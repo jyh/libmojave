@@ -60,16 +60,23 @@ let min_mult_int = -max_mult_int
 (*
  * Catch overflows in addition.
  *)
-let normalize i =
-   if i >= min_int && i <= max_int then
-      Int i
-   else
-      Big_int (big_int_of_int i)
-
 let add_num i j =
    match i, j with
       Int i, Int j ->
-         normalize (i + j)
+			let sum = i + j in
+			if (i>0) & (j>0) then
+				if max_int - i < j then
+					Big_int (add_big_int (big_int_of_int i) (big_int_of_int j))
+				else
+					Int sum
+			else
+				if (i<0) & (j<0) then
+					if min_int - i > j then
+						Big_int (add_big_int (big_int_of_int i) (big_int_of_int j))
+					else
+						Int sum
+				else
+					Int sum
     | Int i, Big_int j ->
          Big_int (add_big_int (big_int_of_int i) j)
     | Big_int i, Int j ->
@@ -80,7 +87,20 @@ let add_num i j =
 let sub_num i j =
    match i, j with
       Int i, Int j ->
-         normalize (i - j)
+			let diff = i - j in
+			if (i>0) & (j<0) then
+				if i > max_int + j then
+					Big_int (sub_big_int (big_int_of_int i) (big_int_of_int j))
+				else
+					Int diff
+			else
+				if (i<0) & (j>0) then
+					if i < min_int + j then
+						Big_int (sub_big_int (big_int_of_int i) (big_int_of_int j))
+					else
+						Int diff
+				else
+					Int diff
     | Int i, Big_int j ->
          Big_int (sub_big_int (big_int_of_int i) j)
     | Big_int i, Int j ->
