@@ -103,15 +103,19 @@ let rec rev_iter f = function
 (*
  * Flat map.
  *)
-let rec flat_map f = function
+let rec flat_map_aux f accum l = function
    h::t ->
-      let h = f h in
-         if h = [] then
-            flat_map f t
-         else
-            h @ flat_map f t
+      flat_map_aux f (h::accum) l t
  | [] ->
-      []
+      begin match l with
+         [] ->
+            accum
+       | h :: t ->
+            flat_map_aux f accum t (f h)
+      end
+
+let flat_map f l =
+   List.rev (flat_map_aux f [] l [])
 
 (*
  * Map, and discard errors.
