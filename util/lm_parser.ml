@@ -191,6 +191,12 @@ sig
 
    (* Comparison *)
    val compare : t -> t -> int
+
+   (* Map over an array of hash codes *)
+   val map_array : (t -> elt -> 'a) -> state -> 'a array
+
+   (* Fold over all of the items *)
+   val fold : ('a -> t -> 'a) -> 'a -> state -> 'a
 end
 
 (*
@@ -253,6 +259,19 @@ struct
 
    let compare index1 index2 =
       index1 - index2
+
+   let map_array f state =
+      Array.mapi f (Array.sub state.int_table 0 (KeyTable.cardinal state.key_table))
+
+   let fold f x state =
+      let len = KeyTable.cardinal state.key_table in
+      let rec fold i x =
+         if i = len then
+            x
+         else
+            fold (succ i) (f x i)
+      in
+         fold 0 x
 end;;
 
 (*
@@ -634,6 +653,30 @@ struct
    module StateSet = Lm_set.LmMake (State);;
    module StateTable = Lm_map.LmMake (State);;
 
+   (*
+    * A StateItem is a pair of the state and the prod_item.
+    *)
+   module StateItemArg =
+   struct
+      type t = State.t * ProdItem.t
+
+      let debug = "StateItem"
+
+      let hash (state, item) =
+         hash_combine (State.hash state) (ProdItem.hash item)
+
+      let compare (state1, item1) (state2, item2) =
+         let cmp = ProdItem.compare item1 item2 in
+            if cmp = 0 then
+               State.compare state1 state2
+            else
+               cmp
+   end;;
+
+   module StateItem = MakeHashCons (StateItemArg);;
+   module StateItemSet = Lm_set.LmMake (StateItem);;
+   module StateItemTable = Lm_map.LmMake (StateItem);;
+
    (************************************************
     * The grammar.
     *)
@@ -678,7 +721,7 @@ struct
     *)
    type pda_action =
       ReduceAction of iaction * ivar * int  (* semantic action, production name, #args *)
-    | GotoAction   of int
+    | GotoAction   of State.t
     | AcceptAction
     | ErrorAction
 
@@ -694,7 +737,7 @@ struct
    (*
     * The PDA transition table.
     *
-    * The pda_item is *purely* for debugging, so access
+    * The pda_info is *purely* for debugging, so access
     * does not have to be fast.
     *)
    type pda_item =
@@ -773,7 +816,8 @@ struct
         info_head_delta          : ProdItemSet.t IVarTable.t IVarTable.t;
         info_head_lookahead      : lookahead IVarTable.t IVarTable.t;
         info_eof                 : IVar.t;
-        info_hash                : hash_state
+        info_hash                : hash_state;
+        info_hash_state_item     : StateItem.state
       }
 
    (*
@@ -781,32 +825,22 @@ struct
     * propagate from one item to another.
     *)
    type prop_edge =
-      { prop_edge_src   : (int * int);          (* state, item *)
-        prop_edge_dst   : (int * int) list      (* state, item *)
+      { prop_edge_src   : StateItem.t;          (* state, item *)
+        prop_edge_dst   : StateItemSet.t        (* state, item *)
       }
 
    module PropEdgeSortArg =
    struct
-      type key = int * int
+      type key = StateItem.t
       type elt = prop_edge
 
       let name edge =
          edge.prop_edge_src
 
       let next edge =
-         edge.prop_edge_dst
+         StateItemSet.to_list edge.prop_edge_dst
 
-      let compare ((i11 : int), (i12 : int)) ((i21 : int), (i22 : int)) =
-         if i11 < i21 then
-            -1
-         else if i11 > i21 then
-            1
-         else if i12 < i22 then
-            -1
-         else if i12 > i22 then
-            1
-         else
-            0
+      let compare = StateItem.compare
    end;;
 
    module PropEdgeSort = MakeSort (PropEdgeSortArg);;
@@ -815,7 +849,7 @@ struct
     * The prop_entry is the lookahead we are computing.
     *)
    type prop_entry =
-      { prop_prod_item       : prod_item;
+      { prop_state_item      : StateItem.t;
         mutable prop_changed : bool;
         mutable prop_vars    : IVarSet.t
       }
@@ -912,8 +946,8 @@ struct
       match action with
          ReduceAction (action, _, _) ->
             fprintf buf "reduce %a" (pp_print_iaction hash) action
-       | GotoAction id ->
-            fprintf buf "goto %d" id
+       | GotoAction state ->
+            fprintf buf "goto %d" (State.hash state)
        | ErrorAction ->
             pp_print_string buf "error"
        | AcceptAction  ->
@@ -945,22 +979,16 @@ struct
       ProdItemSet.iter (fun item ->
             fprintf buf "@ %a" (pp_print_prod_item info) item) items
 
-   let pp_print_closure info buf closure =
-      let gram = info.info_grammar in
-      let hash = info.info_hash in
-         fprintf buf "@[<v 3>Closure:";
-         ProdItemTable.iter (fun prod_item lookahead ->
-               if IVarSet.is_empty lookahead then
-                  fprintf buf "@ @[<hv 3>%a@]" (pp_print_prod_item info) prod_item
-               else
-                  IVarSet.iter (fun v ->
-                        fprintf buf "@ @[<hv 3>%a@ @[<b 3>#%a@]@]" (**)
-                           (pp_print_prod_item info) prod_item (pp_print_ivar hash) v) lookahead) closure;
-         fprintf buf "@]"
+   let pp_print_state info buf state =
+      let { info_state_items = items } = State.get info.info_hash.hash_state_state state in
+         eprintf "@[<v 3>State %d" (State.hash state);
+         pp_print_prod_item_set info buf items;
+         eprintf "@]"
 
    let pp_print_info_item info buf info_item =
       let { info_grammar = gram;
-            info_hash = hash
+            info_hash = hash;
+            info_hash_state_item = hash_state_item
           } = info
       in
       let { info_item_index = index;
@@ -969,10 +997,11 @@ struct
       in
          fprintf buf "@[<v 3>State %d:" index;
          Array.iter (fun entry ->
-               let { prop_prod_item = prod_item;
+               let { prop_state_item = state_item;
                      prop_vars = lookahead
                    } = entry
                in
+               let _, prod_item = StateItem.get hash_state_item state_item in
                   fprintf buf "@ @[<hv 3>%a@ @[<b 2>#%a@]@]" (pp_print_prod_item info) prod_item (pp_print_ivar_set hash) lookahead) entries;
          fprintf buf "@]"
 
@@ -1396,6 +1425,12 @@ struct
        | LookAheadProp set ->
             true, set
 
+   let lookahead_set look =
+      match look with
+         LookAheadConst set
+       | LookAheadProp set ->
+            set
+
    (************************************************
     * Produce the derivation table for items where
     * the dot is at the head.
@@ -1613,18 +1648,6 @@ struct
          State.create info.info_hash.hash_state_state state
 
    (*
-    * Add the state to the set of known LR(0) states.
-    *)
-   let add_state examined unexamined closure =
-      try StateTable.find examined closure, unexamined with
-         Not_found ->
-            try StateTable.find unexamined closure, unexamined with
-               Not_found ->
-                  let index = StateTable.cardinal examined + StateTable.cardinal unexamined in
-                  let unexamined = StateTable.add unexamined closure index in
-                     index, unexamined
-
-   (*
     * Compute the transition table, only for shift operations.
     *)
    let build_delta info unexamined =
@@ -1632,27 +1655,32 @@ struct
 
       (* Perform the closure *)
       let rec build shift_table examined unexamined =
-         if StateTable.is_empty unexamined then
+         if StateSet.is_empty unexamined then
             shift_table, examined
          else
             (* Move an item from unexamined to examined *)
-            let state, index = StateTable.choose unexamined in
-            let examined = StateTable.add examined state index in
-            let unexamined = StateTable.remove unexamined state in
+            let state = StateSet.choose unexamined in
+            let examined = StateSet.add examined state in
+            let unexamined = StateSet.remove unexamined state in
 
             (* Compute the goto states *)
             let delta = shift_state info state in
             let goto_table, unexamined =
                IVarTable.fold (fun (goto_table, unexamined) v items ->
                      let state = closure info items in
-                     let index, unexamined = add_state examined unexamined state in
-                     let goto_table = IVarTable.add goto_table v index in
+                     let unexamined =
+                        if StateSet.mem examined state then
+                           unexamined
+                        else
+                           StateSet.add unexamined state
+                     in
+                     let goto_table = IVarTable.add goto_table v state in
                         goto_table, unexamined) (IVarTable.empty, unexamined) delta
             in
-            let shift_table = IntTable.add shift_table index goto_table in
+            let shift_table = StateTable.add shift_table state goto_table in
                build shift_table examined unexamined
       in
-         build IntTable.empty StateTable.empty unexamined
+         build StateTable.empty StateSet.empty unexamined
 
    let build_start_state info start_table unexamined start =
       let prods =
@@ -1661,9 +1689,9 @@ struct
                raise (Failure ("no such production: " ^ string_of_ivar info.info_hash start))
       in
       let set = List.fold_left ProdItemSet.add ProdItemSet.empty prods in
-      let closure = closure info set in
-      let state_index, unexamined = add_state StateTable.empty unexamined closure in
-      let start_table = IVarTable.add start_table start state_index in
+      let state = closure info set in
+      let unexamined = StateSet.add unexamined state in
+      let start_table = IVarTable.add start_table start state in
          start_table, unexamined
 
    let build_state_table info =
@@ -1674,7 +1702,7 @@ struct
       let start_table, unexamined =
          IVarSet.fold (fun (start_table, unexamined) start ->
                build_start_state info start_table unexamined start) (**)
-            (IVarTable.empty, StateTable.empty) info.info_start_symbols
+            (IVarTable.empty, StateSet.empty) info.info_start_symbols
       in
       let shift_table, states = build_delta info unexamined in
          start_table, shift_table, states
@@ -1688,61 +1716,25 @@ struct
     *)
 
    (*
-    * Give an index to each of the productions in a state.
+    * Build the empty propagation table.
+    * It has an entry for each StateItem.
     *)
-   let build_item_indices info states =
-      StateTable.mapi (fun item index ->
-            let core = State.get info.info_hash.hash_state_state item in
-            let { info_state_items = items;
-                  info_state_closure = closure
-                } = core
-            in
-            let table, _ =
-               ProdItemSet.fold (fun (table, index) prod_item ->
-                     let table = ProdItemTable.add table prod_item index in
-                        table, succ index) (ProdItemTable.empty, 0) core.info_state_items
-            in
-               table, closure, index) states
+   let build_prop_empty info states =
+      (* First, construct each StateItem *)
+      let state_hash = info.info_hash.hash_state_state in
+      let state_item_hash = info.info_hash_state_item in
+         StateSet.iter (fun state ->
+               let core = State.get state_hash state in
+               let items = core.info_state_items in
+                  ProdItemSet.iter (fun item ->
+                        ignore (StateItem.create state_item_hash (state, item))) items) states;
 
-   let build_state_index states =
-      StateTable.fold (fun table state (prods, closure, index) ->
-            IntTable.add table index (prods, closure)) IntTable.empty states
-
-   (*
-    * Build the empty state table.
-    *)
-   let build_prop_empty info state_table =
-      let state_count = IntTable.cardinal state_table in
-      let info_item_none =
-         { info_item_index = 0;
-           info_item_empties = [];
-           info_item_closure = [];
-           info_item_entries = [||]
-         }
-      in
-      let prop_table : info_item array = Array.create state_count info_item_none in
-         IntTable.iter (fun state_index (prod_table, closure) ->
-               let prod_count = ProdItemTable.cardinal prod_table in
-               let prop_entry_list =
-                  ProdItemTable.fold (fun prop_entry_list prod_item _ ->
-                        let prop_entry =
-                           { prop_prod_item = prod_item;
-                             prop_changed   = true;
-                             prop_vars      = IVarSet.empty
-                           }
-                        in
-                           prop_entry :: prop_entry_list) [] prod_table
-               in
-               let prop_entry_array = Array.of_list (List.rev prop_entry_list) in
-               let info_item =
-                  { info_item_index   = state_index;
-                    info_item_empties = [];
-                    info_item_closure = [];
-                    info_item_entries = prop_entry_array
-                  }
-               in
-                  prop_table.(state_index) <- info_item) state_table;
-         prop_table
+         (* The prop table is an array from the hash code to the prop_entry *)
+         StateItem.map_array (fun item _ ->
+               { prop_state_item = item;
+                 prop_changed    = true;
+                 prop_vars       = IVarSet.empty
+               }) state_item_hash
 
    (*
     * Add the propagation info for the initial items.
@@ -1780,12 +1772,13 @@ struct
     *       For each transition (v2 -X-> X . right):
     *          Add lookaheads (look2 look1) to the item "X . right"
     *)
-   let build_prop_head info prop_table state_table goto_table state_index prod_index prod_item v1 right1 =
+   let build_prop_head info prop_table goto_table v1 right1 =
       (* Look up the derivations for v *)
       let delta_table = info.info_head_delta in
       let look_table = IVarTable.find info.info_head_lookahead v1 in
       let look1 = lookahead info right1 in
       let hash = info.info_hash.hash_prod_item_state in
+      let hash_state_item = info.info_hash_state_item in
          IVarTable.fold (fun prop_items v2 look2 ->
                let look = lookahead_concat look2 look1 in
                let prop, vars = lookahead_pair look in
@@ -1793,84 +1786,77 @@ struct
                   IVarTable.fold (fun prop_items v3 items ->
                         ProdItemSet.fold (fun prop_items next_item ->
                               (* Add the edge *)
-                              let next_state_index = IVarTable.find goto_table v3 in
-                              let next_table, _ = IntTable.find state_table next_state_index in
-                              let next_item_index = ProdItemTable.find next_table next_item in
-
-                              let () =
-                                 if !debug_parsegen then
-                                    eprintf "@[<hv 3>Prop %a@ %a ->@ %a@]@." (**)
-                                       (pp_print_prod_item info) prod_item
-                                       (pp_print_lookahead info.info_hash) look
-                                       (pp_print_prod_item info) next_item
-                              in
+                              let next_state = IVarTable.find goto_table v3 in
+                              let next = StateItem.create hash_state_item (next_state, next_item) in
 
                               (* Add the edge if we need to propagate *)
                               let prop_items =
                                  if prop then
-                                    (next_state_index, next_item_index) :: prop_items
+                                    StateItemSet.add prop_items next
                                  else
                                     prop_items
                               in
 
                               (* Initial propagation *)
-                              let prop_entry = prop_table.(next_state_index).info_item_entries.(next_item_index) in
+                              let prop_entry = prop_table.(StateItem.hash next) in
                                  prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars vars;
-                                 prop_items) prop_items items) prop_items delta) [] look_table
+                                 prop_items) prop_items items) prop_items delta) StateItemSet.empty look_table
 
    (*
-    * Add the propagation info for all the items in a state.
+    * Add the propagation info for a state_item.
     *
     * Propagate initial items.
-    * In addition, if we have an item
     *
-    *   item = left . v right
+    * In addition, if the item is:
     *
-    * then goto(v) contains the item
+    *   item = left . X right
+    *
+    * then goto(X) contains the item
     *
     *   left v . right
     *
-    * Propagate lookaheads to this item.
+    * Propagate lookaheads directly to this item.
     *)
-   let build_prop_state info prop_table state_table shift_table prop_edges state_index (prod_table, _) =
-      let goto_table = IntTable.find shift_table state_index in
-      let prods = info.info_prod in
-         ProdItemTable.fold (fun prop_edges prod_item prod_index ->
-               let prod_item_core = ProdItem.get info.info_hash.hash_prod_item_state prod_item in
-               let { prod_item_left = left;
-                     prod_item_right = right
-                   } = prod_item_core
+   let build_prop_state info prop_table shift_table prop_edges state_item =
+      let state_item_hash = info.info_hash_state_item in
+      let state, prod_item = StateItem.get state_item_hash state_item in
+      let goto_table = StateTable.find shift_table state in
+      let prod_item_hash = info.info_hash.hash_prod_item_state in
+      let prod_item_core = ProdItem.get prod_item_hash prod_item in
+      let { prod_item_left = left;
+            prod_item_right = right
+          } = prod_item_core
+      in
+         match right with
+            v :: right ->
+               (* If v is a nonterminal, then also propagate to initial items *)
+               let prop_items =
+                  if IVarTable.mem info.info_prod v then
+                     build_prop_head info prop_table goto_table v right
+                  else
+                     StateItemSet.empty
                in
-                  match right with
-                     v :: right ->
-                        (* If v is a nonterminal, then also propagate to initial items *)
-                        let prop_items =
-                           if IVarTable.mem prods v then
-                              build_prop_head info prop_table state_table goto_table state_index prod_index prod_item v right
-                           else
-                              []
-                        in
 
-                        (* Propagate directly to the next state *)
-                        let next_state_index = IVarTable.find goto_table v in
-                        let next_item_core =
-                           { prod_item_core with prod_item_left = v :: left;
-                                                 prod_item_right = right
-                           }
-                        in
-                        let next_item = ProdItem.create info.info_hash.hash_prod_item_state next_item_core in
-                        let next_table, _ = IntTable.find state_table next_state_index in
-                        let next_item_index = ProdItemTable.find next_table next_item in
+               (* Propagate directly to the next state *)
+               let next_state = IVarTable.find goto_table v in
+               let next_item_core =
+                  { prod_item_core with prod_item_left = v :: left;
+                                        prod_item_right = right
+                  }
+               in
+               let next_item = ProdItem.create prod_item_hash next_item_core in
+               let next = StateItem.create state_item_hash (next_state, next_item) in
 
-                        (* Add the edges *)
-                        let prop_edge =
-                           { prop_edge_src = (state_index, prod_index);
-                             prop_edge_dst = (next_state_index, next_item_index) :: prop_items
-                           }
-                        in
-                           prop_edge :: prop_edges
-                   | [] ->
-                        prop_edges) prop_edges prod_table
+               (* Add the edges *)
+               let prop_items = StateItemSet.add prop_items next in
+               let prop_edge =
+                  { prop_edge_src = state_item;
+                    prop_edge_dst = prop_items
+                  }
+               in
+                  prop_edge :: prop_edges
+          | [] ->
+               prop_edges
 
    (*
     * Now construct a propagation network.
@@ -1878,20 +1864,26 @@ struct
     * each with a propagation entry to another item identified
     * by (state, index).
     *)
-   let build_prop_table info shift_table state_table =
-      let prop_table = build_prop_empty info state_table in
-      let prop_edges = IntTable.fold (build_prop_state info prop_table state_table shift_table) [] state_table in
+   let build_prop_table info shift_table states =
+      let prop_table = build_prop_empty info states in
+      let prop_edges = StateItem.fold (build_prop_state info prop_table shift_table) [] info.info_hash_state_item in
          prop_table, prop_edges
 
    (*
     * Add the eof symbol for the start states.
     *)
-   let set_start_lookahead info start_table prop_table =
+   let set_start_lookahead info prop_table start_table =
       let eof_set = IVarSet.singleton info.info_eof in
-         IVarTable.iter (fun _ state_index ->
-               Array.iter (fun prop_entry ->
-                     prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars eof_set) (**)
-                  prop_table.(state_index).info_item_entries) start_table
+      let hash_state = info.info_hash.hash_state_state in
+      let hash_state_item = info.info_hash_state_item in
+         IVarTable.iter (fun _ state ->
+               let core = State.get hash_state state in
+               let items = core.info_state_items in
+                  ProdItemSet.iter (fun item ->
+                        let item = StateItem.create hash_state_item (state, item) in
+                        let prop_entry = prop_table.(StateItem.hash item) in
+                           prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars eof_set) (**)
+                     items) start_table
 
    (*
     * The fixpoint is a forward-dataflow problem.
@@ -1910,16 +1902,16 @@ struct
    let propagate_lookahead prop_table prop_edges =
       let step () =
          List.fold_left (fun changed prop_edge ->
-               let { prop_edge_src = (state_index, item_index);
+               let { prop_edge_src = src;
                      prop_edge_dst = dst
                    } = prop_edge
                in
-               let item1 = prop_table.(state_index).info_item_entries.(item_index) in
+               let item1 = prop_table.(StateItem.hash src) in
                   if item1.prop_changed then
                      let _ = item1.prop_changed <- false in
                      let vars = item1.prop_vars in
-                        List.fold_left (fun changed (next_state, next_item) ->
-                              let item2 = prop_table.(next_state).info_item_entries.(next_item) in
+                        StateItemSet.fold (fun changed dst ->
+                              let item2 = prop_table.(StateItem.hash dst) in
                               let vars2 = item2.prop_vars in
                               let vars2' = IVarSet.union vars2 item1.prop_vars in
                                  if IVarSet.cardinal vars2' = IVarSet.cardinal vars2 then
@@ -1943,9 +1935,9 @@ struct
     * Rebuild the transition table.
     *)
    let rebuild_trans_table shift_table =
-      IntTable.map (fun goto_table ->
-            IVarTable.map (fun index ->
-                  GotoAction index) goto_table) shift_table
+      StateTable.map (fun goto_table ->
+            IVarTable.map (fun state ->
+                  GotoAction state) goto_table) shift_table
 
    (*
     * Construct the LALR(1) table from the LR(0) table.
@@ -1954,12 +1946,14 @@ struct
       let now = time_print "Starting LALR construction" start now in
       let start_table, shift_table, states = build_state_table info in
       let now = time_print "State table" start now in
-      let state_table = build_item_indices info states in
-      let state_table = build_state_index state_table in
-      let now = time_print "Indexes" start now in
-      let prop_table, prop_edges = build_prop_table info shift_table state_table in
+      let prop_table, prop_edges = build_prop_table info shift_table states in
       let now = time_print "Propagation table" start now in
-      let () = set_start_lookahead info start_table prop_table in
+      let () =
+         if !debug_parsetiming then
+            eprintf "Propagate: %d entries, %d edges@." (Array.length prop_table) (List.length prop_edges)
+      in
+      let () = set_start_lookahead info prop_table start_table in
+      let now = time_print "Start state lookaheads" start now in
       let prop_edges = propagate_order prop_edges in
       let now = time_print "Propagation ordering" start now in
 
@@ -2042,6 +2036,7 @@ struct
            info_first           = first;
            info_eof             = IVar.create hash.hash_ivar_state Arg.eof;
            info_hash            = hash;
+           info_hash_state_item = StateItem.create_state ();
 
            (* Temporary placeholders *)
            info_head_delta      = IVarTable.empty;
@@ -2088,238 +2083,187 @@ struct
                   search items) IVarTable.empty info.info_prod
 
    (*
-    * Get the empty productions associated with a state.
+    * Get all the reduce productions.
+    * The result is a table
+    *     state_item -> lookahead
+    * containing only the reduce items.
     *)
-   let find_empty_productions info empties entries =
+   let add_empty_action info actions empties state v look =
+      let item = IVarTable.find empties v in
+      let item = StateItem.create info.info_hash_state_item (state, item) in
+         StateItemTable.filter_add actions item (fun current_look ->
+               match current_look with
+                  Some current_look ->
+                     lookahead_union current_look look
+                | None ->
+                     look)
+
+   let reduce_actions info empties prop_table =
       let { info_head_lookahead = look_table } = info in
       let hash = info.info_hash.hash_prod_item_state in
-      let prods =
-         Array.fold_left (fun prods entry ->
-               let { prop_prod_item = item;
+      let hash_state_item = info.info_hash_state_item in
+         Array.fold_left (fun actions entry ->
+               let { prop_state_item = state_item;
                      prop_vars = look3
                    } = entry
                in
+               let state, item = StateItem.get hash_state_item state_item in
                let core = ProdItem.get hash item in
                   match core.prod_item_right with
                      v :: right when IVarTable.mem look_table v ->
+                        (* Add all empty productions *)
                         let look_table = IVarTable.find look_table v in
                         let look2 = lookahead_concat (lookahead info right) (LookAheadConst look3) in
-                        let prods =
+                        let actions =
                            if IVarTable.mem empties v then
-                              IVarTable.add prods v look2
+                              add_empty_action info actions empties state v look2
                            else
-                              prods
+                              actions
                         in
-                           IVarTable.fold (fun prods v look1 ->
+                           IVarTable.fold (fun actions v look1 ->
                                  if IVarTable.mem empties v then
                                     let look = lookahead_concat look1 look2 in
-                                       IVarTable.filter_add prods v (fun current_look ->
-                                             match current_look with
-                                                Some current_look ->
-                                                   lookahead_union current_look look
-                                              | None ->
-                                                   look)
+                                       add_empty_action info actions empties state v look
                                  else
-                                    prods) prods look_table
-                   | _ ->
-                        prods) IVarTable.empty entries
-      in
-         (* Now create the prod_entries *)
-         IVarTable.fold (fun empty v look ->
-               let item = IVarTable.find empties v in
-               let _, look = lookahead_pair look in
-               let entry =
-                  { prop_prod_item = item;
-                    prop_changed = false;
-                    prop_vars = look
-                  }
-               in
-                  entry :: empty) [] prods
-
-   (*
-    * !!!DEBUGGING/PRINTING ONLY!!!
-    * Add the complete closure to the item.
-    *)
-   let close_item info info_item =
-      let { info_head_delta = delta_table;
-            info_head_lookahead = look_table
-          } = info
-      in
-      let { info_item_index = state_index;
-            info_item_entries = entries
-          } = info_item
-      in
-      let hash = info.info_hash.hash_prod_item_state in
-         Array.fold_left (fun closure entry ->
-               let { prop_prod_item = prod_item;
-                     prop_vars = look_vars
-                   } = entry
-               in
-               let core = ProdItem.get hash prod_item in
-                  match core.prod_item_right with
-                     v :: right when IVarTable.mem look_table v ->
-                        let look_table = IVarTable.find look_table v in
-                           IVarTable.fold (fun closure v look1 ->
-                                 let look2 = lookahead_concat (lookahead info right) (LookAheadConst look_vars) in
-                                    IVarTable.filter_add closure v (fun look1 ->
-                                          match look1 with
-                                             Some look1 ->
-                                                lookahead_concat look1 look2
-                                           | None ->
-                                                look2)) closure look_table
-                   | _ ->
-                        closure) IVarTable.empty entries
+                                    actions) actions look_table
+                   | [] ->
+                        (* This production calls for a reduce *)
+                        StateItemTable.add actions state_item (LookAheadConst look3)
+                   | _ :: _ ->
+                        actions) StateItemTable.empty prop_table
 
    (*
     * Error messages.
     *)
-   let shift_reduce_conflict info info_item actions v id prod_item =
+   let shift_reduce_conflict info state v shift_state reduce_item =
       let { info_grammar = gram;
             info_hash = hash
           } = info
       in
+      let { hash_prod_item_state = hash_prod_item } = hash in
+      let pp_print_ivar = pp_print_ivar hash in
+      let pp_print_iaction = pp_print_iaction hash in
+      let reduce_core = ProdItem.get hash_prod_item reduce_item in
          eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
-            (pp_print_ivar hash) v
-            id
-            (pp_print_iaction hash) (ProdItem.get hash.hash_prod_item_state prod_item).prod_item_action;
+            pp_print_ivar v
+            (State.hash shift_state)
+            pp_print_iaction reduce_core.prod_item_action;
          if not !debug_parse_conflict_is_warning && not !debug_parsegen then
-            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
-               (pp_print_info_item info) info_item
-               (pp_print_pda_actions hash) actions;
+            eprintf "%a@." (pp_print_state info) state;
          if not !debug_parse_conflict_is_warning then
             raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
-   let reduce_reduce_conflict info info_item actions v action1 action2 =
+   let reduce_reduce_conflict info state v reduce_item action =
       let { info_grammar = gram;
             info_hash = hash
           } = info
       in
+      let { info_grammar = gram;
+            info_hash = hash
+          } = info
+      in
+      let { hash_prod_item_state = hash_prod_item } = hash in
+      let pp_print_ivar = pp_print_ivar hash in
+      let pp_print_iaction = pp_print_iaction hash in
+      let reduce_core = ProdItem.get hash_prod_item reduce_item in
          eprintf "reduce/reduce conflict on %a: reduce %a, reduce %a@." (**)
-            (pp_print_ivar hash) v
-            (pp_print_iaction hash) action1
-            (pp_print_iaction hash) action2;
+            pp_print_ivar v
+            pp_print_iaction reduce_core.prod_item_action
+            pp_print_iaction action;
          if not !debug_parse_conflict_is_warning && not !debug_parsegen then
-            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
-               (pp_print_info_item info) info_item
-               (pp_print_pda_actions hash) actions;
+            eprintf "%a@." (pp_print_state info) state;
          if not !debug_parse_conflict_is_warning then
             raise (Invalid_argument "Lm_parser.reduce_reduce_conflict:\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
+
+   (*
+    * Process all the reduce actions.
+    * This is finally the stage where we check for conflicts.
+    *)
+   let process_reduce_actions info reduce_actions action_table =
+      let { info_grammar         = gram;
+            info_prec            = var_prec_table;
+            info_hash_state_item = hash_state_item;
+            info_hash =
+               { hash_prod_item_state = hash_prod_item }
+          } = info
+      in
+      let { gram_prec_table = prec_table } = gram in
+      let state_item_hash = info.info_hash_state_item in
+         StateItemTable.fold (fun action_table state_item look ->
+               let look = lookahead_set look in
+               let state, item = StateItem.get state_item_hash state_item in
+               let { prod_item_name   = name;
+                     prod_item_action = action;
+                     prod_item_left   = left;
+                     prod_item_prec   = prec_name
+                   } = ProdItem.get hash_prod_item item
+               in
+               let assoc = Precedence.assoc prec_table prec_name in
+               let reduce = ReduceAction (action, name, List.length left) in
+               let actions = StateTable.find action_table state in
+               let actions =
+                  IVarSet.fold (fun actions v ->
+                        try
+                           match IVarTable.find actions v with
+                              GotoAction id ->
+                                 (* Shift/reduce conflict *)
+                                 let cmp =
+                                    try Precedence.compare prec_table prec_name (IVarTable.find var_prec_table v) with
+                                       Not_found ->
+                                          0
+                                 in
+                                    if cmp < 0 then
+                                       actions
+                                    else if cmp = 0 then
+                                       match assoc with
+                                          LeftAssoc ->
+                                             IVarTable.add actions v reduce
+                                        | RightAssoc ->
+                                             actions
+                                        | NonAssoc ->
+                                             IVarTable.add actions v ErrorAction
+                                        | NoneAssoc ->
+                                             shift_reduce_conflict info state v id item;
+                                             actions
+                                    else
+                                       IVarTable.add actions v reduce
+                            | ReduceAction (action2, _, _) ->
+                                 (* Reduce/reduce conflict *)
+                                 reduce_reduce_conflict info state v item action2;
+                                 actions
+                            | ErrorAction
+                            | AcceptAction ->
+                                 raise (Invalid_argument "reduce_action")
+                        with
+                           Not_found ->
+                              IVarTable.add actions v reduce) actions look
+               in
+                  StateTable.add action_table state actions) action_table reduce_actions
 
    (*
     * If a state has only one production,
     * and that is a reduce production, we can do
     * the reduce without lookahead.
     *)
-   let reduce_early info table =
-      if Array.length table = 1 then
-         let { prop_prod_item = item;
-               prop_vars = lookahead
-             } = table.(0)
-         in
+   let reduce_early info prop_table state items =
+      if ProdItemSet.cardinal items = 1 then
+         let item = ProdItemSet.choose items in
             match ProdItem.get info.info_hash.hash_prod_item_state item with
                { prod_item_right = [];
                  prod_item_action = action;
                  prod_item_name = name;
                  prod_item_left = left
                } ->
-                  if IVarSet.cardinal lookahead = 1 && IVarSet.choose lookahead = info.info_eof then
-                     ReduceAccept (action, name, List.length left)
-                  else
-                     ReduceNow (action, name, List.length left)
+                  let state_item = StateItem.create info.info_hash_state_item (state, item) in
+                  let lookahead = prop_table.(StateItem.hash state_item).prop_vars in
+                     if IVarSet.cardinal lookahead = 1 && IVarSet.choose lookahead = info.info_eof then
+                        ReduceAccept (action, name, List.length left)
+                     else
+                        ReduceNow (action, name, List.length left)
              | _ ->
                   ReduceNone
       else
          ReduceNone
-
-   (*
-    * Found a reduce action, resolve conflicts.
-    *)
-   let reduce_action info info_item actions prod_item lookahead =
-      let { info_grammar = gram;
-            info_prec = var_prec_table
-          } = info
-      in
-      let { gram_prec_table = prec_table } = gram in
-      let { prod_item_name   = name;
-            prod_item_action = action;
-            prod_item_left   = left;
-            prod_item_prec   = prec_name
-          } = ProdItem.get info.info_hash.hash_prod_item_state prod_item
-      in
-      let assoc = Precedence.assoc prec_table prec_name in
-      let reduce = ReduceAction (action, name, List.length left) in
-         IVarSet.fold (fun actions v ->
-               try
-                  match IVarTable.find actions v with
-                     GotoAction id ->
-                        (* Shift/reduce conflict *)
-                        let cmp =
-                           try Precedence.compare prec_table prec_name (IVarTable.find var_prec_table v) with
-                              Not_found ->
-                                 0
-                        in
-                           if cmp < 0 then
-                              actions
-                           else if cmp = 0 then
-                              match assoc with
-                                 LeftAssoc ->
-                                    IVarTable.add actions v reduce
-                               | RightAssoc ->
-                                    actions
-                               | NonAssoc ->
-                                    IVarTable.add actions v ErrorAction
-                               | NoneAssoc ->
-                                    shift_reduce_conflict info info_item actions v id prod_item;
-                                    actions
-                           else
-                              IVarTable.add actions v reduce
-                   | ReduceAction (action2, _, _) ->
-                        reduce_reduce_conflict info info_item actions v action action2;
-                        actions
-                   | ErrorAction
-                   | AcceptAction ->
-                        raise (Invalid_argument "reduce_action")
-               with
-                  Not_found ->
-                     IVarTable.add actions v reduce) actions lookahead
-
-   (*
-    * Compute the reduce actions.
-    *)
-   let reduce info empties trans_table states =
-      Array.fold_left (fun trans_table info_item ->
-            let { info_item_index = index;
-                  info_item_entries = prop_entries
-                } = info_item
-            in
-            let actions = IntTable.find trans_table index in
-            let empties = find_empty_productions info empties prop_entries in
-            let info_item = { info_item with info_item_empties = empties } in
-            let actions =
-               List.fold_left (fun actions prop_entry ->
-                     let { prop_prod_item = prod_item;
-                           prop_vars = lookahead
-                         } = prop_entry
-                     in
-                        reduce_action info info_item actions prod_item lookahead) actions empties
-            in
-            let actions =
-               Array.fold_left (fun actions prop_entry ->
-                     let { prop_prod_item = prod_item;
-                           prop_vars = lookahead
-                         } = prop_entry
-                     in
-                        match (ProdItem.get info.info_hash.hash_prod_item_state prod_item).prod_item_right with
-                           [] ->
-                              reduce_action info info_item actions prod_item lookahead
-                         | _ ->
-                              actions) actions prop_entries
-            in
-               if !debug_parsegen then
-                  eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
-                     (pp_print_info_item info) info_item
-                     (pp_print_pda_actions info.info_hash) actions;
-               IntTable.add trans_table index actions) trans_table states
 
    (************************************************************************
     * Constructing the PDA.
@@ -2328,14 +2272,15 @@ struct
    (*
     * Flatten a production state to a pda description.
     *)
-   let pda_info_of_entries hash entries =
+   let pda_info_of_items info prop_table state items =
+      let { info_first = first;
+            info_hash_state_item = hash_state_item;
+            info_hash = { hash_prod_item_state = hash_prod_item }
+          } = info
+      in
       let items, next =
-         Array.fold_left (fun (items, next) entry ->
-               let { prop_prod_item = item;
-                     prop_vars = lookahead
-                   } = entry
-               in
-               let core = ProdItem.get hash.hash_prod_item_state item in
+         ProdItemSet.fold (fun (items, next) prod_item ->
+               let core = ProdItem.get hash_prod_item prod_item in
                let { prod_item_left  = left;
                      prod_item_right = right
                    } = core
@@ -2349,11 +2294,18 @@ struct
                let next =
                   match right with
                      v :: _ ->
-                        IVarSet.add next v
+                        let next2 =
+                           try IVarTable.find first v with
+                              Not_found ->
+                                 IVarSet.singleton v
+                        in
+                           IVarSet.union next next2
                    | [] ->
-                        IVarSet.union next lookahead
+                        let state_item = StateItem.create hash_state_item (state, prod_item) in
+                        let lookahead = prop_table.(StateItem.hash state_item).prop_vars in
+                           IVarSet.union next lookahead
                in
-                  items, next) ([], IVarSet.empty) entries
+                  items, next) ([], IVarSet.empty) items
       in
          { pda_items     = items;
            pda_next      = next
@@ -2366,9 +2318,11 @@ struct
       let start = time_start () in
       let now = start in
       let now, info = info_of_grammar gram start now in
-      let now, start_table, trans_table, states = build_lalr_table info start now in
+      let now, start_table, trans_table, prop_table = build_lalr_table info start now in
       let empty_table = empty_productions info in
-      let trans_table = reduce info empty_table trans_table states in
+      let reduce_actions = reduce_actions info empty_table prop_table in
+      let now = time_print "Reduce productions" start now in
+      let trans_table = process_reduce_actions info reduce_actions trans_table in
       let now = time_print "Shift/reduce table" start now in
 
       (* Build the PDA states *)
@@ -2383,22 +2337,19 @@ struct
            pda_info   = null_info
          }
       in
-      let hash = info.info_hash in
       let table =
-         Array.map (fun info_item ->
-               let { info_item_index = index;
-                     info_item_entries = entries
-                   } = info_item
-               in
-                  { pda_delta  = IntTable.find trans_table index;
-                    pda_reduce = reduce_early info entries;
-                    pda_info   = pda_info_of_entries hash entries
-                  }) states
+         State.map_array (fun state core ->
+               let { info_state_items = items } = core in
+                  { pda_delta  = StateTable.find trans_table state;
+                    pda_reduce = reduce_early info prop_table state items;
+                    pda_info   = pda_info_of_items info prop_table state items
+                  }) info.info_hash.hash_state_state
       in
+      let start_table = IVarTable.map State.hash start_table in
       let now = time_print "PDA construction" start now in
          { pda_start_states    = start_table;
            pda_states          = table;
-           pda_hash            = hash
+           pda_hash            = info.info_hash
          }
 
    let create gram =
@@ -2406,6 +2357,10 @@ struct
       let pda = create_core gram in
       let _ = time_print "Grammar total" start start in
          pda
+
+   (************************************************************************
+    * PDA execution.
+    *)
 
    (*
     * Execute a semantic action.
@@ -2483,6 +2438,7 @@ struct
                    parse_error loc hash run stack state v)
          with
             GotoAction new_state ->
+               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: token %a: shift %d@." state (pp_print_ivar hash) v new_state;
                pda_no_lookahead hash run arg ((state, loc, x) :: stack) new_state
@@ -2511,6 +2467,7 @@ struct
       in
          match action with
             GotoAction new_state ->
+               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
                      state (pp_print_ivar hash) name
@@ -2552,6 +2509,7 @@ struct
       in
          match action with
             GotoAction new_state ->
+               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
                      state (pp_print_ivar hash) name new_state;
