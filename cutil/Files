@@ -10,4 +10,5 @@ FILES =\
 	lm_mmap\
 	lm_marshal_shared\
 	lm_ssl\
-	lm_config
+	lm_config\
+	lm_uname_ext

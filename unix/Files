@@ -4,4 +4,5 @@ UNIX_FILES =\
 	lm_mmap_pipe\
 	lm_rusage\
 	lm_id\
-	lm_inet
+	lm_inet\
+	lm_uname
