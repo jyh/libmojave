@@ -1,11 +1,3 @@
-MLZFILES =\
-	lm_array_sig\
-	lm_dag_sig\
-	lm_linear_set_sig\
-	lm_map_sig\
-	lm_set_sig\
-	lm_thread_sig
-
 STDLIB_FILES =\
 	lm_debug\
 	lm_big_int\
