@@ -67,26 +67,21 @@ let unix_is_executable s =
  * it just has to exist.
  *)
 let win32_suffixes =
-   [".exe"; ".com"; ".bat"]
+   [""; ".exe"; ".com"; ".bat"]
 
-let rec search_win32 name suffixes =
-   match suffixes with
-      suffix :: suffixes ->
-         let name' = name ^ suffix in
-            if Sys.file_exists name' then
-               Some name'
-            else
-               search_win32 name suffixes
-    | [] ->
-         None
-
-let win32_is_executable name =
-   if Sys.file_exists name then
-      Some name
-   else if String.contains name '.' then
-      None
-   else
-      search_win32 name win32_suffixes
+let win32_is_executable =
+   let rec search_win32 suffixes name =
+      match suffixes with
+         suffix :: suffixes ->
+            let name' = name ^ suffix in
+               if Sys.file_exists name' then
+                  Some name'
+               else
+                  search_win32 suffixes name
+       | [] ->
+            None
+   in
+      search_win32 win32_suffixes
 
 (*
  * System-dependent config.
