@@ -191,6 +191,21 @@ let new_name (_, v) pred =
       search 0
 
 (*
+ * Create a new symbol, calling the function f until it
+ * returns non-nil.
+ *)
+let new_name_gen (_, v) f =
+   let rec search i =
+      let nv = i, v in
+         match f nv with
+            Some x ->
+               x
+          | None ->
+               search (succ i)
+   in
+      search 0
+
+(*
  * Check if the symbol is in the table.
  *)
 let is_interned (i, _) =

@@ -67,6 +67,7 @@ val to_string : symbol -> string
  * Find a symbol for which the predicate is false.
  *)
 val new_name : symbol -> (symbol -> bool) -> symbol
+val new_name_gen : symbol -> (symbol -> 'a option) -> 'a
 
 (*
  * Get back the string.
