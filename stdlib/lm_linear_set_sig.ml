@@ -47,6 +47,7 @@ sig
    val of_list : elt list -> t
    val iter : (elt -> unit) -> t -> unit
    val map : (elt -> elt) -> t -> t
+   val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
    val split : t -> index -> t * elt * t
    val append : t -> elt -> t -> t
    val append_list : t -> elt list -> t -> t

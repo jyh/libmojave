@@ -46,6 +46,7 @@ struct
    let make = Array.create
    let iter = Array.iter
    let map = Array.map
+   let fold = Array.fold_left
    let of_list = Array.of_list
    let to_list = Array.to_list
    let lazy_apply = Array.map

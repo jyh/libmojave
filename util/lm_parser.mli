@@ -169,6 +169,11 @@ sig
     *)
    val compile : t -> unit
 
+   (*
+    * Hash code for the parser.
+    *)
+   val hash : t -> int
+
    (* Force a parser build, possibly in debug mode *)
    val build : t -> bool -> unit
 

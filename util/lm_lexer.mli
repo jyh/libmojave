@@ -165,6 +165,11 @@ sig
    val pp_print_lexer : out_channel -> t -> unit
 
    (*
+    * Hash code for the lexer.
+    *)
+   val hash : t -> int
+
+   (*
     * Now match against an input channel.
     * The result is (clause, lexeme, args)
     *    clause: the index of the clause that matched

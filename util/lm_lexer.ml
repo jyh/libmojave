@@ -2313,7 +2313,10 @@ struct
          fprintf buf "@[<v 0>@[<hv 3>Lexer:@ %a@]" pp_print_exp exp;
          fprintf buf "@ @[<hv 3>NFA:";
          Array.iter (fun nfa_state -> fprintf buf "@ %a" pp_print_nfa_state nfa_state) dfa.dfa_table;
-         fprintf buf "@]@]";
+         fprintf buf "@]@]"
+
+   let hash info =
+      Hashtbl.hash_param max_int max_int info.lex_exp
 end
 
 (************************************************************************

@@ -1643,6 +1643,9 @@ struct
 
    let pp_print_parser buf info =
       pp_print_grammar buf info.parse_grammar
+
+   let hash info =
+      Hashtbl.hash_param max_int max_int info.parse_grammar
 end
 
 (*
