@@ -35,7 +35,7 @@
 #include <caml/custom.h>
 
 #ifdef WIN32
-#  include <winsock2.h>
+#  include <winsock.h>
 #  define SHUT_RD 0
 #  define SHUT_WR 1
 
@@ -48,6 +48,8 @@ typedef long socklen_t;
 #  include <fcntl.h>
 
 typedef int SOCKET;
+
+#define closesocket close
 #endif /* !WIN32 */
 
 void enter_blocking_section(void);
@@ -198,7 +200,7 @@ static void ssl_finalize(value v_info)
         info->context = 0;
     }
     if(info->fd >= 0) {
-        close(info->fd);
+        closesocket(info->fd);
         info->fd = -1;
     }
 }
@@ -403,7 +405,7 @@ value lm_ssl_accept(value v_info)
     /* Start SSL operations */
     ssl = SSL_new(info->context);
     if(ssl == 0) {
-        close(fd);
+        closesocket(fd);
         print_errors();
         failwith("lm_ssl_accept");
     }
@@ -411,7 +413,7 @@ value lm_ssl_accept(value v_info)
     /* Set the descriptor */
     code = SSL_set_fd(ssl, fd);
     if(code <= 0) {
-        close(fd);
+        closesocket(fd);
         SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_accept: set_fd failed");
@@ -420,7 +422,7 @@ value lm_ssl_accept(value v_info)
     /* Negotiate */
     code = SSL_accept(ssl);
     if(code <= 0) {
-        close(fd);
+        closesocket(fd);
         SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_accept: negotiation failed");
@@ -609,7 +611,7 @@ static void ssl_finalize(value v_info)
 
     info = SslInfo_val(v_info);
     if(info->fd >= 0) {
-        close(info->fd);
+        closesocket(info->fd);
         info->fd = -1;
     }
 }
@@ -752,12 +754,14 @@ value lm_ssl_listen(value v_info, value v_dhfile, value v_count)
 value lm_ssl_accept(value v_info)
 {
     SslInfo *info;
-    int fd, code;
+    SOCKET fd;
+    int code;
 
     /* Listen on the server socket */
     info = SslInfo_val(v_info);
     enter_blocking_section();
     fd = accept(info->fd, (struct sockaddr *) 0, 0);
+    fflush(stderr);
     leave_blocking_section();
     if(fd < 0) {
         perror("accept");
@@ -775,7 +779,8 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
 {
     SslInfo *info;
     struct sockaddr_in sin;
-    int fd, code;
+    SOCKET fd;
+    int code;
 
     /* Get the address */
     sin.sin_family = AF_INET;
@@ -809,7 +814,7 @@ value lm_ssl_read(value v_info, value v_string, value v_off, value v_len)
     off = Int_val(v_off);
     len = Int_val(v_len);
     enter_blocking_section();
-    amount = read(info->fd, buf + off, len);
+    amount = recv(info->fd, buf + off, len, 0);
     leave_blocking_section();
     return Val_int(amount);
 }
@@ -828,7 +833,7 @@ value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
     off = Int_val(v_off);
     len = Int_val(v_len);
     enter_blocking_section();
-    amount = write(info->fd, buf + off, len);
+    amount = send(info->fd, buf + off, len, 0);
     leave_blocking_section();
     return Val_int(amount);
 }

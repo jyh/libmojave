@@ -24,6 +24,11 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+let eprintf = Printf.eprintf
+let eflush out =
+   output_char out '\n';
+   flush out
+
 open Lm_make_printf
 
 (*
@@ -242,10 +247,12 @@ struct
                fill inx
             end
          else if length <> buf_length then
-            let amount = lm_ssl_read ssl buf length (buf_length - length) in
-               if amount <= 0 then
-                  raise End_of_file;
-               inx.length <- length + amount
+            begin
+               let amount = lm_ssl_read ssl buf length (buf_length - length) in
+                  if amount <= 0 then
+                     raise End_of_file;
+                  inx.length <- length + amount
+            end
 
    (*
     * Get a character.
