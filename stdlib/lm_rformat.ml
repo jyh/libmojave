@@ -460,7 +460,7 @@ let flush_formatting buf =
                                        unformatted_index = index
                          }
     | Formatting _ ->
-         raise (Invalid_argument "Lm_rformat.flush_formatting: unballanced buffer (use debug_dform_depth to debug)")
+         raise (Invalid_argument "Lm_rformat.flush_formatting: unbalanced buffer (use debug_dform_depth to debug)")
 
     | Unformatted _
     | Formatted _ ->
