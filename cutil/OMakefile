@@ -40,7 +40,7 @@ SSL_LDFLAGS =
 if $(SSL_ENABLED)
     SSL_CFLAGS = -DSSL_ENABLED
     SSL_LDFLAGS = -cclib -lssl
-    INCLUDES += -I/usr/kerberos/include
+    INCLUDES += -Ic:/OpenSSL/include -I/usr/kerberos/include
     export
 
 #

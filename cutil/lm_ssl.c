@@ -27,15 +27,26 @@
 #include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
-#include <unistd.h>
 
 #ifdef SSL_ENABLED
-#include <sys/socket.h>
+
+#ifdef WIN32
+#   include <winsock2.h>
+
+#   define SHUT_RD 0
+#   define SHUT_WR 1
+
+#else /* !WIN32 */
+
+#   include <unistd.h>
+#   include <sys/socket.h>
+
+#endif /* !WIN32 */
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
