@@ -485,7 +485,18 @@ let create
       iter_aux f !t
    in
 
-   (*
+	let rec list_of_aux = function
+      Node (key, data, left, right, _) ->
+         (list_of_aux left)@((key,data)::(list_of_aux right))
+    | Leaf ->
+         []
+   in
+
+   let list_of t =
+      list_of_aux !t
+   in
+
+(*
     * Map a function over the table.
     *)
    let rec map_aux f = function
@@ -591,6 +602,7 @@ let create
         not_mem_filt = not_mem_filt;
         intersectp = intersectp;
         of_list = of_list;
+        list_of = list_of;
 		  deletemax = deletemax;
         print = print
       }
