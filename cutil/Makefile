@@ -42,10 +42,12 @@ $(ROOT)/lib/$(MAIN)-native$(EXT_LIB): $(MAIN)-native$(EXT_LIB)
 # Actual makefile
 include $(ROOT)/mk/rules
 
-CFLAGS := $(CFLAGS)\
-	 -DREADLINE\
-	 -DRL_COMPLETION_MATCHES=rl_completion_matches\
-         -DRL_CP_TYPE=rl_compentry_func_t\
-         -DRL_CPP_TYPE=rl_completion_func_t
+ifeq ($(READLINE),$(YES))
+	CFLAGS := $(CFLAGS)\
+		-DREADLINE\
+		-DRL_COMPLETION_MATCHES=rl_completion_matches\
+        -DRL_CP_TYPE=rl_compentry_func_t\
+        -DRL_CPP_TYPE=rl_completion_func_t
+endif
 
 include Makefile.dep
