@@ -1367,14 +1367,18 @@ struct
                                        let prods = VarMTable.find_all prods v in
                                           List.fold_left (fun prop_self prod ->
                                                 let prod_item = prod_item_of_prod prod in
-                                                let item_index = ProdItemTable.find prod_table prod_item in
-                                                let prop_entry = prop_entry_array.(item_index) in
+                                                let item_index =
+                                                   try ProdItemTable.find prod_table prod_item with
+                                                      Not_found ->
+                                                         raise (Invalid_argument "Lm_parser.build_prop_table")
+                                                in
                                                 let prop_self =
                                                    if prop then
                                                       item_index :: prop_self
                                                    else
                                                       prop_self
                                                 in
+                                                let prop_entry = prop_entry_array.(item_index) in
                                                    prop_entry.prop_vars <- VarSet.union prop_entry.prop_vars lookahead;
                                                    prop_self) [] prods
                                     with
@@ -1425,7 +1429,7 @@ struct
       let eof_set = VarSet.singleton eof in
          VarTable.iter (fun _ state_index ->
                Array.iter (fun prop_entry ->
-                     prop_entry.prop_vars <- eof_set) prop_table.(state_index)) start_table
+                     prop_entry.prop_vars <- VarSet.union prop_entry.prop_vars eof_set) prop_table.(state_index)) start_table
 
    (*
     * The fixpoint is a forward-dataflow problem.
@@ -1449,22 +1453,19 @@ struct
    let propagate_lookahead prop_table prop_infos =
       (* Propagate self edges in a fixpoint *)
       let step_self items item_index self_edges =
-         List.fold_left (fun changed next_index ->
-               let item1 = items.(item_index) in
-                  if item1.prop_changed then
-                     let item2 = items.(next_index) in
-                     let vars2 = item2.prop_vars in
-                     let vars2' = VarSet.union vars2 item1.prop_vars in
-                        item1.prop_changed <- false;
-                        if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
-                           changed
-                        else begin
-                           item2.prop_changed <- true;
-                           item2.prop_vars <- vars2';
-                           true
-                        end
-                  else
-                     changed) false self_edges
+         let item1 = items.(item_index) in
+         let vars1 = item1.prop_vars in
+            List.fold_left (fun changed next_index ->
+                  let item2 = items.(next_index) in
+                  let vars2 = item2.prop_vars in
+                  let vars2' = VarSet.union vars2 vars1 in
+                     if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
+                        changed
+                     else begin
+                        item2.prop_changed <- true;
+                        item2.prop_vars <- vars2';
+                        true
+                     end) false self_edges
       in
       let rec fixpoint_self items item_index changed self_edges =
          if step_self items item_index self_edges then
@@ -1486,22 +1487,26 @@ struct
                         prop_item_goto = goto_edge
                       } = prop_item
                   in
-                  let changed = fixpoint_self items item_index changed self_edges in
-                  let { prop_goto_state = next_state;
-                        prop_goto_item  = next_item
-                      } = goto_edge
-                  in
                   let item1 = items.(item_index) in
-                  let item2 = prop_table.(next_state).(next_item) in
-                  let vars2 = item2.prop_vars in
-                  let vars2' = VarSet.union vars2 item1.prop_vars in
-                     if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
-                        changed
-                     else begin
-                        item2.prop_changed <- true;
-                        item2.prop_vars <- vars2';
-                        true
-                     end) changed prop_items
+                     if item1.prop_changed then
+                        let () = item1.prop_changed <- false in
+                        let changed = fixpoint_self items item_index changed self_edges in
+                        let { prop_goto_state = next_state;
+                              prop_goto_item  = next_item
+                            } = goto_edge
+                        in
+                        let item2 = prop_table.(next_state).(next_item) in
+                        let vars2 = item2.prop_vars in
+                        let vars2' = VarSet.union vars2 item1.prop_vars in
+                           if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
+                              changed
+                           else begin
+                              item2.prop_changed <- true;
+                              item2.prop_vars <- vars2';
+                              true
+                           end
+                     else
+                        changed) changed prop_items
       in
 
       (* Propagate changes to all the states *)
