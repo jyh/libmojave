@@ -10,7 +10,7 @@ MLZFILES = \
    lm_map_sig\
    lm_set_sig\
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
+OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
     $(CLEAN)

@@ -18,7 +18,7 @@ FILES =\
 	$(UTIL_FILES)
 
 OCamlLibrary(lm, $(FILES))
-OCamlLibraryCopy($(MPINSTALL), $(LIB), lm, $(EMPTY))
+OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
 
 clean:
     $(CLEAN)

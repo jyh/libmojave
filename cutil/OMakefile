@@ -47,7 +47,7 @@ CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
 #
 # Libraries
 #
-StaticCLibraryInstall($(MPINSTALL), $(LIB), liblmcutil, $(CFILES))
+StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
 
 clean:
     $(CLEAN)
