@@ -151,6 +151,81 @@ let string_of_root = function
          s
 
 (*
+ * Unescape a possibly quoted filename.
+ * The only things we unquote are quotations.
+ *)
+let unescape_string s =
+   let len = String.length s in
+   let rec start i =
+      if i = len then
+         s
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               let buf = Buffer.create len in
+                  Buffer.add_substring buf s 0 i;
+                  dquote buf (succ i)
+          | '\'' ->
+               let buf = Buffer.create len in
+                  Buffer.add_substring buf s 0 i;
+                  squote buf (succ i)
+          | c ->
+               start (succ i)
+
+   and dquote buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               normal buf (succ i)
+          | '\\' when i < len - 1 ->
+               (match s.[i + 1] with
+                   '"' ->
+                      Buffer.add_char buf '"';
+                      dquote buf (i + 2)
+                 | _ ->
+                      Buffer.add_char buf '\\';
+                      dquote buf (succ i))
+          | c ->
+               Buffer.add_char buf c;
+               dquote buf (succ i)
+
+   and squote buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '\'' ->
+               normal buf (succ i)
+          | '\\' when i < len - 1 ->
+               (match s.[i + 1] with
+                   '\'' ->
+                      Buffer.add_char buf '\'';
+                      dquote buf (i + 2)
+                 | _ ->
+                      Buffer.add_char buf '\\';
+                      dquote buf (succ i))
+          | c ->
+               Buffer.add_char buf c;
+               dquote buf (succ i)
+
+   and normal buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               dquote buf (succ i)
+          | '\'' ->
+               squote buf (succ i)
+          | c ->
+               Buffer.add_char buf c;
+               normal buf (succ i)
+   in
+      start 0
+
+(*
  * Split the path into root part, and the rest.
  *)
 let filename_string name =

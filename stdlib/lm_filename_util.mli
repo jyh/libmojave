@@ -43,6 +43,11 @@ val separator_char   : char
 val separator_string : string
 
 (*
+ * Remove quotations from a string that represents a filename.
+ *)
+val unescape_string  : string -> string
+
+(*
  * Normalize function will give the canonical
  * lowercase name on Windows.  It is a nop on
  * Unix.
