@@ -63,7 +63,7 @@ let html_escape_string buffer s =
       else if i < j then
          Buffer.add_substring buffer s i (j - i)
    and collect_escape i j s' =
-      if i < pred j then
+      if i < j then
          Buffer.add_substring buffer s i (j - i);
       Buffer.add_string buffer s';
       collect (succ j) (succ j)
