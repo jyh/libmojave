@@ -227,6 +227,11 @@ let separators = "/\\"
 let split_path = Lm_string_util.split separators
 
 (*
+ * Put it back together.
+ *)
+let concat_path = Lm_string_util.concat separator_string
+
+(*
  * Simplify, remove leading directory.
  *)
 let simplify_path path =

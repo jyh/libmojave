@@ -316,10 +316,7 @@ let trim_std = trim_all quotes white
  *)
 let trim s =
    let length = String.length s in
-   let is_whitespace = function
-      ' ' | '\n' | '\t' -> true
-    | _ -> false
-   in
+   let is_whitespace = String.contains white in
    let rec scan_for_first_nonws index =
       if index < length && is_whitespace s.[index] then
          scan_for_first_nonws (index + 1)

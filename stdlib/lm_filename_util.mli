@@ -91,6 +91,7 @@ type pathname = string list
 
 val split_path : string -> pathname
 val simplify_path : pathname -> pathname
+val concat_path : pathname -> string
 
 (*
  * Path searching.
