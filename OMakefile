@@ -1,0 +1,4 @@
+#
+# Subdirectories of this project
+#
+.SUBDIRS: cutil stdlib util
