@@ -347,7 +347,12 @@ let add_shell_pattern options buf s =
              | '.'
              | '+'
              | '^'
-             | '$' ->
+             | '$'
+             | '|'
+             | '('
+             | ')'
+             | '{'
+             | '}' ->
                   Buffer.add_char buf '\\';
                   Buffer.add_char buf c;
                   collect (succ i)
@@ -374,7 +379,7 @@ let add_shell_pattern options buf s =
       collect 0
 
 let add_shell_disjunct options buf s =
-   Buffer.add_string buf "\\|";
+   Buffer.add_string buf "|";
    add_shell_pattern options buf s
 
 let regexp_of_shell_pattern options s =
