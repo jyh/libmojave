@@ -24,8 +24,10 @@ include Files
 #
 # Build the library.
 #
+OCamlLibrary(lmstdlib, $(STDLIB_FILES))
+
 if $(defined LMINSTALL)
-    OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
+    OCamlLibraryCopy($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
     $(CLEAN) lm_pervasives.ml lm_thread_core.ml lm_thread_pool.ml

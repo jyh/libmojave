@@ -4,7 +4,6 @@
 *~
 .#*
 *.cm*
-Makefile.dep
 lm_pervasives.ml
 lm_thread_core.ml
 *.omc

@@ -3,7 +3,6 @@
 *~
 .#*
 *.cm*
-Makefile.dep
 *.omc
 *.omo
 *.obj
