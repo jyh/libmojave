@@ -699,12 +699,12 @@ struct
    let nullable gram =
       let step nullable prods =
          VarMTable.fold_all (fun nullable v prods ->
-               if VarSet.mem nullable v
-                  || List.exists (fun prod -> List.for_all (VarSet.mem nullable) prod.prod_rhs) prods
-               then
+               if VarSet.mem nullable v then
                   nullable
+               else if List.exists (fun prod -> List.for_all (VarSet.mem nullable) prod.prod_rhs) prods then
+                  VarSet.add nullable v
                else
-                  VarSet.add nullable v) nullable prods
+                  nullable) nullable prods
       in
       let rec fixpoint nullable prods =
          let nullable' = step nullable prods in
@@ -817,11 +817,7 @@ struct
     * Take the closure of a production.
     *)
    let closure info (set : ProdItemSet.t) =
-      let { info_grammar  = { gram_prod = prods };
-            info_nullable = nullable;
-            info_first    = first
-          } = info
-      in
+      let { info_grammar  = { gram_prod = prods } } = info in
       let rec close examined unexamined closure =
          if VarSet.is_empty unexamined then
             closure
@@ -1359,6 +1355,10 @@ struct
 
    let create_core gram =
       let info = info_of_grammar gram in
+      let () =
+         if !debug_parsegen then
+            eprintf "@[<hv 3>Grammar:@ %a@]@." pp_print_info info
+      in
       let start_table, unexamined =
          SymbolSet.fold (fun (start_table, unexamined) start ->
                create_start info start_table unexamined start) (**)
@@ -1423,7 +1423,7 @@ struct
 
    let semantic_action eval arg action stack state tokens =
       let loc = loc_of_stack stack in
-      let state, loc, args, stack = collect_args 0 [] loc stack tokens in
+      let state, loc, args, stack = collect_args state [] loc stack tokens in
       let () =
          if !debug_parse then
             eprintf "Calling action %a@." pp_print_action action
