@@ -137,6 +137,11 @@ sig
     * This will not read past EOF.
     *)
    val search : t -> Input.t -> string * (action * string * string list) option
+
+   (*
+    * Just check if a string matches.
+    *)
+   val matches : t -> Input.t -> bool
 end
 
 (*!
