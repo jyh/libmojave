@@ -52,6 +52,21 @@ type html_buffer =
    }
 
 (*
+ * Tagging functions.
+ *)
+type html_tagger_fun =
+   NoTagger
+ | StringTagger of string
+ | FunTagger of (string -> string)
+
+type html_tagger_pair =
+   { html_tag_begin : html_tagger_fun;
+     html_tag_end   : html_tagger_fun
+   }
+
+type html_tagger = html_tagger_pair option
+
+(*
  * Have to escape special characters.
  *)
 let html_escape_string buffer s =
@@ -223,16 +238,30 @@ let html_print_invis buf s =
 let html_print_atomic buf s =
    Queue.add (AtomicString s) buf.html_line
 
-let html_tag buf s =
-   Queue.add (InvisibleString (Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">" s)) buf.html_line
+let html_tag tagger buf =
+   match tagger with
+      Some { html_tag_begin = FunTagger tagger } ->
+         (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
+    | Some { html_tag_begin = StringTagger tagger } ->
+         (fun s -> Queue.add (InvisibleString tagger) buf.html_line)
+    | Some { html_tag_begin = NoTagger }
+    | None ->
+         (fun s -> ())
 
-let html_etag buf s =
-   Queue.add (InvisibleString "</span>") buf.html_line
+let html_etag tagger buf =
+   match tagger with
+      Some { html_tag_end = FunTagger tagger } ->
+         (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
+    | Some { html_tag_end = StringTagger tagger } ->
+         (fun s -> Queue.add (InvisibleString tagger) buf.html_line)
+    | Some { html_tag_end = NoTagger }
+    | None ->
+         (fun s -> ())
 
 (*
  * An HTML printer.
  *)
-let make_html_printer_aux raw =
+let make_html_printer_aux tagger raw =
    let { raw_print_string  = output_string;
          raw_print_newline = output_newline
        } = raw
@@ -254,30 +283,30 @@ let make_html_printer_aux raw =
         print_invis     = html_print_invis buf;
         print_atomic    = html_print_atomic buf;
         print_tab       = html_tab buf;
-        print_begin_tag = html_tag buf;
-        print_end_tag   = html_etag buf
+        print_begin_tag = html_tag tagger buf;
+        print_end_tag   = html_etag tagger buf
       }
    in
       buf, info
 
-let make_html_printer raw =
-   snd (make_html_printer_aux raw)
+let make_html_printer tagger raw =
+   snd (make_html_printer_aux tagger raw)
 
-let print_html_raw rmargin buf raw =
-   let hbuf, info = make_html_printer_aux raw in
+let print_html_raw rmargin tagger buf raw =
+   let hbuf, info = make_html_printer_aux tagger raw in
       print_to_printer buf rmargin info;
       html_flush hbuf;
       raw.raw_print_flush ()
 
-let print_html_channel rmargin buf out =
-   print_html_raw rmargin buf (raw_channel_printer out)
+let print_html_channel rmargin tagger buf out =
+   print_html_raw rmargin tagger buf (raw_channel_printer out)
 
-let print_html_buffer rmargin buf out =
-   print_html_raw rmargin buf (raw_buffer_printer out)
+let print_html_buffer rmargin tagger buf out =
+   print_html_raw rmargin tagger buf (raw_buffer_printer out)
 
-let print_html_string rmargin buf  =
+let print_html_string rmargin tagger buf  =
    let out = Buffer.create 100 in
-      print_html_buffer rmargin buf out;
+      print_html_buffer rmargin tagger buf out;
       Buffer.contents out
 
 (*!

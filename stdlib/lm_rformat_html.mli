@@ -27,11 +27,23 @@
 open Lm_rformat_raw
 open Lm_rformat
 
-val make_html_printer  : raw_printer -> printer
+type html_tagger_fun =
+   NoTagger
+ | StringTagger of string
+ | FunTagger of (string -> string)
 
-val print_html_channel : int -> buffer -> out_channel -> unit
-val print_html_buffer  : int -> buffer -> Buffer.t -> unit
-val print_html_string  : int -> buffer -> string
+type html_tagger_pair =
+   { html_tag_begin : html_tagger_fun;
+     html_tag_end   : html_tagger_fun
+   }
+
+type html_tagger = html_tagger_pair option
+
+val make_html_printer  : html_tagger -> raw_printer -> printer
+
+val print_html_channel : int -> html_tagger -> buffer -> out_channel -> unit
+val print_html_buffer  : int -> html_tagger -> buffer -> Buffer.t -> unit
+val print_html_string  : int -> html_tagger -> buffer -> string
 
 val escape : string -> string
 
