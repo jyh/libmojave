@@ -310,6 +310,18 @@ struct
    let bof = Input.bof
    let eof = Input.eof
 
+   let zero_char = Char.code '0'
+   let at_char   = Char.code '@'
+   let alert_char     = Char.code 'G' - at_char
+   let backspace_char = Char.code 'H' - at_char
+   let formfeed_char  = Char.code 'L' - at_char
+   let newline_char   = Char.code '\n'
+   let cr_char        = Char.code '\r'
+   let tab_char       = Char.code '\t'
+   let vertical_tab_char = Char.code 'K' - at_char
+   let hex_a_char        = Char.code 'a' - 10
+   let hex_A_char        = Char.code 'A' - 10
+
    (*
     * Character sets.
     *)
@@ -568,6 +580,36 @@ struct
                raise (Failure "interval expression is not terminated")
 
    (*
+    * Character constants.
+    *)
+   let rec regex_hex_const c s i len =
+      if i = len then
+         c, i
+      else
+         let c' = s.[i] in
+         let j = succ i in
+            match c' with
+               '0'..'9' ->
+                  regex_hex_const (c * 16 + Char.code c' - zero_char) s j len
+             | 'a'..'f' ->
+                  regex_hex_const (c * 16 + Char.code c' - hex_a_char) s j len
+             | 'A'..'F' ->
+                  regex_hex_const (c * 16 + Char.code c' - hex_A_char) s j len
+             | _ ->
+                  c, i
+
+   let rec regex_octal_const c s i len =
+      if i = len then
+         c, i
+      else
+         let c' = s.[i] in
+            match c' with
+               '0'..'7' ->
+                  regex_octal_const (c * 8 + Char.code c' - zero_char) s (succ i) len
+             | _ ->
+                  c, i
+
+   (*
     * Literal characters [...]
     *)
    let rec regex_chars s i len =
@@ -607,8 +649,42 @@ struct
                regex_chars_possible_class chars s j len
           | ']' ->
                chars, j
+          | '\\' ->
+               regex_chars_escape chars s j len
           | c ->
                regex_chars_possible_range chars (Char.code c) s j len
+
+   (*
+    * Just saw a backslash.
+    *)
+   and regex_chars_escape chars s i len =
+      if i = len then
+         raise (Failure "character sequence is not terminated");
+      let j = succ i in
+      let c, j =
+         match s.[i] with
+            'a' ->
+               alert_char, j
+          | 'b' ->
+               backspace_char, j
+          | 'f' ->
+               formfeed_char, j
+          | 'n' ->
+               newline_char, j
+          | 'r' ->
+               cr_char, j
+          | 't' ->
+               tab_char, j
+          | 'v' ->
+               vertical_tab_char, j
+          | 'x' ->
+               regex_hex_const 0 s j len
+          | '0'..'9' ->
+               regex_octal_const 0 s i (min (i + 3) len)
+          | c ->
+               Char.code c, j
+      in
+         regex_chars_rest (c :: chars) s j len
 
    (*
     * Just seen a character, look for a character range c-c
@@ -624,6 +700,8 @@ struct
                regex_chars_possible_class (c1 :: chars) s j len
           | ']' ->
                c1 :: chars, j
+          | '\\' ->
+               regex_chars_escape chars s j len
           | c ->
                regex_chars_possible_range (c1 :: chars) (Char.code c) s j len
 
@@ -656,6 +734,8 @@ struct
                regex_chars_class chars s j len
           | '[' ->
                regex_chars_possible_class (Char.code '[' :: chars) s j len
+          | '\\' ->
+               regex_chars_escape (Char.code '[' :: chars) s j len
           | c ->
                regex_chars_rest (Char.code c :: Char.code '[' :: chars) s j len
 
@@ -841,6 +921,35 @@ struct
                   regex_of_string stack s j len
           | '\'' ->
                let stack = eof_delimiter :: stack in
+                  regex_of_string stack s j len
+          | 'a' ->
+               let stack = RegexSymbol [alert_char] :: stack in
+                  regex_of_string stack s j len
+          | 'b' ->
+               let stack = RegexSymbol [backspace_char] :: stack in
+                  regex_of_string stack s j len
+          | 'f' ->
+               let stack = RegexSymbol [formfeed_char] :: stack in
+                  regex_of_string stack s j len
+          | 'n' ->
+               let stack = RegexSymbol [newline_char] :: stack in
+                  regex_of_string stack s j len
+          | 'r' ->
+               let stack = RegexSymbol [cr_char] :: stack in
+                  regex_of_string stack s j len
+          | 't' ->
+               let stack = RegexSymbol [tab_char] :: stack in
+                  regex_of_string stack s j len
+          | 'v' ->
+               let stack = RegexSymbol [vertical_tab_char] :: stack in
+                  regex_of_string stack s j len
+          | 'x' ->
+               let c, j = regex_hex_const 0 s j len in
+               let stack = RegexSymbol [c] :: stack in
+                  regex_of_string stack s j len
+          | '0'..'9' ->
+               let c, j = regex_octal_const 0 s i (min (i + 3) len) in
+               let stack = RegexSymbol [c] :: stack in
                   regex_of_string stack s j len
           | c ->
                let stack = RegexSymbol [Char.code c] :: stack in

@@ -1220,6 +1220,13 @@ struct
                   pda
       in
          parse pda start lexer eval
+
+   let build info debug =
+      let prev_debug = !debug_parse in
+      let () = debug_parse := debug in
+      let pda = create info.parse_grammar in
+         debug_parse := prev_debug;
+         info.parse_pda <- Some pda
 end
 
 (*!

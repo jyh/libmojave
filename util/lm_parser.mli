@@ -111,6 +111,9 @@ sig
       action ->                 (* The name of the semantic action *)
       t
 
+   (* Force a parser build, possibly in debug mode *)
+   val build : t -> bool -> unit
+
    (* Now the actual machine *)
    val parse :
       t ->                      (* The machine *)
