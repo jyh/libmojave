@@ -372,10 +372,10 @@ let fold_argv argv spec arg default usage_msg =
          let opt, current = get_next_arg argv argv_length current in
          let current, arg =
             if opt = "-help" || opt = "--help" then
-               begin
-                  usage spec usage_msg;
-                  raise UsageError
-               end
+            begin
+               usage spec usage_msg;
+               raise UsageError
+            end
             else if String.length opt > 0 && opt.[0] = '-' then
                (* Get information on the option *)
                let spec, s = lookup_option options opt in
@@ -412,10 +412,10 @@ let fold_argv argv spec arg default usage_msg =
                    | Rest f,     "" ->
                         let rec rest_function current =
                            if current < argv_length then
-                              begin
-                                 f argv.(current);
-                                 rest_function (current + 1)
-                              end
+                           begin
+                              f argv.(current);
+                              rest_function (current + 1)
+                           end
                            else
                               "", current, arg
                         in
@@ -472,8 +472,18 @@ let fold_argv argv spec arg default usage_msg =
                   current, arg
             else
                (* Not an option; pass to the default function *)
-               let arg = default arg opt in
-                  current, arg
+               let arg, rest = default arg opt in
+                  if rest then
+                     let rec rest_function arg current =
+                        if current < argv_length then
+                           let arg, _ = default arg argv.(current) in
+                              rest_function arg (current + 1)
+                        else
+                           current, arg
+                     in
+                        rest_function arg current
+                  else
+                     current, arg
          in
             (* We're done with this option, advance to next *)
             parse_option arg current
@@ -487,8 +497,8 @@ let fold spec arg default usage_msg =
    fold_argv Sys.argv spec arg default usage_msg
 
 let parse_argv argv spec default usage_msg =
-   fold_argv argv spec () (fun () opt -> default opt) usage_msg
+   fold_argv argv spec () (fun () opt -> default opt, false) usage_msg
 
 let parse spec default usage_msg =
-   fold spec () (fun () opt -> default opt) usage_msg
+   fold spec () (fun () opt -> default opt, false) usage_msg
 

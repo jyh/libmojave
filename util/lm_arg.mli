@@ -60,8 +60,8 @@ exception UsageError
 (*
  * Folding versions.
  *)
-val fold_argv : string array -> 'a poly_sections -> 'a -> ('a -> string -> 'a) -> string -> 'a
-val fold      : 'a poly_sections -> 'a -> ('a -> string -> 'a) -> string -> 'a
+val fold_argv : string array -> 'a poly_sections -> 'a -> ('a -> string -> 'a * bool) -> string -> 'a
+val fold      : 'a poly_sections -> 'a -> ('a -> string -> 'a * bool) -> string -> 'a
 
 (*
  * Non-folding versions.
