@@ -1,0 +1,12 @@
+STDLIB_FILES =\
+	lm_debug\
+	lm_array_util\
+	lm_set\
+	lm_map\
+	lm_string_util\
+	lm_index\
+	lm_serial_map\
+	lm_splay\
+	lm_make_printf\
+	lm_rformat\
+	lm_format
