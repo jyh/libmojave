@@ -192,7 +192,7 @@ struct
          match j with
             Some(j) ->
                if i = j || not (Table.mem table j) then
-                  raise (Invalid_argument (Printf.sprintf "check_closed: %d->%d" i j))
+                  raise (Invalid_argument (Lm_printf.sprintf "check_closed: %d->%d" i j))
           | None -> ()) table
 
 
@@ -409,7 +409,7 @@ struct
       let node = next in
       let table = Table.add table node { pred = Set.empty; succ = Set.empty } in
          if not (Table.mem table node)
-            then  Printf.eprintf "tried to add node %d, but it's gone missing already!\n" node;
+            then  Lm_printf.eprintf "tried to add node %d, but it's gone missing already!\n" node;
          { table = table; next = succ next }, node
 
    (*
@@ -435,13 +435,13 @@ struct
       let table = update table node1 add_succ in
       let table = update table node2 add_pred in
          if not (Table.mem table node1)
-            then  Printf.eprintf "tried to add %d->%d, but %d node is missing!\n" node1 node2 node1
+            then  Lm_printf.eprintf "tried to add %d->%d, but %d node is missing!\n" node1 node2 node1
          else if not (Set.mem (Table.find table node1).succ node2)
-            then  Printf.eprintf "tried to add %d->%d, but successor element is missing!\n" node1 node2;
+            then  Lm_printf.eprintf "tried to add %d->%d, but successor element is missing!\n" node1 node2;
          if not (Table.mem table node2)
-            then  Printf.eprintf "tried to add %d->%d, but %d node is missing!\n" node1 node2 node2
+            then  Lm_printf.eprintf "tried to add %d->%d, but %d node is missing!\n" node1 node2 node2
          else if not (Set.mem (Table.find table node2).pred node1)
-            then  Printf.eprintf "tried to add %d->%d, but predecessor element is missing!\n" node1 node2;
+            then  Lm_printf.eprintf "tried to add %d->%d, but predecessor element is missing!\n" node1 node2;
          { table = table; next = next }
 
    (*

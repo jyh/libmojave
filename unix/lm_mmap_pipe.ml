@@ -29,9 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-open Printf
-
+open Lm_pervasives
+open Lm_printf
 open Lm_debug
 
 let debug_pipe =
@@ -40,6 +39,10 @@ let debug_pipe =
         debug_description = "Debug shared memory pipe operations";
         debug_value = false
       }
+
+let eflush out =
+   output_char out '\n';
+   flush out
 
 (************************************************************************
  * TYPES                                                                *
@@ -283,7 +286,7 @@ let client_socket { mmap_socket = client } =
 let try_write sock buf =
    try
       let _ = Unix.write sock buf 0 1 in ()
-   with Unix.Unix_error _ -> 
+   with Unix.Unix_error _ ->
       ()
 
 (*

@@ -10,6 +10,21 @@ MLZFILES = \
    lm_map_sig\
    lm_set_sig\
 
+#
+# Tell the preprocessor which Format module to use
+#
+OCAMLCPPFLAGS += -DFORMAT=$(FORMAT)
+
+if $(equal $(FORMAT), Format)
+    OCAMLCPPFLAGS += -DFORMAT_STD
+    export
+if $(equal $(FORMAT), Lm_format)
+    OCAMLCPPFLAGS += -DFORMAT_LM
+    export
+
+#
+# Build the library.
+#
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:

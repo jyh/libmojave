@@ -3,8 +3,9 @@
  * Taken from code by Jason Hickey
  * 12apr01
  *)
-
 open Lm_symbol
+open Lm_printf
+open Lm_pervasives
 
 (*
  * Blocks indents by this many spaces.
@@ -25,8 +26,8 @@ let rec print_sep_list sep printer = function
       printer h
  | h :: t ->
       printer h;
-      Format.print_string sep;
-      Format.print_space ();
+      Lm_format.print_string sep;
+      Lm_format.print_space ();
       print_sep_list sep printer t
 
 let rec print_sep_list_no_space sep printer = function
@@ -36,23 +37,23 @@ let rec print_sep_list_no_space sep printer = function
       printer h
  | h :: t ->
       printer h;
-      Format.print_string sep;
+      Lm_format.print_string sep;
       print_sep_list_no_space sep printer t
 
 let rec print_sep_list_box sep printer = function
    [] ->
       ()
  | [h] ->
-      Format.open_box tabstop;
+      Lm_format.open_box tabstop;
       printer h;
-      Format.close_box ()
+      Lm_format.close_box ()
  | h :: t ->
-      Format.open_box tabstop;
+      Lm_format.open_box tabstop;
       printer h;
-      Format.print_string sep;
-      Format.close_box ();
-      Format.print_space ();
+      Lm_format.print_string sep;
+      Lm_format.close_box ();
+      Lm_format.print_space ();
       print_sep_list_box sep printer t
 
 let print_fst_symbol pair =
-    pp_print_symbol Format.std_formatter (fst pair)
+    pp_print_symbol Lm_format.std_formatter (fst pair)

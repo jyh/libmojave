@@ -27,11 +27,10 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
-
 open Lm_debug
 open Lm_symbol
 open Lm_trace
+open Lm_format
 
 (*
  * Lm_debug flag.
@@ -145,22 +144,22 @@ let tabstop = 3
 (*
  * BUG: inherit until we fix this file.
  *)
-let print_symbol = pp_print_symbol Format.std_formatter
+let print_symbol = pp_print_symbol Lm_format.std_formatter
 
 let print_node_int s v =
-   Format.print_string s;
-   Format.print_string ": ";
-   Format.print_int v
+   Lm_format.print_string s;
+   Lm_format.print_string ": ";
+   Lm_format.print_int v
 
 let print_node_id_list s l =
-   Format.print_string s;
-   Format.print_string " = [";
+   Lm_format.print_string s;
+   Lm_format.print_string " = [";
    ignore (List.fold_left (fun flag v ->
                  if flag then
-                    Format.print_string "; ";
-                 Format.print_int v;
+                    Lm_format.print_string "; ";
+                 Lm_format.print_int v;
                  true) false l);
-   Format.print_string "]"
+   Lm_format.print_string "]"
 
 let print_node node =
    let { node_id = id;
@@ -179,45 +178,45 @@ let print_node node =
          node_size = size
        } = node
    in
-      Format.open_hvbox tabstop;
-      Format.print_string "Node [name=";
-      Format.print_string (string_of_symbol name);
-      Format.print_string "] [id=";
-      Format.print_int id;
-      Format.print_string "]";
-      Format.print_space ();
+      Lm_format.open_hvbox tabstop;
+      Lm_format.print_string "Node [name=";
+      Lm_format.print_string (string_of_symbol name);
+      Lm_format.print_string "] [id=";
+      Lm_format.print_int id;
+      Lm_format.print_string "]";
+      Lm_format.print_space ();
 
       print_node_int "Parent" parent;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_id_list "Pred" pred;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_id_list "Succ" succ;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_id_list "Bucket" (NodeIdSet.to_list bucket);
-      Format.print_space ();
+      Lm_format.print_space ();
 
       print_node_int "Idom" idom;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_int "Ancestor" ancestor;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_int "Child" child;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_int "Label" label;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_int "Sdno" sdno;
-      Format.print_space ();
+      Lm_format.print_space ();
       print_node_int "Size" size;
-      Format.print_space ();
-      Format.close_box ()
+      Lm_format.print_space ();
+      Lm_format.close_box ()
 
 let print_state state =
-   Format.open_vbox 0;
+   Lm_format.open_vbox 0;
    ignore (Array.fold_left (fun flag node ->
                  if flag then
-                    Format.print_space ();
+                    Lm_format.print_space ();
                  print_node node;
                  true) false state.state_vertex);
-   Format.close_box ()
+   Lm_format.close_box ()
 
 (*
  * Print the trace.
@@ -435,10 +434,10 @@ let link state v w =
    let rec balance s =
       if debug debug_loop then
          begin
-            Format.print_string "Balance:";
-            Format.print_space ();
+            Lm_format.print_string "Balance:";
+            Lm_format.print_space ();
             print_node s;
-            Format.print_newline ()
+            Lm_format.print_newline ()
          end;
       let child_s = node_child state s in
          if sdno_label_w < node_sdno (node_label state child_s) then
@@ -763,15 +762,15 @@ let build_nest state =
 let print_state state debug =
       if Lm_debug.debug debug_loop then
          begin
-            Format.open_vbox 3;
-            Format.print_string "*** Lm_loop: ";
-            Format.print_string debug;
-            Format.print_space ();
+            Lm_format.open_vbox 3;
+            Lm_format.print_string "*** Lm_loop: ";
+            Lm_format.print_string debug;
+            Lm_format.print_space ();
             print_state state;
-            Format.print_space ();
-            Format.print_string "*** Done";
-            Format.close_box ();
-            Format.print_newline()
+            Lm_format.print_space ();
+            Lm_format.print_string "*** Done";
+            Lm_format.close_box ();
+            Lm_format.print_newline()
          end
 
 let create debug node_name node_succ root nodes =

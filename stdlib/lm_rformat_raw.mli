@@ -1,10 +1,10 @@
 (*
- * Source file locations.
+ * Low-level output for the formatter.
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2002 Jason Hickey, Caltech
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,37 +24,19 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_format
-open Lm_symbol
-
-type loc
 
 (*
- * Don't use this if you can avoid it.
+ * Raw printer just has two methods.
  *)
-val bogus_loc : string -> loc
+type raw_printer =
+   { raw_print_string  : string -> int -> int -> unit;
+     raw_print_flush   : unit -> unit;
+     raw_print_newline : unit -> unit;
+     raw_print_spaces  : int -> unit
+   }
 
-(*
- * This is the normal way to make a location.
- *    filename, start_line, start_char, end_line, end_char
- *)
-val create_loc : symbol -> int -> int -> int -> int -> loc
-
-(*
- * For marshaling.
- *)
-val dest_loc : loc -> symbol * int * int * int * int
-
-(*
- * Combine two locations.
- * The resulting span covers both.
- *)
-val union_loc : loc -> loc -> loc
-
-(*
- * Print a file location.
- *)
-val pp_print_location : formatter -> loc -> unit
+val raw_channel_printer : out_channel -> raw_printer
+val raw_buffer_printer  : Buffer.t -> raw_printer
 
 (*!
  * @docoff

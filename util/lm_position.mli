@@ -24,10 +24,9 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
-
 open Lm_symbol
 open Lm_location
+open Lm_format
 
 (*
  * Lm_debug flags.

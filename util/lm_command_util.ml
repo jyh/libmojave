@@ -16,9 +16,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *)
-open Format
 open Lm_format_util
 open Lm_string_util
+open Lm_pervasives
+open Lm_format
 
 
 (***  Command Processing (Extract Commands)  ***)
@@ -97,7 +98,7 @@ let bold_text text =
 
 
 (* title_text appname text
-   Format text to be displayed in a title, as in an xterm title.  If the
+   Lm_format text to be displayed in a title, as in an xterm title.  If the
    terminal is not an xterm, then this returns an empty string.  This will
    NOT format the text to display anything to the console itself, under
    any circumstance.  This may prepend the application name to the text. *)

@@ -1,5 +1,5 @@
 (*
- * Printf.
+ * Override Pervasives IO with Lm_format IO
  *
  * ----------------------------------------------------------------
  *
@@ -22,27 +22,21 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
+open Lm_pervasives
+open Lm_format
 
-external magic : 'a -> 'b = "%magic"
+(*
+ * Printing functions.
+ *)
+let printf  = PervasivesPrintf.printf
+let eprintf = PervasivesPrintf.eprintf
+let sprintf = PervasivesPrintf.sprintf
+let fprintf = PervasivesPrintf.fprintf
 
-let fprintf' write_string get_result s =
-   magic ()
-
-let fprintf outx s =
-   fprintf' (output_string outx) (fun () -> ()) s
-
-let printf s =
-   fprintf' (output_string stdout) (fun () -> ()) s
-
-let eprintf s =
-   fprintf' (output_string stderr) (fun () -> ()) s
-
-let sprintf s =
-   let buf = Buffer.create 19 in
-      fprintf' (Buffer.add_string buf) (fun () -> Buffer.contents buf) s
-
-let bprintf buf s =
-   fprintf' (Buffer.add_string buf) (fun () -> buf) s
+(*
+ * Flushing.
+ *)
+let eflush = eflush
 
 (*
  * -*-

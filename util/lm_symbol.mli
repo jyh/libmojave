@@ -29,6 +29,7 @@
  *                               Added sets, tables, indices for
  *                               symbol pairs and triples
  *)
+open Lm_pervasives
 
 (*
  * Representation of symbols.
@@ -126,11 +127,11 @@ module SymbolListSet : Lm_set_sig.LmSet with type elt = symbol list
 module SymbolListTable : Lm_map_sig.LmMap with type key = symbol list
 
 (*
- * Printer uses Format library.
+ * Printer uses Lm_format library.
  *)
-val pp_print_symbol : Format.formatter -> symbol -> unit
-val pp_print_symbol_list : Format.formatter -> symbol list -> unit
-val pp_print_ext_symbol : Format.formatter -> symbol -> unit
+val pp_print_symbol : Lm_format.formatter -> symbol -> unit
+val pp_print_symbol_list : Lm_format.formatter -> symbol list -> unit
+val pp_print_ext_symbol : Lm_format.formatter -> symbol -> unit
 
 (*
  * This printer uses printf.

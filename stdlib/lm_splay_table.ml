@@ -30,9 +30,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Format
-
+open Lm_pervasives
 open Lm_map_sig
+open Lm_format
 
 (************************************************************************
  * TYPES                                                                *

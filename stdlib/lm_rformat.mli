@@ -24,7 +24,14 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 1998, 2001 Jason Hickey, Caltech
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,8 +47,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
@@ -49,21 +56,33 @@
  * TYPES                                                                *
  ************************************************************************)
 
-type 'tag buffer
+(*
+ * Abstract type of buffers containing formatted text.
+ *)
+type buffer
 
 (*
- * A printer contains a tabbing function,
- * a function to print to strings,
- * and a function to print tags.
+ * The BufferOverflow exception is raised when too much visible text is
+ * put in the buffer.  You can control how much visible text is allowed
+ * by using the format_bound function below.
  *)
-type 'tag printer =
-   { print_string : string -> unit;
-     print_invis : string -> unit;
-     print_tab : int -> unit;
-     print_begin_block : 'tag buffer -> int -> unit;
-     print_end_block : 'tag buffer -> int -> unit;
-     print_begin_tag : 'tag buffer -> 'tag -> unit;
-     print_end_tag : 'tag buffer -> 'tag -> unit
+exception RFormatOverflow
+
+(*
+ * A printer contains:
+ *    print_string s : print string s to the buffer
+ *    print_invis s : print string s in invisible mode
+ *    print_tab lmargin tags : tab to the specified left margin
+ *    print_begin_tag : start tagging a value
+ *    print_end_tag : finish tagging the value
+ *)
+type printer =
+   { print_string    : string -> unit;
+     print_invis     : string -> unit;
+     print_tab       : int * string -> string list -> unit;
+     print_begin_tag : string -> unit;
+     print_end_tag   : string -> unit;
+     print_flush     : unit -> unit
    }
 
 (************************************************************************
@@ -73,50 +92,82 @@ type 'tag printer =
 (*
  * Buffer creation.
  *)
-val new_buffer : unit -> 'tag buffer
-val clear_buffer : 'tag buffer -> unit
+val new_buffer : unit -> buffer
+val clear_buffer : buffer -> unit
+val buffer_is_empty : buffer -> bool
+
+(*
+ * Specify the max number of characters in the buffer.
+ * This will not raise an exception even if the buffer
+ * is already too large.  You will get the exception
+ * the next time you insert visible text.
+ *)
+val format_bound : buffer -> int -> unit
 
 (*
  * Breaks.
  *)
-val format_sbreak : 'tag buffer -> string -> string -> unit
-val format_hbreak : 'tag buffer -> string -> string -> unit
-val format_space : 'tag buffer -> unit
-val format_hspace : 'tag buffer -> unit
-val format_newline : 'tag buffer -> unit
+val format_cbreak  : buffer -> string -> string -> unit
+val format_sbreak  : buffer -> string -> string -> unit
+val format_hbreak  : buffer -> string -> string -> unit
+val format_space   : buffer -> unit
+val format_hspace  : buffer -> unit
+val format_newline : buffer -> unit
 
 (*
  * Break zones.
  *)
-val format_lzone : 'tag buffer -> unit
-val format_szone : 'tag buffer -> unit
-val format_hzone : 'tag buffer -> unit
-val format_ezone : 'tag buffer -> unit
-val format_izone : 'tag buffer -> unit
-val format_tzone : 'tag buffer -> 'tag -> unit
+val zone_depth   : buffer -> int
+val format_lzone : buffer -> unit
+val format_szone : buffer -> unit
+val format_hzone : buffer -> unit
+val format_ezone : buffer -> unit
+val format_izone : buffer -> unit
+
+(* TeX boxes *)
+val format_tzone : buffer -> string -> unit
 
 (*
  * Margins.
  *)
-val format_pushm : 'tag buffer -> int -> unit
-val format_popm : 'tag buffer -> unit
+val format_pushm : buffer -> int -> unit
+val format_pushm_str : buffer -> string -> unit
+val format_popm : buffer -> unit
 
 (*
  * Printers.
  *)
-val format_char : 'tag buffer -> char -> unit
-val format_string : 'tag buffer -> string -> unit
-val format_quoted_string : 'tag buffer -> string -> unit
-val format_int : 'tag buffer -> int -> unit
+val format_char : buffer -> char -> unit
+val format_string : buffer -> string -> unit
+val format_string_width : buffer -> string -> int -> unit
+val format_raw_string : buffer -> string -> unit
+val format_quoted_string : buffer -> string -> unit
+val format_int : buffer -> int -> unit
+val format_num : buffer -> Lm_num.num -> unit
+val format_buffer : buffer -> buffer -> unit
+
+(*
+ * Internals.
+ *)
+
+(* Get the current nesting depth *)
+val format_depth : buffer -> int
+
+(* Close all open boxes, indicriminately *)
+val format_flush : buffer -> unit
+
+(* Close all open pushm boxes *)
+val format_flush_popm : buffer -> unit
 
 (*
  * Collecting output.
  *)
-val print_to_printer : int -> 'tag buffer -> 'tag printer -> unit
-val print_to_channel : int -> 'tag buffer -> out_channel -> unit
-val print_to_string : int -> 'tag buffer -> string
-val print_to_html : int -> 'tag buffer -> out_channel -> (int * 'tag) list
-val print_to_tex : int -> 'tag buffer -> out_channel -> unit
+val default_width : int (* 80 *)
+
+(*
+ * Final output.
+ *)
+val print_to_printer : buffer -> int -> printer -> unit
 
 (*
  * -*-

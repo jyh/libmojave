@@ -46,7 +46,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
+open Lm_format
 
 (*
  * An annotated term.

@@ -19,8 +19,7 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Format
-
+open Lm_format
 
 (* pp_print_paragraph_bare buf text
    Prints a paragraph of text.  Normally, the text is allowed to break at
@@ -86,6 +85,6 @@ let y_formatter buf1 buf2 =
       let _, buf1_flush = pp_get_formatter_output_functions buf1 () in
       let _, buf2_flush = pp_get_formatter_output_functions buf2 () in
       buf1_flush ();
-      buf2_flush ()   
+      buf2_flush ()
    in
       make_formatter y_out y_flush

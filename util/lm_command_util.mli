@@ -60,7 +60,7 @@ val bold_text : string -> string
 
 
 (* title_text appname text
-   Format text to be displayed in a title, as in an xterm title.  If the
+   Lm_format text to be displayed in a title, as in an xterm title.  If the
    terminal is not an xterm, then this returns an empty string.  This will
    NOT format the text to display anything to the console itself, under
    any circumstance.  This may prepend the application name to the text. *)
@@ -102,7 +102,7 @@ type ('args, 'result) command = string * ('args, 'result) run_command * string
    fields:
       ri_appname        Name of the application (used in title prompt).
       ri_curses         If true, the help display can use curses interface.
-      ri_hack_title     If true, title text will be displayed in prompts.  
+      ri_hack_title     If true, title text will be displayed in prompts.
       ri_help_prefix    Text/overview to prepend to any help display.
       ri_prompt         Function which, when run, returns text to display on
                         each command prompt.  The function is passed a unit
@@ -157,12 +157,12 @@ val read_eval_print : ('args, 'result) run_info -> 'result run_status
    should be called when ^D is pressed, using ri_cmd_quit.  The given
    read_eval_print function is used; usually you want Mcc_command_util's
    version of read_eval_print.
-   
+
    If the ri_curses flag is true, then the help system is allowed to
    use curses interface to display help on the commands.  Any help text
    will be preceded by the contents of the string ri_help_prefix; the
    rest of the help is extracted from commands.
-   
+
    This function catches EOF, ^C, Unix errors, Failures, and Invalid
    argument exceptions.  If you wish to catch other exceptions in a
    manner that will not abort the run loop, you should pass in a custom

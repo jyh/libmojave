@@ -54,7 +54,8 @@ struct
 
    let singleton x = { tree = Node (0,x,empty,empty,1) }
 
-   open Printf
+   open Lm_pervasives
+   open Lm_printf
 
    let rec print_aux s = function
       { tree = Leaf } -> ()

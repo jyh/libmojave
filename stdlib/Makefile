@@ -28,6 +28,12 @@ include $(ROOT)/mk/rules
 include Makefile.dep
 
 #
+# This is a hack.
+#
+lm_pervasives.ml: lm_pervasives.mlp lm_pervasives.h
+	$(CPP) -imacros lm_pervasives.h lm_pervasives.mlp > $@
+
+#
 # Rules
 #
 lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)

@@ -46,8 +46,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Format
-
+open Lm_format
 open Lm_set_sig
 
 (*
@@ -121,27 +120,27 @@ struct
     * Print the tree.
     *)
    let rec print_tree tree =
-      Format.open_vbox 3;
+      Lm_format.open_vbox 3;
       (match tree with
           Black (_, left, right, size) ->
-             Format.print_string "Black(";
-             Format.print_int size;
-             Format.print_string "):";
-             Format.print_space ();
+             Lm_format.print_string "Black(";
+             Lm_format.print_int size;
+             Lm_format.print_string "):";
+             Lm_format.print_space ();
              print_tree left;
-             Format.print_space ();
+             Lm_format.print_space ();
              print_tree right
         | Red (_, left, right, size) ->
-             Format.print_string "Red(";
-             Format.print_int size;
-             Format.print_string "):";
-             Format.print_space ();
+             Lm_format.print_string "Red(";
+             Lm_format.print_int size;
+             Lm_format.print_string "):";
+             Lm_format.print_space ();
              print_tree left;
-             Format.print_space ();
+             Lm_format.print_space ();
              print_tree right
         | Leaf ->
-             Format.print_string "Leaf");
-      Format.close_box ()
+             Lm_format.print_string "Leaf");
+      Lm_format.close_box ()
 
    (*
     * Check the size of the set.
@@ -149,9 +148,9 @@ struct
    let check_size tree =
       let abort tree' =
          print_tree tree;
-         Format.print_newline ();
+         Lm_format.print_newline ();
          print_tree tree';
-         Format.print_newline ();
+         Lm_format.print_newline ();
          raise (Invalid_argument "check_size")
       in
       let rec check tree =

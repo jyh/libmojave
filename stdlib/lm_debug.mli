@@ -79,18 +79,6 @@ val check_debug : unit -> unit
 val set_debug_flags : string -> unit
 
 (*
- * Print a list of strings.
- *)
-val print_any_list : (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
-val print_string_list :  out_channel -> string list -> unit
-val print_int_list :  out_channel -> int list -> unit
-
-(*
- * Flush output.
- *)
-val eflush : out_channel -> unit
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner.run"

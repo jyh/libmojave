@@ -24,8 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
 open Lm_string_set
+open Lm_format
 
 
 (***  Environment to Store Lm_flags  ***)

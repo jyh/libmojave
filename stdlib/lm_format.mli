@@ -114,14 +114,15 @@ val get_all_formatter_output_functions :
  *)
 type formatter
 
-val formatter_of_out_channel : out_channel -> formatter
-val std_formatter : formatter
-val err_formatter : formatter
-val formatter_of_buffer : Buffer.t -> formatter
-val stdbuf : Buffer.t
-val str_formatter : formatter
-val flush_str_formatter : unit -> string
-val make_formatter : (string -> int -> int -> unit) -> (unit -> unit) -> formatter
+val formatter_of_out_channel     : out_channel -> formatter
+val std_formatter                : formatter
+val err_formatter                : formatter
+val str_formatter                : formatter
+val stdbuf                       : Buffer.t
+val flush_str_formatter          : unit -> string
+
+val formatter_of_buffer          : Buffer.t -> formatter
+val make_formatter               : (string -> int -> int -> unit) -> (unit -> unit) -> formatter
 
 val pp_open_hbox                 : formatter -> unit -> unit
 val pp_open_vbox                 : formatter -> int -> unit
@@ -138,6 +139,7 @@ val pp_print_bool                : formatter -> bool -> unit
 val pp_print_break               : formatter -> int -> int -> unit
 val pp_print_cut                 : formatter -> unit -> unit
 val pp_print_space               : formatter -> unit -> unit
+val pp_print_rbuffer             : formatter -> Lm_rformat.buffer -> unit
 val pp_force_newline             : formatter -> unit -> unit
 val pp_print_flush               : formatter -> unit -> unit
 val pp_print_newline             : formatter -> unit -> unit
@@ -180,14 +182,19 @@ val pp_get_all_formatter_output_functions :
    (unit -> unit) *
    (int -> unit)
 
-val fprintf : formatter -> ('a, formatter, unit) format -> 'a
-val printf  : ('a, formatter, unit) format -> 'a
+(*
+ * Allow output to be diverted to a function.
+ *)
+val divert  : formatter -> (Lm_rformat.buffer -> unit) option -> unit
 
 (*
+ * Printf-style functions.
+ *)
+val fprintf : formatter -> ('a, formatter, unit) format -> 'a
+val printf  : ('a, formatter, unit) format -> 'a
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
 val eprintf : ('a, formatter, unit) format -> 'a
-val sprintf : ('a, formatter, string) format -> 'a
-*)
+val sprintf : ('a, unit, string) format -> 'a
 
 (*
  * -*-

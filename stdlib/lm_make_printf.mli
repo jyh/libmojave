@@ -31,7 +31,7 @@
  *       by a decimal number.
  *    4. A format specifier
  *
- * For Format:
+ * For Lm_format:
  *    @]: close_box
  *    @,: print_cut
  *    @ : print_space
@@ -75,12 +75,13 @@ module type PrintfArgsSig =
 sig
    (* Some buffer type *)
    type t
+   type result
 
    (* The printers *)
    val print_char : t -> char -> unit
    val print_string : t -> string -> unit
 
-   (* Format functions *)
+   (* Lm_format functions *)
    val open_box : t -> int -> unit
    val open_hbox : t -> unit
    val open_vbox : t -> int -> unit
@@ -94,6 +95,8 @@ sig
    val print_break : t -> int -> int -> unit
    val print_flush : t -> unit
    val print_newline : t -> unit
+
+   val exit : t -> result
 end
 
 (*
@@ -103,16 +106,19 @@ module type PrintfSig =
 sig
    (* Some buffer type *)
    type t
+   type result
 
-   (* Printf functions *)
-   val fprintf : t -> ('a, t, unit) format -> 'a
+   (* Lm_printf functions *)
+   val fprintf : t -> ('a, t, result) format -> 'a
 end
 
 (*
  * Here's the actual printf module.
  *)
 module MakePrintf (Args : PrintfArgsSig)
-: PrintfSig with type t = Args.t
+: PrintfSig
+  with type t = Args.t
+  with type result = Args.result
 
 (*!
  * @docoff

@@ -19,8 +19,7 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Format
-
+open Lm_format
 
 (* pp_print_paragraph_bare buf text
    Prints a paragraph of text.  Normally, the text is allowed to break at

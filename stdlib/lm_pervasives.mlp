@@ -1,10 +1,3 @@
-(* CAUTION: this is a generated file.  If you edit it, all changes will be lost! *)
-# 1 "lm_pervasives.mlp"
-# 1 "<built-in>"
-# 1 "<command line>"
-# 1 "lm_pervasives.h" 1
-# 2 "<command line>" 2
-# 1 "lm_pervasives.mlp"
 (*
  * Override some basic functions, mostly for debugging.
  *
@@ -26,7 +19,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -36,7 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_format
+open FORMAT
 
 (*
  * Override input functions for debugging.
@@ -69,37 +62,50 @@ let open_out name =
 
 let open_out_bin name =
    formatter_of_out_channel (open_out_bin name)
-# 79 "lm_pervasives.mlp"
+
+#ifdef FORMAT_STD
+(*
+ * The standard Format does not support divert,
+ * and it does not allow diversion.
+ *)
+let capability_divert = false
+
+let pp_print_rbuffer buf rbuffer =
+   let s = Lm_rformat_text.print_text_string Lm_rformat.default_width rbuffer in
+      pp_print_string buf s
+#endif
+
+#ifdef FORMAT_LM
 (*
  * Lm_format supports rbuffer printing and diversion.
  *)
 let capability_divert = true
-
+#endif
 
 (*
  * Output.
  *)
-let output_char = pp_print_char
-let output_string = pp_print_string
-let output_rbuffer = pp_print_rbuffer
+let output_char       = pp_print_char
+let output_string     = pp_print_string
+let output_rbuffer    = pp_print_rbuffer
 
 (*
  * Normal printing.
  *)
-let print_char = pp_print_char std_formatter
-let print_int = pp_print_int std_formatter
-let print_string = pp_print_string std_formatter
+let print_char    = pp_print_char std_formatter
+let print_int     = pp_print_int std_formatter
+let print_string  = pp_print_string std_formatter
 let print_rbuffer = pp_print_rbuffer std_formatter
 
-let prerr_char = pp_print_char err_formatter
-let prerr_int = pp_print_int err_formatter
-let prerr_string = pp_print_string err_formatter
+let prerr_char    = pp_print_char err_formatter
+let prerr_int     = pp_print_int err_formatter
+let prerr_string  = pp_print_string err_formatter
 let prerr_rbuffer = pp_print_rbuffer err_formatter
 
 (*
  * Print a newline and flush.
  *)
-let flush buf = pp_print_flush buf ()
+let flush buf  = pp_print_flush buf ()
 let eflush buf = pp_print_newline buf ()
 
 (*
@@ -107,7 +113,7 @@ let eflush buf = pp_print_newline buf ()
  *)
 module PervasivesPrintf =
 struct
-   let printf = printf
+   let printf  = printf
    let eprintf = eprintf
    let sprintf = sprintf
    let fprintf = fprintf

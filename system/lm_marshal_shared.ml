@@ -446,7 +446,7 @@ struct
                            local_write_shared_get index lbuf lindex
                      else
                         (* This is something we're not familiar with *)
-                        raise (Invalid_argument (Printf.sprintf "Obj_marshal.marshal: unknown object with tag %d" tag))
+                        raise (Invalid_argument (Lm_printf.sprintf "Obj_marshal.marshal: unknown object with tag %d" tag))
          else
             let i = ((Obj.magic obj) : int) in
                global_write_int i;
@@ -613,7 +613,7 @@ struct
                            local_write_shared_get index lbuf lindex
                      else
                         (* This is something we're not familiar with *)
-                        raise (Invalid_argument (Printf.sprintf "Obj_marshal.marshal: unknown object with tag %d" tag))
+                        raise (Invalid_argument (Lm_printf.sprintf "Obj_marshal.marshal: unknown object with tag %d" tag))
          else
             let i = ((Obj.magic obj) : int) in
                global_write_int i;

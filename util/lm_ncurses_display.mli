@@ -16,8 +16,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *)
-open Format
-
+open Lm_format
 
 (***  Basic Display Features  ***)
 
@@ -111,7 +110,7 @@ val text_viewer : string -> string -> unit
    Allow the user to select an element from a menu of entries.  If
    successful, then the (zero-indexed) entry number that was selected
    is returned.  If failed, then None is returned.
-            
+
    If numbered is true, then a numerical index is displayed next to
    each entry.  *)
 val menu_select : bool -> string -> (char option * string * string) array -> int option

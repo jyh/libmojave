@@ -24,7 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
+open Lm_pervasives
+open Lm_printf
 
 (*
  * All items eventually become ints, floats, or strings.

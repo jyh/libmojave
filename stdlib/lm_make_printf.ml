@@ -31,7 +31,7 @@
  *       by a decimal number.
  *    4. A format specifier
  *
- * For Format:
+ * For Lm_format:
  *    @]: close_box
  *    @,: print_cut
  *    @ : print_space
@@ -75,12 +75,13 @@ module type PrintfArgsSig =
 sig
    (* Some buffer type *)
    type t
+   type result
 
    (* The printers *)
    val print_char : t -> char -> unit
    val print_string : t -> string -> unit
 
-   (* Format functions *)
+   (* Lm_format functions *)
    val open_box : t -> int -> unit
    val open_hbox : t -> unit
    val open_vbox : t -> int -> unit
@@ -94,6 +95,8 @@ sig
    val print_break : t -> int -> int -> unit
    val print_flush : t -> unit
    val print_newline : t -> unit
+
+   val exit : t -> result
 end
 
 (*
@@ -103,22 +106,23 @@ module type PrintfSig =
 sig
    (* Some buffer type *)
    type t
+   type result
 
-   (* Printf functions *)
-   val fprintf : t -> ('a, t, unit) format -> 'a
+   (* Lm_printf functions *)
+   val fprintf : t -> ('a, t, result) format -> 'a
 end
 
 (*
  * Here's the actual printf module.
  *)
-module MakePrintf (Args : PrintfArgsSig)
-: PrintfSig with type t = Args.t =
+module MakePrintf (Args : PrintfArgsSig) =
 struct
    (************************************************************************
     * TYPES
     ************************************************************************)
 
    type t = Args.t
+   type result = Args.result
 
    (*
     * Field flags.
@@ -368,7 +372,7 @@ struct
                      else
                         parse_args options (succ i) cont
                 | '>' ->
-                     cont i (List.rev options)
+                     cont (succ i) (List.rev options)
                 | c ->
                      Buffer.add_char scratch c;
                      parse_args options (succ i) cont
@@ -430,6 +434,9 @@ struct
                 | '?' ->
                      Args.print_flush buf;
                      print_loop buf i len s
+                | '.' ->
+                     Args.print_newline buf;
+                     print_loop buf i len s
                 | c ->
                      Args.print_char buf c;
                      print_loop buf i len s
@@ -441,7 +448,7 @@ struct
     *)
    and print_loop buf i len s =
       if i = len then
-         Obj.magic ()
+         Obj.magic (Args.exit buf)
       else
          match s.[i] with
             '%' ->

@@ -24,8 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Format
 open Lm_symbol
+open Lm_format
 
 (*
  * A location is a character range

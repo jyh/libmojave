@@ -37,7 +37,7 @@ let profile msg f arg =
 
    let padding    = String.make (!profile_level * 2) ' ' in
    let _          = profile_level := succ !profile_level in
-   let _          = Printf.eprintf "profile: %s%s entered\n" padding msg in
+   let _          = Lm_printf.eprintf "profile: %s%s entered\n" padding msg in
    let _          = flush stderr in
    let starttime  = Unix.times () in
    let result     = f arg in
@@ -50,10 +50,10 @@ let profile msg f arg =
    let seconds    = seconds mod 60 in
    let millisec   = (int_of_float (deltatime *. 1000.0)) mod 1000 in
    let total = int_of_float (deltatime *. 1000.0) in
-      Printf.eprintf "profile: %s%s took %d:%02d:%02d.%03d\n" padding msg hours minutes seconds millisec;
+      Lm_printf.eprintf "profile: %s%s took %d:%02d:%02d.%03d\n" padding msg hours minutes seconds millisec;
       if !profile_file <> "" then
          begin
-            let s = Printf.sprintf "%s%s #%d\n"
+            let s = Lm_printf.sprintf "%s%s #%d\n"
                   padding msg total in
                output_string !profile_out s;
                flush !profile_out

@@ -22,8 +22,9 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-
 open Lm_rformat
+open Lm_rformat_raw
+open Lm_rformat_text
 open Lm_make_printf
 
 (************************************************************************
@@ -34,16 +35,16 @@ open Lm_make_printf
  * Multiple formatted output.
  *)
 type formatter =
-   { mutable form_buffer : unit buffer;
-     mutable form_depth : bool list;
-     mutable form_out_string : (string -> int -> int -> unit);
-     mutable form_out_flush : (unit -> unit);
+   { mutable form_buffer      : buffer;
+     mutable form_out_string  : (string -> int -> int -> unit);
+     mutable form_out_flush   : (unit -> unit);
      mutable form_out_newline : (unit -> unit);
-     mutable form_out_space : (int -> unit);
-     mutable form_max_boxes : int;
-     mutable form_max_indent : int;
-     mutable form_ellipsis : string;
-     mutable form_margin : int
+     mutable form_out_space   : (int -> unit);
+     mutable form_max_boxes   : int;
+     mutable form_max_indent  : int;
+     mutable form_ellipsis    : string;
+     mutable form_margin      : int;
+     mutable form_divert      : (buffer -> unit) option
    }
 
 (************************************************************************
@@ -61,79 +62,56 @@ let output_substring = output
  * Flush the buffer.
  *)
 let flush_form form =
-   let { form_buffer = buf;
-         form_depth = depth;
-         form_out_flush = flush';
-         form_out_string = out_string;
+   let { form_buffer      = buf;
+         form_out_flush   = flush;
+         form_out_string  = out_string;
          form_out_newline = out_newline;
-         form_out_space = out_space;
-         form_margin = margin
+         form_out_space   = out_space;
+         form_margin      = margin;
+         form_divert      = divert
        } = form
    in
-   let print_string s =
-      out_string s 0 (String.length s)
-   in
-   let print_tab i =
-      out_newline ();
-      out_space i
-   in
-   let printer =
-      { print_string = print_string;
-        print_invis = print_string;
-        print_tab = print_tab;
-        print_begin_block = (fun _ _ -> ());
-        print_end_block = (fun _ _ -> ());
-        print_begin_tag = (fun _ _ -> ());
-        print_end_tag = (fun _ _ -> ())
-      }
-   in
-   let rec close = function
-      h :: t ->
-         if h then
-            format_popm buf;
-         format_ezone buf;
-         close t
-    | [] ->
-         ()
-   in
-      close depth;
-      print_to_printer margin buf printer;
-      form.form_buffer <- new_buffer ();
-      form.form_depth <- []
+      match divert with
+         Some divert ->
+            format_flush buf;
+            divert buf;
+            form.form_buffer <- new_buffer ()
+       | None ->
+            let raw_printer =
+               { raw_print_string  = out_string;
+                 raw_print_newline = out_newline;
+                 raw_print_spaces  = out_space;
+                 raw_print_flush   = flush
+               }
+            in
+            let printer = make_text_printer raw_printer in
+               format_flush buf;
+               print_to_printer buf margin printer;
+               form.form_buffer <- new_buffer ()
 
 (*
  * Generic operations.
  *)
 let pp_open_hbox form () =
-   format_lzone form.form_buffer;
-   form.form_depth <- false :: form.form_depth
+   format_lzone form.form_buffer
 
 let pp_open_vbox form tab =
    format_hzone form.form_buffer;
-   format_pushm form.form_buffer tab;
-   form.form_depth <- true :: form.form_depth
+   format_pushm form.form_buffer tab
 
 let pp_open_hvbox form tab =
    format_hzone form.form_buffer;
-   format_pushm form.form_buffer tab;
-   form.form_depth <- true :: form.form_depth
+   format_pushm form.form_buffer tab
 
 let pp_open_hovbox form tab =
    format_hzone form.form_buffer;
-   format_pushm form.form_buffer tab;
-   form.form_depth <- true :: form.form_depth
+   format_pushm form.form_buffer tab
 
 let pp_open_box = pp_open_hovbox
 
 let pp_close_box form () =
-   match form.form_depth with
-      h :: t ->
-         if h then
-            format_popm form.form_buffer;
-         form.form_depth <- t;
-         format_ezone form.form_buffer
-    | [] ->
-         ()
+   format_flush_popm form.form_buffer;
+   format_ezone form.form_buffer
 
 let pp_print_string form s =
    format_string form.form_buffer s
@@ -174,6 +152,9 @@ let pp_print_cut form () =
 
 let pp_print_space form () =
    format_hspace form.form_buffer
+
+let pp_print_rbuffer form buffer =
+   format_buffer form.form_buffer buffer
 
 let pp_force_newline form () =
    format_newline form.form_buffer
@@ -223,7 +204,7 @@ let pp_get_max_boxes form () =
    form.form_max_boxes
 
 let pp_over_max_boxes form () =
-   List.length form.form_depth > form.form_max_boxes
+   format_depth form.form_buffer > form.form_max_boxes
 
 let pp_set_ellipsis_text form text =
    form.form_ellipsis <- text
@@ -265,7 +246,6 @@ let pp_get_all_formatter_output_functions form () =
 
 let formatter_of_out_channel outx =
    { form_buffer = new_buffer ();
-     form_depth = [];
      form_out_string = output_substring outx;
      form_out_flush = (fun () -> flush outx);
      form_out_newline = (fun () -> output_char outx '\n');
@@ -276,7 +256,8 @@ let formatter_of_out_channel outx =
      form_max_boxes = default_max_boxes;
      form_max_indent = default_max_indent;
      form_ellipsis = default_ellipsis;
-     form_margin = default_margin
+     form_margin = default_margin;
+     form_divert = None
    }
 
 let std_formatter = formatter_of_out_channel stdout
@@ -284,7 +265,6 @@ let err_formatter = formatter_of_out_channel stderr
 
 let formatter_of_buffer buf =
    { form_buffer = new_buffer ();
-     form_depth = [];
      form_out_string = Buffer.add_substring buf;
      form_out_flush = (fun () -> ());
      form_out_newline = (fun () -> Buffer.add_char buf '\n');
@@ -296,7 +276,8 @@ let formatter_of_buffer buf =
      form_max_boxes = default_max_boxes;
      form_max_indent = default_max_indent;
      form_ellipsis = default_ellipsis;
-     form_margin = default_margin
+     form_margin = default_margin;
+     form_divert = None
    }
 
 let stdbuf = Buffer.create 19
@@ -311,7 +292,6 @@ let flush_str_formatter () =
 
 let make_formatter outx flush =
    { form_buffer = new_buffer ();
-     form_depth = [];
      form_out_string = outx;
      form_out_flush = flush;
      form_out_newline = (fun () -> outx "\n" 0 1);
@@ -322,7 +302,8 @@ let make_formatter outx flush =
      form_max_boxes = default_max_boxes;
      form_max_indent = default_max_indent;
      form_ellipsis = default_ellipsis;
-     form_margin = default_margin
+     form_margin = default_margin;
+     form_divert = None
    }
 
 (*
@@ -399,16 +380,20 @@ let get_formatter_output_functions = pp_get_formatter_output_functions std_forma
 let set_all_formatter_output_functions = pp_set_all_formatter_output_functions std_formatter
 let get_all_formatter_output_functions = pp_get_all_formatter_output_functions std_formatter
 
+let divert formatter divert =
+   formatter.form_divert <- divert
+
 (************************************************************************
  * PRINTF
  ************************************************************************)
 
 (*
- * Format args.
+ * Lm_format args.
  *)
 module Args =
 struct
    type t = formatter
+   type result = unit
 
    let print_char = pp_print_char
    let print_string = pp_print_string
@@ -426,14 +411,51 @@ struct
    let print_break = pp_print_break
    let print_flush fmt = pp_print_flush fmt ()
    let print_newline fmt = pp_print_newline fmt ()
+
+   let exit _ = ()
 end
 
-module Printf = MakePrintf (Args)
+module StringArgs =
+struct
+   type t = unit
+   type result = string
 
-let fprintf = Printf.fprintf
+   let print_char () = pp_print_char str_formatter
+   let print_string () = pp_print_string str_formatter
+
+   let open_box () = pp_open_box str_formatter
+   let open_hbox () = pp_open_hbox str_formatter ()
+   let open_vbox () = pp_open_vbox str_formatter
+   let open_hvbox () = pp_open_hvbox str_formatter
+   let open_hovbox () = pp_open_hovbox str_formatter
+   let close_box () = pp_close_box str_formatter ()
+
+   let print_cut () = pp_print_cut str_formatter ()
+   let print_space () = pp_print_space str_formatter ()
+   let force_newline () = pp_force_newline str_formatter ()
+   let print_break () = pp_print_break str_formatter
+   let print_flush () = pp_print_flush str_formatter ()
+   let print_newline () = pp_print_newline str_formatter ()
+
+   let exit = flush_str_formatter
+end
+
+module FPrintf = MakePrintf (Args)
+module SPrintf = MakePrintf (StringArgs)
+
+let fprintf = FPrintf.fprintf
+
+let sprintf s =
+   SPrintf.fprintf () s
 
 let printf s =
    fprintf std_formatter s
+
+let eprintf s =
+   fprintf err_formatter s
+
+let bprintf buf s =
+   fprintf (formatter_of_buffer buf) s
 
 (*
  * -*-

@@ -58,7 +58,7 @@ let clock_start name =
    try
       let clock = clock_find !clocks name in
       if clock.clock_active then
-         raise (Invalid_argument (Printf.sprintf "clock %s is already active" name));
+         raise (Invalid_argument (Lm_printf.sprintf "clock %s is already active" name));
       let clock =
          { clock_active = true;
            clock_starttime = Unix.times ();
@@ -86,7 +86,7 @@ let clock_stop name =
    try
       let clock = clock_find !clocks name in
       if not clock.clock_active then
-         raise (Invalid_argument (Printf.sprintf "clock %s is not set" name));
+         raise (Invalid_argument (Lm_printf.sprintf "clock %s is not set" name));
       let clock =
          { clock_active = false;
            clock_starttime = clock.clock_starttime;
@@ -97,7 +97,7 @@ let clock_stop name =
          clocks := clock_add !clocks name clock
    with
       Not_found ->
-         raise (Invalid_argument (Printf.sprintf "clock %s does not exist" name))
+         raise (Invalid_argument (Lm_printf.sprintf "clock %s does not exist" name))
 
 (*
  * The total execution time when clock was active.
@@ -109,7 +109,7 @@ let clock_ttime name =
          clock.clock_ttime
    with
       Not_found ->
-         raise (Invalid_argument (Printf.sprintf "clock_ttime: clock %s does not exist" name))
+         raise (Invalid_argument (Lm_printf.sprintf "clock_ttime: clock %s does not exist" name))
 
 (*
  * The total number of calls (start-stop sequences).
@@ -121,7 +121,7 @@ let clock_tcalls name =
          clock.clock_tcalls
    with
       Not_found ->
-         raise (Invalid_argument (Printf.sprintf "clock_tcalls: clock %s does not exist" name))
+         raise (Invalid_argument (Lm_printf.sprintf "clock_tcalls: clock %s does not exist" name))
 
 (*
  * Reset clock.
@@ -152,5 +152,5 @@ let clock_reset name =
 let clock_report msg name =
    let ttime = clock_ttime name in
    let tcalls = clock_tcalls name in
-   Format.print_string (Printf.sprintf "%sTotal time in %s = %.2f sec, %d calls, %.5f sec/call\n" (**)
+   Lm_format.print_string (Lm_printf.sprintf "%sTotal time in %s = %.2f sec, %d calls, %.5f sec/call\n" (**)
       msg name ttime tcalls (ttime /. (float_of_int tcalls)))

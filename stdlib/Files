@@ -6,8 +6,18 @@ STDLIB_MLZFILES =\
 	lm_set_sig
 
 STDLIB_FILES =\
-	lm_pervasives\
 	lm_debug\
+	lm_big_int\
+	lm_num\
+	lm_rformat\
+	lm_rformat_raw\
+	lm_rformat_text\
+	lm_rformat_html\
+	lm_rformat_tex\
+	lm_make_printf\
+	lm_format\
+	lm_pervasives\
+	lm_printf\
 	lm_array_util\
 	lm_string_util\
 	lm_list_util\
@@ -40,9 +50,4 @@ STDLIB_FILES =\
 	lm_splay_linear_set\
 	lm_index\
 	lm_serial_map\
-	lm_splay\
-	lm_make_printf\
-	lm_rformat\
-	lm_format\
-	lm_big_int\
-	lm_num
+	lm_splay

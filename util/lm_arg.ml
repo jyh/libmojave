@@ -27,7 +27,7 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Format
+open Lm_format
 open Lm_format_util
 
 

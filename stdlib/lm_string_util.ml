@@ -22,9 +22,8 @@
  * Author: Jason Hickey <jyh@cs.caltech.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Format
-
 open Lm_debug
+open Lm_printf
 
 (*
  * Show the file loading.

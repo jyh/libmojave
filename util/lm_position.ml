@@ -27,8 +27,7 @@
 open Lm_debug
 open Lm_symbol
 open Lm_location
-
-open Format
+open Lm_format
 
 let debug_pos =
    create_debug (**)

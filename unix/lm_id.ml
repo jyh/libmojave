@@ -77,7 +77,7 @@ let create () =
          Mutex.unlock id_lock;
          index
    in
-      Printf.sprintf "%s:%d:%d" hostname pid index
+      Lm_printf.sprintf "%s:%d:%d" hostname pid index
 
 (*
  * Get a printable representation.
