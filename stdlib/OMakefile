@@ -26,6 +26,6 @@ MLZFILES = \
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
-    $(CLEAN) lm_pervasives.ml
+    $(CLEAN) lm_pervasives.ml lm_threads.ml
 
 all: lmstdlib$(LIB_SUFFIX)
