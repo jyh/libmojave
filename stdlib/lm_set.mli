@@ -30,9 +30,23 @@
  * jyh@cs.cornell.edu
  *)
 
+(*
+ * A generic type of totally ordered elements.
+ *)
 module type OrderedType =
 sig
    type t
+   val compare : t -> t -> int
+end
+
+(*
+ * Ordered type need for debugging.
+ *)
+module type OrderedTypeDebug =
+sig
+   type t
+
+   val print : t -> unit
    val compare : t -> t -> int
 end
 
@@ -79,6 +93,13 @@ sig
    val not_mem_filt : t -> elt list -> elt list
 end
 
+module type LmSetDebug =
+sig
+   include LmSet
+
+   val print : t -> unit
+end
+
 (*
  * Backwards-compatible version.
  *)
@@ -113,4 +134,5 @@ sig
 end
 
 module LmMake (Ord : OrderedType) : (LmSet with type elt = Ord.t)
+module LmMakeDebug (Ord : OrderedTypeDebug) : (LmSetDebug with type elt = Ord.t)
 module Make (Ord : OrderedType) : (S with type elt = Ord.t)

@@ -52,7 +52,7 @@ end
 (*
  * These are the functions provided by the table.
  *)
-module type LmMap =
+module type LmMapBase =
 sig
    type key
    type 'a t
@@ -73,12 +73,18 @@ sig
    val forall : (key -> 'a -> bool) -> 'a t -> bool
    val exists : (key -> 'a -> bool) -> 'a t -> bool
    val isect_mem : 'a t -> (key -> bool) -> 'a t
-   val union : 'a t -> 'a t -> 'a t
 
    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
    val keys : 'a t -> key list
    val data : 'a t -> 'a list
+end
+
+module type LmMap =
+sig
+   include LmMapBase
+
+   val union : (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 end
 
 (*
@@ -105,7 +111,7 @@ end
  *)
 module type LmMapList =
 sig
-   include LmMap
+   include LmMapBase
 
    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
    val find_all : 'a t -> key -> 'a list
@@ -113,12 +119,13 @@ sig
    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
    val data_all : 'a t -> 'a list list
+   val union    : (key -> 'a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
 end
 
 (*
  * Make the set.
  *)
-module LmMake (Base : OrderedType) : LmMap with type key = Base.t =
+module LmMake (Base : OrderedType) =
 struct
    (*
     * Table is a binary tree.
@@ -584,10 +591,34 @@ struct
     | Leaf ->
          raise Not_found
 
-   let find_all tree key =
+   let find tree key =
       find_aux key tree
 
-   let find = find_all
+   (*
+    * Return the data for the entry.
+    *)
+   let rec find_aux key = function
+      Black (key0, data0, left0, right0, _) ->
+         let comp = Base.compare key key0 in
+            if comp = 0 then
+               data0
+            else if comp < 0 then
+               find_aux key left0
+            else
+               find_aux key right0
+    | Red (key0, data0, left0, right0, _) ->
+         let comp = Base.compare key key0 in
+            if comp = 0 then
+               data0
+            else if comp < 0 then
+               find_aux key left0
+            else
+               find_aux key right0
+    | Leaf ->
+         []
+
+   let find_all tree key =
+      find_aux key tree
 
    (************************************************************************
     * REMOVAL                                                              *
@@ -1193,22 +1224,34 @@ struct
     * Union flattens the two trees,
     * merges them, then creates a new tree.
     *)
-   let rec union_aux (s1 : ('elt, 'data) tree) (s2 : ('elt, 'data) tree) =
+   let union_append (append : 'elt -> 'data -> 'data -> 'data)
+                    (s : ('elt, 'data) tree)
+                    (key : 'elt)
+                    (data : 'data) =
+      filter_add s key (function
+         None ->
+            data
+       | Some data' ->
+            append key data' data)
+
+   let rec union_aux (append : 'elt -> 'data -> 'data -> 'data)
+                     (s1 : ('elt, 'data) tree)
+                     (s2 : ('elt, 'data) tree) =
       match s2 with
          Black (key, data, left, right, _) ->
-            union_aux (add (union_aux s1 left) key data) right
+            union_aux append (union_append append (union_aux append s1 left) key data) right
        | Red (key, data, left, right, _) ->
-            union_aux (add (union_aux s1 left) key data) right
+            union_aux append (union_append append (union_aux append s1 left) key data) right
        | Leaf ->
             s1
 
-   let union s1 s2 =
+   let union append s1 s2 =
       let size1 = cardinality s1 in
       let size2 = cardinality s2 in
          if size1 < size2 then
-            union_aux s2 s1
+            union_aux append s2 s1
          else
-            union_aux s1 s2
+            union_aux append s1 s2
 
    (* n8: I think this was the result of a bad merge:
    let union t1 t2 =
@@ -1490,7 +1533,7 @@ end
 (*
  * List version.
  *)
-module LmMakeList (Ord : OrderedType) : LmMapList with type key = Ord.t =
+module LmMakeList (Ord : OrderedType) =
 struct
    module MMap = LmMake (Ord)
 
@@ -1561,7 +1604,7 @@ struct
 
    let iter_all = MMap.iter
    let mapi_all = MMap.mapi
-   let find_all = MMap.find
+   let find_all = MMap.find_all
    let fold_all = MMap.fold
    let data_all = MMap.data
 
@@ -1608,8 +1651,7 @@ struct
 
    let data t = List.concat (MMap.data t)
 
-   let union t1 t2 =
-      raise (Failure "union not implemented for list tables")
+   let union = MMap.union
 end
 
 (*

@@ -52,11 +52,22 @@ open Format
 open Lm_array_util
 
 (*
- * Elements.
+ * A generic type of totally ordered elements.
  *)
 module type OrderedType =
 sig
    type t
+   val compare : t -> t -> int
+end
+
+(*
+ * Ordered type need for debugging.
+ *)
+module type OrderedTypeDebug =
+sig
+   type t
+
+   val print : t -> unit
    val compare : t -> t -> int
 end
 
@@ -103,6 +114,13 @@ sig
    val not_mem_filt : t -> elt list -> elt list
 end
 
+module type LmSetDebug =
+sig
+   include LmSet
+
+   val print : t -> unit
+end
+
 (*
  * Backwards-compatible version.
  *)
@@ -139,7 +157,7 @@ end
 (*
  * Make the set.
  *)
-module LmMake (Ord : OrderedType) : LmSet with type elt = Ord.t =
+module LmMake (Ord : OrderedType) =
 struct
    (************************************************************************
     * TYPES                                                                *
@@ -266,7 +284,7 @@ struct
             match left, right with
                Red _, _
              | _, Red _ ->
-                  raise (Failure "Red_black_set.check_red")
+                  raise (Failure "Lm_set.check_red")
 
              | _ ->
                   check_red left;
@@ -299,7 +317,7 @@ struct
          check_black_aux i j right
     | Leaf ->
          if j <> i then
-            raise (Failure "Red_black_set.check_black")
+            raise (Failure "Lm_set.check_black")
 
    let check_black tree =
       check_black_aux (black_depth 0 tree) 0 tree
@@ -310,13 +328,13 @@ struct
    let rec check_sort_lt key = function
       Black (key', left, right, _) ->
          if Ord.compare key' key >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_lt key' left;
          check_sort_gt_lt key' key right
 
     | Red (key', left, right, _) ->
          if Ord.compare key' key >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_lt key' left;
          check_sort_gt_lt key' key right
 
@@ -326,13 +344,13 @@ struct
    and check_sort_gt key = function
       Black (key', left, right, _) ->
          if Ord.compare key' key <= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key' left;
          check_sort_gt key right
 
     | Red (key', left, right, _) ->
          if Ord.compare key' key <= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key' left;
          check_sort_gt key right
 
@@ -342,13 +360,13 @@ struct
    and check_sort_gt_lt key key' = function
       Black (key'', left, right, _) ->
          if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key'' left;
          check_sort_gt_lt key'' key' right
 
     | Red (key'', left, right, _) ->
          if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key'' left;
          check_sort_gt_lt key'' key' right
 
@@ -360,7 +378,7 @@ struct
          check_sort_lt key left;
          check_sort_gt key right
     | Red _ ->
-         raise (Failure "Red_black_set.check_sort: root is red")
+         raise (Failure "Lm_set.check_sort: root is red")
     | Leaf ->
          ()
 
@@ -603,7 +621,7 @@ struct
 
     | (Red _) as tree ->
          (* Red nodes will not come up *)
-         raise (Invalid_argument "Red_black_set.insert")
+         raise (Invalid_argument "Lm_set.insert")
 
 (*
    let insert key tree =
@@ -1512,6 +1530,48 @@ struct
                   h :: rem
          else
             fst_mem_filt s t
+end
+
+module LmMakeDebug (Ord : OrderedTypeDebug) =
+struct
+   module XSet = LmMake (Ord)
+
+   include XSet
+
+   (*
+    * Print the tree.
+    *)
+   let rec print tree =
+      print_space ();
+      match tree with
+         Black (key, left, right, size) ->
+            print_string "(";
+            open_hvbox 0;
+            print_string "Black";
+            print_space ();
+            Ord.print key;
+            print_string ":";
+            print_int size;
+            print left;
+            print right;
+            print_string ")";
+            close_box ()
+
+       | Red (key, left, right, size) ->
+            print_string "(";
+            open_hvbox 0;
+            print_string "Red";
+            print_space ();
+            Ord.print key;
+            print_string ":";
+            print_int size;
+            print left;
+            print right;
+            print_string ")";
+            close_box ()
+
+       | Leaf ->
+            print_string "Leaf"
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t =

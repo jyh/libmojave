@@ -29,7 +29,7 @@ sig
   val compare : t -> t -> int
 end
 
-module type LmMap =
+module type LmMapBase =
 sig
    type key
    type 'a t
@@ -50,12 +50,18 @@ sig
    val forall : (key -> 'a -> bool) -> 'a t -> bool
    val exists : (key -> 'a -> bool) -> 'a t -> bool
    val isect_mem : 'a t -> (key -> bool) -> 'a t
-   val union : 'a t -> 'a t -> 'a t
 
    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
    val keys : 'a t -> key list
    val data : 'a t -> 'a list
+end
+
+module type LmMap =
+sig
+   include LmMapBase
+
+   val union : (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 end
 
 (*
@@ -79,7 +85,7 @@ end
 
 module type LmMapList =
 sig
-   include LmMap
+   include LmMapBase
 
    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
    val find_all : 'a t -> key -> 'a list
@@ -87,6 +93,7 @@ sig
    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
    val data_all : 'a t -> 'a list list
+   val union    : (key -> 'a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
 end
 
 module Make       (Ord : OrderedType) : (S         with type key = Ord.t)

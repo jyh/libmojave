@@ -41,7 +41,7 @@ if $(equal $(NCURSES), YES)
 #
 # Special CFLAGS
 #
-CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
+CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) -Wno-unused-variable
 
 #
 # Libraries
