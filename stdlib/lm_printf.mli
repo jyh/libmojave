@@ -244,6 +244,11 @@ val pp_get_all_formatter_output_functions :
    (int -> unit)
 
 (*
+ * Allow the use of the Format modules.
+ *)
+val out_channel_of_formatter : Format.formatter -> out_channel
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

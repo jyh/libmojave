@@ -151,6 +151,81 @@ let string_of_root = function
          s
 
 (*
+ * Unescape a possibly quoted filename.
+ * The only things we unquote are quotations.
+ *)
+let unescape_string s =
+   let len = String.length s in
+   let rec start i =
+      if i = len then
+         s
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               let buf = Buffer.create len in
+                  Buffer.add_substring buf s 0 i;
+                  dquote buf (succ i)
+          | '\'' ->
+               let buf = Buffer.create len in
+                  Buffer.add_substring buf s 0 i;
+                  squote buf (succ i)
+          | c ->
+               start (succ i)
+
+   and dquote buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               normal buf (succ i)
+          | '\\' when i < len - 1 ->
+               (match s.[i + 1] with
+                   '"' ->
+                      Buffer.add_char buf '"';
+                      dquote buf (i + 2)
+                 | _ ->
+                      Buffer.add_char buf '\\';
+                      dquote buf (succ i))
+          | c ->
+               Buffer.add_char buf c;
+               dquote buf (succ i)
+
+   and squote buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '\'' ->
+               normal buf (succ i)
+          | '\\' when i < len - 1 ->
+               (match s.[i + 1] with
+                   '\'' ->
+                      Buffer.add_char buf '\'';
+                      dquote buf (i + 2)
+                 | _ ->
+                      Buffer.add_char buf '\\';
+                      dquote buf (succ i))
+          | c ->
+               Buffer.add_char buf c;
+               dquote buf (succ i)
+
+   and normal buf i =
+      if i = len then
+         Buffer.contents buf
+      else
+         match String.unsafe_get s i with
+            '"' ->
+               dquote buf (succ i)
+          | '\'' ->
+               squote buf (succ i)
+          | c ->
+               Buffer.add_char buf c;
+               normal buf (succ i)
+   in
+      start 0
+
+(*
  * Split the path into root part, and the rest.
  *)
 let filename_string name =
@@ -200,6 +275,14 @@ let root name =
    with
       Not_found ->
          name
+
+let suffix name =
+   try
+      let index = String.rindex name '.' in
+         String.sub name index (String.length name - index)
+   with
+      Not_found ->
+         ""
 
 let strip_suffixes name =
    let start =
@@ -289,19 +372,80 @@ let search_command name =
 
 (*
  * Figure out where in the path the commands comes from.
- * The filename must be simple, no path separators.
  *)
 let which name =
-   (* Check for a simple filename *)
-   if Lm_string_util.contains_any name separators then
-      raise (Failure ("Lm_filename_util.which: path filenames are not allowed: " ^ name));
-
-   (* Check the hashtable *)
-   try Hashtbl.find search_table name with
-      Not_found ->
-         let fullname = search_command name in
-            Hashtbl.add search_table name fullname;
+   if Filename.is_relative name then
+      if Lm_string_util.contains_any name separators then
+         let name = Filename.concat (Sys.getcwd ()) name in
+            match is_executable name with
+               Some fullname ->
+                  fullname
+             | None ->
+                  raise Not_found
+      else
+         try Hashtbl.find search_table name with
+            Not_found ->
+               let fullname = search_command name in
+                  Hashtbl.add search_table name fullname;
+                  fullname
+   else
+      match is_executable name with
+         Some fullname ->
             fullname
+       | None ->
+            raise Not_found
+
+(*
+ * Use the directory as the starting point for relative names.
+ *)
+let which_dir dir name =
+   if Filename.is_relative name then
+      if Lm_string_util.contains_any name separators then
+         let name = Filename.concat dir name in
+            match is_executable name with
+               Some fullname ->
+                  fullname
+             | None ->
+                  raise Not_found
+      else
+         try Hashtbl.find search_table name with
+            Not_found ->
+               let fullname = search_command name in
+                  Hashtbl.add search_table name fullname;
+                  fullname
+   else
+      match is_executable name with
+         Some fullname ->
+            fullname
+       | None ->
+            raise Not_found
+
+(*
+ * Make a directory hierarchy.
+ *)
+let mkdirhier dir mode =
+   let rec mkdir dir path =
+      match path with
+         head :: path ->
+            let dir = Filename.concat dir head in
+            let () =
+               try Unix.mkdir dir mode with
+                   Unix.Unix_error (Unix.EEXIST, _, _) ->
+                     ()
+            in
+               mkdir dir path
+       | [] ->
+            ()
+   in
+   let path = filename_path dir in
+   let top, path =
+      match path with
+         AbsolutePath (root, path) ->
+            string_of_root root, path
+       | RelativePath path ->
+            ".", path
+   in
+      mkdir top path
 
 (*!
  * @docoff

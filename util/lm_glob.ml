@@ -1,6 +1,23 @@
 (*
  * Glob expansion.
  *
+ * There is a dilemma here for Win32.
+ * Since \ is the pathname separator, we will
+ * often see names like "dir\*.c".  This is not
+ * and escape sequence in the DOS shell, and in
+ * fact * is not a valid character in Win32
+ * filenames.
+ *
+ * So, we could turn off escape sequences in Win32,
+ * but doing this globally is a bad idea.  For example,
+ * what about the sequence dir\[a-z]*.c?  In this case,
+ * the [ and ] characters _are_ valid in Win32 filenames.
+ *
+ * For now, we punt.  The \ character is considered to
+ * be an escape character.  If you want globbing in
+ * Win32, use forward slashes.  The result will still
+ * use backslashes, so no worries.
+ *
  * ----------------------------------------------------------------
  *
  * @begin[license]
@@ -27,47 +44,349 @@
 open Lm_printf
 open Lm_filename_util
 
-exception GlobException
+(************************************************************************
+ * Tilde expansion.
+ *)
+
+(*
+ * Keep a table of entries.
+ * Whenever we look a value in the passwd file,
+ * add it to the table.
+ *)
+let tilde_table = ref [||]
+
+(*
+ * Keep the table sorted for quick lookup.
+ *)
+let tilde_insert dir name =
+   let table = !tilde_table in
+   let len = Array.length table in
+      if len = 0 then
+         tilde_table := [|dir, name|]
+      else
+         (* Binary search *)
+         let rec search i j =
+            if i < j - 1 then
+               let k = (i + j) / 2 in
+               let dir', _ = table.(k) in
+                  if dir' > dir then
+                     search i k
+                  else
+                     search k j
+            else
+               i
+         in
+         let i = search (-1) len in
+            if i >= 0 && fst table.(i) = dir then
+               (if snd table.(i) <> "" then
+                   table.(i) <- dir, name)
+            else
+               let i = succ i in
+               let ntable = Array.create (len + 1) table.(0) in
+                  Array.blit table 0 ntable 0 i;
+                  ntable.(i) <- dir, name;
+                  Array.blit table i ntable (i + 1) (len - i);
+                  tilde_table := ntable
+
+(*
+ * Find an entry in the table.
+ *)
+let rec tilde_matches dir1 dir2 len i =
+   i = len || dir1.[i] = dir2.[i] && tilde_matches dir1 dir2 len (succ i)
+
+let tilde_collapse dir =
+   let table = !tilde_table in
+   let len = Array.length table in
+   let rec search i j =
+      if i < j - 1 then
+         let k = (i + j) / 2 in
+         let dir', _ = table.(k) in
+            if dir' > dir then
+               search i k
+            else
+               search k j
+      else
+         i
+   in
+   let i = search (-1) len in
+      if i < 0 then
+         dir
+      else
+         let dir', name = table.(i) in
+         let len' = String.length dir' in
+         let len = String.length dir in
+            if len' <= len && tilde_matches dir' dir len' 0 then
+               let namelen = String.length name in
+               let length = len - len' + namelen + 1 in
+               let s = String.make length ' ' in
+                  s.[0] <- '~';
+                  String.blit name 0 s 1 namelen;
+                  String.blit dir len' s (namelen + 1) (len - len');
+                  s
+            else
+               dir
+
+(*
+ * Here is the caching getpwnam.
+ *)
+let getpwnam user =
+   let passwd = Unix.getpwnam user in
+   let dir = passwd.Unix.pw_dir in
+      tilde_insert dir user;
+      dir
+
+(*
+ * Try to figure out the home directory as best as possible.
+ *)
+let home_dir =
+   try
+      let home = Sys.getenv "HOME" in
+         tilde_insert home "";
+         home
+   with
+      Not_found ->
+         let home =
+            try getpwnam (Unix.getlogin ()) with
+               Not_found
+             | Unix.Unix_error _ ->
+                  let home =
+                     if Sys.os_type = "Win32" then
+                        "c:\\"
+                     else
+                        "/tmp"
+                  in
+                     eprintf "No home directory, using %s@." home;
+                     home
+         in
+            Unix.putenv "HOME" home;
+            home
+
+(************************************************************************
+ * Glob expansion.
+ *)
+type glob_options =
+   GlobNoBraces         (* Do not perform csh-style brace expansion *)
+ | GlobNoTilde          (* Do not perform tilde-expansion *)
+ | GlobNoEscape         (* The \ character does not escape special characters *)
+ | GlobNoCheck          (* If an expansion fails, return the expansion literally *)
+ | GlobIgnoreCheck      (* If an expansion fails, it expands to nothing *)
+ | GlobDot              (* Allow wildcards to match filenames with a leading . *)
+ | GlobOnlyDirs         (* Return only directories in the result *)
+ | GlobCVSIgnore        (* Ignore files as specified by .cvsignore files *)
+ | GlobIgnore of string list  (* Ignore the files that match the pattern *)
+ | GlobAllow of string list   (* Allow only files that match the pattern *)
+ | GlobIgnoreFun of (string -> bool)  (* Ignore the files specified by the function *)
+ | GlobAllowFun of (string -> bool)   (* Allow only the files specified by the function *)
+ | GlobHomeDir of string              (* Home directory for ~ expansion *)
+
+type glob_check =
+   NoMatchError
+ | NoMatchPreserve
+ | NoMatchIgnore
+
+type glob_option_bits =
+   { glob_braces    : bool;
+     glob_tilde     : bool;
+     glob_escape    : bool;
+     glob_check     : glob_check;
+     glob_dot       : bool;
+     glob_dirs      : bool;
+     glob_cvs       : bool;
+     glob_ignore    : (string -> bool);
+     glob_allow     : (string -> bool);
+     glob_cvsignore : (string -> bool);
+     glob_home      : string
+   }
+
+let default_glob_options =
+   { glob_braces    = true;
+     glob_tilde     = true;
+     glob_escape    = true;
+     glob_check     = NoMatchError;
+     glob_dot       = false;
+     glob_dirs      = false;
+     glob_cvs       = false;
+     glob_ignore    = (fun _ -> false);
+     glob_allow     = (fun _ -> true);
+     glob_cvsignore = (fun _ -> false);
+     glob_home      = home_dir
+   }
+
+(************************************************************************
+ * Utilities.
+ *)
+
+(*
+ * Determine if a string contains glob characters.
+ *)
+let is_glob_name options name =
+   let len = String.length name in
+   let rec search i =
+      if i >= len then
+         false
+      else
+         match name.[i] with
+            '*' | '?' | '[' | '~' ->
+               true
+          | '\\' when options.glob_escape ->
+               search (i + 2)
+          | _ ->
+               search (succ i)
+   in
+      search 0
+
+(*
+ * Unescape a name.
+ *)
+let unescape options s =
+   if options.glob_escape then
+      let len = String.length s in
+      let buf = Buffer.create len in
+      let rec collect i =
+         if i = len then
+            Buffer.contents buf
+         else
+            let c = s.[i] in
+               if c = '\\' && i < len - 1 then
+                  let c = s.[i + 1] in
+                     match c with
+                        '*' | '?' | '[' | ']' ->
+                           Buffer.add_char buf c;
+                           collect (i + 2)
+                      | _ ->
+                           Buffer.add_char buf '\\';
+                           collect (i + 1)
+               else
+                  begin
+                     Buffer.add_char buf c;
+                     collect (i + 1)
+                  end
+      in
+         collect 0
+   else
+      s
+
+(*
+ * Don't add unnecessary separators.
+ *)
+let filename_concat dir name =
+   match dir, name with
+      "", _ ->
+         name
+    | _, "" ->
+         dir
+    | _ ->
+         Filename.concat dir name
+
+(*
+ * Split the path into root part, and the rest.
+ * If escaping is enabled, do not split at escape sequences,
+ * but split everywhere else.
+ *)
+let filename_split options s =
+   let len = String.length s in
+   let add_name names start i =
+      if start < i then
+         String.sub s start (i - start) :: names
+      else
+         names
+   in
+   let rec collect names start i =
+      if i = len then
+         add_name names start i
+      else
+         let c = s.[i] in
+            match c with
+               '/' ->
+                  collect (add_name names start i) (succ i) (succ i)
+             | '\\' ->
+                  if options.glob_escape && i < len - 1 then
+                     let c = s.[i + 1] in
+                        match c with
+                           '*' | '?' | '[' | ']' ->
+                              collect names start (i + 2)
+                         | _ ->
+                              collect (add_name names start i) (succ i) (succ i)
+                  else
+                     collect (add_name names start i) (succ i) (succ i)
+             | _ ->
+                  collect names start (succ i)
+   in
+   let names = collect [] 0 0 in
+      List.rev names
+
+(*
+ * Split the rest into parts.
+ *)
+let filename_path options name =
+   match filename_string name with
+      AbsolutePath (root, path) ->
+         AbsolutePath (root, filename_split options path)
+    | RelativePath path ->
+         RelativePath (filename_split options path)
 
 (************************************************************************
  * Shell regular expressions.
+ *
  *)
-let add_shell_pattern buf s =
+let add_shell_pattern options buf s =
    let len = String.length s in
-      Buffer.add_string buf "^";
-      for i = 0 to pred len do
+   let rec collect i =
+      if i >= len then
+         Buffer.add_char buf '$'
+      else
          let c = s.[i] in
             match s.[i] with
                '*' ->
-                  Buffer.add_string buf ".*"
+                  Buffer.add_string buf ".*";
+                  collect (succ i)
              | '?' ->
-                  Buffer.add_string buf "."
+                  Buffer.add_string buf ".";
+                  collect (succ i)
              | '.'
              | '+'
              | '^'
              | '$' ->
                   Buffer.add_char buf '\\';
-                  Buffer.add_char buf c
+                  Buffer.add_char buf c;
+                  collect (succ i)
+             | '\\' ->
+                  if options.glob_escape && i < len - 1 then
+                     let c = s.[i + 1] in
+                        match c with
+                           '*' | '?' | '[' | ']' ->
+                              Buffer.add_char buf '\\';
+                              Buffer.add_char buf c;
+                              collect (i + 2)
+                         | _ ->
+                              Buffer.add_string buf "\\\\";
+                              collect (succ i)
+                  else
+                     begin
+                        Buffer.add_string buf "\\\\";
+                        collect (succ i)
+                     end
              | _ ->
-                  Buffer.add_char buf c
-      done;
-      Buffer.add_char buf '$'
+                  Buffer.add_char buf c;
+                  collect (succ i)
+   in
+      collect 0
 
-let add_shell_disjunct buf s =
+let add_shell_disjunct options buf s =
    Buffer.add_string buf "\\|";
-   add_shell_pattern buf s
+   add_shell_pattern options buf s
 
-let regexp_of_shell_pattern s =
+let regexp_of_shell_pattern options s =
    let buf = Buffer.create 32 in
-      add_shell_pattern buf s;
+      add_shell_pattern options buf s;
       Str.regexp (Buffer.contents buf)
 
-let make_filter sl default =
+let make_filter options sl default =
    let buf = Buffer.create 32 in
       match sl with
          s :: sl ->
-            add_shell_pattern buf s;
-            List.iter (add_shell_disjunct buf) sl;
+            add_shell_pattern options buf s;
+            List.iter (add_shell_disjunct options buf) sl;
             let pattern = Str.regexp (Buffer.contents buf) in
                (fun name -> Str.string_match pattern name 0)
        | [] ->
@@ -109,20 +428,19 @@ let default_patterns =
     "*.Z";
     "*.elc";
     "*.ln";
-    "core";
     "core.*"]
 
 let stdignore =
    let buf = Buffer.create 256 in
       Buffer.add_string buf "^\\.cvsignore$";
-      List.iter (add_shell_disjunct buf) default_patterns;
+      List.iter (add_shell_disjunct default_glob_options buf) default_patterns;
       Str.regexp (Buffer.contents buf)
 
 (*
  * Load the ignore expression from .cvsignore.
  *)
 let load_cvsignore dirname =
-   let filename = Filename.concat dirname ".cvsignore" in
+   let filename = filename_concat dirname ".cvsignore" in
 
    (* Get the patterns from the file *)
    let inx = open_in filename in
@@ -137,8 +455,8 @@ let load_cvsignore dirname =
    (* Concatenate them into a large regular expression *)
    let buf = Buffer.create 256 in
       Buffer.add_string buf "^\\.cvsignore$";
-      List.iter (add_shell_disjunct buf) default_patterns;
-      List.iter (add_shell_disjunct buf) patterns;
+      List.iter (add_shell_disjunct default_glob_options buf) default_patterns;
+      List.iter (add_shell_disjunct default_glob_options buf) patterns;
       Str.regexp (Buffer.contents buf)
 
 let load_cvsignore dirname =
@@ -158,43 +476,8 @@ let is_dir filename =
          false
 
 (************************************************************************
- * Glob expansion.
+ * Globbing.
  *)
-type glob_options =
-   GlobNoBraces         (* Do not perform csh-style brace expansion *)
- | GlobNoEscape         (* The \ character does not escape special characters *)
- | GlobNoCheck          (* If an expansion fails, return the expansion literally *)
- | GlobDot              (* Allow wildcards to match filenames with a leading . *)
- | GlobOnlyDirs         (* Return only directories in the result *)
- | GlobCVSIgnore        (* Ignore files as specified by .cvsignore files *)
- | GlobIgnore of string list  (* Ignore the files that match the pattern *)
- | GlobAllow of string list   (* Allow only files that match the pattern *)
- | GlobIgnoreFun of (string -> bool)  (* Ignore the files determined by the function *)
- | GlobAllowFun of (string -> bool)   (* Allow only the files determined by the function *)
-
-type glob_option_bits =
-   { glob_braces    : bool;
-     glob_escape    : bool;
-     glob_check     : bool;
-     glob_dot       : bool;
-     glob_dirs      : bool;
-     glob_cvs       : bool;
-     glob_ignore    : (string -> bool);
-     glob_allow     : (string -> bool);
-     glob_cvsignore : (string -> bool)
-   }
-
-let default_glob_options =
-   { glob_braces = true;
-     glob_escape = true;
-     glob_check  = true;
-     glob_dot    = false;
-     glob_dirs   = false;
-     glob_cvs    = false;
-     glob_ignore = (fun _ -> false);
-     glob_allow  = (fun _ -> true);
-     glob_cvsignore = (fun _ -> false)
-   }
 
 (*
  * Collect glob options.
@@ -205,43 +488,25 @@ let glob_options_of_list l =
          option :: l ->
             let options =
                match option with
-                  GlobNoBraces  -> { options with glob_braces = false }
-                | GlobNoEscape  -> { options with glob_escape = false }
-                | GlobNoCheck   -> { options with glob_check = false }
-                | GlobDot       -> { options with glob_dot = true }
-                | GlobOnlyDirs  -> { options with glob_dirs = true }
-                | GlobCVSIgnore -> { options with glob_cvs = true }
+                  GlobNoBraces    -> { options with glob_braces = false }
+                | GlobNoTilde     -> { options with glob_tilde = false }
+                | GlobNoEscape    -> { options with glob_escape = false }
+                | GlobNoCheck     -> { options with glob_check = NoMatchPreserve }
+                | GlobIgnoreCheck -> { options with glob_check = NoMatchIgnore }
+                | GlobDot         -> { options with glob_dot = true }
+                | GlobOnlyDirs    -> { options with glob_dirs = true }
+                | GlobCVSIgnore   -> { options with glob_cvs = true }
                 | GlobIgnoreFun f -> { options with glob_ignore = f }
                 | GlobAllowFun f  -> { options with glob_allow = f }
-                | GlobIgnore sl   -> { options with glob_ignore = make_filter sl false }
-                | GlobAllow sl    -> { options with glob_allow = make_filter sl true }
+                | GlobIgnore sl   -> { options with glob_ignore = make_filter options sl false }
+                | GlobAllow sl    -> { options with glob_allow = make_filter options sl true }
+                | GlobHomeDir dir -> { options with glob_home = dir }
             in
                collect options l
        | [] ->
             options
    in
       collect default_glob_options l
-
-(*
- * Determine if a string contains glob characters.
- *)
-let is_glob_name options name =
-   let len = String.length name in
-   let rec search i =
-      if i >= len then
-         false
-      else
-         match name.[i] with
-            '*'
-          | '?'
-          | '[' ->
-               true
-          | '\\' when options.glob_escape ->
-               search (i + 2)
-          | _ ->
-               search (succ i)
-   in
-      search 0
 
 (*
  * Perform brace expansion.
@@ -267,7 +532,7 @@ let rec expand_braces options expanded_names unexpanded_names =
             (* Found a brace, search for the parts *)
             and search_found level start last names i =
                if i >= len then
-                  raise GlobException;
+                  raise (Failure (name ^ ": brace mismatch"));
 
                match name.[i] with
                   '\\' when options.glob_escape ->
@@ -276,14 +541,14 @@ let rec expand_braces options expanded_names unexpanded_names =
                      let name = String.sub name last (i - last) in
                         search_found level start (i + 1) (name :: names) (i + 1)
                 | '{' ->
-                      search_found (succ level) start last names (i + 1)
+                       search_found (succ level) start last names (i + 1)
                 | '}' when level = 0 ->
+                      let pref = String.sub name 0 start in
+                      let suf = String.sub name (i + 1) (len - i - 1) in
                       let name = String.sub name last (i - last) in
                       let names = name :: names in
-                      let pref = String.sub name 0 start in
-                      let suf = String.sub name i (len - i) in
                       let names = List.map (fun s -> pref ^ s ^ suf) names in
-                         expanded_names, List.rev_append names unexpanded_names
+                         expanded_names, List.append names unexpanded_names
                 | '}' ->
                       search_found (pred level) start last names (i + 1)
                 | _ ->
@@ -297,22 +562,23 @@ let rec expand_braces options expanded_names unexpanded_names =
 
 let glob_braces options names =
    if options.glob_braces then
-      expand_braces options [] names
+      expand_braces options [] (List.rev names)
    else
       names
 
 (*
  * Expand a glob pattern.
- * the dir is a fully-expanded directory name.
+ * The dir is a fully-expanded directory name.
  *)
-let glob_dir_pattern options dirs names dir pattern =
+let glob_dir_pattern options root dirs names dir pattern =
    let options =
       if options.glob_cvs then
          { options with glob_cvsignore = load_cvsignore dir }
       else
          options
    in
-   let dirx = Unix.opendir dir in
+   let root_dir = filename_concat root dir in
+   let dirx = Unix.opendir root_dir in
    let rec collect dirs names =
       let name =
          try Some (Unix.readdir dirx) with
@@ -320,15 +586,16 @@ let glob_dir_pattern options dirs names dir pattern =
                None
       in
          match name with
-            Some ""
+            None ->
+               dirs, names
+          | Some ""
           | Some "."
           | Some ".." ->
                collect dirs names
-          | None ->
-               dirs, names
           | Some name ->
-               let filename = Filename.concat dir name in
-               let dir_flag = is_dir filename in
+               let root_name = filename_concat root_dir name in
+               let file_name = filename_concat dir name in
+               let dir_flag = is_dir root_name in
                let dirs, names =
                   if (options.glob_dot || name.[0] <> '.')
                      && (not options.glob_dirs || dir_flag)
@@ -338,9 +605,9 @@ let glob_dir_pattern options dirs names dir pattern =
                      && not (options.glob_cvsignore name)
                   then
                      if dir_flag then
-                        filename :: dirs, names
+                        file_name :: dirs, names
                      else
-                        dirs, filename :: names
+                        dirs, file_name :: names
                   else
                      dirs, names
                in
@@ -350,18 +617,18 @@ let glob_dir_pattern options dirs names dir pattern =
       Unix.closedir dirx;
       dirs_names
 
-let glob_dirs_pattern options dirs pattern =
+let glob_dirs_pattern options root dirs pattern =
    let rec collect dirs' names' dirs =
       match dirs with
          dir :: dirs ->
-            let dirs', names' = glob_dir_pattern options dirs' names' dir pattern in
+            let dirs', names' = glob_dir_pattern options root dirs' names' dir pattern in
                collect dirs' names' dirs
        | [] ->
             dirs', names'
    in
       collect [] [] dirs
 
-let glob_dirs_name options dirs name =
+let glob_dirs_name options root dirs name =
    if is_glob_name options name then
       let options =
          if name <> "" && name.[0] = '.' then
@@ -369,33 +636,69 @@ let glob_dirs_name options dirs name =
          else
             options
       in
-      let pattern = regexp_of_shell_pattern name in
-         glob_dirs_pattern options dirs pattern
+      let pattern = regexp_of_shell_pattern options name in
+         glob_dirs_pattern options root dirs pattern
    else
-      List.fold_left (fun (dirs, names) dir ->
-            let filename = Filename.concat dir name in
-               try
-                  let stat = Unix.stat filename in
-                     if stat.Unix.st_kind = Unix.S_DIR then
-                        filename :: dirs, names
-                     else
-                        dirs, filename :: names
-               with
-                  Unix.Unix_error _ ->
-                     dirs, names) ([], []) dirs
+      let name = unescape options name in
+         List.fold_left (fun (dirs, names) dir ->
+               let root_dir  = filename_concat root dir in
+               let root_name = filename_concat root_dir name in
+               let file_name = filename_concat dir name in
+                  try
+                     let stat = Unix.stat root_name in
+                        if stat.Unix.st_kind = Unix.S_DIR then
+                           file_name :: dirs, names
+                        else
+                           dirs, file_name :: names
+                  with
+                     Unix.Unix_error _ ->
+                        dirs, names) ([], []) dirs
+
+(*
+ * Perform tilde expansion.
+ *)
+let null_root = ""
+
+let glob_tilde options root dir path =
+   if options.glob_tilde then
+      match path with
+         name :: rest ->
+            let len = String.length name in
+               if len > 0 && name.[0] = '~' then
+                  if len = 1 then
+                     null_root, options.glob_home, rest
+                  else
+                     let user = String.sub name 1 (len - 1) in
+                     let dir =
+                        try getpwnam user with
+                           Not_found ->
+                              raise (Failure ("Unknown user: " ^ user))
+                     in
+                        null_root, dir, rest
+               else if len > 1 && name.[0] = '\\' && name.[1] = '~' then
+                  root, dir, String.sub name 1 (len - 1) :: rest
+               else
+                  root, dir, path
+       | [] ->
+            root, dir, path
+   else
+      root, dir, path
 
 (*
  * Perform a glob expansion on a single path.
  *)
-let glob_name options dir name =
+let glob_match options root dir name =
    (* Split the path into components *)
-   let dir, path =
-      match filename_path name with
+   let root, dir, path =
+      match filename_path options name with
          RelativePath path ->
-            dir, path
+            root, dir, path
        | AbsolutePath (root, path) ->
-            string_of_root root, path
+            null_root, string_of_root root, path
    in
+
+   (* Do ~ expansion *)
+   let root, dir, path = glob_tilde options root dir path in
 
    (* Walk through the path *)
    let rec glob dirs path =
@@ -403,13 +706,39 @@ let glob_name options dir name =
          [] ->
             dirs, []
        | [name] ->
-            glob_dirs_name options dirs name
+            glob_dirs_name options root dirs name
        | name :: path ->
             let options = { options with glob_dirs = true } in
-            let dirs, _ = glob_dirs_name options dirs name in
+            let dirs, _ = glob_dirs_name options root dirs name in
                glob dirs path
    in
       glob [dir] path
+
+(*
+ * Don't glob-expand unless it is a glob pattern.
+ *)
+let glob_name options root dir name =
+   if is_glob_name options name then
+      let dirs, names = glob_match options root dir name in
+         if dirs = [] && names = [] then
+            match options.glob_check with
+               NoMatchError ->
+                  raise (Failure (name ^ ": bad match"))
+             | NoMatchPreserve ->
+                  [], [name]
+             | NoMatchIgnore ->
+                  [], []
+         else
+            dirs, names
+   else
+      let name      = unescape options name in
+      let root_dir  = filename_concat root dir in
+      let root_name = filename_concat root_dir name in
+      let file_name = filename_concat dir name in
+         if is_dir root_name then
+            [file_name], []
+         else
+            [], [file_name]
 
 (*
  * Perform the actual glob.
@@ -418,10 +747,26 @@ let glob options dir names =
    let options = glob_options_of_list options in
    let names = glob_braces options names in
       List.fold_left (fun (dirs, names) name ->
-            let dirs', names' = glob_name options dir name in
+            let dirs', names' = glob_name options dir "" name in
             let dirs = List.rev_append dirs' dirs in
             let names = List.rev_append names' names in
                dirs, names) ([], []) names
+
+(*
+ * Glob an argv list.
+ * We have to be a little more careful to preserve the order.
+ *)
+let glob_argv options dir names =
+   let options = glob_options_of_list options in
+   let names = glob_braces options names in
+   let names =
+      List.fold_left (fun names name ->
+            let dirs', names' = glob_name options dir "" name in
+            let names' = List.append dirs' names' in
+            let names' = List.sort Pervasives.compare names' in
+               List.rev_append names' names) [] names
+   in
+      List.rev names
 
 (************************************************************************
  * Directory listings.
@@ -446,7 +791,7 @@ let list_dir_exn options hidden_dirs dirs names dirname =
                hidden_dirs, dirs, names
           | Some name ->
                let hidden_dirs, dirs, names =
-                  let filename = Filename.concat dirname name in
+                  let filename = filename_concat dirname name in
                   let dir_flag = is_dir filename in
                      if (options.glob_dot || name.[0] <> '.')
                         && (dir_flag || not options.glob_dirs)

@@ -121,19 +121,19 @@ let stop s =
 let char0 = Char.code '0'
 
 let rec zeros s i =
-   (i < 0) ||
-   match s.[i] with
+   (i < 0) || match s.[i] with
       '1'..'9' -> false
     | '0' -> zeros s (pred i)
     | _ -> true
+
 let rec pad_with_underscore s i =
    if i <= 0 then true else
-   let i = pred i in
-   match s.[i] with
-      '_' -> pad_with_underscore s i
-    | '0' -> not (zeros s (pred i))
-    | '1' .. '9' -> true
-    | _ -> false
+      let i = pred i in
+         match s.[i] with
+            '_' -> pad_with_underscore s i
+          | '0' -> not (zeros s (pred i))
+          | '1' .. '9' -> true
+          | _ -> false
 
 let add =
    let rec loop s fact n i =
@@ -216,7 +216,7 @@ let is_interned (i, _) =
  * If the symbol is not a defined symbol,
  * print the index.
  *)
-let string_of_symbol (i,s) =
+let string_of_symbol (i, s) =
    let len = String.length s in
    let s = if pad_with_underscore s len then s ^ "_" else s in
       if i = 0 then

@@ -111,6 +111,11 @@ val js_escaped : string -> string
 val unescape : string -> string
 
 (*
+ * Test if a string is completely whitespace.
+ *)
+val is_white : string -> bool
+
+(*
  * Split a string str into a list of substrings.
  * The string is split on any character in delims.  Quotations
  * are not split.
@@ -125,6 +130,30 @@ val tokens : string -> string -> string -> string list
 val tokens_std : string -> string list
 
 (*
+ * Tokens_collect is an optimized form of token parsing
+ * based on standard whitespace and quotes, and it
+ * allows for incremental parsing.
+ *
+ * For example:
+ *    let buf = tokens_empty in
+ *    let tokens = tokens_string tokens " Foo \"bar \\" baz" in
+ *    let tokens = tokens_data   tokens "  a \"b c   " in
+ *    let tokens = tokens_string tokens "boo\" bum" in
+ *       tokens_flush tokens
+ * returns
+ *    ["Foo"; "\"bar \\" baz  a \"b c   boo\""; "a"]
+ *)
+type 'a tokens
+
+val tokens_create : (string -> 'a) -> ('a -> string) -> 'a tokens
+val tokens_flush  : 'a tokens -> 'a list
+val tokens_string : 'a tokens -> string -> 'a tokens
+val tokens_data   : 'a tokens -> string -> 'a tokens
+val tokens_break  : 'a tokens -> 'a tokens
+val tokens_add    : 'a tokens -> 'a -> 'a tokens
+val tokens_atomic : 'a tokens -> 'a -> 'a tokens
+
+(*
  * A third way to split into substrings.
  * The tokens are separated by white space,
  * and tokens may be quoted.
@@ -133,6 +162,25 @@ val tokens_std : string -> string list
  *)
 val parse_args_list : string -> string list list
 val parse_args : string -> string list
+
+(*
+ * Reconstruct an argv string from a list of strings.
+ * The strings are concatenated with intervening whitespace.
+ * If any of the strings contains whitespace or non-outermost
+ * quotes, it is quoted, and inner quotes are escaped.
+ *)
+val concat_argv : string list -> string
+
+(*
+ * Construct a string from the list, separating by whitespace.
+ * Quotes are added if the string contains special characters.
+ *)
+val string_argv : string list -> string
+
+(*
+ * Same as string_argv, but always quote the result.
+ *)
+val quote_argv : string list -> string
 
 (*
  * Add a prefix to every string, and concatenate.
