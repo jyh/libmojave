@@ -280,24 +280,23 @@ let with_state id f x =
 let release handle =
    let len = Queue.length handle.handle_queue in
       if len <> 0 then
-         let thread = Queue.take handle.handle_queue in
-            match Queue.take handle.handle_queue with
-               RequestRead thread ->
-                  Condition.signal thread.thread_cond;
-                  let rec unblock i =
-                     if i <> 0 then
-                        let info = Queue.peek handle.handle_queue in
-                           match info with
-                              RequestRead thread ->
-                                 ignore (Queue.take handle.handle_queue);
-                                 Condition.signal thread.thread_cond;
-                                 unblock (pred i)
-                            | RequestWrite _ ->
-                                 ()
-                  in
-                     unblock (pred len)
-             | RequestWrite thread ->
-                  Condition.signal thread.thread_cond
+         match Queue.take handle.handle_queue with
+            RequestRead thread ->
+               Condition.signal thread.thread_cond;
+               let rec unblock i =
+                  if i <> 0 then
+                     let info = Queue.peek handle.handle_queue in
+                        match info with
+                           RequestRead thread ->
+                              ignore (Queue.take handle.handle_queue);
+                              Condition.signal thread.thread_cond;
+                              unblock (pred i)
+                         | RequestWrite _ ->
+                              ()
+               in
+                  unblock (pred len)
+          | RequestWrite thread ->
+               Condition.signal thread.thread_cond
 
 (*
  * Get the lock record.

@@ -38,8 +38,6 @@ let debug_string =
 (*
  * A scratch buffer used by several functions in this module.
  *)
-let scratch_buf = Buffer.create 17
-
 let code0 = Char.code '0'
 let codea = Char.code 'a'
 let codeA = Char.code 'A'
@@ -426,13 +424,13 @@ let unescape s =
  * Trim all whitespace from a string, respecting quotes.
  *)
 let trim_all quotes delims str =
-   Buffer.clear scratch_buf;
-   ignore (tokens_fold (fun first s off len ->
-                 if not first then
-                    Buffer.add_char scratch_buf ' ';
-                 Buffer.add_substring scratch_buf s off len;
-                 false) true quotes delims str);
-   Buffer.contents scratch_buf
+   let scratch_buf = Buffer.create 17 in
+      ignore (tokens_fold (fun first s off len ->
+                    if not first then
+                       Buffer.add_char scratch_buf ' ';
+                    Buffer.add_substring scratch_buf s off len;
+                    false) true quotes delims str);
+      Buffer.contents scratch_buf
 
 let trim_std = trim_all quotes white
 
@@ -560,6 +558,7 @@ let parse_args s =
  * Concatenate strings.
  *)
 let prepend sep sl =
+   let scratch_buf = Buffer.create 17 in
    let collect s =
       Buffer.add_string scratch_buf sep;
       Buffer.add_string scratch_buf s
@@ -576,6 +575,7 @@ let prepend sep sl =
  *)
 let string_of_file name =
    let inx = open_in_bin name in
+   let scratch_buf = Buffer.create 17 in
    let rec loop () =
       Buffer.add_char scratch_buf (input_char inx);
       loop ()
