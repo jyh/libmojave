@@ -60,6 +60,7 @@ sig
    val forall2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
    val forall : (key -> 'a -> bool) -> 'a t -> bool
    val exists : (key -> 'a -> bool) -> 'a t -> bool
+   val find_iter : (key -> 'a -> 'b option) -> 'a t -> 'b option
    val isect_mem : 'a t -> (key -> bool) -> 'a t
 
    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
