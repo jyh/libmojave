@@ -6,3 +6,5 @@
 *-native.*
 *.lib
 Makefile.dep
+*.omc
+*.omo

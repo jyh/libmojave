@@ -4,3 +4,5 @@
 .#*
 *.cm*
 Makefile.dep
+*.omc
+*.omo

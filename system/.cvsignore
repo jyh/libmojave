@@ -6,3 +6,5 @@
 Makefile.dep
 lm_marshal_sig.ml
 lm_marshal_sig.mli
+*.omc
+*.omo

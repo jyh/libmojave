@@ -2,3 +2,5 @@
 *.cma
 *.a
 *.lib
+*.omc
+*.omo
