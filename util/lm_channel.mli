@@ -49,6 +49,7 @@ val descr         : t -> Unix.file_descr
 val close         : t -> unit
 val info          : t -> int * kind * mode * bool
 val of_string     : string -> t
+val of_substring  : string -> int -> int -> t
 
 (*
  * Set text vs binary mode.

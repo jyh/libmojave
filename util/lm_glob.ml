@@ -41,6 +41,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_lexer
 open Lm_printf
 open Lm_filename_util
 
@@ -379,7 +380,7 @@ let add_shell_disjunct options buf s =
 let regexp_of_shell_pattern options s =
    let buf = Buffer.create 32 in
       add_shell_pattern options buf s;
-      Str.regexp (Buffer.contents buf)
+      LmStr.regexp (Buffer.contents buf)
 
 let make_filter options sl default =
    let buf = Buffer.create 32 in
@@ -387,8 +388,8 @@ let make_filter options sl default =
          s :: sl ->
             add_shell_pattern options buf s;
             List.iter (add_shell_disjunct options buf) sl;
-            let pattern = Str.regexp (Buffer.contents buf) in
-               (fun name -> Str.string_match pattern name 0)
+            let pattern = LmStr.regexp (Buffer.contents buf) in
+               (fun name -> LmStr.string_match pattern name 0)
        | [] ->
             (fun name -> default)
 
@@ -434,7 +435,7 @@ let stdignore =
    let buf = Buffer.create 256 in
       Buffer.add_string buf "^\\.cvsignore$";
       List.iter (add_shell_disjunct default_glob_options buf) default_patterns;
-      Str.regexp (Buffer.contents buf)
+      LmStr.regexp (Buffer.contents buf)
 
 (*
  * Load the ignore expression from .cvsignore.
@@ -457,7 +458,7 @@ let load_cvsignore dirname =
       Buffer.add_string buf "^\\.cvsignore$";
       List.iter (add_shell_disjunct default_glob_options buf) default_patterns;
       List.iter (add_shell_disjunct default_glob_options buf) patterns;
-      Str.regexp (Buffer.contents buf)
+      LmStr.regexp (Buffer.contents buf)
 
 let load_cvsignore dirname =
    let pattern =
@@ -465,7 +466,7 @@ let load_cvsignore dirname =
          Sys_error _ ->
             stdignore
    in
-      (fun name -> Str.string_match pattern name 0)
+      (fun name -> LmStr.string_match pattern name 0)
 
 (*
  * Check if a filename refers to a directory.
@@ -599,7 +600,7 @@ let glob_dir_pattern options root dirs names dir pattern =
                let dirs, names =
                   if (options.glob_dot || name.[0] <> '.')
                      && (not options.glob_dirs || dir_flag)
-                     && Str.string_match pattern name 0
+                     && LmStr.string_match pattern name 0
                      && not (options.glob_ignore name)
                      && (options.glob_allow name)
                      && not (options.glob_cvsignore name)

@@ -146,6 +146,24 @@ sig
    val matches : t -> Input.t -> bool
 end
 
+(*
+ * Str module replacement.
+ *)
+module LmStr :
+sig
+   type t
+
+   (*
+    * Construct a regular expression from a string.
+    *)
+   val regexp : string -> t
+
+   (*
+    * Check for a match.
+    *)
+   val string_match : t -> string -> int -> bool
+end
+
 (*!
  * @docoff
  *

@@ -239,7 +239,6 @@ let create id file kind mode binary fd =
       }
 
 let of_string s =
-   let s = String.copy s in
    let len = String.length s in
       { channel_id     = 0;
         channel_fd     = None;
@@ -271,6 +270,11 @@ let of_string s =
         write_fun    = null_writer
       }
 
+let of_string s =
+   of_string (String.copy s)
+
+let of_substring s off len =
+   of_string (String.sub s off len)
 
 let info channel =
    let { channel_id = id;

@@ -493,7 +493,7 @@ struct
    let inside_word_delimiter = RegexSequence  [RegexLimitPrev word_chars; RegexLimitNext word_chars]
 
    let left_line_delimiter   = RegexLimitPrev [bof; Char.code '\r'; Char.code '\n']
-   let right_line_delimiter  = RegexChoice    [RegexSymbol [Char.code '\r'; Char.code '\n'];
+   let right_line_delimiter  = RegexChoice    [RegexSymbol [Char.code '\r'; Char.code '\n'; eof];
                                                RegexSequence [RegexSymbol [Char.code '\r'];
                                                               RegexSymbol [Char.code '\n']]]
    let bof_delimiter         = RegexLimitPrev [bof]
@@ -2200,6 +2200,41 @@ struct
                   dfa
       in
          matches dfa channel
+end
+
+(************************************************************************
+ * Simplified Str replacement.
+ *)
+module LmAction =
+struct
+   type action = int
+
+   let pp_print_action = pp_print_int
+end
+
+module LmLexer = MakeLexer (Lm_channel.LexerInput) (LmAction)
+
+module LmStr =
+struct
+   type t = LmLexer.t
+
+   (*
+    * Create a regular expression.
+    *)
+   let regexp s =
+      LmLexer.add_clause LmLexer.empty 0 s
+
+   (*
+    * Perform the match.
+    *)
+   let string_match info s off =
+      let input = Lm_channel.of_substring s off (String.length s - off) in
+         try
+            let _ = LmLexer.lex info input in
+               true
+         with
+            Failure _ ->
+               false
 end
 
 (*!
