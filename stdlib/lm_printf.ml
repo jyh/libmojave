@@ -22,21 +22,95 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Lm_pervasives
-open Lm_format
+open Format
+
+(*
+ * For now, just use normal output channels.
+ *)
+type out_channel = formatter
+
+(*
+ * Standard channels.
+ *)
+let stdout = std_formatter
+let stderr = err_formatter
+let stdstr = str_formatter
+
+(*
+ * Get the string from the string formatter.
+ *)
+let flush_stdstr = flush_str_formatter
+
+(*
+ * Open new output channels.
+ *)
+let open_out name =
+   formatter_of_out_channel (open_out name)
+
+let open_out_bin name =
+   formatter_of_out_channel (open_out_bin name)
+
+(*
+ * Format during printing.
+ *)
+let pp_print_rbuffer buf rbuffer =
+   let s = Lm_rformat_text.print_text_string Lm_rformat.default_width rbuffer in
+      pp_print_string buf s
+
+(*
+ * Output.
+ *)
+let output_char       = pp_print_char
+let output_string     = pp_print_string
+let output_rbuffer    = pp_print_rbuffer
+
+(*
+ * Normal printing.
+ *)
+let print_char    = pp_print_char std_formatter
+let print_int     = pp_print_int std_formatter
+let print_string  = pp_print_string std_formatter
+let print_rbuffer = pp_print_rbuffer std_formatter
+
+let prerr_char    = pp_print_char err_formatter
+let prerr_int     = pp_print_int err_formatter
+let prerr_string  = pp_print_string err_formatter
+let prerr_rbuffer = pp_print_rbuffer err_formatter
+
+(*
+ * Print a newline and flush.
+ *)
+let flush buf  = pp_print_flush buf ()
+let eflush buf = pp_print_newline buf ()
 
 (*
  * Printing functions.
  *)
-let printf  = PervasivesPrintf.printf
-let eprintf = PervasivesPrintf.eprintf
-let sprintf = PervasivesPrintf.sprintf
-let fprintf = PervasivesPrintf.fprintf
+let printf  = printf
+let eprintf = eprintf
+let sprintf = sprintf
+let fprintf = fprintf
+let bprintf = bprintf
 
 (*
- * Flushing.
+ * List separated by semicolons.
  *)
-let eflush = eflush
+let rec print_any_list print out l =
+   match l with
+      [h] ->
+         print out h
+    | h::t ->
+         print out h;
+         output_string out "; ";
+         print_any_list print out t
+    | [] ->
+         ()
+
+let print_string_list =
+   print_any_list pp_print_string
+
+let print_int_list =
+   print_any_list pp_print_int
 
 (*
  * -*-

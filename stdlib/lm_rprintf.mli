@@ -1,16 +1,9 @@
 (*
- * Oveeride some basic functions, mostly for debugging hooks.
+ * Override the usual out_channels to use the Lm_buffer module.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2000 Jason Hickey, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,14 +20,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * jyh@cs.caltech.edu
  *)
-
-(*
- * Override of input functions is mainly for debugging.
- *)
-val open_in     : string -> in_channel
-val open_in_bin : string -> in_channel
 
 (*
  * Type t of buffers.
@@ -47,11 +34,6 @@ type out_channel
 val stdout : out_channel
 val stderr : out_channel
 val stdstr : out_channel
-
-(*
- * Capailibities.
- *)
-val capability_divert : bool
 
 (*
  * Get the string from the stdstr channel.
@@ -91,15 +73,13 @@ val flush  : out_channel -> unit
 val eflush : out_channel -> unit
 
 (*
- * Also, include the printf-style functions.
+ * Printing.
  *)
-module PervasivesPrintf :
-sig
-   val eprintf : ('a, out_channel, unit) format -> 'a
-   val printf  : ('a, out_channel, unit) format -> 'a
-   val sprintf : ('a, unit, string) format -> 'a
-   val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
-end
+val eprintf : ('a, out_channel, unit) format -> 'a
+val printf  : ('a, out_channel, unit) format -> 'a
+val sprintf : ('a, unit, string) format -> 'a
+val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
+val bprintf : Buffer.t -> ('a, out_channel, unit) format -> 'a
 
 (*
  * List printing helpers.
@@ -111,7 +91,7 @@ val print_int_list : out_channel -> int list -> unit
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

@@ -24,7 +24,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_pervasives
 open Lm_printf
 
 (*

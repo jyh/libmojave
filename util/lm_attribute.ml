@@ -47,7 +47,6 @@
  * @end[license]
  *)
 open Lm_format
-open Lm_pervasives
 
 (************************************************************************
  * TYPES

@@ -18,7 +18,6 @@
  *)
 open Lm_format_util
 open Lm_string_util
-open Lm_pervasives
 open Lm_format
 
 

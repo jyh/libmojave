@@ -29,7 +29,6 @@
  *                               Added sets, tables, indices for
  *                               symbol pairs and triples
  *)
-open Lm_pervasives
 open Lm_format
 open Lm_debug
 
@@ -237,7 +236,7 @@ let rec pp_print_symbol_list buf vl =
          ()
 
 let print_symbol out v =
-   output_string out (string_of_symbol v)
+   Lm_printf.output_string out (string_of_symbol v)
 
 let rec print_symbol_list out vl =
    match vl with
@@ -273,10 +272,10 @@ let string_of_ext_symbol (i, s) =
       if i = 0 then
          s
       else
-         Lm_printf.sprintf "%s%d" s i
+         sprintf "%s%d" s i
    in
       if has_special_char s then
-         Lm_printf.sprintf "`\"%s\"" s
+         sprintf "`\"%s\"" s
       else
          s
 

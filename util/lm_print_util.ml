@@ -5,7 +5,6 @@
  *)
 open Lm_symbol
 open Lm_printf
-open Lm_pervasives
 
 (*
  * Blocks indents by this many spaces.

@@ -16,7 +16,7 @@ STDLIB_FILES =\
 	lm_rformat_tex\
 	lm_make_printf\
 	lm_format\
-	lm_pervasives\
+	lm_rprintf\
 	lm_printf\
 	lm_array_util\
 	lm_string_util\

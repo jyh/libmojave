@@ -1,16 +1,9 @@
 (*
- * Override some basic functions, mostly for debugging.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * @begin[license]
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,15 +20,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
-open FORMAT
-
-(*
- * Override input functions for debugging.
- *)
-let open_in = Pervasives.open_in
-let open_in_bin = Pervasives.open_in_bin
+open Lm_format
 
 (*
  * For now, just use normal output channels.
@@ -62,25 +50,6 @@ let open_out name =
 
 let open_out_bin name =
    formatter_of_out_channel (open_out_bin name)
-
-#ifdef FORMAT_STD
-(*
- * The standard Format does not support divert,
- * and it does not allow diversion.
- *)
-let capability_divert = false
-
-let pp_print_rbuffer buf rbuffer =
-   let s = Lm_rformat_text.print_text_string Lm_rformat.default_width rbuffer in
-      pp_print_string buf s
-#endif
-
-#ifdef FORMAT_LM
-(*
- * Lm_format supports rbuffer printing and diversion.
- *)
-let capability_divert = true
-#endif
 
 (*
  * Output.
@@ -111,13 +80,11 @@ let eflush buf = pp_print_newline buf ()
 (*
  * Printing functions.
  *)
-module PervasivesPrintf =
-struct
-   let printf  = printf
-   let eprintf = eprintf
-   let sprintf = sprintf
-   let fprintf = fprintf
-end
+let printf  = printf
+let eprintf = eprintf
+let sprintf = sprintf
+let fprintf = fprintf
+let bprintf = bprintf
 
 (*
  * List separated by semicolons.
@@ -139,10 +106,12 @@ let print_string_list =
 let print_int_list =
    print_any_list pp_print_int
 
-(*
+(*!
+ * @docoff
+ *
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

@@ -29,7 +29,7 @@
  *                               Added sets, tables, indices for
  *                               symbol pairs and triples
  *)
-open Lm_pervasives
+open Lm_printf
 
 (*
  * Representation of symbols.
