@@ -6,49 +6,6 @@ include Files
 CFILES = $(FILES)
 
 #
-# Do you want to include readline support in libmojave?
-#
-READLINE_CFLAGS =
-READLINE_LDFLAGS =
-
-if $(READLINE_ENABLED)
-    READLINE_CFLAGS =\
-	-DREADLINE\
-        -DRL_COMPLETION_MATCHES=rl_completion_matches\
-        -DRL_CP_TYPE=rl_compentry_func_t\
-        -DRL_CPP_TYPE=rl_completion_func_t
-    READLINE_LDFLAGS = -cclib -lreadline -cclib -lncurses
-    export
-
-#
-# Do you want to include curses support?
-#
-NCURSES_CFLAGS =
-NCURSES_LDFLAGS =
-
-if $(NCURSES_ENABLED)
-    NCURSES_CFLAGS = -DNCURSES
-    NCURSES_LDFLAGS = -cclib -lncurses
-    export
-
-#
-# Do you want to include curses support?
-#
-SSL_CFLAGS =
-SSL_LDFLAGS =
-
-if $(SSL_ENABLED)
-    SSL_CFLAGS = -DSSL_ENABLED
-    SSL_LDFLAGS = -cclib -lssl
-    INCLUDES += -Ic:/OpenSSL/include -I/usr/kerberos/include
-    export
-
-#
-# Special CFLAGS
-#
-CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) $(SSL_CFLAGS)
-
-#
 # Libraries
 #
 StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
