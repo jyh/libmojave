@@ -41,7 +41,6 @@ struct
 (*
 IFDEF ENSEMBLE THEN
 
-   open Ensemble
 
    (*
     * We allocate in Iovec chunks, and we need to keep a subrange.
