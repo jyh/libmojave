@@ -3,10 +3,16 @@
 #
 if $(THREADS_ENABLED)
     lm_thread_core.ml: lm_thread_core_system.ml
-	$(symlink $<, $@)
+        $(symlink $<, $@)
+
+    lm_thread_pool.ml: lm_thread_pool_system.ml
+        $(symlink $<, $@)
 else
     lm_thread_core.ml: lm_thread_core_null.ml
-	$(symlink $<, $@)
+        $(symlink $<, $@)
+
+    lm_thread_pool.ml: lm_thread_pool_null.ml
+        $(symlink $<, $@)
 
 #
 # Library

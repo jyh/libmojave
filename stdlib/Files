@@ -56,4 +56,5 @@ STDLIB_FILES =\
 	lm_splay_linear_set\
 	lm_index\
 	lm_serial_map\
-	lm_splay
+	lm_splay\
+	lm_thread_pool
