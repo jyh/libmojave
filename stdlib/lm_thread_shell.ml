@@ -28,6 +28,7 @@
 open Lm_int_set
 open Lm_thread
 open Lm_thread_sig
+open Lm_printf
 
 (*
  * List of states, indexed by pid.
@@ -85,18 +86,23 @@ let current_entry =
  *)
 let create hidden =
    State.write info_entry (fun info ->
-         let { info_index = index;
+         let { info_index = pid;
                info_jobs = jobs
              } = info
          in
+         let state = State.create () in
          let job =
             { job_hidden = hidden;
-              job_state = State.create ()
+              job_state = state
             }
          in
-            info.info_jobs <- IntTable.add jobs index job;
-            info.info_index <- succ index;
-            index)
+            State.with_state state (fun () ->
+                  State.write current_entry (fun current ->
+                        current.current_pid <- pid;
+                        current.current_state <- state)) ();
+            info.info_jobs <- IntTable.add jobs pid job;
+            info.info_index <- succ pid;
+            pid)
 
 (*
  * Get the pid for a string.

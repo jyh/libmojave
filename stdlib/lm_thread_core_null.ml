@@ -61,6 +61,9 @@ struct
 
    let signal () =
       ()
+
+   let broadcast () =
+      ()
 end
 
 (*

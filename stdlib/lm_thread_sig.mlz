@@ -42,6 +42,7 @@ sig
    val create : unit -> t
    val wait : t -> mutex -> unit
    val signal : t -> unit
+   val broadcast : t -> unit
 end
 
 (*

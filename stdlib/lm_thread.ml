@@ -53,9 +53,10 @@ struct
    type t     = ConditionCore.t
    type mutex = MutexCore.t
 
-   let create = ConditionCore.create
-   let wait   = ConditionCore.wait
-   let signal = ConditionCore.signal
+   let create    = ConditionCore.create
+   let wait      = ConditionCore.wait
+   let signal    = ConditionCore.signal
+   let broadcast = ConditionCore.broadcast
 end
 
 (*
@@ -116,6 +117,7 @@ type 'a info =
    { info_default         : 'a;
      info_debug           : string;
      info_fork            : ('a -> 'a);
+     mutable info_forks   : IntSet.t;
      mutable info_entries : 'a handle IntTable.t
    }
 
@@ -178,6 +180,26 @@ let with_lock debug f x =
          Mutex.unlock state.state_lock;
          if !debug_lock then
             eprintf "Unlocking: %t: %s (exception)@." print_thread_id debug;
+         raise exn
+
+(*
+ * Release the lock temporarily.
+ *)
+let with_unlock debug f x =
+   if !debug_lock then
+      eprintf "\tUnlocking temporarily: %t: %s@." print_thread_id debug;
+   Mutex.unlock state.state_lock;
+   try
+      let result = f x in
+         Mutex.lock state.state_lock;
+         if !debug_lock then
+            eprintf "\tRelocking: %t: %s@." print_thread_id debug;
+         result
+   with
+      exn ->
+         Mutex.lock state.state_lock;
+         if !debug_lock then
+            eprintf "Relocking: %t: %s (exception)@." print_thread_id debug;
          raise exn
 
 (*
@@ -304,28 +326,50 @@ let release handle =
  * Just in case, check the lock.
  *)
 let rec fork_handle thread info =
-   try IntTable.find info.info_entries thread.thread_state with
-      Not_found ->
-         let handle_value =
-            if thread.thread_parent = thread.thread_id then
-               info.info_default
-            else
-               let parent = get_parent_info thread in
-               let parent_handle = fork_handle parent info in
-                  info.info_fork parent_handle.handle_value
-         in
-         let handle =
-            { handle_value      = handle_value;
-              handle_debug      = Printf.sprintf "%s[%d]" info.info_debug thread.thread_id;
-              handle_state      = HandleUnlocked;
-              handle_queue      = Queue.create ();
-              handle_readers    = 0;
-              handle_writers    = 0;
-              handle_active     = IntTable.empty
-            }
-         in
-            info.info_entries <- IntTable.add info.info_entries thread.thread_state handle;
-            handle
+   let state_id = thread.thread_state in
+      try IntTable.find info.info_entries state_id with
+         Not_found ->
+            if !debug_lock then
+               eprintf "Forking handle: %s: state=%d parent=%d this=%d@." (**)
+                  info.info_debug
+                  state_id
+                  thread.thread_parent
+                  thread.thread_id;
+
+            (* Prevent recursion *)
+            let () = info.info_forks <- IntSet.add info.info_forks state_id in
+
+            (* Get the parent's value *)
+            let handle_value =
+               if thread.thread_parent = thread.thread_id then
+                  info.info_default
+               else
+                  let parent = get_parent_info thread in
+                  let parent_handle = fork_handle parent info in
+                     parent_handle.handle_value
+            in
+
+            (* Call the fork function *)
+            let handle_value = with_unlock "fork_hancle" info.info_fork handle_value in
+            let handle =
+               { handle_value      = handle_value;
+                 handle_debug      = Printf.sprintf "%s[%d]" info.info_debug state_id;
+                 handle_state      = HandleUnlocked;
+                 handle_queue      = Queue.create ();
+                 handle_readers    = 0;
+                 handle_writers    = 0;
+                 handle_active     = IntTable.empty
+               }
+            in
+               if !debug_lock then
+                  eprintf "Forked handle: %s: state=%d parent=%d this=%d@." (**)
+                     handle.handle_debug
+                     state_id
+                     thread.thread_parent
+                     thread.thread_id;
+               info.info_entries <- IntTable.add info.info_entries state_id handle;
+               info.info_forks <- IntSet.remove info.info_forks state_id;
+               fork_handle thread info
 
 let handle_of_info thread info =
    with_lock "handle_of_info" (fork_handle thread) info
@@ -579,6 +623,7 @@ let private_val debug x fork =
       { info_default = x;
         info_debug   = debug;
         info_fork    = fork;
+        info_forks   = IntSet.empty;
         info_entries = IntTable.empty
       }
    in

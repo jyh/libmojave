@@ -40,9 +40,10 @@ struct
    type t     = Condition.t
    type mutex = Mutex.t
 
-   let create = Condition.create
-   let wait   = Condition.wait
-   let signal = Condition.signal
+   let create    = Condition.create
+   let wait      = Condition.wait
+   let signal    = Condition.signal
+   let broadcast = Condition.broadcast
 end
 
 (*
