@@ -1257,7 +1257,7 @@ struct
          match clauses2 with
             (action, _, regex) :: clauses2 ->
                if ActionSet.mem actions action then
-                  id, clauses1
+                  collect id clauses1 clauses2
                else
                   collect (succ id) ((action, id, regex) :: clauses1) clauses2
           | [] ->
