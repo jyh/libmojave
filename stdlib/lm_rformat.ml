@@ -848,9 +848,7 @@ let rec search_lzone buf lmargin rmargin col maxx search =
                Text (len, _) ->
                   let col = col + len in
                      col, max col maxx
-             | Break (_, _, notake_len, _, _) ->
-                  let col = col + notake_len in
-                     col, max col maxx
+             | Break (_, _, notake_len, _, _)
              | CBreak (_, _, notake_len, _, _) ->
                   let col = col + notake_len in
                      col, max col maxx
