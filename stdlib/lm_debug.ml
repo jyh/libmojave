@@ -293,6 +293,9 @@ let debug_load =
         debug_value = false
       }
 
+let show_loading s =
+   if !debug_load then
+      Printf.eprintf s eflush
 
 (*
  * Split a string at a particular char.
@@ -327,6 +330,36 @@ let set_debug_flags flags =
          Failure _ ->
             debug_usage ();
             exit 1
+
+(************************************************************************
+ * Printing.
+ *)
+
+(*
+ * List separated by semicolons.
+ *)
+let rec print_any_list print out = function
+   [h] ->
+      print out h
+ | h::t ->
+      print out h;
+      output_string out "; ";
+      print_any_list print out t
+ | [] ->
+      ()
+
+let print_string_list =
+   print_any_list output_string
+
+let print_int_list =
+   print_any_list (fun out i -> fprintf out "%d" i)
+
+(*
+ * Print a newline and flush.
+ *)
+let eflush out =
+   output_char out '\n';
+   flush out
 
 (*
  * -*-

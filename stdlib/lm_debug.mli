@@ -40,6 +40,9 @@ type debug_info =
      debug_value : bool
    }
 
+(* if "load" debug is true, `show_load (s ^ "%t")' will print s to stderr and flush stderr *)
+val show_loading : ((out_channel -> unit) -> unit, out_channel, unit) format -> unit
+
 (*
  * Lm_debug flags.
  *)
@@ -74,6 +77,18 @@ val check_debug : unit -> unit
  * Interface with Arg module.
  *)
 val set_debug_flags : string -> unit
+
+(*
+ * Print a list of strings.
+ *)
+val print_any_list : (out_channel -> 'a -> unit) -> out_channel -> 'a list -> unit
+val print_string_list :  out_channel -> string list -> unit
+val print_int_list :  out_channel -> int list -> unit
+
+(*
+ * Flush output.
+ *)
+val eflush : out_channel -> unit
 
 (*
  * -*-

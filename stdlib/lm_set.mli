@@ -52,6 +52,7 @@ sig
    val remove : t -> elt -> t
    val union : t -> t -> t
    val inter : t -> t -> t
+   val intersectp : t -> t -> bool
    val diff : t -> t -> t
    val compare : t -> t -> int
    val equal : t -> t -> bool
@@ -72,6 +73,10 @@ sig
    val subtract_list : t -> elt list -> t
    val of_list : elt list -> t
    val to_list : t -> elt list
+
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
 end
 
 (*

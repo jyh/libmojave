@@ -9,7 +9,8 @@ CFILES =\
 	lm_raw\
 	lm_readline\
 	lm_rusage\
-	lm_terminfo
+	lm_terminfo\
+	lm_mmap
 
 #
 # Do you want to include readline support in libmojave?

@@ -49,6 +49,8 @@
 
 open Format
 
+open Lm_array_util
+
 (*
  * Elements.
  *)
@@ -74,6 +76,7 @@ sig
    val remove : t -> elt -> t
    val union : t -> t -> t
    val inter : t -> t -> t
+   val intersectp : t -> t -> bool
    val diff : t -> t -> t
    val compare : t -> t -> int
    val equal : t -> t -> bool
@@ -94,6 +97,10 @@ sig
    val subtract_list : t -> elt list -> t
    val of_list : elt list -> t
    val to_list : t -> elt list
+
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
 end
 
 (*
@@ -1139,7 +1146,7 @@ struct
       else
          log2 (succ i) j
 
-   let rec of_array depth max_depth elements off len =
+   let rec of_sorted_array depth max_depth elements off len =
       if len = 1 then
          if depth = max_depth then
             Red (elements.(off), Leaf, Leaf, 1)
@@ -1150,8 +1157,8 @@ struct
       else
          let len2 = len lsr 1 in
             Black (elements.(off + len2),
-                   of_array (succ depth) max_depth elements off len2,
-                   of_array (succ depth) max_depth elements (off + len2 + 1) (len - len2 - 1),
+                   of_sorted_array (succ depth) max_depth elements off len2,
+                   of_sorted_array (succ depth) max_depth elements (off + len2 + 1) (len - len2 - 1),
                    len)
 
    let of_list = function
@@ -1161,10 +1168,13 @@ struct
          Black (key, Leaf, Leaf, 1)
     | elements ->
          let elements = Array.of_list elements in
-         let length = Array.length elements in
+         let length = Lm_array_util.distinct compare elements in
          let max_depth = pred (log2 1 (succ length)) in
-            of_array 0 max_depth elements 0 length
+            of_sorted_array 0 max_depth elements 0 length
 
+   (*
+    * Convert to a list.
+    *)
    let rec to_list_aux l = function
       Black (key, left, right, _)
     | Red (key, left, right, _) ->
@@ -1460,6 +1470,48 @@ struct
     * Width.
     *)
    let cardinal = cardinality
+
+   (*
+    * Filtering operations.
+    *)
+   let rec mem_filt s = function
+      [] ->
+         []
+    | (h :: t) as l ->
+         if mem s h then
+            let rem = mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+         else
+            mem_filt s t
+
+   let rec not_mem_filt s = function
+      [] ->
+         []
+    | (h :: t) as l ->
+         if mem s h then
+            not_mem_filt s t
+         else
+            let rem = not_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+
+   let rec fst_mem_filt s = function
+      [] ->
+         []
+    | (((v, _) as h) :: t) as l ->
+         if mem s v then
+            let rem = fst_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+         else
+            fst_mem_filt s t
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t =

@@ -23,13 +23,34 @@
    a limited form of the full data structure returned by libc.  This contains
    the user and system runtimes, broken down into seconds and microseconds,
    for the requested processes.  *)
-type rusage = 
+type rusage_short =
    { ru_utime_sec  : int;
      ru_utime_usec : int;
      ru_stime_sec  : int;
      ru_stime_usec : int;
    }
 
+(*
+ * A more complete version of rusage.
+ *)
+type rusage =
+   { ru_utime : float;
+     ru_stime : float;
+     ru_maxrss : int;
+     ru_ixrss : int;
+     ru_idrss : int;
+     ru_isrss : int;
+     ru_minflt : int;
+     ru_majflt : int;
+     ru_nswap : int;
+     ru_inblock : int;
+     ru_oublock : int;
+     ru_msgsnd : int;
+     ru_msgrcv : int;
+     ru_nsignals : int;
+     ru_nvcsw : int;
+     ru_nivcsw : int
+   }
 
 (* rusage_who
    Who to report statistics on: the current process, or the aggregate of all
@@ -44,8 +65,12 @@ type rusage_who =
 
 (* getrusage_time who
    Returns the resource usage of the indicated process.  *)
-val getrusage_time : rusage_who -> rusage
+val getrusage_time : rusage_who -> rusage_short
 
+(*
+ * A more complete version of rusage.
+ *)
+val getrusage : unit -> rusage
 
 (* setrlimit_time time
    Sets the resource CPU limit for the current process to the indicated
@@ -58,4 +83,4 @@ val setrlimit_time : int -> unit
    Takes the rusage structure returned by getrusage_time, and computes the
    total compute time of the process.  Returns the pair (sec, usec) which
    indicate the process total running time.  *)
-val total_rusage : rusage -> int * int
+val total_rusage : rusage_short -> int * int

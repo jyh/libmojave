@@ -36,27 +36,21 @@ open Lm_debug
 let debug_symbol = ref false
 
 (*
- * We use a hashtable to manage symbols we have seen.
+ * We no longer use a hashtable.
+ * Symbols with a 0 index are interned.
  *)
 type symbol = int * string
+type var = symbol
 
-type t =
-   { hash : (string, symbol) Hashtbl.t;
-     mutable count : int
-   }
+let new_number =
+   let count = ref 100 in
+      fun () -> incr count; !count
 
 (*
- * A new symbol table.
+ * Get the integer suffix.
  *)
-let table =
-   { hash = Hashtbl.create 19;
-     count = 100
-   }
-
-let new_number () =
-   let index = succ table.count in
-      table.count <- index;
-      index
+let to_int (i, _) =
+   i
 
 (*
  * Mangle a string so it uses printable characters.
@@ -110,15 +104,32 @@ let stop s =
    eprintf "Bogus symbol %s@." s;
    false
 
-let add s =
-   (* assert (if (is_special s) then stop s else true); *)
-   try Hashtbl.find table.hash s with
-      Not_found ->
-         let index = succ table.count in
-         let symbol = index, s in
-            table.count <- index;
-            Hashtbl.add table.hash s symbol;
-            symbol
+let char0 = Char.code '0'
+
+let rec pad_with_underscore s i =
+   if i <= 0 then true else
+   let i = pred i in
+   match s.[i] with
+      '_' -> pad_with_underscore s i
+    | '0' .. '9' -> true
+    | _ -> false
+
+let add =
+   let rec loop s fact n i =
+      if i < 0 then
+         0, s
+      else
+         match s.[i] with
+            '_' ->
+               n, String.sub s 0 (if pad_with_underscore s i then i else i + 1)
+          | '0'..'9' as c ->
+               loop s (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
+          | _ ->
+               n, String.sub s 0 (succ i)
+   in
+      fun s -> loop s 1 0 (String.length s - 1)
+
+let make s i = (i, s)
 
 let add_mangle s =
    add (mangle s)
@@ -127,38 +138,12 @@ let reintern (_, s) =
    add s
 
 (*
- * Add a debugging symbol.
- *)
-let debug_add s =
-   try
-      let len = String.length s in
-      let i = String.rindex s '_' in
-      let j = int_of_string (String.sub s (i + 1) (len - i - 1)) in
-      let s = String.sub s 0 i in
-         j, s
-   with
-      Not_found
-    | Failure _ ->
-         add s
-
-(*
- * Get the symbol name.
- *)
-let to_string (_, s) =
-   s
-
-let to_int (i, _) =
-   i
-
-(*
  * Create a new symbol.
  * Don't add it to the table.
  *)
 let new_symbol_string s =
    (* assert (if is_special s then stop s else true); *)
-   let i = succ table.count in
-      table.count <- i;
-      i, s
+      new_number (), s
 
 let new_symbol (_, v) =
    new_symbol_string v
@@ -173,34 +158,57 @@ let new_symbol_pre pre (_, v) =
       new_symbol_string s
 
 (*
+ * Create a new symbol, avoiding the ones defined by the predicate.
+ *)
+let new_name (_, v) pred =
+   let rec search i =
+      let nv = i, v in
+         if pred nv then
+            search (succ i)
+         else
+            nv
+   in
+      search 0
+
+(*
  * Check if the symbol is in the table.
  *)
-let is_interned (i, s) =
-   try
-      let i', _ = Hashtbl.find table.hash s in
-         i' = i
-   with
-      Not_found ->
-         false
+let is_interned (i, _) =
+   i = 0
 
 (*
  * Printer.
  * If the symbol is not a defined symbol,
  * print the index.
  *)
-let string_of_symbol (i, s) =
-   try
-      let i', _ = Hashtbl.find table.hash s in
-         if i' = i then
-            s
-         else
-            Printf.sprintf "%s_%05d" s i
-   with
-      Not_found ->
-         Printf.sprintf "%s_%05d" s i
+let string_of_symbol (i,s) =
+   let len = String.length s in
+   let s = if pad_with_underscore s len then s ^ "_" else s in
+      if i=0 then s else s ^ string_of_int i
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
+
+let rec pp_print_symbol_list buf vl =
+   match vl with
+      [v] ->
+         pp_print_symbol buf v
+    | v :: vl ->
+         fprintf buf "%a, %a" pp_print_symbol v pp_print_symbol_list vl
+    | [] ->
+         ()
+
+let print_symbol out v =
+   output_string out (string_of_symbol v)
+
+let rec print_symbol_list out vl =
+   match vl with
+      [v] ->
+         print_symbol out v
+    | v :: vl ->
+         Printf.fprintf out "%a, %a" print_symbol v print_symbol_list vl
+    | [] ->
+         ()
 
 (*
  * Print extended symbols. Used in FIR printing.
@@ -223,15 +231,10 @@ let string_of_ext_symbol (i, s) =
             true
    in
    let s =
-      try
-         let i', _ = Hashtbl.find table.hash s in
-            if i' = i then
-               s
-            else
-               Printf.sprintf "%s_%05d" s i
-      with
-         Not_found ->
-            Printf.sprintf "%s_%05d" s i
+      if i = 0 then
+         s
+      else
+         Printf.sprintf "%s%d" s i
    in
       if has_special_char s then
          Printf.sprintf "`\"%s\"" s
@@ -244,18 +247,17 @@ let pp_print_ext_symbol buf v =
 (*
  * Compare for equality.
  *)
-let eq (i1, _) (i2, _) =
-   i1 = i2
+let eq (s1 : symbol) (s2 : symbol) =
+   s1 = s2
 
-let compare (i1, _) (i2, _) =
-   i1 - i2
+let compare = Pervasives.compare
 
 (*
  * Compare pair of symbols for equality.
  *)
 let compare_pair (s1, s2) (s1', s2') =
    let res = compare s1 s1' in
-   if (res = 0) then
+   if res = 0 then
       compare s2 s2'
    else
       res
@@ -265,7 +267,7 @@ let compare_pair (s1, s2) (s1', s2') =
  *)
 let compare_triple (s1, s2, s3) (s1', s2', s3') =
    let res = compare_pair (s1, s2) (s1, s2') in
-   if (res = 0) then
+   if res = 0 then
       compare s3 s3'
    else
       res

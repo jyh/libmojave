@@ -1,19 +1,11 @@
 #
 # Library
 #
-FILES =\
-	lm_debug\
-	lm_set\
-	lm_map\
-	lm_string_util\
-	lm_index\
-	lm_serial_map\
-	lm_splay\
-	lm_make_printf\
-	lm_rformat\
-	lm_format
+include Files
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), lmstdlib, $(FILES))
+OCamlLibraryInstall($(MPINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
     $(CLEAN)
+
+all: lmstdlib$(LIB_SUFFIX)

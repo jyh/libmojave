@@ -41,29 +41,19 @@ let debug_string =
  *)
 let scratch_buf = Buffer.create 17
 
-(*
- * Turn a string into hex.
- *)
-let hex_char =
-   let zero = Char.code '0' in
-   let a = Char.code 'a' - 10 in
-   let hex_char code =
-      if code < 10 then
-         Char.chr (code + zero)
-      else
-         Char.chr (code + a)
-   in
-      hex_char
+let code0 = Char.code '0'
+let codea = Char.code 'a'
+let codeA = Char.code 'A'
 
-let hexify s =
+(*
+ * Check all chars in the string.
+ *)
+let for_all f s =
    let len = String.length s in
-   let buf = String.create (2 * len) in
-      for i = 0 to pred len do
-         let code = Char.code s.[i] in
-            buf.[2 * i] <- hex_char ((code lsr 4) land 15);
-            buf.[2 * i + 1] <- hex_char (code land 15)
-      done;
-      buf
+   let rec check i =
+      (i = len) or (f s.[i] & check (succ i))
+   in
+      check 0
 
 (*
  * Find a char in a string.
@@ -80,6 +70,36 @@ let strchr s c =
          raise Not_found
    in
       aux 0
+
+(*
+ * Index of first char in a set.
+ *)
+let index_set s set =
+   let len = String.length s in
+   let rec loop i =
+      if i = len then
+         raise Not_found
+      else
+         let c = s.[i] in
+            if String.contains set c then
+               i
+            else
+               loop (succ i)
+   in
+      loop 0
+
+let rindex_set s set =
+   let rec loop i =
+      if i < 0 then
+         raise Not_found
+      else
+         let c = s.[i] in
+            if String.contains set c then
+               i
+            else
+               loop (i - 1)
+   in
+      loop (String.length s - 1)
 
 (*
  * Search for a pattern in the indicated buffer, within the start
@@ -115,8 +135,6 @@ let strpat buffer start len pattern =
 (*
  * Escape a string using the C conventions.
  *)
-let zero_char = Char.code '0'
-
 let c_escaped s =
    let len = String.length s in
    let buf = Buffer.create len in
@@ -132,9 +150,9 @@ let c_escaped s =
              | _ ->
                   let code = Char.code c in
                      Buffer.add_char buf '\\';
-                     Buffer.add_char buf (Char.chr (((code / 64) mod 8) + zero_char));
-                     Buffer.add_char buf (Char.chr (((code / 8) mod 8) + zero_char));
-                     Buffer.add_char buf (Char.chr ((code mod 8) + zero_char))
+                     Buffer.add_char buf (Char.chr (((code / 64) mod 8) + code0));
+                     Buffer.add_char buf (Char.chr (((code / 8) mod 8) + code0));
+                     Buffer.add_char buf (Char.chr ((code mod 8) + code0))
          in
             loop (succ i)
    in
@@ -350,7 +368,7 @@ let parse_args line =
                end
    and escape j k =
       if k = len then
-         raise (Invalid_argument ("String_util.parse_args: " ^ line))
+         raise (Invalid_argument ("Lm_string_util.parse_args: " ^ line))
          (* [String.sub buf 0 j] *)
       else
          let c,k =
@@ -458,17 +476,139 @@ let sub name s i len =
    else
       String.sub s i len
 
-(*
- * String sets and string tables
- *)
-module OrderedString = struct
-   type t = string
-   let compare = Pervasives.compare
-end
+let blit name froms i tos j len =
+   if !debug_string then
+      let from_len = String.length froms in
+      let to_len = String.length tos in
+         if i >= 0 & j >= 0 & len >= 0 & i + len < from_len & j + len < to_len then
+            String.blit froms i tos j len
+         else
+            begin
+               eprintf "String_util.blit_error: %s: %s %d %s %d %d@." name froms i tos j len;
+               raise (Failure "String_util.blit")
+            end
+   else
+      String.blit froms i tos j len
 
-module StringSet = Lm_set.LmMake (OrderedString)
-module StringTable = Lm_map.LmMake (OrderedString)
-module StringMTable = Lm_map.LmMakeList (OrderedString)
+let set name s i c =
+   if !debug_string then
+      let len = String.length s in
+         if i >= 0 & i < len then
+            String.set s i c
+         else
+            begin
+               eprintf "String_util.set error: %s: %s.[%d] <- %c@." name s i c;
+               raise (Failure "String_util.set")
+            end
+   else
+      String.set s i c
+
+let get name s i =
+   let len = String.length s in
+      if i >= 0 & i < len then
+         String.get s i
+      else
+         begin
+            eprintf "String_util.get error: %s: %s[%d]@." name s i;
+            raise (Failure "String_util.get")
+         end
+
+(************************************************************************
+ * Hex notation.
+ *)
+
+(*
+ * Turn a string into hex.
+ *)
+let hex_char =
+   let zero = Char.code '0' in
+   let a = Char.code 'a' - 10 in
+   let hex_char code =
+      if code < 10 then
+         Char.chr (code + zero)
+      else
+         Char.chr (code + a)
+   in
+      hex_char
+
+let hexify s =
+   let len = String.length s in
+   let buf = String.create (2 * len) in
+      for i = 0 to pred len do
+         let code = Char.code s.[i] in
+            buf.[2 * i] <- hex_char ((code lsr 4) land 15);
+            buf.[2 * i + 1] <- hex_char (code land 15)
+      done;
+      buf
+
+let unhex i =
+   match i with
+      '0' .. '9' ->
+         (Char.code i) - code0
+    | 'a' .. 'f' ->
+         (Char.code i) - codea + 10
+    | 'A' .. 'F' ->
+         (Char.code i) - codeA + 10
+    | _ ->
+         raise (Failure "unhexify")
+
+let unhexify s =
+   let len = String.length s in
+      if len mod 2 = 0 then
+         let buf = create "String_util.unhexify" (len / 2) in
+         let rec unhexify i j =
+            if j < len then
+               begin
+                  buf.[i] <- Char.chr ((unhex s.[j]) * 16 + (unhex s.[succ j]));
+                  unhexify (i + 1) (j + 2)
+               end
+         in
+            unhexify 0 0;
+            buf
+      else
+         raise (Failure "unhexify")
+
+let unhexify_int s =
+   let len = String.length s in
+   let rec unhexify index i =
+      if i < len then
+         unhexify (index * 16 + (unhex s.[i])) (succ i)
+      else
+         index
+   in
+      unhexify 0 0
+
+(************************************************************************
+ * Locale functions
+ *)
+external set_locale: unit -> unit = "set_locale"
+external is_print: char -> bool = "is_print"
+external is_digit: char -> bool = "is_digit"
+external is_alnum: char -> bool = "is_alnum"
+external is_upper: char -> bool = "is_upper"
+external is_graph: char -> bool = "is_graph"
+
+let _ = set_locale ()
+
+let is_capitalized s = is_upper s.[0]
+
+(*
+ * Functions to quote and unquote strings.
+ *)
+let rec is_simple l i s =
+   if i = l then
+      true
+   else
+      match String.unsafe_get s i with
+         '"' | '\\' | '\r' | '\n' | '\t' | ' ' -> false
+       | c ->
+         is_print c && is_simple l (succ i) s
+
+let quote s =
+   if s <> "" && is_simple (String.length s) 0 s then
+      s
+   else
+      "\"" ^ (String.escaped s) ^ "\""
 
 (*
  * -*-

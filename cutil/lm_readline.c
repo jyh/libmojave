@@ -117,9 +117,9 @@ static char **command_completion(char *text, int start, int end) {
 
 
 /*
- * Actually initialise readline.
+ * Actually initialize readline.
  */
-value caml_initialise_readline(value unit) {
+value caml_initialize_readline(value unit) {
 
    CAMLparam1(unit);
    
@@ -186,9 +186,9 @@ value caml_register_commands(value new_commands) {
 
 
 /*
- * Nothing to initialise :)
+ * Nothing to initialize :)
  */
-value caml_initialise_readline(value unit) {
+value caml_initialize_readline(value unit) {
 
    CAMLparam1(unit);
    CAMLreturn(Val_unit);
