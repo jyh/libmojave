@@ -176,12 +176,7 @@ struct
          ()
 
    and check_sort_gt key = function
-      Black (key', _, left, right, _) ->
-         if Base.compare key' key <= 0 then
-            raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt key key' left;
-         check_sort_gt key right
-
+      Black (key', _, left, right, _)
     | Red (key', _, left, right, _) ->
          if Base.compare key' key <= 0 then
             raise (Failure "Red_black_table.check_sort");
@@ -192,12 +187,7 @@ struct
          ()
 
    and check_sort_gt_lt key key' = function
-      Black (key'', _, left, right, _) ->
-         if Base.compare key'' key <= 0 || Base.compare key'' key' >= 0 then
-            raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt key key'' left;
-         check_sort_gt_lt key'' key' right
-
+      Black (key'', _, left, right, _)
     | Red (key'', _, left, right, _) ->
          if Base.compare key'' key <= 0 || Base.compare key'' key' >= 0 then
             raise (Failure "Red_black_table.check_sort");
@@ -491,14 +481,7 @@ struct
     * Return the data for the entry.
     *)
    let rec find_aux key = function
-      Black (key0, data0, left0, right0, _) ->
-         let comp = Base.compare key key0 in
-            if comp = 0 then
-               data0
-            else if comp < 0 then
-               find_aux key left0
-            else
-               find_aux key right0
+      Black (key0, data0, left0, right0, _)
     | Red (key0, data0, left0, right0, _) ->
          let comp = Base.compare key key0 in
             if comp = 0 then
@@ -517,14 +500,7 @@ struct
     * Return the data for the entry.
     *)
    let rec find_aux key = function
-      Black (key0, data0, left0, right0, _) ->
-         let comp = Base.compare key key0 in
-            if comp = 0 then
-               data0
-            else if comp < 0 then
-               find_aux key left0
-            else
-               find_aux key right0
+      Black (key0, data0, left0, right0, _)
     | Red (key0, data0, left0, right0, _) ->
          let comp = Base.compare key key0 in
             if comp = 0 then
@@ -1170,8 +1146,7 @@ struct
                      (s1 : ('elt, 'data) tree)
                      (s2 : ('elt, 'data) tree) =
       match s2 with
-         Black (key, data, left, right, _) ->
-            union_aux append (union_append append (union_aux append s1 left) key data) right
+         Black (key, data, left, right, _)
        | Red (key, data, left, right, _) ->
             union_aux append (union_append append (union_aux append s1 left) key data) right
        | Leaf ->
@@ -1207,24 +1182,19 @@ struct
             raise (Invalid_argument "initial_path")
 
    let key_of_path = function
-      Left (Black (key, _, _, _, _)) :: _ ->
-         key
-    | Left (Red (key, _, _, _, _)) :: _ ->
-         key
-    | Right (Black (key, _, _, _, _)) :: _ ->
-         key
+      Left (Black (key, _, _, _, _)) :: _
+    | Left (Red (key, _, _, _, _)) :: _
+    | Right (Black (key, _, _, _, _)) :: _
     | Right (Red (key, _, _, _, _)) :: _ ->
          key
     | _ ->
          raise (Invalid_argument "key_of_path")
 
    let rec next_path = function
-      Left (Black (_, _, _, Leaf, _)) :: path ->
-         next_path path
+      Left (Black (_, _, _, Leaf, _)) :: path
     | Left (Red (_, _, _, Leaf, _)) :: path ->
          next_path path
-    | Left (Black (_, _, _, right, _)) :: path ->
-         initial_path path right
+    | Left (Black (_, _, _, right, _)) :: path
     | Left (Red (_, _, _, right, _)) :: path ->
          initial_path path right
     | Right  _ :: path ->
@@ -1269,15 +1239,7 @@ struct
     *)
    let rec mem_aux tree key =
       match tree with
-         Black (key', _, left, right, _) ->
-            let comp = Base.compare key key' in
-               if comp = 0 then
-                  true
-               else if comp < 0 then
-                  mem_aux left key
-               else
-                  mem_aux right key
-
+         Black (key', _, left, right, _)
        | Red (key', _, left, right, _) ->
             let comp = Base.compare key key' in
                if comp = 0 then
@@ -1312,28 +1274,15 @@ struct
     * Iterate a function over the hashtable.
     *)
    let rec iter f = function
-      Black (key, data, left, right, _) ->
+      Black (key, data, left, right, _)
+    | Red (key, data, left, right, _) ->
          iter f left;
          f key data;
          iter f right
-    | Red (key, data, left, right, _) ->
-         iter f left;
-         f key data;
-        iter f right
     | Leaf ->
          ()
 
-   let rec iter_all f = function
-      Black (key, data, left, right, _) ->
-         iter_all f left;
-         f key data;
-         iter_all f right
-    | Red (key, data, left, right, _) ->
-         iter_all f left;
-         f key data;
-         iter_all f right
-    | Leaf ->
-         ()
+   let iter_all = iter
 
    let rec map f = function
       Black (key, data, left, right, size) ->
@@ -1378,16 +1327,15 @@ struct
            Leaf
 
    let rec fold f arg = function
-       Black (key, data, left, right, _) ->
-          let arg = fold f arg left in
-          let arg = f arg key data in
-             fold f arg right
+       Black (key, data, left, right, _)
      | Red (key, data, left, right, _) ->
           let arg = fold f arg left in
           let arg = f arg key data in
              fold f arg right
      | Leaf ->
           arg
+
+   let fold_all = fold
 
    let rec fold_map f arg = function
       Black (key, data, left, right, size) ->
@@ -1402,19 +1350,6 @@ struct
             arg, Red (key, data, left, right, size)
     | Leaf ->
          arg, Leaf
-
-   let rec fold_all f arg t =
-      match t with
-         Black (key, data, left, right, _) ->
-            let arg = fold_all f arg left in
-            let arg = f arg key data in
-               fold_all f arg right
-       | Red (key, data, left, right, _) ->
-            let arg = fold_all f arg left in
-            let arg = f arg key data in
-               fold_all f arg right
-       | Leaf ->
-            arg
 
    let forall2 cmp t1 t2 =
       (cardinal t1 = cardinal t2)
