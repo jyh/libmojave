@@ -19,8 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Format
 
@@ -326,7 +326,7 @@ let codeA = Char.code 'A'
 (*
  * Turn a string into an argument list.
  *)
-let parse_args line =
+let parse_args_list line =
    let len = String.length line in
    let buf = String.create len in
    let rec skip i =
@@ -338,16 +338,23 @@ let parse_args line =
                skip (succ i)
           | '"' ->
                string 0 (succ i)
+          | '\\' ->
+               if len >= i+2 && line.[i+1]='\\'
+               then [] :: skip (i+2) 
+               else raise(Invalid_argument ("Lm_string_util.parse_args: " ^ line))
           | _ ->
                collect i (succ i)
    and collect i j =
       if j = len then
-         [String.sub line i (j - i)]
+         [[String.sub line i (j - i)]]
       else
          match line.[j] with
-            ' ' | '\t' | '\n' | '\r' ->
+            ' ' | '\t' | '\n' | '\r' | '\\' ->
                let s = String.sub line i (j - i) in
-                  s :: (skip (succ j))
+               begin match skip j with
+                  [] -> [[s]]
+                | h::tl -> (s::h) :: tl
+               end
           | _ ->
                collect i (succ j)
    and string j k =
@@ -358,7 +365,9 @@ let parse_args line =
          let c = line.[k] in
             if c = '"' then
                let s = String.sub buf 0 j in
-                  s :: (skip (succ k))
+               match skip (succ k) with
+                  [] -> [[s]]
+                | h::tl -> (s::h)::tl
             else if c = '\\' then
                escape j (succ k)
             else
@@ -395,6 +404,12 @@ let parse_args line =
       if !debug_string then
          eprintf "Lm_string_util.parse_args: done@.";
       args
+
+let parse_args s =
+   match parse_args_list s with
+      [] -> []
+    | [l] -> l
+    | _ -> raise (Invalid_argument ("Lm_string_util.parse_args - line includes \\\\:" ^ s))
 
 (*
  * Concatenate strings.

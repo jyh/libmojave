@@ -81,7 +81,10 @@ val tokens_std : string -> string list
  * A third way to split into substrings.
  * The tokens are separated by white space,
  * and tokens may be quoted.
+ *
+ * In the args_list case, the string lists are separated by \\ (AKA TeX "new line" command).
  *)
+val parse_args_list : string -> string list list
 val parse_args : string -> string list
 val quote: string -> string
 
