@@ -1013,13 +1013,17 @@ struct
     *)
    let add_clause_exp exp action s =
       let regex = regex_of_string s in
+      let arity = regex_arg_count 0 regex in
       let { exp_clauses = clauses;
             exp_id      = id
           } = exp
       in
+      let exp =
          { exp_clauses = (action, id, regex) :: clauses;
            exp_id      = succ id
          }
+      in
+         arity, exp
 
    (*
     * Remove a clause.
@@ -2178,8 +2182,9 @@ struct
       }
 
    let add_clause lex action s =
-      let exp = add_clause_exp lex.lex_exp action s in
-         { lex_exp = exp; lex_dfa = None }
+      let arity, exp = add_clause_exp lex.lex_exp action s in
+      let lex = { lex_exp = exp; lex_dfa = None } in
+         arity, lex
 
    let remove_clause lex action =
       { lex_exp = remove_clause_exp lex.lex_exp action;
@@ -2243,7 +2248,7 @@ struct
     * Create a regular expression.
     *)
    let regexp s =
-      LmLexer.add_clause LmLexer.empty 0 s
+      snd (LmLexer.add_clause LmLexer.empty 0 s)
 
    (*
     * Perform the match.
