@@ -133,11 +133,11 @@ struct
     | { tree = Offset (i, t) } ->
          { tree = Offset (i, map f t) }
 
-   let rec fold (f : 'a -> elt -> 'a) x = function
+   let rec fold (f : 'a -> index -> elt -> 'a) x = function
       { tree = Leaf } ->
          x
     | { tree = Node (ind, e, t1, t2, i) } ->
-        fold f (f (fold f x t1) e) t2
+        fold f (f (fold f x t1) ind e) t2
     | { tree = Lazy (f', tree) } as t ->
          t.tree <- go_down f' tree;
          fold f x t

@@ -46,7 +46,6 @@ struct
    let make = Array.create
    let iter = Array.iter
    let map = Array.map
-   let fold = Array.fold_left
    let of_list = Array.of_list
    let to_list = Array.to_list
    let lazy_apply = Array.map
@@ -59,6 +58,13 @@ struct
          for i = 0 to l2 - 1 do Array.unsafe_set r (i + l1) (Array.unsafe_get a2 i) done;
          r
       end
+
+   let fold f x a =
+      let r = ref x in
+         for i = 0 to Array.length a - 1 do
+            r := f !r i (Array.unsafe_get a i)
+         done;
+         !r
 
    let get = Array.get
 
