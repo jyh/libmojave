@@ -215,6 +215,17 @@ let white = " \t\r\n\012"
 let quotes = "\"'"
 
 (*
+ * Test if a string is all whitespace.
+ *)
+let is_white =
+   let rec test s i len =
+      i < len && (match String.unsafe_get s i with
+                     ' ' | '\t' | '\r' | '\n' | '\012' -> test s (succ i) len
+                   | _ -> false)
+   in
+      (fun s -> test s 0 (String.length s))
+
+(*
  * Split a string str into a list of substrings.
  * The string is split on any character in delims.  Empty substrings
  * are returned as empty strings in the list.  For example:
@@ -322,7 +333,255 @@ let tokens quotes delims str =
    in
       List.rev l
 
-let tokens_std = tokens quotes white
+let tokens_std s =
+   tokens quotes white s
+
+(*
+ * This is a somewhat optimized form of the above,
+ * for parsing based on whitespace and normal quotes.
+ *)
+type 'a tokens_prefix =
+   NoPrefix
+ | WordPrefix of string
+ | QuotePrefix of char * string
+ | PendingPrefix of 'a
+
+type 'a tokens =
+   { tokens_wrap   : (string -> 'a);
+     tokens_unwrap : ('a -> string);
+     tokens_list   : 'a list;
+     tokens_prefix : 'a tokens_prefix
+   }
+
+let tokens_create wrap unwrap =
+   { tokens_wrap   = wrap;
+     tokens_unwrap = unwrap;
+     tokens_list   = [];
+     tokens_prefix = NoPrefix
+   }
+
+(*
+ * Get the tokens list.
+ *)
+let tokens_flush info =
+   let { tokens_wrap = wrap;
+         tokens_list = tokens;
+         tokens_prefix = prefix
+       } = info
+   in
+   let tokens =
+      match prefix with
+         NoPrefix ->
+            tokens
+       | WordPrefix prefix
+       | QuotePrefix (_, prefix) ->
+            wrap prefix :: tokens
+       | PendingPrefix prefix ->
+            prefix :: tokens
+   in
+      List.rev tokens
+
+(*
+ * End the current word.
+ *)
+let tokens_break info =
+   let { tokens_wrap = wrap;
+         tokens_list = tokens;
+         tokens_prefix = prefix
+       } = info
+   in
+      match prefix with
+         NoPrefix ->
+            info
+       | WordPrefix prefix
+       | QuotePrefix (_, prefix) ->
+            { info with tokens_list = wrap prefix :: tokens;
+                        tokens_prefix = NoPrefix
+            }
+       | PendingPrefix prefix ->
+            { info with tokens_list = prefix :: tokens;
+                        tokens_prefix = NoPrefix
+            }
+
+(*
+ * Add a value directly.
+ * This also performs a break.
+ *)
+let tokens_atomic info x =
+   let { tokens_wrap = wrap;
+         tokens_list = tokens;
+         tokens_prefix = prefix
+       } = info
+   in
+      match prefix with
+         NoPrefix ->
+            { info with tokens_list = x :: tokens;
+                        tokens_prefix = NoPrefix
+            }
+       | WordPrefix prefix
+       | QuotePrefix (_, prefix) ->
+            { info with tokens_list = x :: wrap prefix :: tokens;
+                        tokens_prefix = NoPrefix
+            }
+       | PendingPrefix prefix ->
+            { info with tokens_list = prefix :: tokens;
+                        tokens_prefix = NoPrefix
+            }
+
+(*
+ * Add an value that might be unwrapped.
+ * The value is unwrapped only if it is not surrounded by whitespace.
+ *)
+let tokens_add info x =
+   let { tokens_unwrap = unwrap;
+         tokens_list = tokens;
+         tokens_prefix = prefix
+       } = info
+   in
+      match prefix with
+         NoPrefix ->
+            { info with tokens_prefix = PendingPrefix x }
+       | WordPrefix prefix ->
+            { info with tokens_prefix = WordPrefix (prefix ^ unwrap x) }
+       | QuotePrefix (c, prefix) ->
+            { info with tokens_prefix = QuotePrefix (c, prefix ^ unwrap x) }
+       | PendingPrefix prefix ->
+            { info with tokens_prefix = WordPrefix (unwrap prefix ^ unwrap x) }
+
+(*
+ * Insert literal data.
+ * The data is not scanned for whitespace.
+ *)
+let tokens_data info s =
+   match info.tokens_prefix with
+      NoPrefix ->
+         { info with tokens_prefix = WordPrefix s }
+    | WordPrefix word ->
+         { info with tokens_prefix = WordPrefix (word ^ s) }
+    | QuotePrefix (c, word) ->
+         { info with tokens_prefix = QuotePrefix (c, word ^ s) }
+    | PendingPrefix word ->
+         { info with tokens_prefix = WordPrefix (info.tokens_unwrap word ^ s) }
+
+(*
+ * Scan the string for whitespace.
+ *)
+let tokens_string info s =
+   let len = String.length s in
+   let { tokens_wrap = wrap;
+         tokens_unwrap = unwrap
+       } = info
+   in
+
+   (* Scanning whitespace *)
+   let rec scan_white tokens i =
+      if i = len then
+         { info with tokens_list = tokens;
+                     tokens_prefix = NoPrefix
+         }
+      else
+         match String.unsafe_get s i with
+            ' ' | '\t' | '\n' | '\r' | '\012' ->
+               scan_white tokens (succ i)
+          | '"' | '\'' as c ->
+               scan_quote tokens c i (succ i)
+          | '\\' ->
+               scan_word tokens i (i + 2)
+          | c ->
+               scan_word tokens i (succ i)
+
+    (* Scanning a quoted word *)
+   and scan_quote tokens delim start i =
+      if i >= len then
+         { info with tokens_list = tokens;
+                     tokens_prefix =  QuotePrefix (delim, String.sub s start (len - start))
+         }
+      else
+         let c = String.unsafe_get s i in
+            match c with
+               '"' | '\'' when c = delim ->
+                  scan_word tokens start (succ i)
+             | '\\' ->
+                  scan_quote tokens delim start (i + 2)
+             | _ ->
+                  scan_quote tokens delim start (succ i)
+
+    (* Scanning a word *)
+   and scan_word tokens start i =
+      if i >= len then
+         { info with tokens_list = tokens;
+                     tokens_prefix = WordPrefix (String.sub s start (len - start))
+         }
+      else
+         match String.unsafe_get s i with
+            ' ' | '\t' | '\n' | '\r' | '\012' ->
+               scan_white (wrap (String.sub s start (i - start)) :: tokens) (succ i)
+          | '"' | '\'' as c ->
+               scan_quote tokens c start (succ i)
+          | '\\' ->
+               scan_word tokens start (i + 2)
+          | _ ->
+               scan_word tokens start (succ i)
+
+    (* Prefix forms *)
+   and scan_quote_prefix tokens prefix delim i =
+      if i >= len then
+         { info with tokens_list = tokens;
+                     tokens_prefix = QuotePrefix (delim, prefix ^ s)
+         }
+      else
+         let c = String.unsafe_get s i in
+            match c with
+               '"' | '\'' when c = delim ->
+                  scan_word_prefix tokens prefix (succ i)
+             | '\\' ->
+                  scan_quote_prefix tokens prefix delim (i + 2)
+             | _ ->
+                  scan_quote_prefix tokens prefix delim (succ i)
+
+   and scan_word_prefix tokens prefix i =
+      if i >= len then
+         { info with tokens_list = tokens;
+                     tokens_prefix = WordPrefix (prefix ^ s)
+         }
+      else
+         match String.unsafe_get s i with
+            ' ' | '\t' | '\n' | '\r' | '\012' ->
+               scan_white (wrap (prefix ^ String.sub s 0 i) :: tokens) (succ i)
+          | '"' | '\'' as c ->
+               scan_quote_prefix tokens prefix c (succ i)
+          | '\\' ->
+               scan_word_prefix tokens prefix (i + 2)
+          | _ ->
+               scan_word_prefix tokens prefix (succ i)
+
+   and scan_pending_prefix tokens prefix =
+      match String.unsafe_get s 0 with
+         ' ' | '\t' | '\n' | '\r' | '\012' ->
+            scan_white (prefix :: tokens) 1
+       | '"' | '\'' as c ->
+            scan_quote_prefix tokens (unwrap prefix) c 1
+       | '\\' ->
+            scan_word_prefix tokens (unwrap prefix) 2
+       | _ ->
+            scan_word_prefix tokens (unwrap prefix) 1
+   in
+      if len = 0 then
+         info
+      else
+         let { tokens_list = tokens;
+               tokens_prefix = prefix
+             } = info
+         in
+            match prefix with
+               NoPrefix ->
+                  scan_white tokens 0
+             | WordPrefix prefix ->
+                  scan_word_prefix tokens prefix 0
+             | QuotePrefix (c, prefix) ->
+                  scan_quote_prefix tokens prefix c 0
+             | PendingPrefix prefix ->
+                  scan_pending_prefix tokens prefix
 
 (*
  * Split a string based on a bounary.
@@ -524,10 +783,10 @@ let parse_args_list line =
          match line.[j] with
             ' ' | '\t' | '\n' | '\r' | '\\' ->
                let s = String.sub line i (j - i) in
-               begin match skip j with
-                  [] -> [[s]]
-                | h::tl -> (s::h) :: tl
-               end
+                  begin match skip j with
+                           [] -> [[s]]
+                         | h::tl -> (s::h) :: tl
+                  end
           | _ ->
                collect i (succ j)
    and string j k =
@@ -772,6 +1031,160 @@ let unhexify_int s =
          index
    in
       unhexify 0 0
+
+(*
+ * Construct an argv string with proper quoting.
+ *
+ * We are given a list of arguments that may or may not contain
+ * whitespace or quotes.  Quote them in a meaningful way before
+ * parsing.
+ *)
+type mode =
+   ModeNormal
+ | ModeDouble
+ | ModeSingle
+
+let rec needs_quotes mode s i len =
+   if i >= len then
+      mode <> ModeNormal
+   else
+      match mode with
+         ModeNormal ->
+            (match s.[i] with
+               ' '
+             | '\t'
+             | '\012'
+             | '\n'
+             | '\r' ->
+                  true
+             | '"' ->
+                  needs_quotes ModeDouble s (succ i) len
+             | '\'' ->
+                  needs_quotes ModeSingle s (succ i) len
+             | '\\' ->
+                  needs_quotes ModeNormal s (i + 2) len
+             | _ ->
+                  needs_quotes ModeNormal s (succ i) len)
+       | ModeSingle ->
+            (match s.[i] with
+                '\'' ->
+                  needs_quotes ModeNormal s (succ i) len
+              | '\\' ->
+                  needs_quotes ModeSingle s (i + 2) len
+              | _ ->
+                  needs_quotes ModeSingle s (succ i) len)
+       | ModeDouble ->
+           (match s.[i] with
+               '"' ->
+                  needs_quotes ModeNormal s (succ i) len
+             | '\\' ->
+                  needs_quotes ModeDouble s (i + 2) len
+             | _ ->
+                  needs_quotes ModeDouble s (succ i) len)
+
+let needs_quotes s =
+   let len = String.length s in
+      len = 0 || needs_quotes ModeNormal s 0 len
+
+let dquote = '"'
+let equote = "\\\""
+
+let quotify buf s =
+   let len = String.length s in
+   let rec copy i =
+      if i <> len then
+         let c = s.[i] in
+            match c with
+               '"' ->
+                  Buffer.add_string buf equote;
+                  copy (succ i)
+             | '\\' ->
+                  Buffer.add_char buf '\\';
+                  if i < len - 1 then
+                     begin
+                        Buffer.add_char buf s.[i + 1];
+                        copy (i + 2)
+                     end
+             | _ ->
+                  Buffer.add_char buf c;
+                  copy (succ i)
+   in
+      Buffer.add_char buf dquote;
+      copy 0;
+      Buffer.add_char buf dquote
+
+let quote buf s =
+   if needs_quotes s then
+      quotify buf s
+   else
+      Buffer.add_string buf s
+
+let rec concat_argv buf argv =
+   match argv with
+      [arg] ->
+         quote buf arg
+    | arg :: argv ->
+         quote buf arg;
+         Buffer.add_char buf ' ';
+         concat_argv buf argv
+    | [] ->
+         ()
+
+let concat_argv argv =
+   let buf = Buffer.create 32 in
+      concat_argv buf argv;
+      Buffer.contents buf
+
+
+(*
+ * For string quoting.
+ *)
+let rec concat_string buf argv =
+   match argv with
+      [arg] ->
+         Buffer.add_string buf arg
+    | arg :: argv ->
+         Buffer.add_string buf arg;
+         Buffer.add_char buf ' ';
+         concat_string buf argv
+    | [] ->
+         ()
+
+let concat_string argv =
+   match argv with
+      [arg] ->
+         arg
+    | _ :: _ ->
+         let buf = Buffer.create 32 in
+            concat_string buf argv;
+            Buffer.contents buf
+    | [] ->
+         ""
+
+(*
+ * This function adds quotes if needed.
+ *)
+let string_argv argv =
+   let s = concat_string argv in
+      if needs_quotes s then
+         let buf = Buffer.create 32 in
+            quotify buf s;
+            Buffer.contents buf
+      else
+         s
+
+(*
+ * This function always adds quotes.
+ *)
+let quote_argv argv =
+   let s = concat_string argv in
+   let len = String.length s in
+      if needs_quotes s || (not (s.[0] = '"' && s.[len - 1] = '"' || s.[0] = '\'' && s.[len - 1] = '\'')) then
+         let buf = Buffer.create 32 in
+            quotify buf s;
+            Buffer.contents buf
+      else
+         s
 
 (*
  * -*-

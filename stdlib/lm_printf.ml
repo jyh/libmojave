@@ -112,6 +112,12 @@ let print_int_list =
    print_any_list pp_print_int
 
 (*
+ * Get a formatter.
+ *)
+let out_channel_of_formatter out =
+   out
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

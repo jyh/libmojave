@@ -201,6 +201,14 @@ let root name =
       Not_found ->
          name
 
+let suffix name =
+   try
+      let index = String.rindex name '.' in
+         String.sub name index (String.length name - index)
+   with
+      Not_found ->
+         ""
+
 let strip_suffixes name =
    let start =
       try String.rindex name '/' with
@@ -289,7 +297,6 @@ let search_command name =
 
 (*
  * Figure out where in the path the commands comes from.
- * The filename must be simple, no path separators.
  *)
 let which name =
    if Filename.is_relative name then
@@ -312,6 +319,58 @@ let which name =
             fullname
        | None ->
             raise Not_found
+
+(*
+ * Use the directory as the starting point for relative names.
+ *)
+let which_dir dir name =
+   if Filename.is_relative name then
+      if Lm_string_util.contains_any name separators then
+         let name = Filename.concat dir name in
+            match is_executable name with
+               Some fullname ->
+                  fullname
+             | None ->
+                  raise Not_found
+      else
+         try Hashtbl.find search_table name with
+            Not_found ->
+               let fullname = search_command name in
+                  Hashtbl.add search_table name fullname;
+                  fullname
+   else
+      match is_executable name with
+         Some fullname ->
+            fullname
+       | None ->
+            raise Not_found
+
+(*
+ * Make a directory hierarchy.
+ *)
+let mkdirhier dir mode =
+   let rec mkdir dir path =
+      match path with
+         head :: path ->
+            let dir = Filename.concat dir head in
+            let () =
+               try Unix.mkdir dir mode with
+                   Unix.Unix_error (Unix.EEXIST, _, _) ->
+                     ()
+            in
+               mkdir dir path
+       | [] ->
+            ()
+   in
+   let path = filename_path dir in
+   let top, path =
+      match path with
+         AbsolutePath (root, path) ->
+            string_of_root root, path
+       | RelativePath path ->
+            ".", path
+   in
+      mkdir top path
 
 (*!
  * @docoff

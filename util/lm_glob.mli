@@ -27,22 +27,45 @@
 
 type glob_options =
    GlobNoBraces         (* Do not perform csh-style brace expansion *)
+ | GlobNoTilde          (* Do not perform tilde-expansion *)
  | GlobNoEscape         (* The \ character does not escape special characters *)
  | GlobNoCheck          (* If an expansion fails, return the expansion literally *)
+ | GlobIgnoreCheck      (* If an expansion fails, it expands to nothing *)
  | GlobDot              (* Allow wildcards to match filenames with a leading . *)
  | GlobOnlyDirs         (* Return only directories in the result *)
  | GlobCVSIgnore        (* Ignore files as specified by .cvsignore files *)
  | GlobIgnore of string list  (* Ignore the files that match the pattern *)
  | GlobAllow of string list   (* Allow only files that match the pattern *)
- | GlobIgnoreFun of (string -> bool)  (* Ignore the files determined by the function *)
- | GlobAllowFun of (string -> bool)   (* Allow only the files determined by the function *)
+ | GlobIgnoreFun of (string -> bool)  (* Ignore the files specified by the function *)
+ | GlobAllowFun of (string -> bool)   (* Allow only the files specified by the function *)
+ | GlobHomeDir of string              (* Home directory for ~ expansion *)
+
+(*
+ * The initial home directory for tilde expansion.
+ * The globber does its best to figure this out.
+ *)
+val home_dir : string
+
+(*
+ * Try to collapse a filename.
+ * Tilde-expansion will invert this process.
+ *)
+val tilde_collapse : string -> string
 
 (*
  * The glob function returns two lists:
  *    1. a list of directories
  *    2. a list of files of other types
+ *
+ * Raises Failure if the syntax is ill-formed.
  *)
 val glob : glob_options list -> string -> string list -> string list * string list
+
+(*
+ * Glob a command line.
+ * Preserves the argument ordering.
+ *)
+val glob_argv : glob_options list -> string -> string list -> string list
 
 (*
  * Get the entries in a directory.

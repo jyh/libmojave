@@ -80,6 +80,7 @@ val split : string -> string * string
  * Get the name without suffix.
  *)
 val root : string -> string
+val suffix : string -> string
 val strip_suffixes : string -> string
 
 (*
@@ -97,6 +98,12 @@ val concat_path : pathname -> string
  *)
 val is_executable : string -> string option
 val which : string -> string
+val which_dir : string -> string -> string
+
+(*
+ * Make an entire hierarchy.
+ *)
+val mkdirhier : string -> int -> unit
 
 (*!
  * @docoff
