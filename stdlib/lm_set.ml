@@ -46,7 +46,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_format
+open Lm_printf
 open Lm_set_sig
 
 (*
@@ -119,38 +119,23 @@ struct
    (*
     * Print the tree.
     *)
-   let rec print_tree tree =
-      Lm_format.open_vbox 3;
-      (match tree with
-          Black (_, left, right, size) ->
-             Lm_format.print_string "Black(";
-             Lm_format.print_int size;
-             Lm_format.print_string "):";
-             Lm_format.print_space ();
-             print_tree left;
-             Lm_format.print_space ();
-             print_tree right
-        | Red (_, left, right, size) ->
-             Lm_format.print_string "Red(";
-             Lm_format.print_int size;
-             Lm_format.print_string "):";
-             Lm_format.print_space ();
-             print_tree left;
-             Lm_format.print_space ();
-             print_tree right
-        | Leaf ->
-             Lm_format.print_string "Leaf");
-      Lm_format.close_box ()
+   let rec pp_print_tree out tree =
+      match tree with
+         Black (_, left, right, size) ->
+            fprintf out "@[<v 3>Black(%d):@ %a@ %a@]" size pp_print_tree left pp_print_tree right
+       | Red (_, left, right, size) ->
+            fprintf out "@[<v 3>Red(%d):@ %a@ %a@]" size pp_print_tree left pp_print_tree right
+       | Leaf ->
+            fprintf out "Leaf"
+
+   let print_tree = pp_print_tree stdout
 
    (*
     * Check the size of the set.
     *)
    let check_size tree =
       let abort tree' =
-         print_tree tree;
-         Lm_format.print_newline ();
-         print_tree tree';
-         Lm_format.print_newline ();
+         printf "%a@\n%a@\n" pp_print_tree tree pp_print_tree tree';
          raise (Invalid_argument "check_size")
       in
       let rec check tree =
@@ -1435,37 +1420,27 @@ struct
    (*
     * Print the tree.
     *)
-   let rec print tree =
-      print_space ();
+   let rec pp_print out tree =
+      fprintf out "@ ";
       match tree with
          Black (key, left, right, size) ->
-            print_string "(";
-            open_hvbox 0;
-            print_string "Black";
-            print_space ();
-            Ord.print key;
-            print_string ":";
-            print_int size;
-            print left;
-            print right;
-            print_string ")";
-            close_box ()
+            fprintf out "(@[<hv 0>Black@ %a:%d %a %a)@]" (**)
+               Ord.print key
+               size
+               pp_print left
+               pp_print right
 
        | Red (key, left, right, size) ->
-            print_string "(";
-            open_hvbox 0;
-            print_string "Red";
-            print_space ();
-            Ord.print key;
-            print_string ":";
-            print_int size;
-            print left;
-            print right;
-            print_string ")";
-            close_box ()
+            fprintf out "(@[<hv 0>Red@ %a:%d %a %a)@]" (**)
+               Ord.print key
+               size
+               pp_print left
+               pp_print right
 
        | Leaf ->
-            print_string "Leaf"
+            output_string out "Leaf"
+
+   let print = pp_print stdout
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t =

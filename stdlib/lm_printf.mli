@@ -51,7 +51,6 @@ val open_out_bin : string -> out_channel
  *)
 val output_char    : out_channel -> char -> unit
 val output_string  : out_channel -> string -> unit
-val output_rbuffer : out_channel -> Lm_rformat.buffer -> unit
 
 (*
  * These functions are bad style for functional programs.
@@ -59,12 +58,10 @@ val output_rbuffer : out_channel -> Lm_rformat.buffer -> unit
 val print_char    : char -> unit
 val print_int     : int -> unit
 val print_string  : string -> unit
-val print_rbuffer : Lm_rformat.buffer -> unit
 
 val prerr_char    : char -> unit
 val prerr_int     : int -> unit
 val prerr_string  : string -> unit
-val prerr_rbuffer : Lm_rformat.buffer -> unit
 
 (*
  * Flush the output.

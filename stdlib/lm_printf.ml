@@ -51,18 +51,10 @@ let open_out_bin name =
    formatter_of_out_channel (open_out_bin name)
 
 (*
- * Format during printing.
- *)
-let pp_print_rbuffer buf rbuffer =
-   let s = Lm_rformat_text.print_text_string Lm_rformat.default_width rbuffer in
-      pp_print_string buf s
-
-(*
  * Output.
  *)
 let output_char       = pp_print_char
 let output_string     = pp_print_string
-let output_rbuffer    = pp_print_rbuffer
 
 (*
  * Normal printing.
@@ -70,12 +62,10 @@ let output_rbuffer    = pp_print_rbuffer
 let print_char    = pp_print_char std_formatter
 let print_int     = pp_print_int std_formatter
 let print_string  = pp_print_string std_formatter
-let print_rbuffer = pp_print_rbuffer std_formatter
 
 let prerr_char    = pp_print_char err_formatter
 let prerr_int     = pp_print_int err_formatter
 let prerr_string  = pp_print_string err_formatter
-let prerr_rbuffer = pp_print_rbuffer err_formatter
 
 (*
  * Print a newline and flush.

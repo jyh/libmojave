@@ -18,6 +18,7 @@ STDLIB_FILES =\
 	lm_format\
 	lm_rprintf\
 	lm_printf\
+	lm_printf_rbuffer\
 	lm_array_util\
 	lm_string_util\
 	lm_list_util\

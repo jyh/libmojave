@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_printf
 
 (*
  * Used for expressing sharing constraints.
@@ -54,7 +55,7 @@ module type OrderedTypeDebug =
 sig
    type t
 
-   val print : t -> unit
+   val print : out_channel -> t -> unit
    val compare : t -> t -> int
 end
 
