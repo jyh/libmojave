@@ -80,6 +80,8 @@ let html_escape_string buffer s =
                collect_escape i j "&gt;"
           | '&' ->
                collect_escape i j "&amp;"
+          | '"' ->
+               collect_escape i j "&quot;"
           | _ ->
                collect i (succ j)
       else if i = 0 then
