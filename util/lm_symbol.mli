@@ -37,6 +37,7 @@ open Lm_debug
  * Representation of symbols.
  *)
 type symbol
+type var = symbol
 
 (*
  * Debugging adds extra qualifiers to new symbols.
@@ -64,6 +65,11 @@ val new_symbol_pre : string -> symbol -> symbol
 val new_symbol_string : string -> symbol
 
 (*
+ * Find a symbol for which the predicate is false.
+ *)
+val new_name : symbol -> (symbol -> bool) -> symbol
+
+(*
  * Get back the string.
  *)
 val to_int : symbol -> int
@@ -75,7 +81,14 @@ val string_of_ext_symbol : symbol -> string
  * Printer uses Format library.
  *)
 val pp_print_symbol : Format.formatter -> symbol -> unit
+val pp_print_symbol_list : Format.formatter -> symbol list -> unit
 val pp_print_ext_symbol : Format.formatter -> symbol -> unit
+
+(*
+ * This printer uses printf.
+ *)
+val print_symbol : out_channel -> symbol -> unit
+val print_symbol_list : out_channel -> symbol list -> unit
 
 (*
  * Compare two symbols for equality.

@@ -72,6 +72,10 @@ sig
    val subtract_list : t -> elt list -> t
    val of_list : elt list -> t
    val to_list : t -> elt list
+
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
 end
 
 (*

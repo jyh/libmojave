@@ -39,6 +39,7 @@ let debug_symbol = ref false
  * We use a hashtable to manage symbols we have seen.
  *)
 type symbol = int * string
+type var = symbol
 
 type t =
    { hash : (string, symbol) Hashtbl.t;
@@ -173,6 +174,19 @@ let new_symbol_pre pre (_, v) =
       new_symbol_string s
 
 (*
+ * Create a new symbol, avoiding the ones defined by the predicate.
+ *)
+let new_name (_, v) pred =
+   let rec search i =
+      let nv = i, v in
+         if pred nv then
+            search (succ i)
+         else
+            nv
+   in
+      search 0
+
+(*
  * Check if the symbol is in the table.
  *)
 let is_interned (i, s) =
@@ -201,6 +215,27 @@ let string_of_symbol (i, s) =
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
+
+let rec pp_print_symbol_list buf vl =
+   match vl with
+      [v] ->
+         pp_print_symbol buf v
+    | v :: vl ->
+         fprintf buf "%a, %a" pp_print_symbol v pp_print_symbol_list vl
+    | [] ->
+         ()
+
+let print_symbol out v =
+   output_string out (string_of_symbol v)
+
+let rec print_symbol_list out vl =
+   match vl with
+      [v] ->
+         print_symbol out v
+    | v :: vl ->
+         Printf.fprintf out "%a, %a" print_symbol v print_symbol_list vl
+    | [] ->
+         ()
 
 (*
  * Print extended symbols. Used in FIR printing.

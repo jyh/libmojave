@@ -3,6 +3,7 @@
 #
 FILES =\
 	lm_debug\
+	lm_array_util\
 	lm_set\
 	lm_map\
 	lm_string_util\
@@ -17,3 +18,5 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), lmstdlib, $(FILES))
 
 clean:
     $(CLEAN)
+
+all: lmstdlib$(LIB_SUFFIX)
