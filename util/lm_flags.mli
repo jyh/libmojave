@@ -24,8 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_string_util
-
+open Lm_string_set
 
 (*
  * For flags environment, indicate the type of the value recorded.
@@ -42,8 +41,8 @@ type flag_value =
  * named tag, usually the prefix of all the flags in that section.
  *)
 type flag_help_section = string * (string StringTable.t)
-   
-  
+
+
 (*
  * The flags environment contains the environment of currently set flags, as
  * well as a registry of `valid names'' and their default values.  You can
@@ -118,8 +117,8 @@ val std_flags_help_section_text : string -> string -> unit
 val std_flags_register_list : (string * flag_value) list -> unit
 val std_flags_register_list_help : string -> (string * flag_value * string) list -> unit
 val print_std_flag_defaults : unit -> unit
-          
-          
+
+
 (*
  * Print current state
  *)

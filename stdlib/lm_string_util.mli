@@ -26,7 +26,10 @@
 (*
  * Hex representation of a string.
  *)
+val unhex : char -> int
 val hexify : string -> string
+val unhexify : string -> string
+val unhexify_int : string -> int
 
 (*
  * Find a char in a string.
@@ -38,6 +41,17 @@ val strchr : string -> char -> int
  *)
 val white : string
 val quotes : string
+
+(*
+ * Mapping.
+ *)
+val for_all : (char -> bool) -> string -> bool
+
+(*
+ * Get the index of any char in the set.
+ *)
+val index_set : string -> string -> int
+val rindex_set : string -> string -> int
 
 (*
  * Split a string into substrings.
@@ -69,6 +83,7 @@ val tokens_std : string -> string list
  * and tokens may be quoted.
  *)
 val parse_args : string -> string list
+val quote: string -> string
 
 (*
  * Concatenate strings with a separator.
@@ -116,13 +131,21 @@ val string_of_file : string -> string
 val create : string -> int -> string
 val make : string -> int -> char -> string
 val sub : string -> string -> int -> int -> string
+val blit : string -> string -> int -> string -> int -> int -> unit
+val set : string -> string -> int -> char -> unit
+val get : string -> string -> int -> char
 
 (*
- * String environments.
+ * Locale queries.
+ * See man pages for isdigit, isprint, isalnum, isupper and isgraph for more information.
  *)
-module StringSet : Lm_set.LmSet with type elt = string
-module StringTable : Lm_map.LmMap with type key = string
-module StringMTable : Lm_map.LmMapList with type key = string
+val is_digit : char -> bool
+val is_print : char -> bool
+val is_alnum : char -> bool
+val is_upper : char -> bool
+val is_graph : char -> bool
+
+val is_capitalized : string -> bool
 
 (*
  * -*-
