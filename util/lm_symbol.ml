@@ -135,7 +135,9 @@ let rec zeros s i =
     | _ -> true
 
 let rec pad_with_underscore s i =
-   if i <= 0 then true else
+   if i <= 0 then
+      true
+   else
       let i = pred i in
          match s.[i] with
             '_' -> pad_with_underscore s i
