@@ -38,6 +38,8 @@ type assoc =
  | RightAssoc
  | NonAssoc
 
+val pp_print_assoc : out_channel -> assoc -> unit
+
 module type PrecedenceArg =
 sig
    type t
@@ -56,12 +58,13 @@ sig
    val pp_print_prec  : t -> out_channel -> precedence -> unit
 
    (* Comparison *)
+   val add_assoc      : t -> precedence -> assoc -> t
    val assoc          : t -> precedence -> assoc
    val compare        : t -> precedence -> precedence -> int
 end
 
 (* Default implementation *)
-module Precedence : PrecedenceArg
+module ParserPrecedence : PrecedenceArg
 
 exception ParseError of loc
 
@@ -122,6 +125,7 @@ sig
    val prec_max       : precedence
    val create_prec_lt : t -> precedence -> assoc  -> t * precedence
    val create_prec_gt : t -> precedence -> assoc  -> t * precedence
+   val add_assoc      : t -> precedence -> assoc  -> t
    val add_prec       : t -> precedence -> symbol -> t
    val find_prec      : t -> symbol -> precedence
 
