@@ -264,6 +264,11 @@ value lm_ssl_ctx_new(value x)
     return Val_unit;
 }
 
+value lm_ssl_ctx_dhfile(value context, value v_dhfile)
+{
+    return Val_unit;
+}
+
 /*
  * Get data for a new connection.
  */
@@ -289,6 +294,14 @@ value lm_ssl_set_fd(SSL *ssl, value v_fd)
  * Accept a connection.
  */
 value lm_ssl_accept(SSL *ssl)
+{
+    return Val_int(0);
+}
+
+/*
+ * Make a connection.
+ */
+value lm_ssl_connect(SSL *ssl)
 {
     return Val_int(0);
 }
