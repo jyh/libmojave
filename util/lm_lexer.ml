@@ -279,6 +279,7 @@ sig
     * to lex_stop.
     *)
    val lex_string : t -> int -> string
+   val lex_substring : t -> int -> int -> string
 end
 
 module type LexerAction =
@@ -1261,6 +1262,7 @@ struct
    type dfa_info =
      { mutable dfa_stop_clause    : int;                  (* Clause id of the last match, or 0 if none *)
        mutable dfa_stop_pos       : int;                  (* Position of the last match *)
+       mutable dfa_start_pos      : int;                  (* Starting position *)
 
        (*
         * Scanned arguments.
@@ -1649,7 +1651,7 @@ struct
    (*
     * Transition function.
     * We are in DFA state dfa_id, processing symbol c.
-    * Raises Not_found if there is no transition.
+    * Returns None if there is no transition.
     *)
    let rec dfa_delta dfa dfa_info dfa_state c =
       match TransTable.find dfa_state.dfa_state_delta c DfaUnknownTransition with
@@ -1660,14 +1662,14 @@ struct
                   pp_print_dfa_set dfa_state.dfa_state_set
                   pp_print_char c dfa_id;
             dfa_eval_actions dfa_info actions;
-            dfa.dfa_states.(dfa_id)
+            Some (dfa.dfa_states.(dfa_id))
        | DfaNoTransition ->
             if !debug_lex then
                eprintf "State %d %a: no transition for symbol %a@." (**)
                   dfa_state.dfa_state_index
                   pp_print_dfa_set dfa_state.dfa_state_set
                   pp_print_char c;
-            raise Not_found
+            None
        | DfaUnknownTransition ->
             if !debug_lex then
                eprintf "State %d %a: computing transition on symbol %a@." (**)
@@ -1686,22 +1688,21 @@ struct
       let dfa_info =
          { dfa_stop_clause = -1;
            dfa_stop_pos    = 0;
+           dfa_start_pos   = 0;
            dfa_args        = IntTable.empty;
            dfa_channel     = channel
          }
       in
       let rec loop dfa_state c =
-         let dfa_state = dfa_delta dfa dfa_info dfa_state c in
-         let c = Input.lex_next channel in
-            loop dfa_state c
+         match dfa_delta dfa dfa_info dfa_state c with
+            Some dfa_state ->
+               loop dfa_state (Input.lex_next channel)
+          | None ->
+               ()
       in
       let dfa_state = dfa.dfa_states.(0) in
       let c = Input.lex_start channel in
-      let () =
-         try loop dfa_state c with
-            Not_found ->
-               ()
-      in
+      let () = loop dfa_state c in
 
       (* Now figure out what happened *)
       let { dfa_stop_clause = clause;
@@ -1716,7 +1717,7 @@ struct
          if clause < 0 then
             begin
                Input.lex_stop channel 0;
-               raise (Failure "dfa_lex: no clause matched")
+               raise (Failure "lex: no clause matched")
             end;
 
          (*
@@ -1740,6 +1741,71 @@ struct
          in
             Input.lex_stop channel pos;
             IntTable.find dfa.dfa_action_table clause, lexeme, args
+
+   (*
+    * Return the input followed by a regular expression
+    * terminator.
+    *)
+   let search dfa channel =
+      let dfa_info =
+         { dfa_stop_clause = -1;
+           dfa_stop_pos    = 0;
+           dfa_start_pos   = 0;
+           dfa_args        = IntTable.empty;
+           dfa_channel     = channel
+         }
+      in
+      let start_state = dfa.dfa_states.(0) in
+      let rec loop dfa_state c =
+         match dfa_delta dfa dfa_info dfa_state c with
+            Some dfa_state ->
+               loop dfa_state (Input.lex_next channel)
+          | None ->
+               if dfa_info.dfa_stop_clause < 0 then
+                  search c
+      and search c =
+         match dfa_delta dfa dfa_info start_state c with
+            Some dfa_state ->
+               dfa_info.dfa_start_pos <- Input.lex_pos channel;
+               loop dfa_state (Input.lex_next channel)
+          | None ->
+               if c = eof then
+                  dfa_info.dfa_start_pos <- Input.lex_pos channel
+               else
+                  search (Input.lex_next channel)
+      in
+      let c = Input.lex_start channel in
+      let () = search c in
+
+      (* Now figure out what happened *)
+      let { dfa_stop_clause = clause;
+            dfa_stop_pos    = stop;
+            dfa_start_pos   = start;
+            dfa_args        = args
+          } = dfa_info
+      in
+      let skipped = Input.lex_string channel start in
+      let matched =
+         if clause < 0 then
+            None
+         else
+            let lexeme = Input.lex_substring channel start (stop - start) in
+            let args =
+               try
+                  let args = IntTable.find args clause in
+                  let args =
+                     IntTable.fold (fun args _ (pos1, pos2) ->
+                           String.sub lexeme pos1 (pos2 - pos1) :: args) [] args
+                  in
+                     List.rev args
+               with
+                  Not_found ->
+                     []
+            in
+               Some (IntTable.find dfa.dfa_action_table clause, lexeme, args)
+      in
+         Input.lex_stop channel (max start stop);
+         skipped, matched
 
    (*
     * Create the DFA from a list of regular expressions.
@@ -1798,6 +1864,18 @@ struct
                   dfa
       in
          lex dfa channel
+
+   let search info channel =
+      let dfa =
+         match info.lex_dfa with
+            Some dfa ->
+               dfa
+          | None ->
+               let dfa = create info.lex_exp in
+                  info.lex_dfa <- Some dfa;
+                  dfa
+      in
+         search dfa channel
 end
 
 (*!

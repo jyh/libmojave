@@ -84,6 +84,7 @@ sig
     * to lex_stop.
     *)
    val lex_string : t -> int -> string
+   val lex_substring : t -> int -> int -> string
 end
 
 (*
@@ -128,6 +129,14 @@ sig
     *    args: the arguments for \(...\) patterns.
     *)
    val lex : t -> Input.t -> action * string * string list
+
+   (*
+    * Search for the first occurrence of a match.
+    * Return the unmatched data that was skipped as well.
+    *    (action, skipped, matched, args)
+    * This will not read past EOF.
+    *)
+   val search : t -> Input.t -> string * (action * string * string list) option
 end
 
 (*!
