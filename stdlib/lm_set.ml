@@ -1259,6 +1259,8 @@ struct
        | Leaf ->
             true
 
+   let is_subset = subset
+
    let compare s1 s2 =
       let rec compare s1 s2 =
 	 match s1, s2 with

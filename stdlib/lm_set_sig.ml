@@ -100,7 +100,13 @@ sig
    val diff : t -> t -> t
    val compare : t -> t -> int
    val equal : t -> t -> bool
+
+   (*
+    * These two functions are identical.
+    * subset s1 s2 tests whether s1 is a subset of s2.
+    *)
    val subset : t -> t -> bool
+   val is_subset : t -> t -> bool
 
    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
 
