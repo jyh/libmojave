@@ -987,14 +987,38 @@ struct
       }
 
    (*
+    * Compute the number of arguments in the regex.
+    *)
+   let rec regex_arg_count count e =
+      match e with
+         RegexAnySymbol
+       | RegexSymbol _
+       | RegexExceptSymbol _
+       | RegexLimitPrev _
+       | RegexLimitNext _
+       | RegexChoice [] ->
+            count
+       | RegexChoice (e :: _)
+       | RegexStar e
+       | RegexPlus e
+       | RegexInterval (e, _, _) ->
+            regex_arg_count count e
+       | RegexSequence el ->
+            List.fold_left regex_arg_count count el
+       | RegexArg e ->
+            regex_arg_count (succ count) e
+
+   (*
     * Add a clause to the pre-NFA.
     *)
    let add_clause_exp exp action s =
       let regex = regex_of_string s in
+      let count = regex_arg_count 0 regex in
       let { exp_clauses = clauses;
             exp_id      = id
           } = exp
       in
+         count,
          { exp_clauses = (action, id, regex) :: clauses;
            exp_id      = succ id
          }
@@ -2156,9 +2180,8 @@ struct
       }
 
    let add_clause lex action s =
-      { lex_exp = add_clause_exp lex.lex_exp action s;
-        lex_dfa = None
-      }
+      let count, exp = add_clause_exp lex.lex_exp action s in
+         count, { lex_exp = exp; lex_dfa = None }
 
    let remove_clause lex action =
       { lex_exp = remove_clause_exp lex.lex_exp action;
@@ -2222,7 +2245,7 @@ struct
     * Create a regular expression.
     *)
    let regexp s =
-      LmLexer.add_clause LmLexer.empty 0 s
+      snd (LmLexer.add_clause LmLexer.empty 0 s)
 
    (*
     * Perform the match.

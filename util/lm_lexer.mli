@@ -117,8 +117,11 @@ sig
    (* The empty lexer accepts the empty language *)
    val empty : t
 
-   (* Add a clause, specified as a regular expression *)
-   val add_clause : t -> action -> string -> t
+   (*
+    * Add a clause, specified as a regular expression
+    * the int is the number of arguments in the regex.
+    *)
+   val add_clause : t -> action -> string -> int * t
 
    (* Remove a clause by action name *)
    val remove_clause : t -> action -> t
