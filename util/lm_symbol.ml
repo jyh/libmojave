@@ -42,19 +42,9 @@ let debug_symbol = ref false
 type symbol = int * string
 type var = symbol
 
-type t =
-   { mutable count : int }
-
-(*
- * A new symbol table.
- *)
-let table =
-   { count = 100 }
-
-let new_number () =
-   let index = succ table.count in
-      table.count <- index;
-      index
+let new_number =
+   let count = ref 100 in
+      fun () -> incr count; !count
 
 (*
  * Get the integer suffix.
@@ -116,20 +106,28 @@ let stop s =
 
 let char0 = Char.code '0'
 
-let add s =
-   let rec loop fact n i =
+let rec pad_with_underscore s i =
+   if i <= 0 then true else
+   let i = pred i in
+   match s.[i] with
+      '_' -> pad_with_underscore s i
+    | '0' .. '9' -> true
+    | _ -> false
+
+let add =
+   let rec loop s fact n i =
       if i < 0 then
          0, s
       else
          match s.[i] with
             '_' ->
-               n, String.sub s 0 i
+               n, String.sub s 0 (if pad_with_underscore s i then i else i + 1)
           | '0'..'9' as c ->
-               loop (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
+               loop s (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
           | _ ->
                n, String.sub s 0 (succ i)
    in
-      loop 1 0 (String.length s - 1)
+      fun s -> loop s 1 0 (String.length s - 1)
 
 let make s i = (i, s)
 
@@ -145,9 +143,7 @@ let reintern (_, s) =
  *)
 let new_symbol_string s =
    (* assert (if is_special s then stop s else true); *)
-   let i = succ table.count in
-      table.count <- i;
-      i, s
+      new_number (), s
 
 let new_symbol (_, v) =
    new_symbol_string v
@@ -185,17 +181,10 @@ let is_interned (i, _) =
  * If the symbol is not a defined symbol,
  * print the index.
  *)
-let string_of_symbol = function
-   (0, s) ->
-      s
- | (i, s) ->
-      let len = String.length s in
-         if len = 0 then
-            "_" ^ string_of_int i
-         else if Lm_string_util.is_digit s.[pred len] then
-            s ^ "_" ^ string_of_int i
-         else
-            s ^ string_of_int i
+let string_of_symbol (i,s) =
+   let len = String.length s in
+   let s = if pad_with_underscore s len then s ^ "_" else s in
+      if i=0 then s else s ^ string_of_int i
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
