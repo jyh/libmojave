@@ -8,7 +8,8 @@ CFILES = $(FILES)
 #
 # Libraries
 #
-StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
+if $(defined LMINSTALL)
+    StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
 
 clean:
     $(CLEAN)

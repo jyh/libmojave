@@ -5,7 +5,8 @@ include Files
 
 OCAMLINCLUDES += ../stdlib ../util
 
-OCamlLibraryInstall($(LMINSTALL), $(LIB), lmunix, $(UNIX_FILES))
+if $(defined LMINSTALL)
+    OCamlLibraryInstall($(LMINSTALL), $(LIB), lmunix, $(UNIX_FILES))
 
 clean:
     $(CLEAN)

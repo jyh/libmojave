@@ -28,10 +28,24 @@ FILES =\
 	$(UTIL_FILES)
 
 OCamlLibrary(lm, $(FILES))
-OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
+
+if $(defined LMINSTALL)
+    OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
 
 clean:
     $(CLEAN)
+
+#
+# Configuration
+#
+if $(not $(defined THREADS_ENABLED))
+    THREADS_ENABLED = false
+    export
+
+if $(not $(defined CamlSubDirs))
+    CamlSubDirs(dirs) =
+        .SUBDIRS: $(dirs)
+    export
 
 #
 # Subdirectories of this project

@@ -5,7 +5,8 @@ include Files
 
 OCAMLINCLUDES += ../stdlib ../unix
 
-OCamlLibraryInstall($(LMINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
+if $(defined LMINSTALL)
+    OCamlLibraryInstall($(LMINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
 
 MLZFILES = lm_marshal_sig
 
