@@ -33,6 +33,20 @@ include Makefile.dep
 lm_pervasives.ml: lm_pervasives.mlp lm_pervasives.h
 	$(CPP) -imacros lm_pervasives.h lm_pervasives.mlp > $@
 
+ifeq ($(THREADS_ENABLED),YES)
+
+lm_threads.ml: lm_threads_system.ml
+	$(LN) $< $@
+else
+
+lm_threads.ml: lm_threads_null.ml
+	$(LN) $< $@
+
+endif
+
+clean::
+	$(RM) lm_threads.ml
+
 #
 # Rules
 #
