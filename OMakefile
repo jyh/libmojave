@@ -23,6 +23,4 @@ OCamlLibraryCopy($(MPINSTALL), $(LIB), lm, $(EMPTY))
 #
 # Subdirectories of this project
 #
-if $(equal $(PREBUILT_CLIBS), undefined)
-    .SUBDIRS: cutil
-.SUBDIRS: stdlib unix system util
+.SUBDIRS: cutil stdlib unix system util

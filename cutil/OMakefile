@@ -1,53 +1,59 @@
-#
-# LibMojave C files
-#
-CFILES =\
-	lm_abstract\
-	lm_float\
-	lm_ncurses\
-	lm_printf\
-	lm_raw\
-	lm_readline\
-	lm_rusage\
-	lm_terminfo\
-	lm_mmap\
-	lm_marshal_shared
+if $(not $(equal $(PREBUILT_CLIBS), undefined))
+   $(MPINSTALL): $(LIB)/liblmcutil$(EXT_LIB)
+   $(LIB)/liblmcutil$(EXT_LIB): $(ROOT)/$(PREBUILT_CLIBS)/liblmcutil$(EXT_LIB)
+      $(CP) $^ $@
 
-#
-# Do you want to include readline support in libmojave?
-#
-READLINE_CFLAGS =
-READLINE_LDFLAGS =
+else
+   #
+   # LibMojave C files
+   #
+   CFILES =\
+           lm_abstract\
+           lm_float\
+           lm_ncurses\
+           lm_printf\
+           lm_raw\
+           lm_readline\
+           lm_rusage\
+           lm_terminfo\
+           lm_mmap\
+           lm_marshal_shared
 
-if $(equal $(READLINE), YES)
-    READLINE_CFLAGS =\
-	-DREADLINE\
-        -DRL_COMPLETION_MATCHES=rl_completion_matches\
-        -DRL_CP_TYPE=rl_compentry_func_t\
-        -DRL_CPP_TYPE=rl_completion_func_t
-    READLINE_LDFLAGS = -cclib -lreadline -cclib -lncurses
-    export
+   #
+   # Do you want to include readline support in libmojave?
+   #
+   READLINE_CFLAGS =
+   READLINE_LDFLAGS =
 
-#
-# Do you want to include curses support?
-#
-NCURSES_CFLAGS =
-NCURSES_LDFLAGS =
+   if $(equal $(READLINE), YES)
+       READLINE_CFLAGS =\
+           -DREADLINE\
+           -DRL_COMPLETION_MATCHES=rl_completion_matches\
+           -DRL_CP_TYPE=rl_compentry_func_t\
+           -DRL_CPP_TYPE=rl_completion_func_t
+       READLINE_LDFLAGS = -cclib -lreadline -cclib -lncurses
+       export
 
-if $(equal $(NCURSES), YES)
-    NCURSES_CFLAGS = -DNCURSES
-    NCURSES_LDFLAGS = -cclib -lncurses
-    export
+   #
+   # Do you want to include curses support?
+   #
+   NCURSES_CFLAGS =
+   NCURSES_LDFLAGS =
 
-#
-# Special CFLAGS
-#
-CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
+   if $(equal $(NCURSES), YES)
+       NCURSES_CFLAGS = -DNCURSES
+       NCURSES_LDFLAGS = -cclib -lncurses
+       export
 
-#
-# Libraries
-#
-StaticCLibraryInstall($(MPINSTALL), $(LIB), liblmcutil, $(CFILES))
+   #
+   # Special CFLAGS
+   #
+   CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
 
-clean:
-    $(CLEAN)
+   #
+   # Libraries
+   #
+   StaticCLibraryInstall($(MPINSTALL), $(LIB), liblmcutil, $(CFILES))
+
+   clean:
+       $(CLEAN)
