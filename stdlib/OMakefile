@@ -14,6 +14,8 @@ else
     lm_thread_pool.ml: lm_thread_pool_null.ml
         $(symlink $<, $@)
 
+OCamlGeneratedFiles(lm_thread_pool.ml lm_thread_core.ml)
+
 #
 # Library
 #
@@ -25,6 +27,6 @@ include Files
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
-    $(CLEAN) lm_pervasives.ml lm_thread_core.ml
+    $(CLEAN) lm_pervasives.ml lm_thread_core.ml lm_thread_pool.ml
 
 all: lmstdlib$(LIB_SUFFIX)
