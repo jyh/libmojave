@@ -586,7 +586,7 @@ let get_thread_handle thread handle =
    if IntTable.mem handle.handle_active thread.thread_id then
       handle.handle_value
    else
-      raise (Invalid_argument "State.get: entry is not locked")
+      raise (Invalid_argument (Printf.sprintf "State.get: %s: entry is not locked" handle.handle_debug))
 
 let get entry =
    if !debug_lock then
