@@ -420,6 +420,9 @@ module SymbolListTable = Lm_map.LmMake (SymbolListCompare)
 let output_symbol_set out s =
    output_symbol_list out (SymbolSet.to_list s)
 
+let pp_print_symbol_set buf s =
+   pp_print_symbol_list buf (SymbolSet.to_list s)
+
 (*
  * -*-
  * Local Variables:

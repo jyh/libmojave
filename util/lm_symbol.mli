@@ -138,6 +138,7 @@ val output_symbol_set    : out_channel -> SymbolSet.t -> unit
  *)
 val pp_print_symbol      : formatter -> symbol -> unit
 val pp_print_symbol_list : formatter -> symbol list -> unit
+val pp_print_symbol_set  : formatter -> SymbolSet.t -> unit
 val pp_print_ext_symbol  : formatter -> symbol -> unit
 
 (*
