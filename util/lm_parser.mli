@@ -125,6 +125,7 @@ sig
     * but parsing can only be performed for start variables.
     *)
    val add_start      : t -> symbol -> t
+   val get_start      : t -> symbol list
 
    (* Precedence control *)
    val prec_min       : precedence

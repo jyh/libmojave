@@ -1359,6 +1359,9 @@ struct
       let gram = add_start info.parse_grammar sym in
          { parse_grammar = gram; parse_pda = None }
 
+   let get_start info =
+      SymbolSet.to_list info.parse_grammar.gram_start_symbols
+
    let prec_min = Precedence.prec_min
    let prec_max = Precedence.prec_max
 
