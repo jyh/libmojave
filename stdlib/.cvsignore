@@ -13,3 +13,6 @@ lm_map_sig.mli
 lm_set_sig.ml
 lm_set_sig.mli
 lm_pervasives.ml
+lm_thread_core.ml
+lm_thread_sig.ml
+lm_thread_sig.mli

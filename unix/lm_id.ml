@@ -31,6 +31,12 @@
  *)
 
 (*
+ * Use the null implementation of threads.
+ * Don't kill this off.
+ *)
+open Lm_thread
+
+(*
  * The identifier is just a string.
  *)
 type t = string
@@ -41,17 +47,6 @@ type t = string
  *    2. Process identifier
  *    3. A unique number in this process
  *)
-module Mutex =
-struct
-   type t = unit
-
-   let create () = ()
-
-   let lock () = ()
-
-   let unlock () = ()
-end
-
 let id_lock = Mutex.create ()
 let id_value = ref 0
 
