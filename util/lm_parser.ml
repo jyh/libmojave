@@ -284,13 +284,21 @@ struct
    module ProdItemSet   = Lm_set.LmMake (ProdItemCompare);;
    module ProdItemTable = Lm_map.LmMake (ProdItemCompare);;
 
-   module ProdItemSetCompare =
+   (*
+    * A state in the machine is a set of prod_items.
+    *)
+   type state =
+      { state_hash   : int;
+        state_set    : ProdItemSet.t
+      }
+
+   module StateCompare =
    struct
-      type t = ProdItemSet.t
+      type t = state
       let compare = Pervasives.compare
    end
 
-   module ProdItemSetTable = Lm_map.LmMake (ProdItemSetCompare);;
+   module StateTable = Lm_map.LmMake (StateCompare);;
 
    (*
     * The lookahead is a set of variables.
@@ -758,6 +766,14 @@ struct
     *)
 
    (*
+    * A state from a set.
+    *)
+   let state_of_set set =
+      { state_hash  = Hashtbl.hash set;
+        state_set   = set
+      }
+
+   (*
     * Build a prod_item from a production.
     *)
    let prod_item_of_prod prod =
@@ -806,6 +822,8 @@ struct
    (*
     * Take the closure of a production.
     *)
+   let closure_count = ref 0   (* For performance measurements *)
+
    let closure info (table : lookahead ProdItemTable.t) =
       let { info_grammar  = { gram_prod = prods };
             info_nullable = nullable;
@@ -813,6 +831,7 @@ struct
           } = info
       in
       let step closure =
+         incr closure_count;
          ProdItemTable.fold (fun (closure, changed) prod_item lookahead ->
                match prod_item with
                   { prod_item_right = v :: rest } ->
@@ -862,32 +881,33 @@ struct
     * already exists.
     *)
    let add_state examined unexamined closure =
-      let key =
-         ProdItemTable.fold (fun key item _ ->
-               ProdItemSet.add key item) ProdItemSet.empty closure
+      let set =
+         ProdItemTable.fold (fun set item _ ->
+               ProdItemSet.add set item) ProdItemSet.empty closure
       in
+      let key = state_of_set set in
          try
-            let info_item = ProdItemSetTable.find examined key in
+            let info_item = StateTable.find examined key in
             let info_item, changed = info_item_union info_item closure in
                if changed then
-                  info_item, ProdItemSetTable.remove examined key, ProdItemSetTable.add unexamined key info_item
+                  info_item, StateTable.remove examined key, StateTable.add unexamined key info_item
                else
                   info_item, examined, unexamined
          with
             Not_found ->
                try
-                  let info_item = ProdItemSetTable.find unexamined key in
+                  let info_item = StateTable.find unexamined key in
                   let info_item, _ = info_item_union info_item closure in
-                  let unexamined = ProdItemSetTable.add unexamined key info_item in
+                  let unexamined = StateTable.add unexamined key info_item in
                      info_item, examined, unexamined
                with
                   Not_found ->
                      let info_item =
-                        { info_item_index = ProdItemSetTable.cardinal examined + ProdItemSetTable.cardinal unexamined;
+                        { info_item_index = StateTable.cardinal examined + StateTable.cardinal unexamined;
                           info_item_table = closure
                         }
                      in
-                     let unexamined = ProdItemSetTable.add unexamined key info_item in
+                     let unexamined = StateTable.add unexamined key info_item in
                         info_item, examined, unexamined
 
    (*
@@ -925,15 +945,17 @@ struct
    (*
     * Compute the transition table, only for shift operations.
     *)
+   let shift_count = ref 0
+
    let rec shift_closure info shift_table examined unexamined =
       let { info_grammar = { gram_prod = prods } } = info in
-         if ProdItemSetTable.is_empty unexamined then
+         if StateTable.is_empty unexamined then
             shift_table, examined
          else
             (* Move an item from unexamined to examined *)
-            let key, info_item = ProdItemSetTable.choose unexamined in
-            let examined = ProdItemSetTable.add examined key info_item in
-            let unexamined = ProdItemSetTable.remove unexamined key in
+            let key, info_item = StateTable.choose unexamined in
+            let examined = StateTable.add examined key info_item in
+            let unexamined = StateTable.remove unexamined key in
 
             (* For each of the shift symbols, add a shift operation *)
             let syms = shift_symbols info_item in
@@ -953,6 +975,7 @@ struct
             in
             let id = info_item.info_item_index in
             let shift_table = IntTable.add shift_table id shift in
+               incr shift_count;
                shift_closure info shift_table examined unexamined
 
    (*
@@ -1034,7 +1057,7 @@ struct
     * Compute the reduce actions.
     *)
    let reduce info trans_table states =
-      ProdItemSetTable.fold (fun trans_table _ info_item ->
+      StateTable.fold (fun trans_table _ info_item ->
             let { info_item_index = index;
                   info_item_table = prod_items
                 } = info_item
@@ -1076,14 +1099,19 @@ struct
          start_table, examined, unexamined
 
    let create gram =
+      eprintf "PDA: creating@.";
+      let start = Unix.gettimeofday () in
       let info = info_of_grammar gram in
       let start_table, examined, unexamined =
          SymbolSet.fold (fun (table, examined, unexamined) start ->
                create_start info table examined unexamined start) (**)
-            (SymbolTable.empty, ProdItemSetTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
+            (SymbolTable.empty, StateTable.empty, StateTable.empty) gram.gram_start_symbols
       in
+      eprintf "PDA: step1: %g secs@." (Unix.gettimeofday () -. start);
       let trans_table, states = shift_closure info IntTable.empty examined unexamined in
+      eprintf "PDA: step2: %d closures: %d shifts: %d states: %g secs@." !closure_count !shift_count (StateTable.cardinal states) (Unix.gettimeofday () -. start);
       let trans_table = reduce info trans_table states in
+      eprintf "PDA: step3: %g secs@." (Unix.gettimeofday () -. start);
 
       (* Build the PDA states *)
       let null_state =
@@ -1091,9 +1119,9 @@ struct
            pda_reduce = ReduceNone
          }
       in
-      let table = Array.create (ProdItemSetTable.cardinal states) null_state in
+      let table = Array.create (StateTable.cardinal states) null_state in
       let () =
-         ProdItemSetTable.iter (fun _ info_item ->
+         StateTable.iter (fun _ info_item ->
                let  { info_item_index = index;
                       info_item_table = items
                     } = info_item
@@ -1105,6 +1133,7 @@ struct
                in
                   table.(index) <- state) states
       in
+         eprintf "PDA: created: %g secs@." (Unix.gettimeofday () -. start);
          { pda_start_states  = start_table;
            pda_states        = table
          }
