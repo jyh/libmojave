@@ -63,16 +63,19 @@ type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
+ | NoneAssoc
 
 let pp_print_assoc buf assoc =
    let s =
       match assoc with
          LeftAssoc ->
-            "left "
+            "left"
        | RightAssoc ->
             "right"
        | NonAssoc ->
-            "nona "
+            "nona"
+       | NoneAssoc ->
+            "none"
    in
       pp_print_string buf s
 
@@ -112,6 +115,9 @@ sig
    (* Variable names: the names of terminals and nonterminals *)
    type symbol
 
+   (* A symbol to represent eof *)
+   val eof : symbol
+
    (* For debugging *)
    val to_string : symbol -> string
    val pp_print_symbol : out_channel -> symbol -> unit
@@ -119,6 +125,7 @@ sig
    (* Sets and tables *)
    module SymbolSet : Lm_set_sig.LmSet with type elt = symbol;;
    module SymbolTable : Lm_map_sig.LmMap with type key = symbol;;
+   module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol;;
 
    (* Names of semantic actions *)
    type action
@@ -151,25 +158,15 @@ struct
       'a * 'b                   (* The result of the semantic action *)
 
    (*
-    * Internally, we represent variables with integers.
+    * JYH: it used to be the case that we represented vars with
+    * integers.  However, this makes the union operation pretty hard,
+    * so we just go ahead and use symbols directly.
     *)
-   type var = int
+   type var = symbol
 
-   module VarCompare =
-   struct
-      type t = var
-      let compare = (-)
-   end
-
-   module VarSet    = IntSet;;
-   module VarTable  = IntTable;;
-   module VarMTable = IntMTable;;
-
-   (*
-    * EOF is a special var.
-    * Have to fix this.
-    *)
-   let eof_var     = -1
+   module VarSet    = SymbolSet;;
+   module VarTable  = SymbolTable;;
+   module VarMTable = SymbolMTable;;
 
    (************************************************
     * The grammar.
@@ -194,13 +191,11 @@ struct
     * and precedences.
     *)
    type grammar =
-     { gram_var_of_symbol : var SymbolTable.t;
-       gram_symbol_of_var : symbol VarTable.t;
-       gram_prod          : prod VarMTable.t;
-       gram_prec          : precedence VarTable.t;
-       gram_prec_table    : Precedence.t;
-       gram_start_symbols : SymbolSet.t
-     }
+      { gram_prod          : prod VarMTable.t;
+        gram_prec          : precedence VarTable.t;
+        gram_prec_table    : Precedence.t;
+        gram_start_symbols : SymbolSet.t
+      }
 
    (************************************************
     * The PDA.
@@ -214,6 +209,7 @@ struct
     | ShiftAction  of int                  (* goto state *)
     | GotoAction   of int
     | AcceptAction
+    | ErrorAction
 
    (*
     * We may reduce states without lookahead,
@@ -234,8 +230,6 @@ struct
 
    type pda =
       { pda_start_states  : int SymbolTable.t;
-        pda_var_of_symbol : var SymbolTable.t;
-        pda_symbol_of_var : symbol VarTable.t;
         pda_states        : pda_state array
       }
 
@@ -243,9 +237,7 @@ struct
     * Run time info.
     *)
    type ('a, 'b) run =
-      { run_var_of_symbol : var SymbolTable.t;
-        run_symbol_of_var : symbol VarTable.t;
-        run_states        : pda_state array;
+      { run_states        : pda_state array;
         run_lexer         : ('a, 'b) lexer;
         run_eval          : ('a, 'b) eval
       }
@@ -322,53 +314,10 @@ struct
      }
 
    (************************************************************************
-    * Utilities.
-    *)
-
-   (*
-    * Get the index of a symbol.
-    * If the symbol is new, expand the tables.
-    *)
-   let var_of_symbol_exn gram sym =
-      SymbolTable.find gram.gram_var_of_symbol sym
-
-   let var_of_symbol gram v =
-      let { gram_var_of_symbol = var_of_symbol;
-            gram_symbol_of_var = symbol_of_var
-          } = gram
-      in
-         try gram, SymbolTable.find var_of_symbol v with
-            Not_found ->
-               let index = SymbolTable.cardinal var_of_symbol in
-               let gram =
-                  { gram with gram_var_of_symbol = SymbolTable.add var_of_symbol v index;
-                              gram_symbol_of_var = VarTable.add symbol_of_var index v
-                  }
-               in
-                  gram, index
-
-   let vars_of_symbols gram vl =
-      let gram, vl =
-         List.fold_left (fun (gram, vl) v ->
-               let gram, v = var_of_symbol gram v in
-                  gram, v :: vl) (gram, []) vl
-      in
-         gram, List.rev vl
-
-   (*
-    * Get the symbol for a var.
-    *)
-   let symbol_of_var gram v =
-      VarTable.find gram.gram_symbol_of_var v
-
-   (************************************************************************
     * Printing and errors.
     *)
    let pp_print_var gram buf v =
-      if v = eof_var then
-         pp_print_char buf '$'
-      else
-         pp_print_symbol buf (symbol_of_var gram v)
+      pp_print_symbol buf v
 
    let rec pp_print_vars gram buf vl =
       List.iter (fun v -> fprintf buf " %a" (pp_print_var gram) v) vl
@@ -390,7 +339,7 @@ struct
             prod_prec   = pre
           } = prod
       in
-         fprintf buf "@[<hv 3>(production@ action: %a@ prec: %a@ target: %a@ sources:@ %a)@]" (**)
+         fprintf buf "@[<hv 3>(production@ action: %a@ prec: %a@ target: %a@ @[<hv 3>sources:@ %a@])@]" (**)
             pp_print_action action
             (Precedence.pp_print_prec gram.gram_prec_table) pre
             (pp_print_var gram) name
@@ -438,12 +387,14 @@ struct
             fprintf buf "shift %d" id
        | GotoAction id ->
             fprintf buf "goto %d" id
+       | ErrorAction ->
+            pp_print_string buf "error"
        | AcceptAction  ->
             pp_print_string buf "accept"
 
    let pp_print_pda_actions info buf actions =
       let pp_print_var = pp_print_var info.info_grammar in
-         IntTable.iter (fun v action ->
+         VarTable.iter (fun v action ->
                fprintf buf "@ %a: %a" pp_print_var v pp_print_pda_action action) actions
 
    let pp_print_closure info buf closure =
@@ -504,9 +455,7 @@ struct
     * Empty grammar has the basic precedences.
     *)
    let empty_grammar =
-      { gram_var_of_symbol = SymbolTable.empty;
-        gram_symbol_of_var = VarTable.empty;
-        gram_prod          = VarMTable.empty;
+      { gram_prod          = VarMTable.empty;
         gram_prec          = VarTable.empty;
         gram_prec_table    = Precedence.empty;
         gram_start_symbols = SymbolSet.empty
@@ -521,16 +470,14 @@ struct
    (*
     * Add a symbol at a given precedence level.
     *)
-   let add_prec gram pre sym =
-      let gram, v = var_of_symbol gram sym in
-         { gram with gram_prec = VarTable.add gram.gram_prec v pre }
+   let add_prec gram pre v =
+      { gram with gram_prec = VarTable.add gram.gram_prec v pre }
 
    (*
     * Find the precedence level for a symbol.
     *)
-   let find_prec gram sym =
-      let v = var_of_symbol_exn gram sym in
-         VarTable.find gram.gram_prec v
+   let find_prec gram v =
+      VarTable.find gram.gram_prec v
 
    (*
     * Add a production.
@@ -538,8 +485,6 @@ struct
     * of the rightmost variable that has a precedence.
     *)
    let add_production gram action v rhs pre =
-      let gram, v   = var_of_symbol gram v in
-      let gram, rhs = vars_of_symbols gram rhs in
       let pre =
          match pre with
             Some sym ->
@@ -572,17 +517,6 @@ struct
          { gram with gram_prod = table }
 
    (*
-    * Translate a variable in the translation table.
-    *)
-   let translate_var table v =
-      try VarTable.find table v with
-         Not_found ->
-            v
-
-   let translate_vars table vars =
-      List.map (translate_var table) vars
-
-   (*
     * Precedence union is a little hard.
     * Suppose the second grammar contains some precedence
     * levels that do not occur in the first grammar.  We
@@ -610,7 +544,7 @@ struct
       List.fold_left (fun precs v ->
             VarTable.add precs v pre) precs vars
 
-   let union_prec var_trans prec1 table1 prec2 table2 =
+   let union_prec prec1 table1 prec2 table2 =
       (* Build an inverse precedence table for grammar2 *)
       let inv_table =
          VarTable.fold (fun inv_table v pre ->
@@ -622,7 +556,7 @@ struct
                          | None ->
                               []
                      in
-                        translate_var var_trans v :: vars)) PrecTable.empty prec2
+                        v :: vars)) PrecTable.empty prec2
       in
 
       (*
@@ -653,42 +587,21 @@ struct
     * Union of two grammars.
     *)
    let union_grammar gram1 gram2 =
-      let { gram_var_of_symbol = var_of_symbol1;
-            gram_symbol_of_var = symbol_of_var1;
-            gram_prod          = prod1;
+      let { gram_prod          = prod1;
             gram_prec          = prec1;
             gram_prec_table    = prec_table1;
             gram_start_symbols = start1
           } = gram1
       in
-      let { gram_var_of_symbol = var_of_symbol2;
-            gram_symbol_of_var = symbol_of_var2;
-            gram_prod          = prod2;
+      let { gram_prod          = prod2;
             gram_prec          = prec2;
             gram_prec_table    = prec_table2;
             gram_start_symbols = start2
           } = gram2
       in
 
-      (* Find the new symbols *)
-      let var_trans, var_of_symbol, symbol_of_var =
-         SymbolTable.fold (fun (var_trans, var_of_symbol, symbol_of_var) sym v ->
-               try
-                  let v' = SymbolTable.find var_of_symbol1 sym in
-                     if v' <> v then
-                        raise (Failure "union_grammar: the grammars share a variable, but declare it separately");
-                     var_trans, var_of_symbol, symbol_of_var
-               with
-                  Not_found ->
-                     let v' = SymbolTable.cardinal var_of_symbol in
-                     let var_trans = VarTable.add var_trans v v' in
-                     let var_of_symbol = SymbolTable.add var_of_symbol sym v' in
-                     let symbol_of_var = VarTable.add symbol_of_var v' sym in
-                        var_trans, var_of_symbol, symbol_of_var) (VarTable.empty, var_of_symbol1, symbol_of_var1) var_of_symbol2
-      in
-
       (* Compute the new precedence table *)
-      let precs, prec_table = union_prec var_trans prec1 prec_table1 prec2 prec_table2 in
+      let precs, prec_table = union_prec prec1 prec_table1 prec2 prec_table2 in
 
       (* Get the complete set of actions for the first parser *)
       let actions =
@@ -702,21 +615,13 @@ struct
          VarMTable.fold_all (fun (changed, prods) _ prodlist ->
                List.fold_left (fun (changed, prods) prod ->
                      let { prod_action = action;
-                           prod_name   = name;
-                           prod_rhs    = rhs;
-                           prod_prec   = pre
+                           prod_name   = name
                          } = prod
                      in
                         if ActionSet.mem actions prod.prod_action then
                            changed, prods
                         else
-                           let name = translate_var var_trans name in
-                           let prod =
-                              { prod with prod_name = name;
-                                          prod_rhs  = translate_vars var_trans rhs
-                              }
-                           in
-                              true, VarMTable.add prods name prod) (changed, prods) prodlist) (false, prod1) prod2
+                           true, VarMTable.add prods name prod) (changed, prods) prodlist) (false, prod1) prod2
       in
 
       (* Union of the start symbols *)
@@ -725,21 +630,32 @@ struct
       (* Has anything changed? *)
       let changed =
          changed
-         || not (VarTable.is_empty var_trans)
          || (VarTable.cardinal precs <> VarTable.cardinal prec1)
          || (SymbolSet.cardinal start <> SymbolSet.cardinal start1)
       in
 
       (* New grammar *)
       let gram =
-         { gram_var_of_symbol = var_of_symbol;
-           gram_symbol_of_var = symbol_of_var;
-           gram_prod          = prods;
+         { gram_prod          = prods;
            gram_prec          = precs;
            gram_prec_table    = prec_table;
            gram_start_symbols = start
          }
       in
+         changed, gram
+
+   (*
+    * Debugging version.
+    *)
+   let union_grammar gram1 gram2 =
+      if !debug_parsegen then
+         eprintf "@[<v 3>Grammar union:@ @[<hv 3>Grammar1:@ %a@]@ @[<hv 3>Grammar2:@ %a@]@]@." (**)
+            pp_print_grammar gram1
+            pp_print_grammar gram2;
+      let changed, gram = union_grammar gram1 gram2 in
+         if !debug_parsegen then
+            eprintf "@[<v 3>Grammar union %b:@ %a@]@." (**)
+               changed pp_print_grammar gram;
          changed, gram
 
    (************************************************************************
@@ -809,12 +725,15 @@ struct
       in
 
       (* Initialize with the terminals *)
-      let { gram_symbol_of_var = vars;
-            gram_prod = prods
-          } = gram
+      let { gram_prod = prods } = gram in
+      let vars =
+         VarMTable.fold_all (fun vars v prods ->
+               let vars = VarSet.add vars v in
+                  List.fold_left (fun vars prod ->
+                        List.fold_left VarSet.add vars prod.prod_rhs) vars prods) VarSet.empty prods
       in
       let first =
-         VarTable.fold (fun first v _ ->
+         VarSet.fold (fun first v ->
                if VarMTable.mem prods v then
                   VarTable.add first v VarSet.empty
                else
@@ -1048,7 +967,7 @@ struct
               prod_item_name = name;
               prod_item_left = left
             }, lookahead ->
-               if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof_var then
+               if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
                   ReduceAccept (action, name, List.length left)
                else
                   ReduceNow (action, name, List.length left)
@@ -1094,6 +1013,8 @@ struct
                                | RightAssoc ->
                                     actions
                                | NonAssoc ->
+                                    VarTable.add actions v ErrorAction
+                               | NoneAssoc ->
                                     shift_reduce_conflict info v id prod_item;
                                     actions
                            else
@@ -1101,6 +1022,7 @@ struct
                    | ReduceAction (action2, _, _) ->
                         reduce_reduce_conflict info v action action2;
                         actions
+                   | ErrorAction
                    | AcceptAction ->
                         raise (Invalid_argument "reduce_action")
                with
@@ -1137,14 +1059,11 @@ struct
    let create_start info start_table examined unexamined start =
       let gram = info.info_grammar in
       let prods =
-         try
-            let _, start = var_of_symbol gram start in
-               VarMTable.find_all gram.gram_prod start
-         with
+         try VarMTable.find_all gram.gram_prod start with
             Not_found ->
                raise (Failure ("no such production: " ^ to_string start))
       in
-      let lookahead = VarSet.singleton eof_var in
+      let lookahead = VarSet.singleton eof in
       let table =
          List.fold_left (fun table prod ->
                let prod_item = prod_item_of_prod prod in
@@ -1186,8 +1105,6 @@ struct
                   table.(index) <- state) states
       in
          { pda_start_states  = start_table;
-           pda_var_of_symbol = gram.gram_var_of_symbol;
-           pda_symbol_of_var = gram.gram_symbol_of_var;
            pda_states        = table
          }
 
@@ -1230,25 +1147,27 @@ struct
     *)
    let fst3 (v, _, _) = v
 
-   let rec pda_lookahead run arg stack state token =
+   let rec pda_lookahead run arg stack state tok =
       let { pda_delta = delta } = run.run_states.(state) in
-      let v, loc, x = token in
+      let v, loc, x = tok in
       let action =
-         try IntTable.find delta v with
+         try VarTable.find delta v with
             Not_found ->
                raise (ParseError loc)
       in
-         match IntTable.find delta v with
+         match VarTable.find delta v with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
-                  eprintf "State %d: token %a: shift %d@." state pp_print_symbol (VarTable.find run.run_symbol_of_var v) new_state;
+                  eprintf "State %d: token %a: shift %d@." state pp_print_symbol v new_state;
                pda_no_lookahead run arg ((state, loc, x) :: stack) new_state
           | ReduceAction (action, name, tokens) ->
                if !debug_parse then
                   eprintf "State %d: reduce %a@." state pp_print_action action;
                let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
-                  pda_goto_lookahead run arg loc stack state name x token
+                  pda_goto_lookahead run arg loc stack state name x tok
+          | ErrorAction ->
+               raise (ParseError loc)
           | AcceptAction ->
                match stack with
                   [_, _, x] ->
@@ -1256,12 +1175,12 @@ struct
                 | _ ->
                      raise (Invalid_argument "pda_lookahead")
 
-   and pda_goto_lookahead run arg loc stack state name x token =
+   and pda_goto_lookahead run arg loc stack state name x tok =
       if !debug_parse then
          eprintf "State %d: Goto lookahead: production %a@." (**)
-            state pp_print_symbol (VarTable.find run.run_symbol_of_var name);
+            state pp_print_symbol name;
       let action =
-         try IntTable.find run.run_states.(state).pda_delta name with
+         try VarTable.find run.run_states.(state).pda_delta name with
             Not_found ->
                raise (ParseError loc)
       in
@@ -1270,10 +1189,11 @@ struct
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
-                     state pp_print_symbol (VarTable.find run.run_symbol_of_var name)
-                     new_state pp_print_symbol (VarTable.find run.run_symbol_of_var (fst3 token));
+                     state pp_print_symbol name
+                     new_state pp_print_symbol (fst3 tok);
                let stack = (state, loc, x) :: stack in
-                  pda_lookahead run arg stack new_state token
+                  pda_lookahead run arg stack new_state tok
+          | ErrorAction
           | ReduceAction _
           | AcceptAction ->
                eprintf "pda_goto_no_lookahead: illegal action: %a@." pp_print_pda_action action;
@@ -1292,21 +1212,16 @@ struct
             let _, arg, _, x, _ = semantic_action run.run_eval arg action stack state tokens in
                arg, x
        | ReduceNone ->
-            let sym, loc, arg, x = run.run_lexer arg in
+            let v, loc, arg, x = run.run_lexer arg in
             let () =
                if !debug_parse then
-                  eprintf "State %d: Read token: %a@." state pp_print_symbol sym
-            in
-            let v =
-               try SymbolTable.find run.run_var_of_symbol sym with
-                  Not_found ->
-                     raise (ParseError loc)
+                  eprintf "State %d: Read token: %a@." state pp_print_symbol v
             in
                pda_lookahead run arg stack state (v, loc, x)
 
    and pda_goto_no_lookahead run arg loc stack state name x =
       let action =
-         try IntTable.find run.run_states.(state).pda_delta name with
+         try VarTable.find run.run_states.(state).pda_delta name with
             Not_found ->
                raise (ParseError loc)
       in
@@ -1315,25 +1230,22 @@ struct
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
-                     state pp_print_symbol (VarTable.find run.run_symbol_of_var name) new_state;
+                     state pp_print_symbol name new_state;
                let stack = (state, loc, x) :: stack in
                   pda_no_lookahead run arg stack new_state
+          | ErrorAction
           | ReduceAction _
           | AcceptAction ->
                eprintf "pda_goto_no_lookahead: illegal action: %a@." pp_print_pda_action action;
                raise (Invalid_argument "pda_goto_no_lookahead")
 
    let parse pda start lexer eval arg =
-      let { pda_var_of_symbol = var_of_symbol;
-            pda_symbol_of_var = symbol_of_var;
-            pda_states        = states;
+      let { pda_states        = states;
             pda_start_states  = start_states
           } = pda
       in
       let run =
-         { run_var_of_symbol = var_of_symbol;
-           run_symbol_of_var = symbol_of_var;
-           run_states        = states;
+         { run_states        = states;
            run_lexer         = lexer;
            run_eval          = eval
          }
@@ -1411,17 +1323,20 @@ struct
          else
             info1
 
-   let parse info start lexer eval =
-      let pda =
-         match info.parse_pda with
-            Some pda ->
+   let pda_of_info info =
+      match info.parse_pda with
+         Some pda ->
+            pda
+       | None ->
+            let pda = create info.parse_grammar in
+               info.parse_pda <- Some pda;
                pda
-          | None ->
-               let pda = create info.parse_grammar in
-                  info.parse_pda <- Some pda;
-                  pda
-      in
-         parse pda start lexer eval
+
+   let parse info start lexer eval =
+      parse (pda_of_info info) start lexer eval
+
+   let compile info =
+      ignore (pda_of_info info)
 
    let build info debug =
       let prev_debug = !debug_parse in
@@ -1454,8 +1369,8 @@ struct
 
    let empty =
       let prec_table = PrecTable.empty in
-      let prec_table = PrecTable.add prec_table prec_min (NonAssoc, 0) in
-      let prec_table = PrecTable.add prec_table prec_max (NonAssoc, 1) in
+      let prec_table = PrecTable.add prec_table prec_min (NoneAssoc, 0) in
+      let prec_table = PrecTable.add prec_table prec_max (NoneAssoc, 1) in
          prec_table
 
    (*

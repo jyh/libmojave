@@ -2246,41 +2246,26 @@ struct
                   else
                      info1
 
-   let lex info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
+   let dfa_of_info info =
+      match info.lex_dfa with
+         Some dfa ->
+            dfa
+       | None ->
+            let dfa = create info.lex_exp in
+               info.lex_dfa <- Some dfa;
                dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         lex dfa channel
+
+   let lex info channel =
+      lex (dfa_of_info info) channel
 
    let search info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
-               dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         search dfa channel
+      search (dfa_of_info info) channel
 
    let matches info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
-               dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         matches dfa channel
+      matches (dfa_of_info info) channel
+
+   let compile info =
+      ignore (dfa_of_info info)
 end
 
 (************************************************************************

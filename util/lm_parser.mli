@@ -37,6 +37,7 @@ type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
+ | NoneAssoc
 
 val pp_print_assoc : out_channel -> assoc -> unit
 
@@ -76,6 +77,9 @@ sig
    (* Variable names: the names of terminals and nonterminals *)
    type symbol
 
+   (* A unique symbol to identify eof *)
+   val eof : symbol
+
    (* For debugging *)
    val to_string : symbol -> string
    val pp_print_symbol : out_channel -> symbol -> unit
@@ -83,6 +87,7 @@ sig
    (* Sets and tables *)
    module SymbolSet : Lm_set_sig.LmSet with type elt = symbol;;
    module SymbolTable : Lm_map_sig.LmMap with type key = symbol;;
+   module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol;;
 
    (*
     * Semantic actions.
@@ -156,6 +161,13 @@ sig
     * Assumes that productions with the same action name are the same.
     *)
    val union : t -> t -> t
+
+   (*
+    * Build the parser if it isn't already built.
+    * This step is entirely optional.  Call it if you want
+    * to check for errors in the current grammar.
+    *)
+   val compile : t -> unit
 
    (* Force a parser build, possibly in debug mode *)
    val build : t -> bool -> unit

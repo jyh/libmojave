@@ -134,6 +134,14 @@ sig
    val union : t -> t -> t
 
    (*
+    * Compile the machine if not already compiled.
+    * This is entirely optional.  It is here just in case you
+    * want to expand the machine eagerly (for example before
+    * marshaling it to a file).
+    *)
+   val compile : t -> unit
+
+   (*
     * Now match against an input channel.
     * The result is (clause, lexeme, args)
     *    clause: the index of the clause that matched
