@@ -47,8 +47,13 @@ value ml_print_char(value v_fmt, value v_char)
     char buffer[BUFSIZE];
     char *fmt = String_val(v_fmt);
     char c = Int_val(v_char);
+#ifdef WIN32
+    if(sprintf(buffer, fmt, c) < 0)
+        failwith("ml_print_char");
+#else
     if(snprintf(buffer, sizeof(buffer), fmt, c) < 0)
         failwith("ml_print_char");
+#endif
     return copy_string(buffer);
 }
 
@@ -60,8 +65,13 @@ value ml_print_int(value v_fmt, value v_int)
     char buffer[BUFSIZE];
     char *fmt = String_val(v_fmt);
     int i = Int_val(v_int);
+#ifdef WIN32
+    if(sprintf(buffer, fmt, i) < 0)
+        failwith("ml_print_int");
+#else
     if(snprintf(buffer, sizeof(buffer), fmt, i) < 0)
         failwith("ml_print_int");
+#endif
     return copy_string(buffer);
 }
 
@@ -74,8 +84,13 @@ value ml_print_float(value v_fmt, value v_float)
     char buffer[BUFSIZE];
     char *fmt = String_val(v_fmt);
     double x = Double_val(v_float);
+#ifdef WIN32
+    if(sprintf(buffer, fmt, x) < 0)
+        failwith("ml_print_float");
+#else
     if(snprintf(buffer, sizeof(buffer), fmt, x) < 0)
         failwith("ml_print_float");
+#endif
     return copy_string(buffer);
 }
 
@@ -88,8 +103,13 @@ value ml_print_string(value v_fmt, value v_string)
     char buffer[BUFSIZE];
     char *fmt = String_val(v_fmt);
     char *s = String_val(v_string);
+#ifdef WIN32
+    if(sprintf(buffer, fmt, s) < 0)
+        failwith("ml_print_string");
+#else
     if(snprintf(buffer, sizeof(buffer), fmt, s) < 0)
         failwith("ml_print_string");
+#endif
     return copy_string(buffer);
 }
 

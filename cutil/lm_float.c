@@ -28,12 +28,18 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 
+#ifdef WIN32
+#  define INLINE
+#else
+#  define INLINE inline
+#endif
+
 
 /***  Low-level calls  ***/
 
 
 /* Extract a float out of a block, and vice versa */
-static inline long double load_float80(value f) {
+static INLINE long double load_float80(value f) {
 
    long double val;
    
@@ -44,7 +50,7 @@ static inline long double load_float80(value f) {
 }
 
 
-static inline void store_float80(value f, long double val) {
+static INLINE void store_float80(value f, long double val) {
 
    long double *buffer;
    
@@ -55,7 +61,7 @@ static inline void store_float80(value f, long double val) {
 }
 
 
-static inline value copy_float80(long double val) {
+static INLINE value copy_float80(long double val) {
 
    value block;
    
@@ -80,7 +86,11 @@ value string_of_float80(value f) {
    
    /* Print the floating-point value to a buffer */
    val = load_float80(f);
+#ifdef WIN32
+   sprintf(buffer, "%Lg", val);
+#else
    snprintf(buffer, sizeof(buffer), "%Lg", val);
+#endif
    buffer[sizeof(buffer) - 1] = '\0';
    
    /* Allocate a new string block to contain result */
@@ -176,7 +186,11 @@ value float80_format(value fmt, value f) {
    
    /* Print the floating-point value to a buffer */
    val = load_float80(f);
+#ifdef WIN32
+   sprintf(buffer, String_val(fmt), val);
+#else
    snprintf(buffer, sizeof(buffer), String_val(fmt), val);
+#endif
    buffer[sizeof(buffer) - 1] = '\0';
    
    /* Allocate a new string block to contain result */

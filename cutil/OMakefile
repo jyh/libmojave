@@ -42,7 +42,11 @@ if $(equal $(NCURSES), YES)
 #
 # Special CFLAGS
 #
-CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) -Wno-unused-variable
+CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
+
+if $(not $(equal $(OSTYPE), Win32))
+   CFLAGS += -Wno-unused-variable
+   export
 
 #
 # Libraries
@@ -50,6 +54,4 @@ CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) -Wno-unused-variable
 StaticCLibraryInstall($(MPINSTALL), $(LIB), liblmcutil, $(CFILES))
 
 clean:
-    $(CLEAN) *-byte.c *-native.c
-
-all: liblmcutil$(LIB_SUFFIX)
+    $(CLEAN)

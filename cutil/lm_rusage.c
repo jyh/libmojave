@@ -3,63 +3,73 @@
  * Copyright(c) 2002 Justin David Smith, Caltech
  */
 #include <stdio.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
+#include <errno.h>
+
+#ifndef WIN32
+#  include <unistd.h>
+#  include <sys/time.h>
+#  include <sys/resource.h>
+#endif
+
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
-#include <errno.h>
-
 
 /*
  * These values correspond to the rusage_who constant constructors.
  */
-int translate_rusage_who(int who) {
-
-   switch(who) {
-      case 0:  return(RUSAGE_SELF);
-      case 1:  return(RUSAGE_CHILDREN);
-      default: failwith("translate_rusage_who: bad rusage_who constant constructor");
-   }
-
+#ifndef WIN32
+int translate_rusage_who(int who)
+{
+    switch(who) {
+    case 0:
+        return RUSAGE_SELF;
+    case 1:
+        return RUSAGE_CHILDREN;
+    default:
+        failwith("translate_rusage_who: bad rusage_who constant constructor");
+    }
 }
-
+#endif /* !WIN32 */
 
 /*
  * This is a simplified version of getrusage that simply reports on the
  * process run times of the current process or the aggregate of its
  * children.
  */
-value caml_getrusage_time(value mlwho) {
-
-   CAMLparam1(mlwho);
-   CAMLlocal1(result);
-   struct rusage usage;
-   int who = translate_rusage_who(Int_val(mlwho));
+value caml_getrusage_time(value mlwho)
+{
+    CAMLparam1(mlwho);
+    CAMLlocal1(result);
    
-   /* Allocate the result block and initialise it (in case we fail) */
-   result = alloc_tuple(4);
-   Field(result, 0) = Val_int(0);
-   Field(result, 1) = Val_int(0);
-   Field(result, 2) = Val_int(0);
-   Field(result, 3) = Val_int(0);
+    /* Allocate the result block and initialise it (in case we fail) */
+    result = alloc_tuple(4);
+    Field(result, 0) = Val_int(0);
+    Field(result, 1) = Val_int(0);
+    Field(result, 2) = Val_int(0);
+    Field(result, 3) = Val_int(0);
 
-   /* Get the current process stats */
-   if(getrusage(who, &usage) != 0) {
-      failwith("caml_getrusage_times: getrusage call failed");
-   }
-   
-   /* Load the fields of interest into our block */
-   modify(&Field(result, 0), Val_int(usage.ru_utime.tv_sec));
-   modify(&Field(result, 1), Val_int(usage.ru_utime.tv_usec));
-   modify(&Field(result, 2), Val_int(usage.ru_stime.tv_sec));
-   modify(&Field(result, 3), Val_int(usage.ru_stime.tv_usec));
+#ifndef WIN32
+    {
+        struct rusage usage;
+        int who = translate_rusage_who(Int_val(mlwho));
 
-   /* Return the result */
-   CAMLreturn(result);
+        /* Get the current process stats */
+        if(getrusage(who, &usage) != 0) {
+            failwith("caml_getrusage_times: getrusage call failed");
+        }
    
+        /* Load the fields of interest into our block */
+        modify(&Field(result, 0), Val_int(usage.ru_utime.tv_sec));
+        modify(&Field(result, 1), Val_int(usage.ru_utime.tv_usec));
+        modify(&Field(result, 2), Val_int(usage.ru_stime.tv_sec));
+        modify(&Field(result, 3), Val_int(usage.ru_stime.tv_usec));
+    }
+#endif
+
+    /* Return the result */
+    CAMLreturn(result);
 }
 
 
@@ -69,6 +79,8 @@ value caml_getrusage_time(value mlwho) {
 value caml_setrlimit_time(value time) {
 
    CAMLparam1(time);
+
+#ifndef WIN32
    struct rlimit rlim;
 
    /* Set the rlimit max field */
@@ -79,6 +91,7 @@ value caml_setrlimit_time(value time) {
    if(setrlimit(RLIMIT_CPU, &rlim) != 0) {
       failwith("caml_setrlimit_time: setrlimit call failed");
    }
+#endif
    
    /* We were successful */
    CAMLreturn(Val_unit);
