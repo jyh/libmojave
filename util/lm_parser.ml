@@ -94,7 +94,6 @@ sig
    val pp_print_prec  : t -> out_channel -> precedence -> unit
 
    (* Comparison *)
-   val add_assoc      : t -> precedence -> assoc -> t
    val assoc          : t -> precedence -> assoc
    val compare        : t -> precedence -> precedence -> int
 end
@@ -1187,14 +1186,6 @@ struct
    let prec_min = Precedence.prec_min
    let prec_max = Precedence.prec_max
 
-   let add_assoc info pre assoc =
-      let { parse_grammar = gram } = info in
-      let { gram_prec_table = prec_table } = gram in
-      let prec_table = Precedence.add_assoc prec_table pre assoc in
-      let gram = { gram with gram_prec_table = prec_table } in
-      let info = { parse_grammar = gram; parse_pda = None } in
-         info
-
    let create_prec_lt info pre assoc =
       let { parse_grammar = gram } = info in
       let { gram_prec_table = prec_table } = gram in
@@ -1249,7 +1240,7 @@ end
 (*
  * Default precedence module.
  *)
-module ParserPrecedence : PrecedenceArg =
+module Precedence : PrecedenceArg =
 struct
    (*
     * A precedence has a name and associativity.
@@ -1272,21 +1263,6 @@ struct
       let prec_table = PrecTable.add prec_table prec_min (NonAssoc, 0) in
       let prec_table = PrecTable.add prec_table prec_max (NonAssoc, 1) in
          prec_table
-
-   (*
-    * Check that the associativity matches.
-    *)
-   let add_assoc table pre assoc =
-      let () =
-         try
-            let assoc', _ = PrecTable.find table pre in
-               if assoc' <> assoc then
-                  raise (Failure "ParserPrecedence.add_assoc: associativities do not match")
-         with
-            Not_found ->
-               raise (Failure "ParserPrecedence.add_assoc: precedence is not defined")
-      in
-         table
 
    (*
     * Shift all the precedence levels at least the given level
