@@ -607,7 +607,7 @@ struct
 
    let first gram nullable =
       let step first prods =
-         VarMTable.fold_all (fun (first, changed) v prods ->
+         VarMTable.fold_all (fun (first, changed) _ prods ->
                List.fold_left (fun (first, changed) prod ->
                      let { prod_name = x;
                            prod_rhs = rhs
@@ -726,10 +726,6 @@ struct
                               []
                      in
                         List.fold_left (fun (closure, changed) prod ->
-                              let { prod_name = name;
-                                    prod_rhs = rhs
-                                  } = prod
-                              in
                               let lookahead = first_list nullable first rest lookahead in
                               let prod_item = prod_item_of_prod prod in
                               let lookahead, changed =
@@ -1110,7 +1106,7 @@ struct
                eprintf "State %d: ReduceNow: %a@." state pp_print_action action;
             let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
                pda_goto_no_lookahead run arg loc stack state name x
-       | ReduceAccept (action, name, tokens) ->
+       | ReduceAccept (action, _, tokens) ->
             if !debug_parse then
                eprintf "State %d: ReduceAccept: %a@." state pp_print_action action;
             let _, arg, _, x, _ = semantic_action run.run_eval arg action stack state tokens in

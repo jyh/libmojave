@@ -353,7 +353,7 @@ struct
                                          Black (key1, left1, node, succ size1),
                                          Black (key2, left2, right2, size2),
                                          succ size0)
-                               | Red (key3, left3, right3, size3), _ ->
+                               | Red (key3, left3, right3, _), _ ->
                                     (*
                                      * Rotation:
                                      *
@@ -413,7 +413,7 @@ struct
                                          Black (key1, left1, right1, size1),
                                          Black (key2, node, right2, succ size2),
                                          succ size0)
-                               | _, Red (key3, left3, right3, size3) ->
+                               | _, Red (key3, left3, right3, _) ->
                                     (*
                                      * Rotate:
                                      *
@@ -492,7 +492,7 @@ struct
          (* Leaf is colored red *)
          Red (key, Leaf, Leaf, 1)
 
-    | (Red _) as tree ->
+    | (Red _) ->
          (* Red nodes will not come up *)
          raise (Invalid_argument "Lm_set.insert")
 
@@ -591,9 +591,9 @@ struct
             lift key path (Black (key0, left0, right, pred size0))
        | Right (Red (key0, left0, _, size0)) :: path, right ->
             lift key path (Red (key0, left0, right, pred size0))
-       | Delete (Black (key0, left0, _, size0)) :: path, right ->
+       | Delete (Black (_, left0, _, size0)) :: path, right ->
             lift key path (Black (key, left0, right, pred size0))
-       | Delete (Red (key0, left0, _, size0)) :: path, right ->
+       | Delete (Red (_, left0, _, size0)) :: path, right ->
             lift key path (Red (key, left0, right, pred size0))
        | [], node ->
             node
@@ -627,7 +627,7 @@ struct
                                          Black (key3, left3, right3, size3),
                                          pred size0))
 
-                         | Red (key3, left3, right3, size3), _ ->
+                         | Red (key3, left3, right3, _), _ ->
                               (*
                                *      key0:b                    key3:b
                                *      /    \                  /       \
@@ -658,7 +658,7 @@ struct
                                          pred size0))
                      end
 
-                | Red (key2, left2, right2, size2) ->
+                | Red (key2, left2, right2, _) ->
                      begin
                         match left2 with
                            Black (key3, Red (key4, left4, right4, _), d, _) ->
@@ -744,7 +744,7 @@ struct
                                          new_black key0 right1 right,
                                          pred size0))
 
-                         | _, Red (key3, left3, right3, size3) ->
+                         | _, Red (key3, left3, right3, _) ->
                               (*
                                *      key0:b                    key3:b
                                *      /     \                 /        \
@@ -776,7 +776,7 @@ struct
 
                      end
 
-                | Red (key1, left1, right1, size1) ->
+                | Red (key1, left1, right1, _) ->
                      begin
                         match right1 with
                            Black (key3, d, Red (key4, left4, right4, _), _) ->
@@ -862,7 +862,7 @@ struct
                                        Black (key3, left3, right3, size3),
                                        pred size0))
 
-                         | Red (key3, left3, right3, size3), _ ->
+                         | Red (key3, left3, right3, _), _ ->
                               (*
                                *     key0:r                   key3:b
                                *     /    \                  /       \
@@ -917,7 +917,7 @@ struct
                                        new_black key0 right1 right,
                                        pred size0))
 
-                         | _, Red (key3, left3, right3, size3) ->
+                         | _, Red (key3, left3, right3, _) ->
                               (*
                                *       key0:r                 key3:b
                                *       /    \                /       \

@@ -340,7 +340,7 @@ let compare_pair (s1, s2) (s1', s2') =
  * Compare triple of symbols for equality.
  *)
 let compare_triple (s1, s2, s3) (s1', s2', s3') =
-   let res = compare_pair (s1, s2) (s1, s2') in
+   let res = compare_pair (s1, s2) (s1', s2') in
    if res = 0 then
       compare s3 s3'
    else

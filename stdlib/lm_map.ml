@@ -314,7 +314,7 @@ struct
                                        (new_black key1 data1 left1 node)
                                        (Black (key2, data2, left2, right2, size2))
 
-                               | Red (key3, data3, left3, right3, size3), _ ->
+                               | Red (key3, data3, left3, right3, _), _ ->
                                     (*
                                      * Rotation:
                                      *
@@ -377,7 +377,7 @@ struct
                                        (Black (key1, data1, left1, right1, size1))
                                        (new_black key2 data2 node right2)
 
-                               | _, Red (key3, data3, left3, right3, size3) ->
+                               | _, Red (key3, data3, left3, right3, _) ->
                                     (*
                                      * Rotate:
                                      *
@@ -455,7 +455,7 @@ struct
          (* Leaf is colored red *)
          Red (key, dataf None, Leaf, Leaf, 1)
 
-    | (Red _) as tree ->
+    | Red _ ->
          (* Red nodes will not come up *)
          raise (Invalid_argument "Red_black_table.insert")
 
@@ -639,10 +639,10 @@ struct
             lift key path (Black (key0, data0, left0, right, pred size0))
        | Right (Red (key0, data0, left0, _, size0)) :: path, right ->
             lift key path (Red (key0, data0, left0, right, pred size0))
-       | Delete (Black (key0, data0, left0, _, size0)) :: path, right ->
+       | Delete (Black (_, _, left0, _, size0)) :: path, right ->
             let key0, data0 = key in
                lift key path (Black (key0, data0, left0, right, pred size0))
-       | Delete (Red (key0, data0, left0, _, size0)) :: path, right ->
+       | Delete (Red (_, _, left0, _, size0)) :: path, right ->
             let key0, data0 = key in
                lift key path (Red (key0, data0, left0, right, pred size0))
        | [], node ->
@@ -678,7 +678,7 @@ struct
                                          Black (key3, data3, left3, right3, size3),
                                          pred size0))
 
-                         | Red (key3, data3, left3, right3, size3), _ ->
+                         | Red (key3, data3, left3, right3, _), _ ->
                               (*
                                *      key0:b                    key3:b
                                *      /    \                  /       \
@@ -711,7 +711,7 @@ struct
                                          pred size0))
                      end
 
-                | Red (key2, data2, left2, right2, size2) ->
+                | Red (key2, data2, left2, right2, _) ->
                      begin
                         match left2 with
                            Black (key3, data3, Red (key4, data4, left4, right4, _), d, _) ->
@@ -801,7 +801,7 @@ struct
                                          new_black key0 data0 right1 right,
                                          pred size0))
 
-                         | _, Red (key3, data3, left3, right3, size3) ->
+                         | _, Red (key3, data3, left3, right3, _) ->
                               (*
                                *      key0:b                    key3:b
                                *      /     \                 /        \
@@ -835,7 +835,7 @@ struct
 
                      end
 
-                | Red (key1, data1, left1, right1, size1) ->
+                | Red (key1, data1, left1, right1, _) ->
                      begin
                         match right1 with
                            Black (key3, data3, d, Red (key4, data4, left4, right4, _), _) ->
@@ -926,7 +926,7 @@ struct
                                        Black (key3, data3, left3, right3, size3),
                                        pred size0))
 
-                         | Red (key3, data3, left3, right3, size3), _ ->
+                         | Red (key3, data3, left3, right3, _), _ ->
                               (*
                                *     key0:r                   key3:b
                                *     /    \                  /       \
@@ -984,7 +984,7 @@ struct
                                        new_black key0 data0 right1 right,
                                        pred size0))
 
-                         | _, Red (key3, data3, left3, right3, size3) ->
+                         | _, Red (key3, data3, left3, right3, _) ->
                               (*
                                *       key0:r                 key3:b
                                *       /    \                /       \
@@ -1022,11 +1022,11 @@ struct
                      raise (Invalid_argument "lift_black6")
             end
 
-       | Delete (Black (_, data0, left0, right0, size0)) :: path, node ->
+       | Delete (Black (_, _, left0, right0, size0)) :: path, node ->
             let key0, data0 = key in
                lift_black key (Right (Black (key0, data0, left0, right0, size0)) :: path) node
 
-       | Delete (Red (_, data0, left0, right0, size0)) :: path, node ->
+       | Delete (Red (_, _, left0, right0, size0)) :: path, node ->
             let key0, data0 = key in
                lift_black key (Right (Red (key0, data0, left0, right0, size0)) :: path) node
 

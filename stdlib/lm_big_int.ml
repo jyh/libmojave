@@ -59,7 +59,7 @@ let zero_big_int = true, []
 let rec zeros = function
    0 :: t ->
       zeros t
- | _ :: t ->
+ | _ :: _ ->
       false
  | [] ->
       true
@@ -82,14 +82,11 @@ let big_int_of_int i =
 (*
  * Integer testing is conservative.
  *)
-let is_integer_big_int (sign, mag) =
-   match mag with
-      []
-    | [_]
-    | [_; _] ->
-         true
-    | _ :: _ :: mag ->
-         zeros mag
+let is_integer_big_int = function
+   _, ([] | [_] | [_; _]) ->
+      true
+ | _, _ :: _ :: mag ->
+      zeros mag
 
 let rec collect_big_int = function
    digit :: mag ->
@@ -504,20 +501,19 @@ let of_string = big_int_of_string
 (*
  * Produce a int32.
  *)
-let to_int32 (sign, mag) =
-   match mag with
-      [] ->
-         Int32.zero
-    | digits ->
-         let rec collect shift i digits =
-            match digits with
-               digit :: digits when shift < 32 ->
-                  let i = Int32.logor i (Int32.shift_left (Int32.of_int digit) shift) in
-                     collect (shift + shift_int) i digits
-             | _ ->
-                  i
-         in
-            collect 0 Int32.zero digits
+let to_int32 = function
+   _, [] ->
+      Int32.zero
+ | _, digits ->
+      let rec collect shift i digits =
+         match digits with
+            digit :: digits when shift < 32 ->
+               let i = Int32.logor i (Int32.shift_left (Int32.of_int digit) shift) in
+                  collect (shift + shift_int) i digits
+          | _ ->
+               i
+      in
+         collect 0 Int32.zero digits
 
 let of_int32 i =
    let rec make_mag i =

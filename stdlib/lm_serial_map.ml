@@ -70,16 +70,15 @@ struct
 
    let empty = (SMap.empty, SMapShadow.empty)
 
-   let is_empty (table, shadow) = SMap.is_empty table
+   let is_empty (table, _) = SMap.is_empty table
 
-   let cardinal (table, shadow) = SMap.cardinal table
+   let cardinal (table, _) = SMap.cardinal table
 
    let add (table, shadow) key data =
       let index =
          try
-            let data, index = SMapShadow.find shadow key in
             (* Key is already in map *)
-               index
+            snd (SMapShadow.find shadow key)
          with
             Not_found ->
                incr counter;
@@ -87,36 +86,36 @@ struct
       in
          SMap.add table index key, SMapShadow.add shadow key (data, index)
 
-   let find (table, shadow) key =
+   let find (_, shadow) key =
       fst (SMapShadow.find shadow key)
 
    let remove (table, shadow) key =
-      let data, index = SMapShadow.find shadow key in
+      let index = snd (SMapShadow.find shadow key) in
          SMap.remove table index, SMapShadow.remove shadow key
 
-   let mem (table, shadow) key =
+   let mem (_, shadow) key =
       SMapShadow.mem shadow key
 
    let iter f (table, shadow) =
-      SMap.iter (fun index key ->
-         let data, index = SMapShadow.find shadow key in
+      SMap.iter (fun _ key ->
+         let data = fst (SMapShadow.find shadow key) in
             f key data) table
 
    let fold f accum (table, shadow) =
-      SMap.fold (fun accum index key ->
-         let data, index = SMapShadow.find shadow key in
+      SMap.fold (fun accum _ key ->
+         let data = fst (SMapShadow.find shadow key) in
             f accum key data) accum table
 
-   let keys (table, shadow) =
+   let keys (table, _) =
       let keys_rev =
-         SMap.fold (fun keys index key ->
+         SMap.fold (fun keys _ key ->
             key :: keys) [] table
       in
          List.rev keys_rev
 
    let data (table, shadow) =
       let data_list_rev =
-         SMap.fold (fun data_list index key ->
+         SMap.fold (fun data_list _ key ->
             let data, _ = SMapShadow.find shadow key in
                data :: data_list) [] table
       in

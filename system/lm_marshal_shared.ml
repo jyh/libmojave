@@ -236,12 +236,9 @@ struct
       (*
        * Break apart the info.
        *)
-      let { marshal_id = marshal_id;
-            marshal_values = marshal_values;
+      let { marshal_values = marshal_values;
             marshal_copies = marshal_copies;
             marshal_hash = marshal_hash;
-            marshal_local_tlb = marshal_local_tlb;
-            marshal_global_tlb = marshal_global_tlb
           } = info
       in
 
@@ -249,26 +246,6 @@ struct
        * Keep a list of global pages we are using for this object.
        *)
       let allocated_global_pages = ref [] in
-      let alloc_page () =
-         let global_page =
-            match info.marshal_global_free_list with
-               FreeFun f ->
-                  let page, free_list = f () in
-                     info.marshal_global_free_list <- free_list;
-                     page
-         in
-         let local_page =
-            match info.marshal_local_free_list with
-               FreeFun f ->
-                  let page, free_list = f () in
-                     info.marshal_local_free_list <- free_list;
-                     page
-         in
-            marshal_local_tlb.(local_page) <- global_page;
-            marshal_global_tlb.(global_page) <- local_page;
-            allocated_global_pages := global_page :: !allocated_global_pages;
-            local_page
-      in
 
       (*
        * Global buffer operations.
@@ -303,12 +280,6 @@ struct
          buf.[index + 1] <- Char.chr ((i lsr 13) land 255);
          buf.[index + 2] <- Char.chr ((i lsr 5) land 255);
          buf.[index + 3] <- Char.chr (((i lsl 3) land 255) + (shared_get lsl 2) + 2)
-      in
-      let local_write_shared_set i buf index =
-         buf.[index] <- Char.chr ((i lsr 21) land 255);
-         buf.[index + 1] <- Char.chr ((i lsr 13) land 255);
-         buf.[index + 2] <- Char.chr ((i lsr 5) land 255);
-         buf.[index + 3] <- Char.chr (((i lsl 3) land 255) + (shared_set lsl 2) + 2)
       in
       let local_write_header tag i buf index =
          buf.[index] <- Char.chr tag;
