@@ -26,7 +26,6 @@
  *)
 
 type t
-type ssl
 type ssl_out
 type ssl_in
 
@@ -36,18 +35,19 @@ exception SSLSigPipe
  * SSL interface.
  *)
 val enabled        : unit -> bool
-val create_server  : string -> string -> t
-val create_client  : string -> t
-val create_ssl     : t -> ssl
-val set_fd         : ssl -> Unix.file_descr -> unit
-val accept         : ssl -> unit
-val connect        : ssl -> unit
-val shutdown       : ssl -> unit
+val socket         : string -> t
+val bind           : t -> Unix.inet_addr -> int -> unit
+val getsockname    : t -> Unix.inet_addr * int
+val listen         : t -> string -> int -> unit
+val accept         : t -> t
+val connect        : t -> Unix.inet_addr -> int -> unit
+val shutdown       : t -> unit
+val close          : t -> unit
 
 (*
  * Buffered output.
  *)
-val out_channel_of_ssl : ssl -> ssl_out
+val out_channel_of_ssl : t -> ssl_out
 
 val fprintf : ssl_out -> ('a, ssl_out, unit) format -> 'a
 
@@ -60,7 +60,7 @@ val flush : ssl_out -> unit
 (*
  * Buffered input.
  *)
-val in_channel_of_ssl : ssl -> ssl_in
+val in_channel_of_ssl : t -> ssl_in
 val input_char : ssl_in -> char
 val input_line : ssl_in -> string
 val really_input : ssl_in -> string -> int -> int -> unit

@@ -30,52 +30,31 @@ open Lm_make_printf
  * Define hooks to C code.
  *)
 type t
-type ssl
+type ssl = t
 
 exception SSLSigPipe
 
 external enabled        : unit -> bool                       = "lm_ssl_enabled"
-external create_context : string -> t                        = "lm_ssl_ctx_new"
-external set_dhfile     : t -> string -> unit                = "lm_ssl_ctx_dhfile"
-external create_ssl     : t -> ssl                           = "lm_ssl_new"
-external shutdown       : ssl -> unit                        = "lm_ssl_shutdown"
+external socket         : string -> t                        = "lm_ssl_socket"
+external bind           : t -> Unix.inet_addr -> int -> unit = "lm_ssl_bind"
+external getsockname    : t -> Unix.inet_addr * int          = "lm_ssl_get_addr"
+external listen         : t -> string -> int -> unit         = "lm_ssl_listen"
+external accept         : t -> t                             = "lm_ssl_accept"
+external connect        : t -> Unix.inet_addr -> int -> unit = "lm_ssl_connect"
+external shutdown       : t -> unit                          = "lm_ssl_shutdown"
+external close          : t -> unit                          = "lm_ssl_close"
 
 (*
  * Private functions.
  *)
 external lm_ssl_init     : unit -> unit                       = "lm_ssl_init"
-external lm_ssl_read     : ssl -> string -> int -> int -> int = "lm_ssl_read"
-external lm_ssl_write    : ssl -> string -> int -> int -> int = "lm_ssl_write"
-external lm_ssl_set_fd   : ssl -> Unix.file_descr -> int      = "lm_ssl_set_fd"
-external lm_ssl_accept   : ssl -> int                         = "lm_ssl_accept"
-external lm_ssl_connect  : ssl -> int                         = "lm_ssl_connect"
+external lm_ssl_read     : t -> string -> int -> int -> int   = "lm_ssl_read"
+external lm_ssl_write    : t -> string -> int -> int -> int   = "lm_ssl_write"
 
 (*
  * Initialize.
  *)
 let () = lm_ssl_init ()
-
-(*
- * Wrappers.
- *)
-let create_client = create_context
-
-let create_server keyfile dhfile =
-   let context = create_context keyfile in
-      set_dhfile context dhfile;
-      context
-
-let set_fd ssl fd =
-   if lm_ssl_set_fd ssl fd = 0 then
-      raise (Failure "Lm_ssl.set_fd")
-
-let accept ssl =
-   if lm_ssl_accept ssl <= 0 then
-      raise (Failure "Lm_ssl.accept")
-
-let connect ssl =
-   if lm_ssl_connect ssl <= 0 then
-      raise (Failure "Lm_ssl.connect")
 
 (*
  * Buffered output channel.

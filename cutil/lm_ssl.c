@@ -1,5 +1,6 @@
 /*
- * Interface to OpenSSL.
+ * Interface to OpenSSL.  This looks just like a standard socket
+ * API, except that a few of the functions require certificates.
  *
  * ----------------------------------------------------------------
  *
@@ -31,25 +32,67 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
+#include <caml/custom.h>
+
+#ifdef WIN32
+#  include <winsock2.h>
+#  define SHUT_RD 0
+#  define SHUT_WR 1
+#else /* !WIN32 */
+#  include <unistd.h>
+#  include <sys/types.h>
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+
+typedef int SOCKET;
+#endif /* !WIN32 */
+
+void enter_blocking_section(void);
+void leave_blocking_section(void);
+
+/*
+ * Inet addresses are strings.
+ */
+static value alloc_inet_addr(uint32 addr)
+{
+    value a;
+    a = alloc_string(sizeof(uint32));
+    *(uint32 *)a = addr;
+    return a;
+}
 
 #ifdef SSL_ENABLED
 
-#ifdef WIN32
-#   include <winsock2.h>
-
-#   define SHUT_RD 0
-#   define SHUT_WR 1
-
-#else /* !WIN32 */
-
-#   include <unistd.h>
-#   include <sys/socket.h>
-
-#endif /* !WIN32 */
+/************************************************************************
+ * SSL routines.
+ */
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+
+/*
+ * Struct for the socket.
+ *   server: is this a server socket?
+ *   fd: file descriptor for the socket
+ *   context: the SSL context
+ *   ssl:
+ */
+typedef enum {
+    SSL_INFO_MASTER,
+    SSL_INFO_SLAVE
+} SslInfoKind;
+
+typedef struct {
+    SslInfoKind kind;
+    SOCKET fd;
+    SSL_CTX *context;
+    SSL *ssl;
+} SslInfo;
+
+/************************************************
+ * ML interface to addresses.
+ */
 
 /*
  * Print an error message.
@@ -65,33 +108,11 @@ static void print_errors()
 }
 
 /*
- * Say whether SSL is enabled.
- */
-value lm_ssl_enabled(value x)
-{
-    return Val_true;
-}
-
-/*
- * Start the SSL server.
- */
-value lm_ssl_init(value x)
-{
-    SSL_load_error_strings();
-    SSL_library_init();
-    return Val_unit;
-}
-
-/*
  * Create a new context.
  */
-SSL_CTX *lm_ssl_ctx_new(value v_keyfile)
+static SSL_CTX *lm_ssl_ctx_new(const char *keyfile)
 {
-    char *keyfile;
     SSL_CTX *context;
-
-    /* Parameters */
-    keyfile = String_val(v_keyfile);
 
     /* Create a new context and initialize */
     context = SSL_CTX_new(SSLv23_method());
@@ -120,14 +141,10 @@ SSL_CTX *lm_ssl_ctx_new(value v_keyfile)
 /*
  * Add the DH file to the context.
  */
-value lm_ssl_ctx_dhfile(SSL_CTX *context, value v_dhfile)
+static void lm_ssl_ctx_dhfile(SSL_CTX *context, const char *dhfile)
 {
-    char *dhfile;
     BIO *bio;
     DH *ret;
-
-    /* Parameters */
-    dhfile = String_val(v_dhfile);
 
     /* Set the DH parameters */
     bio = BIO_new_file(dhfile, "r");
@@ -143,86 +160,323 @@ value lm_ssl_ctx_dhfile(SSL_CTX *context, value v_dhfile)
         print_errors();
         failwith("lm_ssl_ctx_new: can't set DH params");
     }
+}
+
+/*
+ * Custom blocks.
+ */
+#define SslInfo_val(v)   ((SslInfo *) Data_custom_val(v))
+
+static int ssl_info_compare(value v1, value v2)
+{
+    SslInfo *info1 = SslInfo_val(v1);
+    SslInfo *info2 = SslInfo_val(v2);
+
+    return info1->fd == info2->fd ? 0 : info1->fd < info2->fd ? -1 : 1;
+}
+
+static long ssl_info_hash(value v)
+{
+    return (long) SslInfo_val(v);
+}
+
+static void ssl_finalize(value v_info)
+{
+    SslInfo *info;
+    int code;
+
+    info = SslInfo_val(v_info);
+    if(info->ssl) {
+        SSL_free(info->ssl);
+        info->ssl = 0;
+    }
+    if(info->kind == SSL_INFO_MASTER && info->context) {
+        SSL_CTX_free(info->context);
+        info->context = 0;
+    }
+    if(info->fd >= 0) {
+        close(info->fd);
+        info->fd = -1;
+    }
+}
+
+/*
+ * Pass info in a custom block.
+ */
+static struct custom_operations win_handle_ops = {
+    "ssl_socket",
+    ssl_finalize,
+    ssl_info_compare,
+    ssl_info_hash,
+    custom_serialize_default,
+    custom_deserialize_default
+};
+
+static value ssl_info_new(SslInfoKind kind, SOCKET fd, SSL_CTX *context, SSL *ssl)
+{
+    value v = alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
+    SslInfo *info = SslInfo_val(v);
+    info->kind = kind;
+    info->fd = fd;
+    info->context = context;
+    info->ssl = ssl;
+    return v;
+}
+
+/************************************************************************
+ * Public functions.
+ */
+
+/*
+ * Say whether SSL is enabled.
+ */
+value lm_ssl_enabled(value x)
+{
+    return Val_true;
+}
+
+/*
+ * Start the SSL server.
+ */
+value lm_ssl_init(value x)
+{
+    SSL_load_error_strings();
+    SSL_library_init();
+    return Val_unit;
+}
+
+/*
+ * Create a new socket.
+ */
+value lm_ssl_socket(value v_keyfile)
+{
+    SOCKET s;
+    SSL_CTX *context;
+
+    /* Add context */
+    context = lm_ssl_ctx_new(String_val(v_keyfile));
+
+    /* Open the socket */
+    s = socket(PF_INET, SOCK_STREAM, 0);
+    if(s < 0) {
+        SSL_CTX_free(context);
+        failwith("lm_ssl_socket: socket call failed");
+    }
+
+    return ssl_info_new(SSL_INFO_MASTER, s, context, 0);
+}
+
+/*
+ * Bind the socket to an address.
+ */
+value lm_ssl_bind(value v_info, value v_addr, value v_port)
+{
+    SslInfo *info;
+    struct sockaddr_in sin;
+
+    /* Get the address */
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_port = htons(Int_val(v_port));
+
+    /* Perform the bind */
+    info = SslInfo_val(v_info);
+    if(bind(info->fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
+        perror("bind");
+        failwith("lm_ssl_bind: bind failed");
+    }
 
     return Val_unit;
 }
 
 /*
- * Get data for a new connection.
+ * Get the address of the socket.
  */
-SSL *lm_ssl_new(SSL_CTX *context)
+value lm_ssl_get_addr(value v_info)
 {
-    SSL *info = SSL_new(context);
-    if(context == 0)
-        failwith("lm_ssl_new");
-    return info;
+    SslInfo *info;
+    struct sockaddr_in sin;
+    socklen_t size;
+    value a, addr;
+
+    /* Get the address */
+    info = SslInfo_val(v_info);
+    size = sizeof(sin);
+    if(getsockname(info->fd, (struct sockaddr *) &sin, &size) < 0 || sin.sin_family != AF_INET) {
+        perror("getsockname");
+        failwith("lm_ssl_get_addr: getsockname failed");
+    }
+
+    /* Allocate the address */
+    a = alloc_inet_addr(sin.sin_addr.s_addr);
+    Begin_root(a);
+    addr = alloc_small(2, 0);
+    Field(addr, 0) = a;
+    Field(addr, 1) = Val_int(ntohs(sin.sin_port));
+    End_roots();
+    return addr;
 }
 
 /*
- * Set the file descriptor.
+ * Listen.
  */
-value lm_ssl_set_fd(SSL *ssl, value v_fd)
+value lm_ssl_listen(value v_info, value v_dhfile, value v_count)
 {
-    int fd = Int_val(v_fd);
-    int code = SSL_set_fd(ssl, fd);
-    return Val_int(code);
+    SslInfo *info;
+
+    info = SslInfo_val(v_info);
+    lm_ssl_ctx_dhfile(info->context, String_val(v_dhfile));
+    listen(info->fd, Int_val(v_count));
+    return Val_unit;
 }
 
 /*
- * Accept a connection.
+ * Accept a connection on the socket.
  */
-value lm_ssl_accept(SSL *ssl)
+value lm_ssl_accept(value v_info)
 {
-    int code = SSL_accept(ssl);
-    if(code <= 0)
+    SslInfo *info;
+    int fd, code;
+    SSL *ssl;
+
+    /* Listen on the server socket */
+    info = SslInfo_val(v_info);
+    enter_blocking_section();
+    fd = accept(info->fd, (struct sockaddr *) 0, 0);
+    leave_blocking_section();
+    if(fd < 0) {
+        perror("accept");
+        failwith("lm_ssl_accept");
+    }
+
+    /* Start SSL operations */
+    ssl = SSL_new(info->context);
+    if(ssl == 0) {
         print_errors();
-    return Val_int(code);
+        failwith("lm_ssl_accept");
+    }
+
+    /* Set the descriptor */
+    code = SSL_set_fd(ssl, fd);
+    if(code <= 0) {
+        print_errors();
+        failwith("lm_ssl_accept: set_fd failed");
+    }
+
+    /* Negotiate */
+    code = SSL_accept(ssl);
+    if(code <= 0) {
+        print_errors();
+        failwith("lm_ssl_accept: negotiation failed");
+    }
+
+    /* Allocate a new struct */
+    return ssl_info_new(SSL_INFO_SLAVE, fd, info->context, ssl);
 }
 
 /*
- * Make a connection.
+ * Make a connection on the socket.
  */
-value lm_ssl_connect(SSL *ssl)
+value lm_ssl_connect(value v_info, value v_addr, value v_port)
 {
-    int code = SSL_connect(ssl);
-    if(code <= 0)
+    SslInfo *info;
+    struct sockaddr_in sin;
+    int fd, code;
+    SSL *ssl;
+
+    /* Check to make sure not connected */
+    info = SslInfo_val(v_info);
+    if(info->ssl)
+        failwith("lm_ssl_connect: already connected");
+
+    /* Get the address */
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_port = htons(Int_val(v_port));
+
+    /* Make the connection */
+    enter_blocking_section();
+    code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
+    leave_blocking_section();
+    if(code < 0) {
+        perror("connect");
+        failwith("lm_ssl_connect");
+    }
+
+    /* Start SSL operations */
+    ssl = SSL_new(info->context);
+    if(ssl == 0) {
         print_errors();
-    return Val_int(code);
+        failwith("lm_ssl_connect");
+    }
+    info->ssl = ssl;
+
+    /* Set the descriptor */
+    code = SSL_set_fd(ssl, info->fd);
+    if(code <= 0) {
+        print_errors();
+        failwith("lm_ssl_connect: set_fd failed");
+    }
+
+    /* Negotiate */
+    code = SSL_connect(ssl);
+    if(code <= 0) {
+        print_errors();
+        failwith("lm_ssl_connect: negotiation failed");
+    }
+
+    return Val_unit;
 }
 
 /*
  * Read some data from the connection.
  */
-value lm_ssl_read(SSL *ssl, value v_string, value v_off, value v_len)
+value lm_ssl_read(value v_info, value v_string, value v_off, value v_len)
 {
-    char *buf = String_val(v_string);
-    int off = Int_val(v_off);
-    int len = Int_val(v_len);
-    int amount = SSL_read(ssl, buf + off, len);
+    int off, len, amount;
+    SslInfo *info;
+    char *buf;
+
+    info = SslInfo_val(v_info);
+    buf = String_val(v_string);
+    off = Int_val(v_off);
+    len = Int_val(v_len);
+    enter_blocking_section();
+    amount = SSL_read(info->ssl, buf + off, len);
+    leave_blocking_section();
     return Val_int(amount);
 }
 
 /*
  * Write some data to the connection.
  */
-value lm_ssl_write(SSL *ssl, value v_string, value v_off, value v_len)
+value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
 {
-    char *buf = String_val(v_string);
-    int off = Int_val(v_off);
-    int len = Int_val(v_len);
-    int amount = SSL_write(ssl, buf + off, len);
+    int off, len, amount;
+    SslInfo *info;
+    char *buf;
+
+    info = SslInfo_val(v_info);
+    buf = String_val(v_string);
+    off = Int_val(v_off);
+    len = Int_val(v_len);
+    enter_blocking_section();
+    amount = SSL_write(info->ssl, buf + off, len);
+    leave_blocking_section();
     return Val_int(amount);
 }
 
 /*
  * Shutdown the connection.
  */
-value lm_ssl_shutdown(SSL *ssl)
+value lm_ssl_shutdown(value v_info)
 {
+    SslInfo *info;
     int code;
 
     /* Shutdown the connection */
-    code = SSL_shutdown(ssl);
+    info = SslInfo_val(v_info);
+    code = SSL_shutdown(info->ssl);
 
     /*
      * If we called shutdown first, the return code is always 0.
@@ -230,26 +484,82 @@ value lm_ssl_shutdown(SSL *ssl)
      * and try again.
      */
     if(code == 0) {
-        int fd = SSL_get_wfd(ssl);
-        if(fd >= 0) {
-            shutdown(fd, SHUT_WR);
-            code = SSL_shutdown(ssl);
-        }
+        shutdown(info->fd, SHUT_WR);
+        code = SSL_shutdown(info->ssl);
     }
 
     /* SSL struct is no longer needed */
-    SSL_free(ssl);
-    return Val_int(code);
+    SSL_free(info->ssl);
+    info->ssl = 0;
+    return Val_unit;
+}
+
+/*
+ * Close the connection.
+ */
+value lm_ssl_close(value v_info)
+{
+    ssl_finalize(v_info);
+    return Val_unit;
 }
 
 #else /* !SSL_ENABLED */
 
 /*
- * Pretend SSL connection.
+ * Unencrypted socket connection.
  */
 typedef struct {
-    int fd;
-} SSL;
+    SOCKET fd;
+} SslInfo;
+
+/*
+ * Custom blocks.
+ */
+#define SslInfo_val(v)   ((SslInfo *) Data_custom_val(v))
+
+static int ssl_info_compare(value v1, value v2)
+{
+    SslInfo *info1 = SslInfo_val(v1);
+    SslInfo *info2 = SslInfo_val(v2);
+
+    return info1->fd == info2->fd ? 0 : info1->fd < info2->fd ? -1 : 1;
+}
+
+static long ssl_info_hash(value v)
+{
+    return (long) SslInfo_val(v);
+}
+
+static void ssl_finalize(value v_info)
+{
+    SslInfo *info;
+
+    info = SslInfo_val(v_info);
+    if(info->fd >= 0) {
+        close(info->fd);
+        info->fd = -1;
+    }
+}
+
+/*
+ * Pass info in a custom block.
+ */
+static struct custom_operations win_handle_ops = {
+    "ssl_socket",
+    ssl_finalize,
+    ssl_info_compare,
+    ssl_info_hash,
+    custom_serialize_default,
+    custom_deserialize_default
+};
+
+static value ssl_info_new(SOCKET fd)
+{
+    value v = alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
+    SslInfo *info = SslInfo_val(v);
+    info->fd = fd;
+    return v;
+}
 
 /*
  * Say whether SSL is enabled.
@@ -268,89 +578,185 @@ value lm_ssl_init(value x)
 }
 
 /*
- * Create a new context.
+ * Create a new socket.
  */
-value lm_ssl_ctx_new(value x)
+value lm_ssl_socket(value v_keyfile)
 {
+    SOCKET s;
+
+    /* Open the socket */
+    s = socket(PF_INET, SOCK_STREAM, 0);
+    if(s < 0)
+        failwith("lm_ssl_socket: socket call failed");
+
+    return ssl_info_new(s);
+}
+
+/*
+ * Bind the socket to an address.
+ */
+value lm_ssl_bind(value v_info, value v_addr, value v_port)
+{
+    SslInfo *info;
+    struct sockaddr_in sin;
+
+    /* Get the address */
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_port = htons(Int_val(v_port));
+
+    /* Perform the bind */
+    info = SslInfo_val(v_info);
+    if(bind(info->fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
+        perror("bind");
+        failwith("lm_ssl_bind: bind failed");
+    }
+
     return Val_unit;
 }
 
-value lm_ssl_ctx_dhfile(value context, value v_dhfile)
+/*
+ * Get the address of the socket.
+ */
+value lm_ssl_get_addr(value v_info)
 {
+    SslInfo *info;
+    struct sockaddr_in sin;
+    socklen_t size;
+    value a, addr;
+
+    /* Get the address */
+    info = SslInfo_val(v_info);
+    size = sizeof(sin);
+    if(getsockname(info->fd, (struct sockaddr *) &sin, &size) < 0) {
+        perror("getsockname");
+        failwith("lm_ssl_get_addr: getsockname failed");
+    }
+
+    /* Allocate the address */
+    a = alloc_inet_addr(sin.sin_addr.s_addr);
+    Begin_root(a);
+    addr = alloc_small(2, 0);
+    Field(addr, 0) = a;
+    Field(addr, 1) = Val_int(ntohs(sin.sin_port));
+    End_roots();
+    return a;
+}
+
+/*
+ * Listen.
+ */
+value lm_ssl_listen(value v_info, value v_dhfile, value v_count)
+{
+    SslInfo *info;
+
+    info = SslInfo_val(v_info);
+    listen(info->fd, Int_val(v_count));
     return Val_unit;
 }
 
 /*
- * Get data for a new connection.
+ * Accept a connection on the socket.
  */
-SSL *lm_ssl_new(value x)
+value lm_ssl_accept(value v_info)
 {
-    SSL *sslp = (SSL *) malloc(sizeof(SSL));
-    if(sslp == 0)
-        failwith("lm_ssl_new");
-    sslp->fd = -1;
-    return sslp;
+    SslInfo *info;
+    int fd, code;
+
+    /* Listen on the server socket */
+    info = SslInfo_val(v_info);
+    enter_blocking_section();
+    fd = accept(info->fd, (struct sockaddr *) 0, 0);
+    leave_blocking_section();
+    if(fd < 0) {
+        perror("accept");
+        failwith("lm_ssl_accept");
+    }
+
+    /* Allocate a new struct */
+    return ssl_info_new(fd);
 }
 
 /*
- * Set the file descriptor.
+ * Make a connection on the socket.
  */
-value lm_ssl_set_fd(SSL *ssl, value v_fd)
+value lm_ssl_connect(value v_info, value v_addr, value v_port)
 {
-    ssl->fd = Int_val(v_fd);
-    return Val_int(0);
-}
+    SslInfo *info;
+    struct sockaddr_in sin;
+    int fd, code;
 
-/*
- * Accept a connection.
- */
-value lm_ssl_accept(SSL *ssl)
-{
-    return Val_int(0);
-}
+    /* Get the address */
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_port = htons(Int_val(v_port));
 
-/*
- * Make a connection.
- */
-value lm_ssl_connect(SSL *ssl)
-{
-    return Val_int(0);
+    /* Make the connection */
+    info = SslInfo_val(v_info);
+    enter_blocking_section();
+    code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
+    leave_blocking_section();
+    if(code < 0) {
+        perror("connect");
+        failwith("lm_ssl_connect");
+    }
+
+    return Val_unit;
 }
 
 /*
  * Read some data from the connection.
  */
-value lm_ssl_read(SSL *ssl, value v_string, value v_off, value v_len)
+value lm_ssl_read(value v_info, value v_string, value v_off, value v_len)
 {
-    char *buf = String_val(v_string);
-    int off = Int_val(v_off);
-    int len = Int_val(v_len);
-    int amount = read(ssl->fd, buf + off, len);
+    int off, len, amount;
+    SslInfo *info;
+    char *buf;
+
+    info = SslInfo_val(v_info);
+    buf = String_val(v_string);
+    off = Int_val(v_off);
+    len = Int_val(v_len);
+    enter_blocking_section();
+    amount = read(info->fd, buf + off, len);
+    leave_blocking_section();
     return Val_int(amount);
 }
 
 /*
  * Write some data to the connection.
  */
-value lm_ssl_write(SSL *ssl, value v_string, value v_off, value v_len)
+value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
 {
-    char *buf = String_val(v_string);
-    int off = Int_val(v_off);
-    int len = Int_val(v_len);
-    int amount = write(ssl->fd, buf + off, len);
+    int off, len, amount;
+    SslInfo *info;
+    char *buf;
+
+    info = SslInfo_val(v_info);
+    buf = String_val(v_string);
+    off = Int_val(v_off);
+    len = Int_val(v_len);
+    enter_blocking_section();
+    amount = write(info->fd, buf + off, len);
+    leave_blocking_section();
     return Val_int(amount);
 }
 
 /*
  * Shutdown the connection.
  */
-value lm_ssl_shutdown(SSL *ssl)
+value lm_ssl_shutdown(value v_info)
 {
-    free(ssl);
-    return Val_int(0);
+    return Val_unit;
+}
+
+/*
+ * Close the connection.
+ */
+value lm_ssl_close(value v_info)
+{
+    ssl_finalize(v_info);
+    return Val_unit;
 }
 
 #endif /* !SSL_ENABLED */
-
-
-
