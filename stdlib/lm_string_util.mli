@@ -103,6 +103,7 @@ val c_escaped : string -> string
  * This assumes single quotes.
  *)
 val js_escaped : string -> string
+val html_escaped : string -> string
 
 (*
  * Unescape a string.  Convert all escape sequences,

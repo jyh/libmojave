@@ -213,6 +213,40 @@ let js_escaped s =
       loop 0
 
 (*
+ * Escape a string using the HTML conventions.
+ *)
+let html_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let _ =
+            match c with
+               '<' ->
+                  Buffer.add_string buf "&lt;"
+             | '>' ->
+                  Buffer.add_string buf "&gt;"
+             | '&' ->
+                  Buffer.add_string buf "&amp;"
+             | ' ' ->
+                  Buffer.add_string buf "&nbsp;"
+             | '\r' ->
+                  ()
+             | '\n' ->
+                  Buffer.add_string buf "<br>\n";
+             | '\t' ->
+                  Buffer.add_string buf "&nbsp;&nbsp;&nbsp;&nbsp;"
+             | _ ->
+                  Buffer.add_char buf c
+         in
+            loop (succ i)
+   in
+      loop 0
+
+(*
  * A generic definition of white space.
  *)
 let white = " \t\r\n\012"
