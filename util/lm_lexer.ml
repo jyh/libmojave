@@ -27,17 +27,18 @@
 open Lm_debug
 open Lm_printf
 open Lm_location
+open Lm_int_set
 
 let debug_lex =
    create_debug (**)
-      { debug_name = "debug-lex";
+      { debug_name = "lex";
         debug_description = "Debug the lexer";
         debug_value = false
       }
 
 let debug_lexgen =
    create_debug (**)
-      { debug_name = "debug-lexgen";
+      { debug_name = "lexgen";
         debug_description = "Debug the lexer generator";
         debug_value = false
       }
@@ -307,11 +308,228 @@ sig
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
+
+   (* Sets *)
+   module ActionSet : Lm_set_sig.LmSet with type elt = action
+
+   (*
+    * You can use the function to decide which clauses take
+    * precedence for a match of equal length.  The function
+    * gets two clause numbers.  If you use the min function,
+    * then you get the first clause that matched.  If you
+    * use the max function, you get the second clause that
+    * matched.
+    *)
+   val choose : int -> int -> int
 end
 
 module MakeLexer (Input : LexerInput) (Action : LexerAction) =
 struct
    open Action
+
+   (************************************************************************
+    * Types.
+    *)
+
+   (*
+    * A simplified regular expression.
+    *)
+
+   (* %%MAGICBEGIN%% *)
+   type regex =
+      RegexAnySymbol
+    | RegexSymbol       of int list
+    | RegexExceptSymbol of int list
+    | RegexLimitPrev    of int list
+    | RegexLimitNext    of int list
+    | RegexChoice       of regex list
+    | RegexSequence     of regex list
+    | RegexStar         of regex
+    | RegexPlus         of regex
+    | RegexInterval     of regex * int * int       (* regex, min, max *)
+    | RegexArg          of regex
+
+   (*
+    * Termination symbols.
+    *)
+   type regex_term =
+      RegexTermEof
+    | RegexTermRightParen of int
+    | RegexTermRightArg   of int
+    | RegexTermPipe       of int
+
+   (*
+    * An expression is nearly an NFA,
+    * but designed to be built incrementally.
+    * The id is an arbitrary int, but all clauses
+    * must have unique ids.
+    *)
+   type exp =
+      { exp_clauses : (action * int * regex) list;
+        exp_id      : int
+      }
+
+   (*
+    * An action specifies:
+    *    ActionEpsilon state : epsilon transition to the given states
+    *    ActionArgStart i    : start collecting the arguments for the rules
+    *    ActionArgStop i     : stop collecting the arguments for the rules
+    *    ActionStop i        : rule i is finished
+    *    ActionSymbol table  : transition function
+    *    ActionLimit syms    : normally an epsilon transition, but limited to syms
+    *                          (this is to handle \< and \> symbols)
+    *)
+   type nfa_action =
+      NfaActionEpsilon      of int list           (* next state list *)
+    | NfaActionArgStart     of int * int          (* arg id, next state *)
+    | NfaActionArgStop      of int * int          (* arg id, next state *)
+    | NfaActionStop         of int                (* clause id, next state *)
+    | NfaActionSymbol       of int list * int     (* symbols, next state *)
+    | NfaActionAnySymbol    of int                (* next state *)
+    | NfaActionExceptSymbol of int list *int      (* symbols, next state *)
+    | NfaActionLimitPrev    of int list * int     (* symbols, next state *)
+    | NfaActionLimitNext    of int list * int     (* symbols, next state *)
+    | NfaActionNone
+    | NfaActionResetCounter of int * int list              (* counter, next state list *)
+    | NfaActionIncrCounter  of int * int * int * int * int (* counter, min, final, max, restart *)
+
+   (*
+    * This is the argument info we pass to the DFA.
+    *)
+   type arg =
+      { arg_index     : int;
+        arg_depends   : IntSet.t;
+        arg_clause    : int;
+        arg_number    : int
+      }
+
+   (*
+    * This is the info we accumulate during compilation.
+    *    nfa_index       : the index of the next state to be allocated
+    *    nfa_counter     : the total number of interval expression we have seen
+    *    nfa_arg_index   : the identifier of the next argument
+    *    nfa_arg_depends : what other arguments this one depends on
+    *)
+   type nfa_accum =
+      { nfa_index       : int;
+        nfa_counter     : int;
+        nfa_arg_index   : int;
+        nfa_arg_table   : arg IntTable.t
+      }
+
+   (*
+    * This is the info we pass left-to-right during compilation.
+    *    nfa_clause       : the index of the current clause being compiled
+    *    nfa_arg_number   : the index of the next argument
+    *    nfa_arg_depends  : what other arguments the next one depends on
+    *)
+   type nfa_info =
+      { nfa_clause        : int;
+        nfa_arg_number    : int;
+        nfa_arg_depends   : IntSet.t;
+      }
+
+   (*
+    * A state in the machine.
+    *)
+   type nfa_state =
+      { nfa_state_index   : int;
+        nfa_state_action  : nfa_action
+      }
+
+   (*
+    * The NFA has a start state,
+    * and an array of states.
+    *)
+   type nfa =
+      { nfa_actions     : action IntTable.t;
+        nfa_start       : NfaState.t;
+        nfa_table       : nfa_state array;
+        nfa_args        : IntSet.t IntTable.t;
+        nfa_arg_info    : arg IntTable.t
+      }
+
+   (*
+    * DFA actions.
+    *)
+   type dfa_actions =
+      { dfa_action_stop          : int option;                (* clause id *)
+        dfa_action_arg_start_prev: IntSet.t;                  (* arg ids *)
+        dfa_action_arg_stop_prev : IntSet.t;                  (* arg ids *)
+        dfa_action_arg_stop_cur  : IntSet.t                   (* arg ids *)
+      }
+
+   (*
+    * A transition may specify a new state and some actions.
+    * or it may not exist,
+    * or it may be unknown.
+    *)
+   type dfa_transition =
+      DfaTransition of int * dfa_actions
+    | DfaNoTransition
+    | DfaUnknownTransition
+
+   (*
+    * A DFA state has an index,
+    * the subset of states for the NFA,
+    * and a lazy transition function.
+    *)
+   type dfa_state =
+      { dfa_state_index         : int;
+        dfa_state_set           : DfaState.t;
+        mutable dfa_state_delta : dfa_transition TransTable.t
+      }
+
+   (*
+    * The DFA has:
+    *)
+   type dfa =
+     { mutable dfa_states : dfa_state array;      (* May be partially filled *)
+       mutable dfa_length : int;                  (* Index of the largest valid state *)
+       mutable dfa_map    : int DfaStateTable.t;  (* Map from NFA state subsets to DFA states *)
+       dfa_table          : nfa_state array;      (* The NFA *)
+       dfa_arg_depends    : IntSet.t IntTable.t;  (* The map from clause id to valid arguments *)
+       dfa_arg_table      : arg IntTable.t;       (* The info about each arg *)
+       dfa_action_table   : action IntTable.t     (* The map from clause id to actions *)
+     }
+
+   (*
+    * The actual type.
+    *)
+   type t =
+      { lex_exp         : exp;
+        mutable lex_dfa : dfa option
+      }
+   (* %%MAGICEND%% *)
+
+   (*
+    * When we are collecting an arg, it may be in several states.
+    *)
+   type dfa_arg =
+      ArgStarted of int
+    | ArgComplete of int * int
+    | ArgFinished of int * int
+
+   (*
+    * When we are scanning, we also have state.
+    *)
+   type dfa_info =
+     { mutable dfa_stop_clause    : int;                  (* Clause id of the last match, or 0 if none *)
+       mutable dfa_stop_pos       : int;                  (* Position of the last match *)
+       mutable dfa_start_pos      : int;                  (* Starting position *)
+
+       (*
+        * Scanned arguments.
+        * The index is the argument id number.
+        * The value is (start, stop).
+        *)
+       mutable dfa_args           : dfa_arg IntTable.t;
+
+       (*
+        * The channel we are scanning from.
+        *)
+       dfa_channel                : Input.t
+     }
 
    (************************************************************************
     * Characters and classes.
@@ -397,40 +615,6 @@ struct
     *)
 
    (*
-    * A simplified regular expression.
-    *)
-   type regex =
-      RegexAnySymbol
-    | RegexSymbol       of int list
-    | RegexExceptSymbol of int list
-    | RegexLimitPrev    of int list
-    | RegexLimitNext    of int list
-    | RegexChoice       of regex list
-    | RegexSequence     of regex list
-    | RegexStar         of regex
-    | RegexPlus         of regex
-    | RegexInterval     of regex * int * int       (* regex, min, max *)
-    | RegexArg          of regex
-
-   (*
-    * Termination symbols.
-    *)
-   type regex_term =
-      RegexTermEof
-    | RegexTermRightParen of int
-    | RegexTermRightArg   of int
-    | RegexTermPipe       of int
-
-   (*
-    * An expression is nearly an NFA,
-    * but designed to be built incrementally.
-    *)
-   type exp =
-      { exp_clauses : (action * int * regex) list;
-        exp_id      : int
-      }
-
-   (*
     * Printer.
     *)
    let pp_print_char buf c =
@@ -504,7 +688,7 @@ struct
                                                RegexSequence [RegexSymbol [Char.code '\r'];
                                                               RegexSymbol [Char.code '\n']]]
    let bof_delimiter         = RegexLimitPrev [bof]
-   let eof_delimiter         = RegexLimitNext [eof]
+   let eof_delimiter         = RegexSymbol [eof]
 
    (*
     * Reduce a choice list.
@@ -985,6 +1169,20 @@ struct
                s pp_print_regex regex;
          regex
 
+   (************************************************************************
+    * Expressions.
+    *)
+
+   let pp_print_exp buf exp =
+      let { exp_clauses = clauses;
+            exp_id = id
+          } = exp
+      in
+         fprintf buf "Id: %d" id;
+         List.iter (fun (action, id, regex) ->
+               fprintf buf "@ @[<hv 3>Clause:@ id = %d@ action = %a@ @[<hv 3>regex =@ %a@]@]" (**)
+                  id pp_print_action action pp_print_regex regex) clauses
+
    (*
     * An expression is a set of clauses.
     *)
@@ -1020,13 +1218,17 @@ struct
     *)
    let add_clause_exp exp action s =
       let regex = regex_of_string s in
+      let arity = regex_arg_count 0 regex in
       let { exp_clauses = clauses;
             exp_id      = id
           } = exp
       in
+      let exp =
          { exp_clauses = (action, id, regex) :: clauses;
            exp_id      = succ id
          }
+      in
+         arity, exp
 
    (*
     * Remove a clause.
@@ -1038,93 +1240,39 @@ struct
       in
          { exp with exp_clauses = clauses }
 
+   (*
+    * Take the union of two expression lists.
+    *)
+   let union_exp exp1 exp2 =
+      let { exp_clauses = clauses1;
+            exp_id = id1
+          } = exp1
+      in
+      let { exp_clauses = clauses2 } = exp2 in
+      let actions =
+         List.fold_left (fun actions (action, _, _) ->
+               ActionSet.add actions action) ActionSet.empty clauses1
+      in
+      let rec collect id clauses1 clauses2 =
+         match clauses2 with
+            (action, _, regex) :: clauses2 ->
+               if ActionSet.mem actions action then
+                  id, clauses1
+               else
+                  collect (succ id) ((action, id, regex) :: clauses1) clauses2
+          | [] ->
+               id, clauses1
+      in
+      let id, clauses1 = collect id1 clauses1 clauses2 in
+         if id = id1 then
+            false, exp1
+         else
+            true, { exp_clauses = clauses1; exp_id = id }
+
    (************************************************************************
     * NFA.
     *)
 
-   (*
-    * An action specifies:
-    *    ActionEpsilon state : epsilon transition to the given states
-    *    ActionArgStart i    : start collecting the arguments for the rules
-    *    ActionArgStop i     : stop collecting the arguments for the rules
-    *    ActionStop i        : rule i is finished
-    *    ActionSymbol table  : transition function
-    *    ActionLimit syms    : normally an epsilon transition, but limited to syms
-    *                          (this is to handle \< and \> symbols)
-    *)
-   type nfa_action =
-      NfaActionEpsilon      of int list           (* next state list *)
-    | NfaActionArgStart     of int * int          (* arg id, next state *)
-    | NfaActionArgStop      of int * int          (* arg id, next state *)
-    | NfaActionStop         of int                (* clause id, next state *)
-    | NfaActionSymbol       of int list * int     (* symbols, next state *)
-    | NfaActionAnySymbol    of int                (* next state *)
-    | NfaActionExceptSymbol of int list *int      (* symbols, next state *)
-    | NfaActionLimitPrev    of int list * int     (* symbols, next state *)
-    | NfaActionLimitNext    of int list * int     (* symbols, next state *)
-    | NfaActionNone
-    | NfaActionResetCounter of int * int list              (* counter, next state list *)
-    | NfaActionIncrCounter  of int * int * int * int * int (* counter, min, final, max, restart *)
-
-   (*
-    * This is the argument info we pass to the DFA.
-    *)
-   type arg =
-      { arg_index     : int;
-        arg_depends   : IntSet.t;
-        arg_clause    : int;
-        arg_number    : int
-      }
-
-   (*
-    * This is the info we accumulate during compilation.
-    *    nfa_index       : the index of the next state to be allocated
-    *    nfa_counter     : the total number of interval expression we have seen
-    *    nfa_arg_index   : the identifier of the next argument
-    *    nfa_arg_depends : what other arguments this one depends on
-    *)
-   type nfa_accum =
-      { nfa_index       : int;
-        nfa_counter     : int;
-        nfa_arg_index   : int;
-        nfa_arg_table   : arg IntTable.t
-      }
-
-   (*
-    * This is the info we pass left-to-right during compilation.
-    *    nfa_clause       : the index of the current clause being compiled
-    *    nfa_arg_number   : the index of the next argument
-    *    nfa_arg_depends  : what other arguments the next one depends on
-    *)
-   type nfa_info =
-      { nfa_clause        : int;
-        nfa_arg_number    : int;
-        nfa_arg_depends   : IntSet.t;
-      }
-
-   (*
-    * A state in the machine.
-    *)
-   type nfa_state =
-      { nfa_state_index   : int;
-        nfa_state_action  : nfa_action
-      }
-
-   (*
-    * The NFA has a start state,
-    * and an array of states.
-    *)
-   type nfa =
-      { nfa_actions     : action IntTable.t;
-        nfa_start       : NfaState.t;
-        nfa_table       : nfa_state array;
-        nfa_args        : IntSet.t IntTable.t;
-        nfa_arg_info    : arg IntTable.t
-      }
-
-   (************************************************
-    * Printing.
-    *)
    let pp_print_nfa_id buf nid =
       match nid with
          (nid, []) ->
@@ -1458,87 +1606,6 @@ struct
     * The DFA is computed lazily from the NFA.
     *)
 
-   (*
-    * DFA actions.
-    *)
-   type dfa_actions =
-      { dfa_action_stop          : int option;                (* clause id *)
-        dfa_action_arg_start_prev: IntSet.t;                  (* arg ids *)
-        dfa_action_arg_stop_prev : IntSet.t;                  (* arg ids *)
-        dfa_action_arg_stop_cur  : IntSet.t                   (* arg ids *)
-      }
-
-   (*
-    * A transition may specify a new state and some actions.
-    * or it may not exist,
-    * or it may be unknown.
-    *)
-   type dfa_transition =
-      DfaTransition of int * dfa_actions
-    | DfaNoTransition
-    | DfaUnknownTransition
-
-   (*
-    * A DFA state has an index,
-    * the subset of states for the NFA,
-    * and a lazy transition function.
-    *)
-   type dfa_state =
-      { dfa_state_index         : int;
-        dfa_state_set           : DfaState.t;
-        mutable dfa_state_delta : dfa_transition TransTable.t
-      }
-
-   (*
-    * The DFA has:
-    *)
-   type dfa =
-     { mutable dfa_states : dfa_state array;      (* May be partially filled *)
-       mutable dfa_length : int;                  (* Index of the largest valid state *)
-       mutable dfa_map    : int DfaStateTable.t;  (* Map from NFA state subsets to DFA states *)
-       dfa_table          : nfa_state array;      (* The NFA *)
-       dfa_arg_depends    : IntSet.t IntTable.t;  (* The map from clause id to valid arguments *)
-       dfa_arg_table      : arg IntTable.t;       (* The info about each arg *)
-       dfa_action_table   : action IntTable.t     (* The map from clause id to actions *)
-     }
-
-   (*
-    * The actual type.
-    *)
-   type t =
-      { lex_exp         : exp;
-        mutable lex_dfa : dfa option
-      }
-
-   (*
-    * When we are collecting an arg, it may be in several states.
-    *)
-   type dfa_arg =
-      ArgStarted of int
-    | ArgComplete of int * int
-    | ArgFinished of int * int
-
-   (*
-    * When we are scanning, we also have state.
-    *)
-   type dfa_info =
-     { mutable dfa_stop_clause    : int;                  (* Clause id of the last match, or 0 if none *)
-       mutable dfa_stop_pos       : int;                  (* Position of the last match *)
-       mutable dfa_start_pos      : int;                  (* Starting position *)
-
-       (*
-        * Scanned arguments.
-        * The index is the argument id number.
-        * The value is (start, stop).
-        *)
-       mutable dfa_args           : dfa_arg IntTable.t;
-
-       (*
-        * The channel we are scanning from.
-        *)
-       dfa_channel                : Input.t
-     }
-
    (************************************************
     * Printing.
     *)
@@ -1605,10 +1672,7 @@ struct
    let dfa_action_add_stop action clause =
       match action.dfa_action_stop with
          Some clause' ->
-            if clause < clause' then
-               { action with dfa_action_stop = Some clause }
-            else
-               action
+            { action with dfa_action_stop = Some (Action.choose clause clause') }
        | None ->
             { action with dfa_action_stop = Some clause }
 
@@ -1650,7 +1714,7 @@ struct
       let stop =
          match stop1, stop2 with
             Some stop1, Some stop2 ->
-               Some (min stop1 stop2)
+               Some (Action.choose stop1 stop2)
           | None, _ ->
                stop2
           | _, None ->
@@ -2194,49 +2258,62 @@ struct
       }
 
    let add_clause lex action s =
-      let exp = add_clause_exp lex.lex_exp action s in
-         { lex_exp = exp; lex_dfa = None }
+      let arity, exp = add_clause_exp lex.lex_exp action s in
+      let lex = { lex_exp = exp; lex_dfa = None } in
+         arity, lex
 
    let remove_clause lex action =
       { lex_exp = remove_clause_exp lex.lex_exp action;
         lex_dfa = None
       }
 
-   let lex info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
+   (*
+    * Take the union of two lexers.
+    * We assume that if we have seen a clause before,
+    * then we have seen all the rest of the clauses too.
+    *)
+   let union info1 info2 =
+      let { lex_exp = exp1; lex_dfa = dfa1 } = info1 in
+      let { lex_exp = exp2; lex_dfa = dfa2 } = info2 in
+         (* Catch degenerate cases first *)
+         match exp1.exp_clauses, exp2.exp_clauses with
+            [], _ -> info2
+          | _, [] -> info1
+          | _ ->
+               let changed, exp = union_exp exp1 exp2 in
+                  if changed then
+                     { lex_exp = exp; lex_dfa = None }
+                  else
+                     info1
+
+   let dfa_of_info info =
+      match info.lex_dfa with
+         Some dfa ->
+            dfa
+       | None ->
+            let dfa = create info.lex_exp in
+               info.lex_dfa <- Some dfa;
                dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         lex dfa channel
+
+   let lex info channel =
+      lex (dfa_of_info info) channel
 
    let search info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
-               dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         search dfa channel
+      search (dfa_of_info info) channel
 
    let matches info channel =
-      let dfa =
-         match info.lex_dfa with
-            Some dfa ->
-               dfa
-          | None ->
-               let dfa = create info.lex_exp in
-                  info.lex_dfa <- Some dfa;
-                  dfa
-      in
-         matches dfa channel
+      matches (dfa_of_info info) channel
+
+   let compile info =
+      ignore (dfa_of_info info)
+
+   let pp_print_lexer buf info =
+      let { lex_exp = exp } = info in
+      let dfa = dfa_of_info info in
+         fprintf buf "@[<v 0>@[<hv 3>Lexer:@ %a@]" pp_print_exp exp;
+         fprintf buf "@ @[<hv 3>NFA:";
+         Array.iter (fun nfa_state -> fprintf buf "@ %a" pp_print_nfa_state nfa_state) dfa.dfa_table;
+         fprintf buf "@]@]";
 end
 
 (************************************************************************
@@ -2247,6 +2324,10 @@ struct
    type action = int
 
    let pp_print_action = pp_print_int
+
+   module ActionSet = IntSet;;
+
+   let choose = min
 end
 
 module LmLexer = MakeLexer (Lm_channel.LexerInput) (LmAction)
@@ -2259,7 +2340,7 @@ struct
     * Create a regular expression.
     *)
    let regexp s =
-      LmLexer.add_clause LmLexer.empty 0 s
+      snd (LmLexer.add_clause LmLexer.empty 0 s)
 
    (*
     * Perform the match.
