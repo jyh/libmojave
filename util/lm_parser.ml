@@ -298,7 +298,13 @@ struct
    module ProdItemCompare =
    struct
       type t = prod_item
-      let compare = Pervasives.compare
+
+      let compare item1 item2 =
+         let cmp = item1.prod_item_hash - item2.prod_item_hash in
+            if cmp = 0 then
+               Pervasives.compare item1.prod_item_core item2.prod_item_core
+            else
+               cmp
    end
 
    module ProdItemSet   = Lm_set.LmMake (ProdItemCompare);;
@@ -1136,12 +1142,15 @@ struct
          collect IntSet.empty lower
 
    let propagate_order_core prop_table =
+      (* The map from state index to a set of next states *)
       let next_table =
          Array.map (fun prod_table ->
                Array.fold_left (fun next prop ->
                      List.fold_left (fun next info ->
                            IntSet.add next info.prop_next_state) next prop.prop_info) IntSet.empty prod_table) prop_table
       in
+
+      (* Depth-first search *)
       let rec search order examined unexamined index =
          let unexamined = IntSet.remove unexamined index in
             if IntSet.mem examined index then
@@ -1153,11 +1162,28 @@ struct
                   IntSet.fold (fun (order, examined, unexamined) index ->
                         search order examined unexamined index) (order, examined, unexamined) next
       in
+
+      (* Try finding a root in the graph *)
+      let choose_root unexamined =
+         let roots =
+            IntSet.fold (fun roots index ->
+                  IntSet.fold IntSet.remove roots next_table.(index)) unexamined unexamined
+         in
+         let s =
+            if IntSet.is_empty roots then
+               unexamined
+            else
+               roots
+         in
+            IntSet.choose s
+      in
+
+      (* Compute as a fixpoint *)
       let rec fixpoint order examined unexamined =
          if IntSet.is_empty unexamined then
             List.rev order
          else
-            let index = IntSet.choose unexamined in
+            let index = choose_root unexamined in
             let order, examined, unexamined = search order examined unexamined index in
                fixpoint order examined unexamined
       in
@@ -1186,41 +1212,41 @@ struct
    let propagate_lookahead prop_table order =
       let step () =
          List.fold_left (fun changed index ->
-               let prod_table = prop_table.(index) in
-                  Array.fold_left (fun changed prop ->
-                        let { prop_info = info;
-                              prop_vars = vars
-                            } = prop
-                        in
-                           List.fold_left (fun changed info ->
-                                 let { prop_next_state = next_state_index;
-                                       prop_next_item  = next_item_index;
-                                       prop_lookahead  = lookahead
-                                     } = info
-                                 in
-                                 let vars1 = lookahead_vars lookahead vars in
-                                 let next_entry = prop_table.(next_state_index).(next_item_index) in
-                                 let vars2 = next_entry.prop_vars in
-                                 let vars = VarSet.union vars1 vars2 in
-                                    if VarSet.cardinal vars <> VarSet.cardinal vars2 then
-                                       begin
-                                          next_entry.prop_vars <- vars;
-                                          true
-                                       end
-                                    else
-                                       changed) changed info) changed prod_table) false order
+               Array.fold_left (fun changed prop ->
+                     let { prop_info = info;
+                           prop_vars = vars
+                         } = prop
+                     in
+                        List.fold_left (fun changed info ->
+                              let { prop_next_state = next_state_index;
+                                    prop_next_item  = next_item_index;
+                                    prop_lookahead  = lookahead
+                                  } = info
+                              in
+                              let vars1 = lookahead_vars lookahead vars in
+                              let next_entry = prop_table.(next_state_index).(next_item_index) in
+                              let vars2 = next_entry.prop_vars in
+                              let vars = VarSet.union vars1 vars2 in
+                                 if VarSet.cardinal vars <> VarSet.cardinal vars2 then begin
+                                    next_entry.prop_vars <- vars;
+                                    true
+                                 end
+                                 else
+                                    changed) changed info) changed prop_table.(index)) false order
       in
-      let rec fixpoint () =
+      let rec fixpoint index =
          if step () then
-            fixpoint ()
+            fixpoint (succ index)
+         else
+            index
       in
          if !debug_parsetiming then
             let start = Unix.gettimeofday () in
-               eprintf "Lm_parser: solving fixpoint@.";
-               fixpoint ();
-               eprintf "Fixpoint: %g secs@." (Unix.gettimeofday () -. start)
+               eprintf "Lm_parser: solving fixpoint for %d states@." (List.length order);
+               let index = fixpoint 1 in
+                  eprintf "Fixpoint %d iterations in %g secs@." index (Unix.gettimeofday () -. start)
          else
-            fixpoint ()
+            ignore (fixpoint 1)
 
    (*
     * Rebuild the traditional table from the propagation network.
