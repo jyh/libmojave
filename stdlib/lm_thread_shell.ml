@@ -73,7 +73,7 @@ let root_id = "id", 1
 let info_entry =
    let current = State.current () in
    let job =
-      { job_type   = VisibleJob;
+      { job_type   = HiddenJob;
         job_state  = current
       }
    in
@@ -134,42 +134,24 @@ let create name job_type =
  * Get the pid for a string.
  * Check that it is defined.
  *)
-let pid_of_string pid =
-   (* Split the string based in integer suffix *)
-   let len = String.length pid in
-   let pid =
-      let rec search i =
-         if i = 0 then
-            raise Not_found;
-         let j = pred i in
-            match pid.[j] with
-               '0'..'9' ->
-                  search j
-             | _ ->
-                  if i = len then
-                     raise Not_found;
-                  let id = String.sub pid 0 i in
-                  let i = int_of_string (String.sub pid i (len - i)) in
-                     id, i
-      in
-         search len
-   in
+let make_pid id i =
+   let pid = id, i in
       State.read info_entry (fun info ->
             if PidTable.mem info.info_jobs pid then
                pid
             else
                raise Not_found)
 
-let string_of_pid (id, i) =
-   id ^ string_of_int i
+let dest_pid (id, i) =
+   id, i
 
 (*
  * Create a job with an exact id.
  *)
-let create_or_find pid mode =
-   try pid_of_string pid with
+let create_or_find id i mode =
+   try make_pid id i with
       Not_found ->
-         create pid mode
+         create id mode
 
 (*
  * Return the current pid.

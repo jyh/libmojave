@@ -41,13 +41,13 @@ val with_current : ('a -> 'b) -> 'a -> 'b
  * Raises Failure if the string is not well-formed.
  * Raises Not_found if the string is not a current pid.
  *)
-val pid_of_string : string -> pid
-val string_of_pid : pid -> string
+val make_pid : string -> int -> pid
+val dest_pid : pid -> string * int
 
 (*
  * Create, or find a previous job with this name.
  *)
-val create_or_find : string -> job_type -> pid
+val create_or_find : string -> int -> job_type -> pid
 
 (*!
  * @docoff
