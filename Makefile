@@ -10,7 +10,8 @@ INCLUDE :=
 
 DIRS :=\
 	stdlib\
-	util
+	util\
+	unix
 
 ADIRS :=\
 	cutil\
@@ -42,18 +43,21 @@ include $(ROOT)/mk/rules
 #
 # Sub-dependencies
 #
-include util/Files
 include stdlib/Files
+include util/Files
+include unix/Files
 
 #
 # Optimization
 #
 STDLIB_CMXFILES := $(addprefix stdlib/, $(addsuffix .cmx, $(STDLIB_FILES)))
 UTIL_CMXFILES   := $(addprefix util/,   $(addsuffix .cmx, $(UTIL_FILES)))
+UNIX_CMXFILES   := $(addprefix unix/,   $(addsuffix .cmx, $(UNIX_FILES)))
 
 CMXFILES :=\
 	$(STDLIB_CMXFILES)\
-	$(UTIL_CMXFILES)
+	$(UTIL_CMXFILES)\
+	$(UNIX_CMXFILES)
 
 #
 # Libraries

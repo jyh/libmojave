@@ -20,15 +20,15 @@
 
 
 (* C readline function returns None at EOF *)
-external caml_initialise_readline : unit -> unit = "caml_initialise_readline"
+external caml_initialize_readline : unit -> unit = "caml_initialize_readline"
 external caml_register_commands : string list -> unit = "caml_register_commands"
 external caml_readline : string -> string option = "caml_readline"
 
 
-(* initialise_readline ()
+(* initialize_readline ()
    Initialise the readline library.  *)
-let initialise_readline () =
-   caml_initialise_readline ()
+let initialize_readline () =
+   caml_initialize_readline ()
 
 
 (* register_commands commands
@@ -43,7 +43,7 @@ let register_commands commands =
 (* readline prompt
    Displays a readline prompt, and accepts a line of input from the user.
    Tab completion will be enabled as approprate.  Be sure to call the
-   initialise_readline () function before calling this function.  This
+   initialize_readline () function before calling this function.  This
    will raise End_of_file if the user strikes ^D.  *)
 let readline prompt =
    match caml_readline prompt with

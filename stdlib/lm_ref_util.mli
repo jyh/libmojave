@@ -1,5 +1,5 @@
 (*
- * Override some basic functions, mostly for debugging.
+ * Reference operations.
  *
  * ----------------------------------------------------------------
  *
@@ -30,11 +30,9 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Lm_debug
-
-let open_in = Pervasives.open_in
-let open_in_bin = Pervasives.open_in_bin
+(* Stack ops *)
+val push : 'a -> ('a list) ref -> unit
+val pop : ('a list) ref -> 'a
 
 (*
  * -*-

@@ -1,5 +1,5 @@
 (*
- * Override some basic functions, mostly for debugging.
+ * Useful utilities for threads.
  *
  * ----------------------------------------------------------------
  *
@@ -30,11 +30,18 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Lm_debug
+(*
+ * Printer locking.
+*)
+let print_lock = Mutex.create ()
 
-let open_in = Pervasives.open_in
-let open_in_bin = Pervasives.open_in_bin
+let lock_printer () =
+   Mutex.lock print_lock
+
+let unlock_printer () =
+   flush stdout;
+   flush stderr;
+   Mutex.unlock print_lock
 
 (*
  * -*-

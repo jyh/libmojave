@@ -10,6 +10,7 @@ LCFILES :=\
 	lm_ncurses\
 	lm_printf\
 	lm_raw\
+	lm_mmap\
 	lm_readline\
 	lm_rusage\
 	lm_terminfo

@@ -23,11 +23,33 @@
    a limited form of the full data structure returned by libc.  This contains
    the user and system runtimes, broken down into seconds and microseconds,
    for the requested processes.  *)
-type rusage = 
+type rusage_short =
    { ru_utime_sec  : int;
      ru_utime_usec : int;
      ru_stime_sec  : int;
      ru_stime_usec : int;
+   }
+
+(*
+ * A more complete version.
+ *)
+type rusage =
+   { ru_utime : float;
+     ru_stime : float;
+     ru_maxrss : int;
+     ru_ixrss : int;
+     ru_idrss : int;
+     ru_isrss : int;
+     ru_minflt : int;
+     ru_majflt : int;
+     ru_nswap : int;
+     ru_inblock : int;
+     ru_oublock : int;
+     ru_msgsnd : int;
+     ru_msgrcv : int;
+     ru_nsignals : int;
+     ru_nvcsw : int;
+     ru_nivcsw : int
    }
 
 
@@ -42,9 +64,9 @@ type rusage_who =
 (***  External Calls  ***)
 
 
-external caml_getrusage_time : rusage_who -> rusage = "caml_getrusage_time"
+external caml_getrusage_time : rusage_who -> rusage_short = "caml_getrusage_time"
 external caml_setrlimit_time : int -> unit = "caml_setrlimit_time"
-
+external getrusage : unit -> rusage = "ml_getrusage"
 
 (***  Interface  ***)
 

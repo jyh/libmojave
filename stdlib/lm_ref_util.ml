@@ -1,5 +1,5 @@
 (*
- * Override some basic functions, mostly for debugging.
+ * Operations on references.
  *
  * ----------------------------------------------------------------
  *
@@ -32,9 +32,25 @@
 
 open Printf
 open Lm_debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   show_loading "Loading Lm_ref_util%t"
 
-let open_in = Pervasives.open_in
-let open_in_bin = Pervasives.open_in_bin
+(*
+ * Stack operations.
+ *)
+let push a stack =
+   stack := a::!stack
+
+let pop stack =
+   match !stack with
+      h::t ->
+         stack := t;
+         h
+    | [] ->
+         raise (Invalid_argument "pop")
 
 (*
  * -*-

@@ -19,9 +19,9 @@
  *)
 
 
-(* initialise_readline ()
+(* initialize_readline ()
    Initialise the readline library.  *)
-val initialise_readline : unit -> unit
+val initialize_readline : unit -> unit
 
 
 (* register_commands commands
@@ -35,6 +35,6 @@ val register_commands : string list -> unit
 (* readline prompt
    Displays a readline prompt, and accepts a line of input from the user.
    Tab completion will be enabled as approprate.  Be sure to call the
-   initialise_readline () function before calling this function.  This
+   initialize_readline () function before calling this function.  This
    will raise End_of_file if the user strikes ^D.  *)
 val readline : string -> string
