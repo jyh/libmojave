@@ -25,8 +25,6 @@
  * @end[license]
  */
 #include <stdio.h>
-#include <memory.h>
-#include <stdlib.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -59,7 +57,7 @@ static int uname(struct utsname *name)
     char *osname;
 
     /* Ask Win32 for OS info */
-    osversion.dwOSVersionInfoSize = sizeof (osversion);
+    osversion.dwOSVersionInfoSize = sizeof(osversion);
     if(GetVersionEx(&osversion) == 0)
         return -1;
 
@@ -109,7 +107,7 @@ static int uname(struct utsname *name)
             ptype = 6;
         else
             ptype = sysinfo.dwProcessorType;
-        sprintf (name->machine, "i%d86", ptype);
+        sprintf(name->machine, "i%d86", ptype);
         break;
     case PROCESSOR_ARCHITECTURE_ALPHA:
         strcpy(name->machine, "alpha");
