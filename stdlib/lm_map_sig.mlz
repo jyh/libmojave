@@ -99,6 +99,7 @@ sig
 
    val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
    val find_all : 'a t -> key -> 'a list
+   val find_all_partial : 'a t -> key -> 'a list
    val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
    val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
    val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a

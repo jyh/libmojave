@@ -1524,9 +1524,15 @@ struct
 
    let iter_all = MMap.iter
    let mapi_all = MMap.mapi
-   let find_all = MMap.find_all
    let fold_all = MMap.fold
    let data_all = MMap.data
+
+   (*
+    * find_all is a total function.
+    * find_all_partial fails if the element is not in the table.
+    *)
+   let find_all_partial = MMap.find
+   let find_all = MMap.find_all
 
    let filter t key f = (* table_ext v_ext search *)
       try

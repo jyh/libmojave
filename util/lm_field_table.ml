@@ -381,11 +381,12 @@ struct
       let fields = List.sort (fun (_, _, _, index1) (_, _, _, index2) ->
                                     index2 - index1) fields in
          collect table.table_count [] fields
+
    (*
     * Find all the entries based on the external name.
     *)
    let find_ext table v_ext =
-      let fields = SymbolMTable.find_all table.table_ext v_ext in
+      let fields = SymbolMTable.find_all_partial table.table_ext v_ext in
          List.map (fun (v', x, _) -> v', x) fields
 
    (*

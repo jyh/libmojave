@@ -329,18 +329,6 @@ let rec nth_tl i l =
             raise (Invalid_argument "nth_tl")
 
 (*
- * Remove an element from a list.
- *)
-let rec remove k = function
-   h :: t ->
-      if k = h then
-         remove k t
-      else
-         h :: remove k t
- | [] ->
-      []
-
-(*
  * Functional replacement.
  *)
 let rec replacef_nth i f = function
@@ -645,8 +633,12 @@ let rec tryremove x = function
          t
       else
          let res = tryremove x t in
-         if res == t then l else h::res
- | [] -> []
+            if res == t then
+               l
+            else
+               h :: res
+ | [] ->
+      []
 
 (*
  * Remove the specified suffix from the list.
