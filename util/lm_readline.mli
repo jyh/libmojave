@@ -34,7 +34,8 @@ val register_commands : string list -> unit
 (* load_history filename
    Load a command history file (one command per line) and append it to the
    current history.
-   Will raise Sys_error if the file cannot be opened. *)
+   Will raise Sys_error if the file cannot be opened.
+   Will raise Not_found if the file does not exist. *)
 val read_history : string -> unit
 
 (* save_history filename

@@ -18,6 +18,7 @@
 #if READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <errno.h>
 #endif
 
 
@@ -187,7 +188,10 @@ value caml_read_history(value name) {
     CAMLparam1(name);
     int result;
     result = read_history( String_val(name) );
-    if (result != 0) {
+    if (result == ENOENT) {
+        raise_not_found();
+    }
+    else if (result != 0) {
         CAMLlocal1(error);
         error = copy_string(strerror( result ));
         raise_sys_error( error );
