@@ -44,10 +44,6 @@ if $(equal $(NCURSES), YES)
 #
 CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
 
-if $(not $(equal $(OSTYPE), Win32))
-   CFLAGS += -Wno-unused-variable
-   export
-
 #
 # Libraries
 #
