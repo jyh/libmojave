@@ -668,7 +668,7 @@ struct
                                                RegexSequence [RegexSymbol [Char.code '\r'];
                                                               RegexSymbol [Char.code '\n']]]
    let bof_delimiter         = RegexLimitPrev [bof]
-   let eof_delimiter         = RegexLimitNext [eof]
+   let eof_delimiter         = RegexSymbol [eof]
 
    (*
     * Reduce a choice list.
