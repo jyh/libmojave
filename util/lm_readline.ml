@@ -23,6 +23,9 @@
 external caml_initialize_readline : unit -> unit = "caml_initialize_readline"
 external caml_register_commands : string list -> unit = "caml_register_commands"
 external caml_readline : string -> string option = "caml_readline"
+external caml_read_history : string -> unit = "caml_read_history"
+external caml_write_history : string -> unit = "caml_write_history"
+external caml_history_truncate_file : string -> int -> unit = "caml_history_truncate_file"
 
 
 (* initialize_readline ()
@@ -39,6 +42,14 @@ let initialize_readline () =
 let register_commands commands =
    caml_register_commands commands
 
+let read_history filename =
+   caml_read_history filename
+
+let write_history filename =
+   caml_write_history filename
+
+let history_truncate_file filename nlines =
+   caml_history_truncate_file filename nlines
 
 (* readline prompt
    Displays a readline prompt, and accepts a line of input from the user.

@@ -31,6 +31,23 @@ val initialize_readline : unit -> unit
    the command-line.  *)
 val register_commands : string list -> unit
 
+(* load_history filename
+   Load a command history file (one command per line) and append it to the
+   current history.
+   Will raise Sys_error if the file cannot be opened. *)
+val read_history : string -> unit
+
+(* save_history filename
+   Save the currently registered command history to a file (one command per
+   line) deleting any previous contents.
+   Will raise Sys_error if the file cannot be opened. *)
+val write_history : string -> unit
+
+(* history_truncate_file filename nlines
+   Truncate history file filename to nlines in length, keeping most recent
+   commands.
+   Will raise Sys_error on failure *)
+val history_truncate_file : string -> int -> unit
 
 (* readline prompt
    Displays a readline prompt, and accepts a line of input from the user.

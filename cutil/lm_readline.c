@@ -13,6 +13,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+#include <caml/fail.h>
 
 #if READLINE
 #include <readline/readline.h>
@@ -75,7 +76,7 @@ static char *dupstr(const char *s) {
 static char *command_generator(char *text, int state) {
 
    const char *name;
-   
+
    /* Make sure we have a command list to process */
    if(commands == NULL) return(NULL);
 
@@ -84,7 +85,7 @@ static char *command_generator(char *text, int state) {
       list_index = 0;
       len = strlen(text);
    }
-   
+
    /* Return the next command name which partially matches the text */
    while((name = commands[list_index]) != NULL) {
       ++list_index;
@@ -92,7 +93,7 @@ static char *command_generator(char *text, int state) {
          return(dupstr(name));
       }
    }
-   
+
    /* If nothing matched, then return NULL */
    return(NULL);
 
@@ -100,17 +101,17 @@ static char *command_generator(char *text, int state) {
 
 
 /*
- * Attempt command-name completion (assuming a list of 
+ * Attempt command-name completion (assuming a list of
  * commands have been registered into the system).
  */
 static char **command_completion(char *text, int start, int end) {
 
    char **matches = NULL;
-   
+
    if(start == 0) {
       matches = RL_COMPLETION_MATCHES(text, (RL_CP_TYPE *)command_generator);
    }
-   
+
    return(matches);
 
 }
@@ -122,19 +123,19 @@ static char **command_completion(char *text, int start, int end) {
 value caml_initialize_readline(value unit) {
 
    CAMLparam1(unit);
-   
+
    /* Setup the default command table */
    commands = NULL;
 
    /* Tell the completer about our command completion engine */
    rl_attempted_completion_function = (RL_CPP_TYPE *)command_completion;
-   
+
    /* Set horizontal scroll mode; other modes screw up display */
    rl_variable_bind("horizontal-scroll-mode", "on");
-   
+
    /* Disable the bell */
    rl_variable_bind("bell-style", "none");
-   
+
    CAMLreturn(Val_unit);
 
 }
@@ -148,7 +149,7 @@ value caml_register_commands(value new_commands) {
    CAMLparam1(new_commands);
    CAMLlocal1(cptr);
    int length;
-   
+
    /* Try to figure out the length of this list... */
    cptr = new_commands;
    length = 0;
@@ -156,14 +157,14 @@ value caml_register_commands(value new_commands) {
       cptr = Field(cptr, 1);
       ++length;
    }
-   
+
    /* Allocate the real, internal command structure */
    destruct_command_list();
    commands = malloc(sizeof(char *) * (length + 1));
    if(commands == NULL) {
       CAMLreturn(Val_unit);
    }
-   
+
    cptr = new_commands;
    length = 0;
    while(Is_block(cptr)) {
@@ -172,14 +173,58 @@ value caml_register_commands(value new_commands) {
       cptr = Field(cptr, 1);
       ++length;
    }
-   
+
    /* Clear the final entry in the commands list */
    commands[length] = NULL;
-   
+
    /* We were apparently successful */
    CAMLreturn(Val_unit);
 
 }
+
+value caml_read_history(value name) {
+
+    CAMLparam1(name);
+    int result;
+    result = read_history( String_val(name) );
+    if (result != 0) {
+        CAMLlocal1(error);
+        error = copy_string(strerror( result ));
+        raise_sys_error( error );
+    }
+    CAMLreturn(Val_unit);
+
+}
+
+value caml_write_history(value name) {
+
+    CAMLparam1(name);
+    int result;
+    result = write_history( String_val(name) );
+    if (result != 0) {
+        CAMLlocal1(error);
+        error = copy_string(strerror( result ));
+        raise_sys_error( error );
+    }
+    CAMLreturn(Val_unit);
+
+}
+
+value caml_history_truncate_file(value name, value nlines) {
+
+    CAMLparam2(name, nlines);
+    int result;
+    result = history_truncate_file( String_val(name), Long_val(nlines) );
+    if (result != 0) {
+        CAMLlocal1(error);
+        error = copy_string(strerror( result ));
+        raise_sys_error( error );
+    }
+    CAMLreturn(Val_unit);
+
+}
+
+
 
 
 #else /* No READLINE... */
@@ -202,6 +247,25 @@ value caml_initialize_readline(value unit) {
 value caml_register_commands(value new_commands) {
 
    CAMLparam1(new_commands);
+   CAMLreturn(Val_unit);
+
+}
+
+value caml_read_history(value name) {
+
+   CAMLparam1(name);
+   CAMLreturn(Val_unit);
+
+}
+value caml_write_history(value name) {
+
+   CAMLparam1(name);
+   CAMLreturn(Val_unit);
+
+}
+value caml_history_truncate_file(value name, value len) {
+
+   CAMLparam2(name,len);
    CAMLreturn(Val_unit);
 
 }
