@@ -855,6 +855,13 @@ struct
          fprintf buf "@ @[<hv 3>First:%a@]" (pp_print_var_table gram) first;
          fprintf buf "@]"
 
+   let pp_print_lookahead gram buf look =
+      match look with
+         LookAheadConst set ->
+            fprintf buf "@[<b 3>const%a@]" (pp_print_var_set gram) set
+       | LookAheadProp set ->
+            fprintf buf "@[<b 3>prop%a@]" (pp_print_var_set gram) set
+
    (*
     * Error messages.
     *)
@@ -1358,8 +1365,8 @@ struct
                let lookaheads = VarMTable.add lookaheads v (lookahead info right, v_prod) in
                let unexamined = VarSet.add unexamined v in
                   delta, lookaheads, unexamined
-          | _ ->
-               raise (Invalid_argument "build_head_item")
+          | [] ->
+               delta, lookaheads, unexamined
 
    let build_head_items info delta lookaheads unexamined v items =
       List.fold_left (fun (delta, lookaheads, unexamined) item ->
@@ -1377,12 +1384,13 @@ struct
             if VarSet.mem examined v then
                build_head_search info examined unexamined delta lookaheads
             else
+               let examined = VarSet.add examined v in
                let items =
                   try VarMTable.find_all info.info_grammar.gram_prod v with
                      Not_found ->
                         []
                in
-               let delta, lookahead, unexamined = build_head_items info delta lookaheads unexamined v items in
+               let delta, lookaheads, unexamined = build_head_items info delta lookaheads unexamined v items in
                   build_head_search info examined unexamined delta lookaheads
 
    let build_head_close info v =
@@ -1392,7 +1400,17 @@ struct
     * Solve the lookahead functions.
     * This is a fixpoint, but it should be pretty cheap.
     *)
-   let build_lookaheads v lookaheads =
+   let build_lookaheads info v lookaheads =
+      if !debug_parsegen then begin
+         eprintf "@[<v 3>Raw lookaheads:";
+         VarMTable.iter_all (fun v items ->
+               eprintf "@ @[<v 3>%a =" pp_print_symbol v;
+               List.iter (fun (e, v_prod) ->
+                     eprintf "@ %a ^ %a" (pp_print_lookahead info.info_grammar) e pp_print_symbol v_prod) items;
+               eprintf "@]") lookaheads;
+         eprintf "@]@."
+      end;
+
       (* Invert the table *)
       let table =
          VarMTable.fold_all (fun table v items ->
@@ -1425,10 +1443,11 @@ struct
                         let e = lookahead_concat e2 e1 in
                            try
                               let e_old = VarTable.find venv v in
-                                 if lookahead_equal e e_old then
+                              let e_new = lookahead_union e_old e in
+                                 if lookahead_equal e_old e_new then
                                     venv, changed
                                  else
-                                    VarTable.add venv v e, true
+                                    VarTable.add venv v e_new, true
                            with
                               Not_found ->
                                  VarTable.add venv v e, true) (venv, changed) next) (venv, false) venv
@@ -1446,15 +1465,37 @@ struct
     * Main function.
     *)
    let build_head_table info =
-      VarMTable.fold (fun table v _ ->
-            let delta, lookaheads = build_head_close info v in
-            let lookaheads = build_lookaheads v lookaheads in
-            let head =
-               { head_delta = delta;
-                 head_lookahead = lookaheads
-               }
-            in
-               VarTable.add table v head) VarTable.empty info.info_grammar.gram_prod
+      let table =
+         VarMTable.fold (fun table v _ ->
+               let delta, lookaheads = build_head_close info v in
+               let lookaheads = build_lookaheads info v lookaheads in
+               let head =
+                  { head_delta = delta;
+                    head_lookahead = lookaheads
+                  }
+               in
+                  VarTable.add table v head) VarTable.empty info.info_grammar.gram_prod
+      in
+         if !debug_parsegen then begin
+            eprintf "@[<v 3>Head table:";
+            VarTable.iter (fun v head ->
+                  let { head_delta = delta;
+                        head_lookahead = look
+                      } = head
+                  in
+                     eprintf "@ @ @[<v 3>%a =" pp_print_symbol v;
+                     VarTable.iter (fun v items ->
+                           eprintf "@ @[<hv 3>%a ->" pp_print_symbol v;
+                           ProdItemSet.iter (fun item ->
+                                 eprintf "@ %a" (pp_print_prod_item info.info_grammar) item) items;
+                           eprintf "@]") delta;
+                     eprintf "@]@ @[<v 3>Lookahead:";
+                     VarTable.iter (fun v look ->
+                           eprintf "@ @[<b 3>%a = %a@]" pp_print_symbol v (pp_print_lookahead info.info_grammar) look) look;
+                     eprintf "@]") table;
+            eprintf "@]@."
+         end;
+         table
 
    (************************************************
     * Producing the state table.
@@ -1726,6 +1767,7 @@ struct
     *)
    let build_prop_state info prop_table state_table shift_table prop_edges state_index prod_table =
       let goto_table = IntTable.find shift_table state_index in
+      let prods = info.info_grammar.gram_prod in
          ProdItemTable.fold (fun prop_edges prod_item prod_index ->
                let prod_item_core = ProdItem.get prod_item in
                let { prod_item_left = left;
@@ -1736,7 +1778,10 @@ struct
                      v :: right ->
                         (* If v is a nonterminal, then also propagate to initial items *)
                         let prop_items =
-                           build_prop_head info prop_table state_table goto_table state_index prod_index v right
+                           if VarMTable.mem prods v then
+                              build_prop_head info prop_table state_table goto_table state_index prod_index v right
+                           else
+                              []
                         in
 
                         (* Propagate directly to the next state *)
