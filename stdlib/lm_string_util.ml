@@ -621,7 +621,7 @@ let tokens_string info s =
                   scan_pending_prefix tokens prefix
 
 (*
- * Split a string based on a bounary.
+ * Split a string based on a boundary.
  *)
 let split_string boundary s =
    let len_s = String.length s in
