@@ -71,6 +71,7 @@ exception RFormatOverflow
 (*
  * A printer contains:
  *    print_string s : print string s to the buffer
+ *    print_atomic s : print the buffer to the buffer
  *    print_invis s : print string s in invisible mode
  *    print_tab lmargin tags : tab to the specified left margin
  *    print_begin_tag : start tagging a value
@@ -79,6 +80,7 @@ exception RFormatOverflow
 type printer =
    { print_string    : string -> unit;
      print_invis     : string -> unit;
+     print_atomic    : string -> unit;
      print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
      print_end_tag   : string -> unit
@@ -122,6 +124,7 @@ val format_szone : buffer -> unit
 val format_hzone : buffer -> unit
 val format_ezone : buffer -> unit
 val format_izone : buffer -> unit
+val format_azone : buffer -> unit
 
 (* TeX boxes *)
 val format_tzone : buffer -> string -> unit
@@ -138,7 +141,6 @@ val format_popm : buffer -> unit
  *)
 val format_char : buffer -> char -> unit
 val format_string : buffer -> string -> unit
-val format_string_width : buffer -> string -> int -> unit
 val format_raw_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit

@@ -81,12 +81,21 @@ let sprintf = Printf.sprintf
 
 (*
  * Identify the zone types.
+ *
+ *   LZone: linear zone: line breaks are ignored
+ *   HZone: hard zone: all line breaks are taken
+ *   SZone: soft zone: either *all* soft breaks in the zone are taken, or none are
+ *   AZone: atomic zone: this zone acts like a single character
+ *   IZone: all text in the zone is "invisible" to margin calculations
+ *   TZone: tagged zone, no special line breaking treatment
+ *   MZone: margin zone, adds the offset to the left margin
  *)
 type zone_tag =
    LZoneTag
  | HZoneTag
  | SZoneTag
  | IZoneTag
+ | AZoneTag
  | TZoneTag of string
  | MZoneTag of int * string
 
@@ -100,13 +109,6 @@ type zone_tag =
  *      c. the length to append to the current line if it is not
  *      d. a string to insert on the next line if the break is taken
  *      e. a string to append if it is not
- *
- *   4. zone control
- *      LZone: no line breaks are allowed in a linear zone
- *      HZone: all Breaks are takes in a hard zone
- *      SZone: either all Breaks are taken, or they are not
- *      IZone: no lines breaks or margin control
- *      MZone: push the left margin to the current column plus the offset
  *)
 type print_command =
    (* Printing text, keep the length *)
@@ -202,6 +204,7 @@ and root =
 (*
  * A printer contains:
  *    print_string s : print string s to the buffer
+ *    print_atomic s : print the buffer to the buffer
  *    print_invis s : print string s in invisible mode
  *    print_tab lmargin tags : tab to the specified left margin
  *    print_begin_tag : start tagging a value
@@ -210,6 +213,7 @@ and root =
 type printer =
    { print_string    : string -> unit;
      print_invis     : string -> unit;
+     print_atomic    : string -> unit;
      print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
      print_end_tag   : string -> unit
@@ -356,6 +360,9 @@ let format_szone buf =
 
 let format_izone buf =
    push_zone buf IZoneTag
+
+let format_azone buf =
+   push_zone buf AZoneTag
 
 let format_tzone buf tag =
    push_zone buf (TZoneTag tag)
@@ -512,8 +519,9 @@ let rec get_soft_binder buf =
                LZoneTag ->
                   raise NoBinder
              | IZoneTag ->
-                  raise(Invalid_argument "dform error: soft break in izone")
-
+                  raise (Invalid_argument "dform error: soft break in izone")
+             | AZoneTag ->
+                  raise (Invalid_argument "dform error: soft break in azone")
              | SZoneTag
              | HZoneTag ->
                   (* Allocate a new binding occurrence *)
@@ -521,7 +529,8 @@ let rec get_soft_binder buf =
                      head.formatting_index <- index;
                      index
 
-             | MZoneTag _ | TZoneTag _ ->
+             | MZoneTag _
+             | TZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
          in
@@ -541,14 +550,16 @@ let rec get_hard_binder buf =
                LZoneTag ->
                   raise NoBinder
              | IZoneTag ->
-                  raise(Invalid_argument "dform error: hard break in izone")
-
+                  raise (Invalid_argument "dform error: hard break in izone")
+             | AZoneTag ->
+                  raise (Invalid_argument "dform error: hard break in azone")
              | HZoneTag
              | SZoneTag ->
                   (* Return the hard break binder *)
                   0
 
-             | MZoneTag _ | TZoneTag _ ->
+             | MZoneTag _
+             | TZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
          in
@@ -568,9 +579,6 @@ let rec get_hard_binder buf =
  *)
 let format_raw_string buf s =
    push_command buf (Text (String.length s, s))
-
-let format_string_width buf s i =
-   push_command buf (Text (i, s))
 
 let format_cbreak buf str str' =
    let l = String.length str in
@@ -796,17 +804,23 @@ let get_formatted buf =
 let rec next_text_len stack = function
    Text (len, _) :: _ when len > 0 ->
       len
- | Inline buf :: t when buf.buf_tag <> IZoneTag ->
-      let { unformatted_commands = commands } = get_unformatted buf in
-         next_text_len (t :: stack) commands
+ | Inline buf :: t ->
+      (match buf.buf_tag with
+          AZoneTag ->
+             1
+        | IZoneTag ->
+             next_text_len stack t
+        | _ ->
+             let { unformatted_commands = commands } = get_unformatted buf in
+                next_text_len (t :: stack) commands)
  | _ :: t ->
       next_text_len stack t
  | [] ->
-      match stack with
-         t :: tl ->
-            next_text_len tl t
-       | [] ->
-            0
+      (match stack with
+          t :: tl ->
+             next_text_len tl t
+        | [] ->
+             0)
 
 (*
  * Breaks are never taken in a linear zone.
@@ -984,6 +998,12 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
     | IZoneTag ->
          (* All text inside is invisible to margin calculations *)
          col, maxx
+    | AZoneTag ->
+         (* An atomic zone takes exactly 1 character *)
+         let col = succ col in
+            if search && col >= rmargin then
+               raise MarginError;
+            col, max col maxx
     | MZoneTag (off, str) ->
          (* Adjust the offset, so we don't go too far right *)
          let col' = col + off in
@@ -1152,12 +1172,24 @@ and print_zone buf rmargin col printer linear tags =
 
     | IZoneTag ->
          let printer =
-            { printer with
-              print_string = printer.print_invis;
-              print_tab = print_arg2_invis;
+            { printer with print_string = printer.print_invis;
+                           print_tab = print_arg2_invis
             }
          in
             print_ltzone linear buf rmargin col printer tags
+
+    | AZoneTag ->
+         let buffer = Buffer.create 16 in
+         let print_string = Buffer.add_string buffer in
+         let printer =
+            { printer with print_string = print_string;
+                           print_invis = print_string;
+                           print_tab = print_arg2_invis
+            }
+         in
+         let col = print_ltzone linear buf rmargin col printer tags in
+            printer.print_atomic (Buffer.contents buffer);
+            col
 
     | MZoneTag (off, str) ->
          (print_ltzone linear buf rmargin col printer tags) + off

@@ -28,18 +28,27 @@ open Lm_rformat_raw
 open Lm_rformat
 
 (*
+ * Kinds of input.
+ *)
+type data =
+   VisibleString of string
+ | InvisibleString of string
+ | AtomicString of string
+
+(*
  * We hack the indentation in the HTML printer.
  * Format the data into lines, and print the tabstops in
- * the background color.
+ * invisible mode.
  *
- * The prefix is the white space that is inserted to
- * get the left margin right.
+ * The prefix is the white space for the left margin.
  *)
 type html_buffer =
-   { html_current_line   : (bool * string) Queue.t;
-     mutable html_prefix : string;
-     html_print_string   : string -> unit;
-     html_print_newline  : unit -> unit
+   { html_line               : data Queue.t;
+     mutable html_column     : int;
+     mutable html_prefix     : data list;
+     mutable html_spacer     : string;
+     html_print_string       : string -> unit;
+     html_print_newline      : unit -> unit
    }
 
 (*
@@ -71,51 +80,115 @@ let html_escape_string buffer s =
       collect 0 0
 
 (*
- * Print strings.
+ * For external use.
  *)
-let html_print_string buf s =
-   Queue.add (true, s) buf.html_current_line
-
-let html_print_invis buf s =
-   Queue.add (false, s) buf.html_current_line
+let escape s =
+   let buf = Buffer.create 16 in
+      html_escape_string buf s;
+      Buffer.contents buf
 
 (*
  * Extract the entire line.
  *)
 let html_line buf =
    let buffer = Buffer.create 100 in
-      Queue.iter (fun (vis, h) ->
-            if vis then
-               html_escape_string buffer h
-            else
-               Buffer.add_string buffer h) buf.html_current_line;
-      Buffer.contents buffer
-
-let html_visible buf =
-   let buffer = Buffer.create 100 in
-      Queue.iter (fun (vis, h) ->
-            if vis then
-               Buffer.add_string buffer h) buf.html_current_line;
+      Queue.iter (function
+         VisibleString s ->
+            html_escape_string buffer s
+       | InvisibleString s
+       | AtomicString s ->
+            Buffer.add_string buffer s) buf.html_line;
       Buffer.contents buffer
 
 let html_push_line buf =
    let line = html_line buf in
       buf.html_print_string line;
-      Queue.clear buf.html_current_line
+      Queue.clear buf.html_line
 
 let html_flush buf =
    html_push_line buf
 
 (*
- * Set up all pending tabstops.
+ * Get the spacer from the prefix.
  *)
-let html_tab_line buf =
-   buf.html_prefix ^ html_visible buf
+let html_spacer buf =
+   let buffer = Buffer.create 16 in
+      Buffer.add_string buffer "<span style=\"visibility:hidden\">";
+      List.iter (fun item ->
+            match item with
+               VisibleString s ->
+                  html_escape_string buffer s
+             | InvisibleString _ ->
+                  ()
+             | AtomicString s ->
+                  Buffer.add_string buffer s) buf.html_prefix;
+      Buffer.add_string buffer "</span>";
+      Buffer.contents buffer
+
+(*
+ * Get a new prefix buffer.
+ * The entire line is (buf.html_prefix @ buf.html_current_line).
+ * Build the line, and truncate it.
+ *)
+let html_prefix buf col =
+   let { html_column = cur;
+         html_prefix = prefix;
+         html_line = line
+       } = buf
+   in
+
+   (* Add the visible elements in the current line to the prefix *)
+   let prefix =
+      if col < cur then
+         prefix
+      else
+         List.rev (Queue.fold (fun prefix item ->
+                         match item with
+                            VisibleString _
+                          | AtomicString _ ->
+                               item :: prefix
+                          | InvisibleString _ ->
+                               prefix) (List.rev prefix) line)
+   in
+
+   (* Truncate the prefix to the current column *)
+   let rec collect prefix cur items =
+      match items with
+         item :: items ->
+            (match item with
+                VisibleString s ->
+                   let len = String.length s in
+                   let next = cur + len in
+                      if next <= col then
+                         collect (item :: prefix) next items
+                      else
+                         let s = String.sub s 0 (col - cur) in
+                            VisibleString s :: prefix
+              | InvisibleString _ ->
+                   collect prefix cur items
+              | AtomicString _ ->
+                   let next = succ cur in
+                      if next <= col then
+                         collect (item :: prefix) next items
+                      else
+                         prefix)
+       | [] ->
+            if cur < col then
+               VisibleString (String.make (col - cur) 'm') :: prefix
+            else
+               prefix
+   in
+      buf.html_column <- col;
+      buf.html_prefix <- List.rev (collect [] 0 prefix);
+      buf.html_spacer <- html_spacer buf
 
 (*
  * Newline.
- * Compute all pending tabstops,
- * then push the line and the new tabstop.
+ *
+ * The col is the new *absolute* tabstop.
+ *
+ * Compute the new tabstop prefix, then push the line,
+ * and save the new tabstop.
  *)
 let html_tab buf (col, _) _ =
    if col = 0 then
@@ -123,22 +196,32 @@ let html_tab buf (col, _) _ =
          html_push_line buf;
          buf.html_print_newline ();
          buf.html_print_string "<br>\n";
-         buf.html_prefix <- ""
+         buf.html_column <- 0;
+         buf.html_prefix <- [];
+         buf.html_spacer <- ""
       end
    else
-      let tabline = buf.html_prefix ^ html_visible buf in
+      let spacer =
+         if col <> buf.html_column then
+            html_prefix buf col;
+         buf.html_spacer
+      in
          html_push_line buf;
-         let prefix =
-            if col >= String.length tabline then
-               tabline
-            else
-               String.sub tabline 0 col
-         in
-         let spacer = Printf.sprintf "<span style=\"visibility:hidden\">%s</span>" prefix in
-            buf.html_prefix <- prefix;
-            buf.html_print_newline ();
-            buf.html_print_string "<br>\n";
-            buf.html_print_string spacer
+         buf.html_print_newline ();
+         buf.html_print_string "<br>\n";
+         buf.html_print_string spacer
+
+(*
+ * Print strings.
+ *)
+let html_print_string buf s =
+   Queue.add (VisibleString s) buf.html_line
+
+let html_print_invis buf s =
+   Queue.add (InvisibleString s) buf.html_line
+
+let html_print_atomic buf s =
+   Queue.add (AtomicString s) buf.html_line
 
 let html_tag buf s =
    buf.html_print_string ("<" ^ s ^ ">")
@@ -158,8 +241,10 @@ let make_html_printer_aux raw =
       output_string s 0 (String.length s)
    in
    let buf =
-      { html_current_line  = Queue.create ();
-        html_prefix        = "";
+      { html_line          = Queue.create ();
+        html_column        = 0;
+        html_prefix        = [];
+        html_spacer        = "";
         html_print_string  = print_string;
         html_print_newline = output_newline
       }
@@ -167,6 +252,7 @@ let make_html_printer_aux raw =
    let info =
       { print_string    = html_print_string buf;
         print_invis     = html_print_invis buf;
+        print_atomic    = html_print_atomic buf;
         print_tab       = html_tab buf;
         print_begin_tag = html_tag buf;
         print_end_tag   = html_etag buf

@@ -55,6 +55,7 @@ let make_text_printer raw =
    in
       { print_string    = print_string;
         print_invis     = print_string;
+        print_atomic    = print_string;
         print_tab       = print_tab;
         print_begin_tag = print_arg1_invis;
         print_end_tag   = print_arg1_invis

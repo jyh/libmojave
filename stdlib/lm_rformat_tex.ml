@@ -213,6 +213,7 @@ let make_tex_printer_aux raw =
    let info =
       { print_string    = tex_print_string buf;
         print_invis     = tex_print_invis buf;
+        print_atomic    = tex_print_string buf;
         print_tab       = tex_tab buf;
         print_begin_tag = tex_tag buf;
         print_end_tag   = tex_etag buf

@@ -33,6 +33,8 @@ val print_html_channel : int -> buffer -> out_channel -> unit
 val print_html_buffer  : int -> buffer -> Buffer.t -> unit
 val print_html_string  : int -> buffer -> string
 
+val escape : string -> string
+
 (*!
  * @docoff
  *
