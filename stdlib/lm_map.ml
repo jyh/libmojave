@@ -1174,7 +1174,8 @@ struct
 
    (* n8: I think this was the result of a bad merge:
    let union t1 t2 =
-      fold add t1 t2 *)
+      fold add t1 t2
+   *)
 
    (*
     * Build a path into a tree.
@@ -1305,7 +1306,7 @@ struct
     | Red (key, data, left, right, _) ->
          iter f left;
          f key data;
-         iter f right
+        iter f right
     | Leaf ->
          ()
 

@@ -160,6 +160,8 @@ end
  * A simple field table.
  *)
 module FieldTable : FieldTableSig
+module FieldMTable : FieldMTableSig
+
 
 (*!
  * @docoff
