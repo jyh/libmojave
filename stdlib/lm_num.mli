@@ -66,8 +66,11 @@ val is_integer_num : num -> bool
 val integer_num : num -> int
 val num_of_int : int -> num
 val int_of_num : num -> int
+
 val string_of_num : num -> string
 val num_of_string : string -> num
+val to_string : num -> string
+val of_string : string -> num
 
 (*
  * -*-

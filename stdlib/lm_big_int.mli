@@ -60,6 +60,11 @@ val integer_big_int : big_int -> int
 
 val string_of_big_int : big_int -> string
 val big_int_of_string : string -> big_int
+val to_string : big_int -> string
+val of_string : string -> big_int
+
+val to_int32 : big_int -> Int32.t
+val of_int32 : Int32.t -> big_int
 
 (*
  * Special cases.

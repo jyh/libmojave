@@ -265,6 +265,21 @@ let num_of_string s =
       else
          Big_int i
 
+let to_string = string_of_num
+let of_string = num_of_string
+
+(*
+ * Int32 conversions.
+ *)
+let to_int32 = function
+   Int i ->
+      Int32.of_int i
+ | Big_int i ->
+      Lm_big_int.to_int32 i
+
+let of_int32 i =
+   Big_int (Lm_big_int.of_int32 i)
+
 (*
  * -*-
  * Local Variables:

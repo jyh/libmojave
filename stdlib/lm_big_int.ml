@@ -46,7 +46,7 @@ type big_int = bool * int list
  *)
 let shift_int = 15
 let carry_int = 1 lsl shift_int
-let max_int = pred carry_int
+let max_int   = pred carry_int
 
 (*
  * Representation of zero.
@@ -458,6 +458,45 @@ let big_int_of_string s =
       else
          true, collect 0 []
 
+(*
+ * Additional names.
+ *)
+let to_string = string_of_big_int
+let of_string = big_int_of_string
+
+(*
+ * Produce a int32.
+ *)
+let to_int32 (sign, mag) =
+   match mag with
+      [] ->
+         Int32.zero
+    | digits ->
+         let rec collect shift i digits =
+            match digits with
+               digit :: digits when shift < 32 ->
+                  let i = Int32.logor i (Int32.shift_left (Int32.of_int digit) shift) in
+                     collect (shift + shift_int) i digits
+             | _ ->
+                  i
+         in
+            collect 0 Int32.zero digits
+
+let of_int32 i =
+   let rec make_mag i =
+      if i = Int32.zero then
+         []
+      else
+         (Int32.to_int i) land max_int :: make_mag (Int32.shift_right i shift_int)
+   in
+      if i < Int32.zero then
+         false, make_mag (Int32.neg i)
+      else
+         true, make_mag i
+
+(*
+ * Test for zero.
+ *)
 let is_zero_big_int (_, mag) =
    zeros mag
 
