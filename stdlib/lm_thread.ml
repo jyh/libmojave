@@ -34,7 +34,7 @@ open Lm_int_set
 let debug_lock =
    create_debug (**)
       { debug_name = "lock";
-        debug_description = "Display lock operations";
+        debug_description = "Show locking operations";
         debug_value = false
       }
 
