@@ -16,6 +16,7 @@ STDLIB_FILES =\
 	lm_int_util\
 	lm_hashtbl_util\
 	lm_ref_util\
+	lm_threads\
 	lm_thread_util\
 	lm_thread_event\
 	lm_array_sig\

@@ -1,16 +1,10 @@
 (*
- * Useful utilities for threads.
+ * Our personal implementation of threads.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * @begin[license]
+ * Copyright (C) 2003 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,27 +21,48 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
-open Lm_threads
+module type MutexSig =
+sig
+   type t
 
-(*
- * Printer locking.
- *)
-let print_lock = Mutex.create ()
+   val create : unit -> t
+   val lock : t -> unit
+   val unlock : t -> unit
+end
 
-let lock_printer () =
-   Mutex.lock print_lock
+module Mutex : MutexSig
 
-let unlock_printer () =
-   flush stdout;
-   flush stderr;
-   Mutex.unlock print_lock
+module type ConditionSig =
+sig
+   type t
 
-(*
+   val create : unit -> t
+   val wait : t -> Mutex.t -> unit
+   val signal : t -> unit
+end
+
+module Condition : ConditionSig
+
+module type ThreadSig =
+sig
+   type t
+   type id
+   val create : ('a -> 'b) -> 'a -> t
+   val self : unit -> t
+   val id : t -> int
+end
+
+module Thread : ThreadSig
+
+(*!
+ * @docoff
+ *
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)
