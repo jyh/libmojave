@@ -27,6 +27,7 @@
 open Lm_debug
 open Lm_printf
 open Lm_location
+open Lm_int_set
 
 let debug_parse =
    create_debug (**)
@@ -38,22 +39,16 @@ let debug_parse =
 let debug_parsegen =
    create_debug (**)
       { debug_name = "parsegen";
-        debug_description = "Debug the parseer generator";
+        debug_description = "Debug the parser generator";
         debug_value = false
       }
 
-(*
- * Helper modules.
- *)
-module IntCompare =
-struct
-   type t = int
-   let compare = (-)
-end
-
-module IntSet    = Lm_set.LmMake     (IntCompare);;
-module IntTable  = Lm_map.LmMake     (IntCompare);;
-module IntMTable = Lm_map.LmMakeList (IntCompare);;
+let debug_parsetiming =
+   create_debug (**)
+      { debug_name = "parsetiming";
+        debug_description = "Display timing statistics for the parser generator";
+        debug_value = false
+      }
 
 (*
  * A precedence directive is left-associative, right-associative,
@@ -265,13 +260,20 @@ struct
     *
     * We also keep the precedence of the production,
     * and its semantic action name.
+    *
+    * The hash is just to make comparisons faster.
     *)
-   type prod_item =
+   type prod_item_core =
       { prod_item_name   : var;
         prod_item_left   : var list;       (* Reverse order *)
         prod_item_right  : var list;
         prod_item_action : action;
         prod_item_prec   : precedence
+      }
+
+   type prod_item =
+      { prod_item_hash   : int;
+        prod_item_core   : prod_item_core
       }
 
    module ProdItemCompare =
@@ -392,7 +394,7 @@ struct
                List.iter (fun prod -> fprintf buf "@ %a" (pp_print_prod gram) prod) prods) prods;
          fprintf buf "@]"
 
-   let pp_print_prod_item info buf item =
+   let pp_print_prod_item_core info buf item =
       let { prod_item_action = action;
             prod_item_prec   = pre;
             prod_item_name   = name;
@@ -407,6 +409,9 @@ struct
             (pp_print_var gram) name
             (pp_print_vars gram) (List.rev left)
             (pp_print_vars gram) right
+
+   let pp_print_prod_item info buf item =
+      pp_print_prod_item_core info buf item.prod_item_core
 
    let pp_print_pda_action buf action =
       match action with
@@ -467,7 +472,7 @@ struct
          eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
             (pp_print_var gram) v
             id
-            pp_print_action prod_item.prod_item_action
+            pp_print_action prod_item.prod_item_core.prod_item_action
 
    let reduce_reduce_conflict info v action1 action2 =
       let gram = info.info_grammar in
@@ -786,6 +791,11 @@ struct
    (*
     * Build a prod_item from a production.
     *)
+   let prod_item_of_core core =
+      { prod_item_hash = Hashtbl.hash core;
+        prod_item_core = core
+      }
+
    let prod_item_of_prod prod =
       let { prod_action = action;
             prod_name   = name;
@@ -793,12 +803,15 @@ struct
             prod_prec   = pre
           } = prod
       in
+      let core =
          { prod_item_action = action;
            prod_item_prec   = pre;
            prod_item_name   = name;
            prod_item_left   = [];
            prod_item_right  = rhs
          }
+      in
+         prod_item_of_core core
 
    (*
     * Take the closure of a production.
@@ -843,7 +856,7 @@ struct
       in
       let unexamined =
          ProdItemSet.fold (fun unexamined prod_item ->
-               match prod_item.prod_item_right with
+               match prod_item.prod_item_core.prod_item_right with
                   v :: _ ->
                      VarSet.add unexamined v
                 | [] ->
@@ -870,7 +883,7 @@ struct
     *)
    let shift_symbols item =
       ProdItemSet.fold (fun syms prod_item ->
-            match prod_item.prod_item_right with
+            match prod_item.prod_item_core.prod_item_right with
                v :: _ ->
                   VarSet.add syms v
              | [] ->
@@ -881,17 +894,19 @@ struct
     *)
    let shift_item item v =
       ProdItemSet.fold (fun set prod_item ->
+            let core = prod_item.prod_item_core in
             let { prod_item_left = left;
                   prod_item_right = right
-                } = prod_item
+                } = core
             in
                match right with
                   v' :: right when v' = v ->
-                     let prod_item =
-                        { prod_item with prod_item_left = v :: left;
-                                         prod_item_right = right
+                     let core =
+                        { core with prod_item_left = v :: left;
+                                    prod_item_right = right
                         }
                      in
+                     let prod_item = prod_item_of_core core in
                         ProdItemSet.add set prod_item
                 | _ ->
                      set) ProdItemSet.empty item
@@ -990,9 +1005,10 @@ struct
                let prod_count = ProdItemTable.cardinal prod_table in
                let prod_entry_list =
                   ProdItemTable.fold (fun prop_entry_list prod_item prod_index ->
+                        let prod_item_core = prod_item.prod_item_core in
                         let { prod_item_left = left;
                               prod_item_right = right
-                            } = prod_item
+                            } = prod_item_core
                         in
                         let prop_entry =
                            match right with
@@ -1019,11 +1035,12 @@ struct
 
                                  (* Get the goto state *)
                                  let next_state_index = VarTable.find goto_table v in
-                                 let next_item =
-                                    { prod_item with prod_item_left = v :: left;
-                                                     prod_item_right = right
+                                 let next_item_core =
+                                    { prod_item_core with prod_item_left = v :: left;
+                                                          prod_item_right = right
                                     }
                                  in
+                                 let next_item = prod_item_of_core next_item_core in
                                  let next_table = IntTable.find state_table next_state_index in
                                  let next_item_index = ProdItemTable.find next_table next_item in
                                  let prop_info =
@@ -1159,10 +1176,12 @@ struct
    let reduce_early table =
       if ProdItemTable.cardinal table = 1 then
          match ProdItemTable.choose table with
-            { prod_item_right = [];
-              prod_item_action = action;
-              prod_item_name = name;
-              prod_item_left = left
+            { prod_item_core =
+                 { prod_item_right = [];
+                   prod_item_action = action;
+                   prod_item_name = name;
+                   prod_item_left = left
+                 }
             }, lookahead ->
                if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
                   ReduceAccept (action, name, List.length left)
@@ -1186,7 +1205,7 @@ struct
             prod_item_action = action;
             prod_item_left   = left;
             prod_item_prec   = prec_name
-          } = prod_item
+          } = prod_item.prod_item_core
       in
       let assoc = Precedence.assoc prec_table prec_name in
       let reduce = ReduceAction (action, name, List.length left) in
@@ -1238,7 +1257,7 @@ struct
             let actions = IntTable.find trans_table index in
             let actions =
                ProdItemTable.fold (fun actions prod_item lookahead ->
-                     match prod_item.prod_item_right with
+                     match prod_item.prod_item_core.prod_item_right with
                         [] ->
                            reduce_action info actions prod_item lookahead
                       | _ ->
@@ -1305,7 +1324,7 @@ struct
          }
 
    let create gram =
-      if !debug_parsegen then
+      if !debug_parsetiming then
          let start = Unix.gettimeofday () in
          let () = eprintf "Creating grammar@." in
          let pda = create_core gram in
