@@ -1017,8 +1017,10 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
             col, max col maxx
     | MZoneTag (off, str) ->
          (* Adjust the offset, so we don't go too far right *)
+
+         (* XXX: JYH: changed this to mod temporarily, until we think of something smarter *)
          let col' = col + off in
-         let col' = min col' (rmargin / lcol_const) in
+         let col' = col' mod (rmargin / lcol_const) in
          let off = col' - col in
 
          (* Adjust the left margin *)
