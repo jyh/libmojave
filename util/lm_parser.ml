@@ -811,29 +811,48 @@ struct
             info_first    = first
           } = info
       in
-      let step closure =
+      let rec close examined unexamined closure =
          incr closure_count;
-         ProdItemSet.fold (fun closure prod_item ->
-               match prod_item with
-                  { prod_item_right = v :: rest } ->
-                     let prods =
-                        try VarMTable.find_all prods v with
-                           Not_found ->
-                              []
-                     in
-                        List.fold_left (fun closure prod ->
-                              ProdItemSet.add closure (prod_item_of_prod prod)) closure prods
-                | { prod_item_right = [] } ->
-                     closure) closure closure
+         if VarSet.is_empty unexamined then
+            closure
+         else
+            let examined, unexamined, closure =
+               VarSet.fold (fun (examined, unexamined, closure) v ->
+                     let unexamined = VarSet.remove unexamined v in
+                        if VarSet.mem examined v then
+                           examined, unexamined, closure
+                        else
+                           let examined = VarSet.add examined v in
+                              try
+                                 let prods = VarMTable.find_all prods v in
+                                 let unexamined, closure =
+                                    List.fold_left (fun (unexamined, closure) prod ->
+                                          let unexamined =
+                                             match prod.prod_rhs with
+                                                v :: _ ->
+                                                   VarSet.add unexamined v
+                                              | [] ->
+                                                   unexamined
+                                          in
+                                          let closure = ProdItemSet.add closure (prod_item_of_prod prod) in
+                                             unexamined, closure) (unexamined, closure) prods
+                                 in
+                                    examined, unexamined, closure
+                              with
+                                 Not_found ->
+                                    examined, unexamined, closure) (examined, unexamined, closure) unexamined
+            in
+               close examined unexamined closure
       in
-      let rec fixpoint closure =
-         let closure' = step closure in
-            if ProdItemSet.cardinal closure' <> ProdItemSet.cardinal closure then
-               fixpoint closure'
-            else
-               closure
+      let unexamined =
+         ProdItemSet.fold (fun unexamined prod_item ->
+               match prod_item.prod_item_right with
+                  v :: _ ->
+                     VarSet.add unexamined v
+                | [] ->
+                     unexamined) VarSet.empty set
       in
-         fixpoint set
+         close VarSet.empty unexamined set
 
    (*
     * Add the state identified by the closure to the set
@@ -984,9 +1003,8 @@ struct
                         let prop_entry =
                            match right with
                               v :: right ->
-                                 let lookahead = lookahead nullable first VarSet.empty right in
-
                                  (* If v is a nonterminal, add the self-edges *)
+                                 let lookahead = lookahead nullable first VarSet.empty right in
                                  let prop_infos =
                                     try
                                        let prods = VarMTable.find_all prods v in
@@ -1017,7 +1035,7 @@ struct
                                  let prop_info =
                                     { prop_next_state = next_state_index;
                                       prop_next_item  = next_item_index;
-                                      prop_lookahead  = lookahead
+                                      prop_lookahead  = LookAheadProp VarSet.empty
                                     }
                                  in
                                     { prop_prod_item = prod_item;
