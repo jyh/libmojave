@@ -6,6 +6,7 @@
 *.cm*
 lm_pervasives.ml
 lm_thread_core.ml
+lm_thread_pool.ml
 *.omc
 *.omo
 *.obj
