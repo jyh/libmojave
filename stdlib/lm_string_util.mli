@@ -96,6 +96,11 @@ val parse_args_list : string -> string list list
 val parse_args : string -> string list
 
 (*
+ * Concatenate strings with a separator.
+ *)
+val concat : string -> string list -> string
+
+(*
  * Search for a pattern in the indicated buffer, within the start
  * and length constraints applied to the buffer.  Note that this
  * uses a very inefficient algorithm; at some point I (JDS) will
