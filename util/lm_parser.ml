@@ -146,9 +146,86 @@ end;;
 
 (*
  * The default function for combinding hash values.
+ * XXX: JYH: we should try using a smarter hash function.
  *)
 let hash_combine i1 i2 =
     (i1 lsl 2) lxor (i1 lsr 2) lxor i2
+
+(************************************************************************
+ * Sorter.
+ *)
+module type SortArg =
+sig
+   type elt
+
+   val name : elt -> int
+   val next : elt -> int list
+end
+
+module type SortSig =
+sig
+   type elt
+
+   val sort : elt list -> elt list
+end
+
+module MakeSort (Arg : SortArg) : SortSig with type elt = Arg.elt =
+struct
+   type elt = Arg.elt
+
+   (*
+    * Find the roots if there are any.
+    * If there are none, just pick a node at random.
+    *)
+   let roots nodes =
+      let roots =
+         IntTable.fold (fun roots index node ->
+               IntSet.add roots index) IntSet.empty nodes
+      in
+      let roots =
+         IntTable.fold (fun roots _ node ->
+               List.fold_left IntSet.remove roots (Arg.next node)) roots nodes
+      in
+         (* If the graph is cyclic, just choost the first node *)
+         if IntSet.is_empty roots then
+            IntSet.singleton (fst (IntTable.choose nodes))
+         else
+            roots
+
+   (*
+    * Shift a node from the unexamined to the examined list.
+    *)
+   let shift sorted unexamined index =
+      if IntTable.mem unexamined index then
+         let node = IntTable.find unexamined index in
+         let unexamined = IntTable.remove unexamined index in
+         let sorted = node :: sorted in
+            sorted, unexamined
+      else
+         sorted, unexamined
+
+   (*
+    * Sorter.
+    * Find the roots, then use a depth-first search to flatten.
+    *)
+   let sort nodes =
+      let rec sort sorted unexamined =
+         if IntTable.is_empty unexamined then
+            sorted
+         else
+            let roots = roots unexamined in
+            let sorted, unexamined =
+               IntSet.fold (fun (sorted, unexamined) index ->
+                     shift sorted unexamined index) (sorted, unexamined) roots
+            in
+               sort sorted unexamined
+      in
+      let unexamined =
+         List.fold_left (fun unexamined node ->
+               IntTable.add unexamined (Arg.name node) node) IntTable.empty nodes
+      in
+         List.rev (sort [] unexamined)
+end
 
 (************************************************************************
  * Precedences.
@@ -521,25 +598,70 @@ struct
 
    (*
     * Info for propagating lookaheads.
+    *
+    * prop_self_info:
+    *    for propagating lookaheads from one item to
+    *    other items *within* a state.
+    * prop_goto_info:
+    *    for propagating lookaheads from one item to
+    *    another item in another state.
+    * prop_item_info:
+    *    contains self and goto info.
+    *
     *)
-   type lookahead_item =
-      LookAheadConst of VarSet.t
-    | LookAheadProp  of VarSet.t
+   type prop_goto_info =
+      { prop_goto_state     : int;
+        prop_goto_item      : int
+      }
+
+   type prop_item_info =
+      { prop_item_item   : int;
+        prop_item_next   : int list;
+        prop_item_goto   : prop_goto_info
+      }
+
+   type prop_info =
+      { prop_info_state  : int;
+        prop_info_items  : prop_item_info list
+      }
 
    (*
-    * Info for propagating lookaheads.
+    * The prop_entry is the lookahead we are computing.
     *)
-   type prop_info =
-      { prop_next_state   : int;
-        prop_next_item    : int;
-        prop_lookahead    : lookahead_item
+   type prop_entry =
+      { prop_prod_item       : prod_item;
+        mutable prop_changed : bool;
+        mutable prop_vars    : VarSet.t
       }
 
-   type prop_entry =
-      { prop_prod_item    : prod_item;
-        mutable prop_info : prop_info list;
-        mutable prop_vars : VarSet.t
-      }
+   (*
+    * Sorters.
+    *)
+   module PropItemSortArg =
+   struct
+      type elt = prop_item_info
+
+      let name info =
+         info.prop_item_item
+
+      let next info =
+         info.prop_item_next
+   end
+
+   module PropItemSort = MakeSort (PropItemSortArg);;
+
+   module PropInfoSortArg =
+   struct
+      type elt = prop_info
+
+      let name info =
+         info.prop_info_state
+
+      let next info =
+         List.map (fun item -> item.prop_item_goto.prop_goto_state) info.prop_info_items
+   end
+
+   module PropInfoSort = MakeSort (PropInfoSortArg);;
 
    (************************************************************************
     * Printing and errors.
@@ -1175,20 +1297,9 @@ struct
                if VarSet.mem nullable v then
                   lookahead nullable first set rhs
                else
-                  LookAheadConst set
+                  false, set
        | [] ->
-            LookAheadProp set
-
-   (*
-    * Construct the lookahead for the next item from the
-    * lookahead info and the lookahead for this item.
-    *)
-   let lookahead_vars lookahead vars =
-      match lookahead with
-         LookAheadConst set ->
-            set
-       | LookAheadProp set ->
-            VarSet.union vars set
+            true, set
 
    (*
     * Give an index to each of the productions in a state.
@@ -1219,35 +1330,53 @@ struct
           } = info
       in
       let state_count = IntTable.cardinal state_table in
-      let prop_table = Array.create state_count [||] in
-         IntTable.iter (fun state_index prod_table ->
+      let prop_table : prop_entry array array = Array.create state_count [||] in
+      let prop_infos =
+         IntTable.fold (fun prop_infos state_index prod_table ->
                let goto_table = IntTable.find shift_table state_index in
                let prod_count = ProdItemTable.cardinal prod_table in
-               let prod_entry_list =
-                  ProdItemTable.fold (fun prop_entry_list prod_item prod_index ->
+
+               (* Construct the initial entries *)
+               let prop_entry_list =
+                  ProdItemTable.fold (fun prop_entry_list prod_item _ ->
+                        let prop_entry =
+                           { prop_prod_item = prod_item;
+                             prop_changed   = true;
+                             prop_vars      = VarSet.empty
+                           }
+                        in
+                           prop_entry :: prop_entry_list) [] prod_table
+               in
+               let prop_entry_array = Array.of_list (List.rev prop_entry_list) in
+               let () = prop_table.(state_index) <- prop_entry_array in
+
+               (* Now construct propagation info *)
+               let prop_items =
+                  ProdItemTable.fold (fun prop_items prod_item prod_index ->
                         let prod_item_core = ProdItem.get prod_item in
                         let { prod_item_left = left;
                               prod_item_right = right
                             } = prod_item_core
                         in
-                        let prop_entry =
                            match right with
                               v :: right ->
                                  (* If v is a nonterminal, add the self-edges *)
-                                 let lookahead = lookahead nullable first VarSet.empty right in
-                                 let prop_infos =
+                                 let prop, lookahead = lookahead nullable first VarSet.empty right in
+                                 let prop_self =
                                     try
                                        let prods = VarMTable.find_all prods v in
-                                          List.fold_left (fun prop_infos prod ->
+                                          List.fold_left (fun prop_self prod ->
                                                 let prod_item = prod_item_of_prod prod in
                                                 let item_index = ProdItemTable.find prod_table prod_item in
-                                                let prop_info =
-                                                   { prop_next_state = state_index;
-                                                     prop_next_item = item_index;
-                                                     prop_lookahead = lookahead
-                                                   }
+                                                let prop_entry = prop_entry_array.(item_index) in
+                                                let prop_self =
+                                                   if prop then
+                                                      item_index :: prop_self
+                                                   else
+                                                      prop_self
                                                 in
-                                                   prop_info :: prop_infos) [] prods
+                                                   prop_entry.prop_vars <- VarSet.union prop_entry.prop_vars lookahead;
+                                                   prop_self) [] prods
                                     with
                                        Not_found ->
                                           []
@@ -1263,27 +1392,31 @@ struct
                                  let next_item = ProdItem.create next_item_core in
                                  let next_table = IntTable.find state_table next_state_index in
                                  let next_item_index = ProdItemTable.find next_table next_item in
-                                 let prop_info =
-                                    { prop_next_state = next_state_index;
-                                      prop_next_item  = next_item_index;
-                                      prop_lookahead  = LookAheadProp VarSet.empty
+                                 let prop_goto =
+                                    { prop_goto_state = next_state_index;
+                                      prop_goto_item  = next_item_index
                                     }
                                  in
-                                    { prop_prod_item = prod_item;
-                                      prop_info      = prop_info :: prop_infos;
-                                      prop_vars      = VarSet.empty
+
+                                 (* Construct the entire item *)
+                                 let prop_item =
+                                    { prop_item_item = prod_index;
+                                      prop_item_next = prop_self;
+                                      prop_item_goto = prop_goto
                                     }
+                                 in
+                                    prop_item :: prop_items
                             | [] ->
-                                 { prop_prod_item = prod_item;
-                                   prop_info      = [];
-                                   prop_vars      = VarSet.empty
-                                 }
-                        in
-                           prop_entry :: prop_entry_list) [] prod_table
+                                 prop_items) [] prod_table
                in
-               let prod_entry_table = Array.of_list (List.rev prod_entry_list) in
-                  prop_table.(state_index) <- Array.of_list (List.rev prod_entry_list)) state_table;
-         prop_table
+               let prop_info =
+                  { prop_info_state = state_index;
+                    prop_info_items = prop_items
+                  }
+               in
+                  prop_info :: prop_infos) [] state_table
+      in
+         prop_table, prop_infos
 
    (*
     * Add the eof symbol for the start states.
@@ -1300,107 +1433,80 @@ struct
     * order.  Use depth-first-search to find an approximate
     * order.
     *)
-   let int_set_of_interval lower upper =
-      let rec collect set i =
-         if i = upper then
-            set
-         else
-            collect (IntSet.add set i) (succ i)
+   let propagate_order prop_infos =
+      (* Sort the edges within a state *)
+      let prop_infos =
+         List.map (fun prop_info ->
+               let items = PropItemSort.sort prop_info.prop_info_items in
+                  { prop_info with prop_info_items = items }) prop_infos
       in
-         collect IntSet.empty lower
-
-   let propagate_order_core prop_table =
-      (* The map from state index to a set of next states *)
-      let next_table =
-         Array.map (fun prod_table ->
-               Array.fold_left (fun next prop ->
-                     List.fold_left (fun next info ->
-                           IntSet.add next info.prop_next_state) next prop.prop_info) IntSet.empty prod_table) prop_table
-      in
-
-      (* Depth-first search *)
-      let rec search order examined unexamined index =
-         let unexamined = IntSet.remove unexamined index in
-            if IntSet.mem examined index then
-               order, examined, unexamined
-            else
-               let order = index :: order in
-               let examined = IntSet.add examined index in
-               let next = next_table.(index) in
-                  IntSet.fold (fun (order, examined, unexamined) index ->
-                        search order examined unexamined index) (order, examined, unexamined) next
-      in
-
-      (* Try finding a root in the graph *)
-      let choose_root unexamined =
-         let roots =
-            IntSet.fold (fun roots index ->
-                  IntSet.fold IntSet.remove roots next_table.(index)) unexamined unexamined
-         in
-         let s =
-            if IntSet.is_empty roots then
-               unexamined
-            else
-               roots
-         in
-            IntSet.choose s
-      in
-
-      (* Compute as a fixpoint *)
-      let rec fixpoint order examined unexamined =
-         if IntSet.is_empty unexamined then
-            List.rev order
-         else
-            let index = choose_root unexamined in
-            let order, examined, unexamined = search order examined unexamined index in
-               fixpoint order examined unexamined
-      in
-      let unexamined = int_set_of_interval 0 (Array.length prop_table) in
-         fixpoint [] IntSet.empty unexamined
-
-   let check_order order =
-      let len  = List.length order in
-      let set1 = List.fold_left IntSet.add IntSet.empty order in
-      let set2 = int_set_of_interval 0 len in
-         assert (IntSet.equal set1 set2)
-
-   let propagate_order prop_table =
-      if !debug_parsetiming then
-         let start = Unix.gettimeofday () in
-         let order = propagate_order_core prop_table in
-            check_order order;
-            eprintf "propagate_order: %g secs@." (Unix.gettimeofday () -. start);
-            order
-      else
-         propagate_order_core prop_table
+         (* Sort the states *)
+         PropInfoSort.sort prop_infos
 
    (*
     * Now solve the lookahead fixpoint.
     *)
-   let propagate_lookahead prop_table order =
+   let propagate_lookahead prop_table prop_infos =
+      (* Propagate self edges in a fixpoint *)
+      let step_self items item_index self_edges =
+         List.fold_left (fun changed next_index ->
+               let item1 = items.(item_index) in
+                  if item1.prop_changed then
+                     let item2 = items.(next_index) in
+                     let vars2 = item2.prop_vars in
+                     let vars2' = VarSet.union vars2 item1.prop_vars in
+                        item1.prop_changed <- false;
+                        if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
+                           changed
+                        else begin
+                           item2.prop_changed <- true;
+                           item2.prop_vars <- vars2';
+                           true
+                        end
+                  else
+                     changed) false self_edges
+      in
+      let rec fixpoint_self items item_index changed self_edges =
+         if step_self items item_index self_edges then
+            fixpoint_self items item_index true self_edges
+         else
+            changed
+      in
+
+      (* Propagate changes to a state *)
+      let step_state changed prop_info =
+         let { prop_info_state = state_index;
+               prop_info_items = prop_items
+             } = prop_info
+         in
+         let items = prop_table.(state_index) in
+            List.fold_left (fun changed prop_item ->
+                  let { prop_item_item = item_index;
+                        prop_item_next = self_edges;
+                        prop_item_goto = goto_edge
+                      } = prop_item
+                  in
+                  let changed = fixpoint_self items item_index changed self_edges in
+                  let { prop_goto_state = next_state;
+                        prop_goto_item  = next_item
+                      } = goto_edge
+                  in
+                  let item1 = items.(item_index) in
+                  let item2 = prop_table.(next_state).(next_item) in
+                  let vars2 = item2.prop_vars in
+                  let vars2' = VarSet.union vars2 item1.prop_vars in
+                     if VarSet.cardinal vars2' = VarSet.cardinal vars2 then
+                        changed
+                     else begin
+                        item2.prop_changed <- true;
+                        item2.prop_vars <- vars2';
+                        true
+                     end) changed prop_items
+      in
+
+      (* Propagate changes to all the states *)
       let step () =
-         List.fold_left (fun changed index ->
-               Array.fold_left (fun changed prop ->
-                     let { prop_info = info;
-                           prop_vars = vars
-                         } = prop
-                     in
-                        List.fold_left (fun changed info ->
-                              let { prop_next_state = next_state_index;
-                                    prop_next_item  = next_item_index;
-                                    prop_lookahead  = lookahead
-                                  } = info
-                              in
-                              let vars1 = lookahead_vars lookahead vars in
-                              let next_entry = prop_table.(next_state_index).(next_item_index) in
-                              let vars2 = next_entry.prop_vars in
-                              let vars = VarSet.union vars1 vars2 in
-                                 if VarSet.cardinal vars <> VarSet.cardinal vars2 then begin
-                                    next_entry.prop_vars <- vars;
-                                    true
-                                 end
-                                 else
-                                    changed) changed info) changed prop_table.(index)) false order
+         List.fold_left step_state false prop_infos
       in
       let rec fixpoint index =
          if step () then
@@ -1410,7 +1516,7 @@ struct
       in
          if !debug_parsetiming then
             let start = Unix.gettimeofday () in
-               eprintf "Lm_parser: solving fixpoint for %d states@." (List.length order);
+               eprintf "Lm_parser: solving fixpoint for %d states@." (List.length prop_infos);
                let index = fixpoint 1 in
                   eprintf "Fixpoint %d iterations in %g secs@." index (Unix.gettimeofday () -. start)
          else
@@ -1464,10 +1570,10 @@ struct
       let shift_table, states = shift_closure info IntTable.empty ProdItemSetTable.empty unexamined in
       let state_table = build_item_indices states in
       let state_table = build_state_index state_table in
-      let prop_table = build_prop_table info shift_table state_table in
+      let prop_table, prop_infos = build_prop_table info shift_table state_table in
       let () = set_start_lookahead start_table prop_table in
-      let order = propagate_order prop_table in
-      let () = propagate_lookahead prop_table order in
+      let prop_infos = propagate_order prop_infos in
+      let () = propagate_lookahead prop_table prop_infos in
       let states = rebuild_state_table prop_table in
       let trans_table = rebuild_trans_table info shift_table in
          trans_table, states
