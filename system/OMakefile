@@ -7,6 +7,8 @@ OCAMLINCLUDES = $(OCAMLINCLUDES) -I ../stdlib -I ../unix
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
 
+MLZFILES = lm_marshal_sig
+
 clean:
     $(CLEAN)
 
