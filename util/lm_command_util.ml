@@ -334,16 +334,13 @@ let run_loop read_eval_print run =
           | Sys.Break ->
                Continue
           | Unix.Unix_error (error, f, arg) ->
-               printf "Unix error on command: %s: %s %s@." (Unix.error_message error) f arg;
+               printf "Lm_command_util.run_loop: Unix error on command: %s: %s %s@." (Unix.error_message error) f arg;
                Continue
           | Sys_error msg ->
-               printf "System error on command: %s@." msg;
+               printf "Lm_command_util.run_loop: System error on command: %s@." msg;
                Continue
           | Failure msg ->
-               printf "Failure on command: %s@." msg;
-               Continue
-          | Invalid_argument msg ->
-               printf "Invalid argument on command: %s@." msg;
+               printf "Lm_command_util.run_loop: Failure on command: %s@." msg;
                Continue
       in
          match continue with
