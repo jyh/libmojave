@@ -597,9 +597,14 @@ struct
       in
       let prec_list = List.sort (Precedence.compare table2) prec_list in
 
+      (* Initial translation *)
+      let translate = PrecTable.empty in
+      let translate = PrecTable.add translate prec_min prec_min in
+      let translate = PrecTable.add translate prec_max prec_max in
+
       (* Walk through each level, and create it if it doesn't already exist *)
-      let precs, table, _ =
-         List.fold_left (fun (precs, table, prev_prec) pre ->
+      let translate, precs, table, _ =
+         List.fold_left (fun (translate, precs, table, prev_prec) pre ->
                let vars = PrecTable.find inv_table pre in
                let table, current_prec =
                   match find_existing_prec precs vars with
@@ -609,10 +614,22 @@ struct
                         let assoc = Precedence.assoc table2 pre in
                            Precedence.create_prec_gt table prev_prec assoc
                in
+               let translate = PrecTable.add translate pre current_prec in
                let precs = add_precs precs vars current_prec in
-                  precs, table, current_prec) (prec1, table1, Precedence.prec_min) prec_list
+                  translate, precs, table, current_prec) (translate, prec1, table1, Precedence.prec_min) prec_list
       in
-         precs, table
+(*
+         PrecTable.iter (fun pre1 pre2 ->
+               eprintf "Translate %d -> %d@." (Obj.magic pre1) (Obj.magic pre2)) translate;
+         eprintf "Pre: %d Table1: %d Table2: %d@." (**)
+            (IntTable.cardinal (Obj.magic table))
+            (IntTable.cardinal (Obj.magic table1))
+            (IntTable.cardinal (Obj.magic table2));
+         VarTable.iter (fun _ pre ->
+               eprintf "Checking precedence for %d@." (Obj.magic pre);
+               ignore (Precedence.assoc table pre)) precs;
+ *)
+         translate, precs, table
 
    (*
     * Union of two grammars.
@@ -632,7 +649,7 @@ struct
       in
 
       (* Compute the new precedence table *)
-      let precs, prec_table = union_prec prec1 prec_table1 prec2 prec_table2 in
+      let prec_translate, precs, prec_table = union_prec prec1 prec_table1 prec2 prec_table2 in
 
       (* Get the complete set of actions for the first parser *)
       let actions =
@@ -646,13 +663,15 @@ struct
          VarMTable.fold_all (fun (changed, prods) _ prodlist ->
                List.fold_left (fun (changed, prods) prod ->
                      let { prod_action = action;
-                           prod_name   = name
+                           prod_name   = name;
+                           prod_prec   = pre
                          } = prod
                      in
                         if ActionSet.mem actions prod.prod_action then
                            changed, prods
                         else
-                           true, VarMTable.add prods name prod) (changed, prods) prodlist) (false, prod1) prod2
+                           let prod = { prod with prod_prec = PrecTable.find prec_translate pre } in
+                              true, VarMTable.add prods name prod) (changed, prods) prodlist) (false, prod1) prod2
       in
 
       (* Union of the start symbols *)
@@ -1260,10 +1279,10 @@ struct
     * Found a reduce action, resolve conflicts.
     *)
    let reduce_action info actions prod_item lookahead =
-      let { info_grammar = { gram_prec = var_prec_table;
-                             gram_prec_table = prec_table
-                           }
-          } = info
+      let { info_grammar = gram } = info in
+      let { gram_prec = var_prec_table;
+            gram_prec_table = prec_table
+          } = gram
       in
       let { prod_item_name   = name;
             prod_item_action = action;
@@ -1725,7 +1744,9 @@ struct
     * Get the associativity of a precedence operator.
     *)
    let assoc table pre =
-      fst (PrecTable.find table pre)
+      try fst (PrecTable.find table pre) with
+         Not_found ->
+            raise (Failure (Printf.sprintf "Lm_parser.assoc: associativity not found: %d out of %d" pre (PrecTable.cardinal table)))
 
    (*
     * Compare two precedences.
