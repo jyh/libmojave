@@ -1424,6 +1424,24 @@ struct
        | Leaf ->
             false
 
+   let rec find_iter cmp t =
+      match t with
+         Black (key, data, left, right, _)
+       | Red (key, data, left, right, _) ->
+            let x = cmp key data in
+               (match x with
+                   Some _ ->
+                      x
+                 | None ->
+                      let x = find_iter cmp left in
+                         match x with
+                            Some _ ->
+                               x
+                          | None ->
+                               find_iter cmp right)
+       | Leaf ->
+            None
+
    let isect_mem t test =
       fold (fun t' v x ->
             if test v then
@@ -1569,6 +1587,21 @@ struct
          List.exists (fun x -> cmp key x) l
       in
          MMap.exists cmp_list t
+
+   let rec find_iter cmp t =
+      let rec cmp_list key l =
+         match l with
+            h :: t ->
+               let x = cmp key h in
+                  (match x with
+                      Some _ ->
+                         x
+                    | None ->
+                         cmp_list key t)
+          | [] ->
+               None
+      in
+         MMap.find_iter cmp_list t
 
    let isect_mem t test =
       MMap.isect_mem t test
