@@ -124,12 +124,14 @@ type ('elt, 'data, 'table) table_methods =
      is_empty : 'table -> bool;
      mem : 'table -> 'elt -> bool;
      add : 'table -> 'elt -> 'data -> 'table;
+     replace : 'table -> 'elt -> 'data list -> 'table;
      find : 'table -> 'elt -> 'data;
      find_all : 'table -> 'elt -> 'data list;
      remove : 'table -> 'elt -> 'table;
      union : 'table -> 'table -> 'table;
      elements : 'table -> ('elt * 'data list) list;
      iter : ('elt -> 'data -> unit) -> 'table -> unit;
+     fold_map : ('elt -> 'data -> 'table -> 'table) -> 'table -> 'table -> 'table;
      map : ('elt -> 'data -> 'data) -> 'table -> 'table;
      cardinal : 'table -> int;
      mem_filt : 'table -> 'elt list -> 'elt list;
@@ -188,12 +190,14 @@ sig
    val is_empty : t -> bool
 	val length : t -> int
    val add : t -> elt -> data -> t
+   val replace : t -> elt -> data list -> t
    val union : t -> t -> t
    val mem : t -> elt -> bool
    val find : t -> elt -> data
    val find_all : t -> elt -> data list (* last added first *)
    val remove : t -> elt -> t
    val iter : (elt -> data -> unit) -> t -> unit
+	val fold_map : (elt -> data -> t -> t) -> t -> t -> t
    val map : (elt -> data -> data) -> t -> t
    val list_of : t -> (elt * data list) list
    val deletemax : t -> (elt * data list * t)

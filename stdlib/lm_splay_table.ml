@@ -288,6 +288,19 @@ let create
             []
    in
 
+	let add_list_aux key data = function
+      Node (key', data', left, right, _) ->
+         if ord_compare key key' < 0 then
+            (* Root should become right child *)
+            new_node key data left (new_node key' data' empty right)
+         else
+            (* Root should become left child *)
+            new_node key data (new_node key' data' left empty) right
+    | Leaf ->
+         (* Tree is empty, so make a new root *)
+          new_node key data empty empty
+	in
+
    (*
     * Add an entry to the table.
     * If the entry already exists,
@@ -304,19 +317,7 @@ let create
                      raise (Invalid_argument "Splay_table.add_list")
             end
        | SplayNotFound tree ->
-            begin
-               match tree with
-                  Node (key', data', left, right, _) ->
-                     if ord_compare key key' < 0 then
-                        (* Root should become right child *)
-                        new_node key data left (new_node key' data' empty right)
-                     else
-                        (* Root should become left child *)
-                        new_node key data (new_node key' data' left empty) right
-                | Leaf ->
-                        (* Tree is empty, so make a new root *)
-                     new_node key data empty empty
-            end
+				add_list_aux key data tree
    in
 
    let add t key data =
@@ -349,6 +350,20 @@ let create
             t := tree;
             t
    in
+
+	let replace t key data =
+      match splay key [] !t with
+         SplayFound tree ->
+            begin
+               match tree with
+                  Node (key, old_data', left, right, size) ->
+                     ref (Node (key, data, left, right, size))
+                | Leaf ->
+                     raise (Invalid_argument "Splay_table.replace: Leaf reached")
+            end
+       | SplayNotFound tree ->
+				ref (add_list_aux key data tree)
+	in
 
    (*
     * Merge two hashtables.
@@ -484,6 +499,19 @@ let create
       iter_aux f !t
    in
 
+   let rec fold_aux f acc = function
+      Node (key, data, left, right, _) ->
+         let acc' = List.fold_left (fun acc item -> f key item acc) acc data in
+         let acc'' = fold_aux f acc' left in
+         fold_aux f acc'' right
+    | Leaf ->
+         acc
+   in
+
+	let fold_map f acc t =
+		fold_aux f acc !t
+	in
+
 	let rec list_of_aux table l =
 		match table with
 			Node (key, data, left, right, _) ->
@@ -583,6 +611,7 @@ let create
         is_empty = is_empty;
         mem = mem;
         add = add;
+        replace = replace;
         find = find;
         find_all = find_all;
         make = make;
@@ -590,6 +619,7 @@ let create
         union = union;
         elements = elements;
         iter = iter;
+        fold_map = fold_map;
         map = map;
         cardinal = cardinal;
         mem_filt = mem_filt;

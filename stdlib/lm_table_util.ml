@@ -49,12 +49,14 @@ struct
    let is_empty = methods.is_empty
 	let length = methods.cardinal
    let add = methods.add
+   let replace = methods.replace
    let union = methods.union
    let mem = methods.mem
    let find = methods.find
    let find_all = methods.find_all
    let remove = methods.remove
    let iter = methods.iter
+   let fold_map = methods.fold_map
    let map = methods.map
    let deletemax = methods.deletemax
    let list_of = methods.list_of
