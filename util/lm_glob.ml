@@ -348,6 +348,7 @@ let add_shell_pattern options buf s =
              | '+'
              | '^'
              | '$'
+             | '|'
              | '('
              | ')'
              | '{'
