@@ -1536,12 +1536,11 @@ struct
                      pda_item_right = right
                    } = item
                in
-                  fprintf buf "@[<b 3>";
+                  fprintf buf "@ @[<b 3>";
                   Lm_list_util.rev_iter (fun v -> fprintf buf "@ %a" pp_print_var v) left;
                   fprintf buf "@ .";
                   List.iter (fun v -> fprintf buf "@ %a" pp_print_var v) right;
                   fprintf buf "@]") items;
-         fprintf buf "@]";
          fprintf buf "@ @[<b 3>The next possible tokens are:";
          VarSet.iter (fun v -> fprintf buf "@ %a" pp_print_var v) next;
          fprintf buf "@]@]";
