@@ -46,6 +46,7 @@ STDLIB_FILES =\
 	lm_splay_set\
 	lm_splay_table\
 	lm_string_set\
+	lm_int_set\
 	lm_array_linear_set\
 	lm_splay_linear_set\
 	lm_index\
