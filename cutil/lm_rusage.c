@@ -1,0 +1,85 @@
+/*
+ * rusage interface for MCC
+ * Copyright(c) 2002 Justin David Smith, Caltech
+ */
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
+#include <errno.h>
+
+
+/*
+ * These values correspond to the rusage_who constant constructors.
+ */
+int translate_rusage_who(int who) {
+
+   switch(who) {
+      case 0:  return(RUSAGE_SELF);
+      case 1:  return(RUSAGE_CHILDREN);
+      default: failwith("translate_rusage_who: bad rusage_who constant constructor");
+   }
+
+}
+
+
+/*
+ * This is a simplified version of getrusage that simply reports on the
+ * process run times of the current process or the aggregate of its
+ * children.
+ */
+value caml_getrusage_time(value mlwho) {
+
+   CAMLparam1(mlwho);
+   CAMLlocal1(result);
+   struct rusage usage;
+   int who = translate_rusage_who(Int_val(mlwho));
+   
+   /* Allocate the result block and initialise it (in case we fail) */
+   result = alloc_tuple(4);
+   Field(result, 0) = Val_int(0);
+   Field(result, 1) = Val_int(0);
+   Field(result, 2) = Val_int(0);
+   Field(result, 3) = Val_int(0);
+
+   /* Get the current process stats */
+   if(getrusage(who, &usage) != 0) {
+      failwith("caml_getrusage_times: getrusage call failed");
+   }
+   
+   /* Load the fields of interest into our block */
+   modify(&Field(result, 0), Val_int(usage.ru_utime.tv_sec));
+   modify(&Field(result, 1), Val_int(usage.ru_utime.tv_usec));
+   modify(&Field(result, 2), Val_int(usage.ru_stime.tv_sec));
+   modify(&Field(result, 3), Val_int(usage.ru_stime.tv_usec));
+
+   /* Return the result */
+   CAMLreturn(result);
+   
+}
+
+
+/*
+ * Set the rlimit maximum CPU time for a process (in seconds).
+ */
+value caml_setrlimit_time(value time) {
+
+   CAMLparam1(time);
+   struct rlimit rlim;
+
+   /* Set the rlimit max field */
+   rlim.rlim_cur = Int_val(time);
+   rlim.rlim_max = Int_val(time);
+   
+   /* Call setrlimit */
+   if(setrlimit(RLIMIT_CPU, &rlim) != 0) {
+      failwith("caml_setrlimit_time: setrlimit call failed");
+   }
+   
+   /* We were successful */
+   CAMLreturn(Val_unit);
+   
+}
