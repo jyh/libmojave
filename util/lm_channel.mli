@@ -98,6 +98,7 @@ sig
    type t = channel
 
    val lex_start     : t -> int
+   val lex_restart   : t -> int -> unit
    val lex_stop      : t -> int -> unit
    val lex_string    : t -> int -> string
    val lex_substring : t -> int -> int -> string

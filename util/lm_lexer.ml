@@ -268,6 +268,13 @@ sig
    val lex_start : t -> int
 
    (*
+    * In some cases, the lexer may want to restart scanning
+    * from a previous point.  If so, it will call this function
+    * to reset the start point.
+    *)
+   val lex_restart : t -> int -> unit
+
+   (*
     * When the lexer is done, it calls lex_stop with
     * the number of characters in the final lexeme.  Note
     * that this can cause data to be pushed back onto the input stream.
@@ -2093,7 +2100,16 @@ struct
                loop dfa_state (Input.lex_next channel)
           | None ->
                if dfa_info.dfa_stop_clause < 0 then
-                  search c
+                  begin
+                     (*
+                      * The proper way to backtrack would be to do something
+                      * like change the regex R to .*\(R\)  However, we don't
+                      * want to modify the DFA, so we take this potentially
+                      * quadratic hit.
+                      *)
+                     Input.lex_restart channel dfa_info.dfa_start_pos;
+                     search (Input.lex_next channel)
+                  end
       and search c =
          match dfa_delta dfa dfa_info start_state c with
             Some dfa_state ->

@@ -1023,6 +1023,17 @@ struct
          prev
 
    (*
+    * Restart at a previous position.
+    *)
+   let lex_restart channel pos =
+      let { in_max = max;
+            in_index = index
+          } = channel
+      in
+         assert (pos >= 0 && pos <= max - index);
+         channel.lex_index <- index + pos
+
+   (*
     * Stop lexing.
     * The argument is how much data was read in lex mode.
     *)

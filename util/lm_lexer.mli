@@ -72,6 +72,13 @@ sig
    val lex_start : t -> int
 
    (*
+    * In some cases, the lexer may want to restart scanning
+    * from a previous point.  If so, it will call this function
+    * to reset the start point.
+    *)
+   val lex_restart : t -> int -> unit
+
+   (*
     * When the lexer is done, it calls lex_stop with
     * the number of characters in the final lexeme.  Note
     * that this can cause data to be pushed back onto the input stream.
