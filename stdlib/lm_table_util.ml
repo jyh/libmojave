@@ -46,6 +46,7 @@ struct
     * Now project them.
     *)
    let empty = methods.empty
+   let is_empty = methods.is_empty
    let add = methods.add
    let union = methods.union
    let mem = methods.mem
