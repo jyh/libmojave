@@ -44,12 +44,19 @@ external shutdown       : t -> unit                          = "lm_ssl_shutdown"
 external close          : t -> unit                          = "lm_ssl_close"
 
 (*
+ * For restarting from an existing socket.
+ *)
+external fd             : t -> int                           = "lm_ssl_fd"
+external serve          : int -> string -> string -> t       = "lm_ssl_serve"
+
+(*
  * Private functions.
  *)
 external lm_ssl_enabled  : unit -> bool                       = "lm_ssl_enabled"
 external lm_ssl_init     : unit -> unit                       = "lm_ssl_init"
 external lm_ssl_read     : t -> string -> int -> int -> int   = "lm_ssl_read"
 external lm_ssl_write    : t -> string -> int -> int -> int   = "lm_ssl_write"
+external lm_ssl_flush    : t -> unit                          = "lm_ssl_flush"
 
 (*
  * Initialize.
@@ -162,8 +169,9 @@ struct
    let print_break _ _ _ =
       ()
 
-   let print_flush =
-      flush
+   let print_flush out =
+      flush out;
+      lm_ssl_flush out.ssl
 
    let print_newline =
       force_newline

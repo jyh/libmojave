@@ -45,6 +45,12 @@ val shutdown       : t -> unit
 val close          : t -> unit
 
 (*
+ * For restart.
+ *)
+val fd             : t -> int
+val serve          : int -> string -> string -> t
+
+(*
  * Buffered output.
  *)
 val out_channel_of_ssl : t -> ssl_out

@@ -45,6 +45,7 @@ typedef long socklen_t;
 #  include <sys/types.h>
 #  include <sys/socket.h>
 #  include <netinet/in.h>
+#  include <fcntl.h>
 
 typedef int SOCKET;
 #endif /* !WIN32 */
@@ -273,6 +274,45 @@ value lm_ssl_socket(value v_keyfile)
 }
 
 /*
+ * Reuse an existing socket.
+ */
+value lm_ssl_serve(value v_fd, value v_keyfile, value v_dhfile)
+{
+    SOCKET s;
+    SSL_CTX *context;
+    SslInfo *info;
+    value v_info;
+    int one = 1;
+
+    /* Add context */
+    context = lm_ssl_ctx_new(String_val(v_keyfile));
+
+    /* Open the socket */
+    s = Int_val(v_fd);
+
+    /* Allow the address to be reused */
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+    /* Allocate the context */
+    v_info = ssl_info_new(SSL_INFO_MASTER, s, context, 0);
+    info = SslInfo_val(v_info);
+
+    /* Set the Diffie-Helman file */
+    lm_ssl_ctx_dhfile(info->context, String_val(v_dhfile));
+
+    return v_info;
+}
+
+/*
+ * Get an integer describing the socket.
+ */
+value lm_ssl_fd(value v_info)
+{
+    SslInfo *info = SslInfo_val(v_info);
+    return Val_int(info->fd);
+}
+
+/*
  * Bind the socket to an address.
  */
 value lm_ssl_bind(value v_info, value v_addr, value v_port)
@@ -354,6 +394,11 @@ value lm_ssl_accept(value v_info)
         perror("accept");
         failwith("lm_ssl_accept");
     }
+
+#ifndef WIN32
+    /* Set the close-on-exec flag */
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
 
     /* Start SSL operations */
     ssl = SSL_new(info->context);
@@ -480,6 +525,21 @@ value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
 }
 
 /*
+ * Flush the connection.
+ */
+value lm_ssl_flush(value v_info)
+{
+    SslInfo *info;
+    BIO *bio;
+
+    info = SslInfo_val(v_info);
+    bio = SSL_get_wbio(info->ssl);
+    if(bio)
+        BIO_flush(bio);
+    return Val_unit;
+}
+
+/*
  * Shutdown the connection.
  */
 value lm_ssl_shutdown(value v_info)
@@ -603,6 +663,24 @@ value lm_ssl_socket(value v_keyfile)
         failwith("lm_ssl_socket: socket call failed");
 
     return ssl_info_new(s);
+}
+
+/*
+ * Reuse an existing socket.
+ */
+value lm_ssl_serve(value v_fd, value v_keyfile, value v_dhfile)
+{
+    SOCKET s = Int_val(v_fd);
+    return ssl_info_new(s);
+}
+
+/*
+ * Get an integer describing the socket.
+ */
+value lm_ssl_fd(value v_info)
+{
+    SslInfo *info = SslInfo_val(v_info);
+    return Val_int(info->fd);
 }
 
 /*
@@ -753,6 +831,11 @@ value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
     amount = write(info->fd, buf + off, len);
     leave_blocking_section();
     return Val_int(amount);
+}
+
+value lm_ssl_flush(value v_info)
+{
+    return Val_unit;
 }
 
 /*
