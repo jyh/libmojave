@@ -16,4 +16,5 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *)
+val parse_id : string -> string * string * string * string * string * string
 val parse_id_revision : string -> string

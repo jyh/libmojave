@@ -61,7 +61,6 @@ let to_int (i, _) =
 let to_string (_, s) =
    s
 
-
 (*
  * Mangle a string so it uses printable characters.
  *)
