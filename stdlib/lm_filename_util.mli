@@ -95,7 +95,7 @@ val simplify_path : pathname -> pathname
 (*
  * Path searching.
  *)
-val is_executable : string -> bool
+val is_executable : string -> string option
 val which : string -> string
 
 (*!

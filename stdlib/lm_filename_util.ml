@@ -41,26 +41,52 @@ let groups =
          []
 
 let unix_is_executable s =
-   try
-      let { Unix.st_kind = kind;
-            Unix.st_perm = perm;
-            Unix.st_uid = uid;
-            Unix.st_gid = gid
-          } = Unix.stat s
-      in
-         (kind = Unix.S_REG)
-         && ((perm land 0o001) <> 0
-             || (List.mem gid groups && (perm land 0o010) <> 0)
-             || (uid = euid && (perm land 0o100) <> 0))
-   with
-      Unix.Unix_error _ ->
-         false
+   let flag =
+      try
+         let { Unix.st_kind = kind;
+               Unix.st_perm = perm;
+               Unix.st_uid = uid;
+               Unix.st_gid = gid
+             } = Unix.stat s
+         in
+            (kind = Unix.S_REG)
+            && ((perm land 0o001) <> 0
+                || (List.mem gid groups && (perm land 0o010) <> 0)
+                || (uid = euid && (perm land 0o100) <> 0))
+      with
+         Unix.Unix_error _ ->
+            false
+   in
+      if flag then
+         Some s
+      else
+         None
 
 (*
  * On Windows, the file does not have the be executable,
  * it just has to exist.
  *)
-let win32_is_executable = Sys.file_exists
+let win32_suffixes =
+   [".exe"; ".com"; ".bat"]
+
+let rec search_win32 name suffixes =
+   match suffixes with
+      suffix :: suffixes ->
+         let name' = name ^ suffix in
+            if Sys.file_exists name' then
+               Some name'
+            else
+               search_win32 name suffixes
+    | [] ->
+         None
+
+let win32_is_executable name =
+   if Sys.file_exists name then
+      Some name
+   else if String.contains name '.' then
+      None
+   else
+      search_win32 name win32_suffixes
 
 (*
  * System-dependent config.
@@ -251,10 +277,11 @@ let search_command name =
       match dirs with
          dir :: dirs ->
             let pathname = Filename.concat dir name in
-               if is_executable pathname then
-                  pathname
-               else
-                  search dirs name
+               (match is_executable pathname with
+                   Some pathname ->
+                      pathname
+                 | None ->
+                      search dirs name)
        | [] ->
             raise Not_found
    in
