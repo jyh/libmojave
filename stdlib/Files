@@ -1,4 +1,4 @@
-STDLIB_MLZFILES =\
+MLZFILES =\
 	lm_array_sig\
 	lm_dag_sig\
 	lm_linear_set_sig\

@@ -8,7 +8,7 @@ INCLUDE :=
 
 # Library files
 include Files
-MLZFILES := $(STDLIB_MLZFILES)
+MLZFILES := $(MLZFILES)
 LMFILES := $(STDLIB_FILES)
 LMIFILES := $(STDLIB_FILES)
 

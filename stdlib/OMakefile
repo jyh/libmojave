@@ -13,19 +13,12 @@ else
 #
 include Files
 
-MLZFILES = \
-   lm_array_sig\
-   lm_dag_sig\
-   lm_linear_set_sig\
-   lm_map_sig\
-   lm_set_sig\
-
 #
 # Build the library.
 #
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
-    $(CLEAN) lm_pervasives.ml lm_threads.ml
+    $(CLEAN) lm_pervasives.ml lm_thread_core.ml
 
 all: lmstdlib$(LIB_SUFFIX)
