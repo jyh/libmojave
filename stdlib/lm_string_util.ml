@@ -433,20 +433,13 @@ let parse_args s =
 (*
  * Concatenate strings.
  *)
-let concat sep sl =
-   let rec collect sl =
-      match sl with
-         [s] ->
-            Buffer.add_string scratch_buf s
-       | [] ->
-            ()
-       | s :: sl ->
-            Buffer.add_string scratch_buf s;
-            Buffer.add_string scratch_buf sep;
-            collect sl
+let prepend sep sl =
+   let collect s =
+      Buffer.add_string scratch_buf sep;
+      Buffer.add_string scratch_buf s
    in
       Buffer.clear scratch_buf;
-      collect sl;
+      List.iter collect sl;
       Buffer.contents scratch_buf
 
 (*

@@ -96,9 +96,9 @@ val parse_args_list : string -> string list list
 val parse_args : string -> string list
 
 (*
- * Concatenate strings with a separator.
+ * Add a prefix to every string, and concatenate.
  *)
-val concat : string -> string list -> string
+val prepend : string -> string list -> string
 
 (*
  * Search for a pattern in the indicated buffer, within the start
