@@ -61,11 +61,13 @@ let debug_parse_conflict_is_warning =
  * A precedence directive is left-associative, right-associative,
  * or nonassociative.
  *)
+(* %%MAGICBEGIN%% *)
 type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
  | NoneAssoc
+(* %%MAGICEND%% *)
 
 let pp_print_assoc buf assoc =
    let s =
@@ -151,7 +153,9 @@ module MakeHash (Arg : HashArgSig)
 struct
    type elt = Arg.t
 
+   (* %%MAGICBEGIN %% *)
    type t = int * elt
+   (* %%MAGICEND%% *)
 
    let create x =
       Arg.hash x, x
@@ -208,6 +212,7 @@ module MakeHashCons (Arg : HashArgSig)
   with type elt = Arg.t
   with type hash = MakeHash(Arg).t =
 struct
+   (* %%MAGICBEGIN%% *)
    type elt = Arg.t
    type t = int
 
@@ -222,6 +227,7 @@ struct
       { mutable key_table : int KeyTable.t;
         mutable int_table : elt array
       }
+   (* %%MAGICEND%% *)
 
    let create_state () =
       { key_table = KeyTable.empty;
@@ -415,6 +421,7 @@ struct
     * A production item is represents a production with
     * a current position.
     *)
+   (* %%MAGICBEGIN%% *)
    type prod_item_core =
       { prod_item_name   : ivar;
         prod_item_left   : ivar list;       (* Reverse order *)
@@ -422,6 +429,7 @@ struct
         prod_item_action : iaction;
         prod_item_prec   : precedence
       }
+   (* %%MAGICEND%% *)
 
    (*
     * Hash utilities.
@@ -507,10 +515,12 @@ struct
     * An LR(0) state is a set of ProdItems, and
     * a closure, which is a set of nonterminals.
     *)
+   (* %%MAGICBEGIN%% *)
    type info_state =
       { info_state_items   : ProdItemSet.t;
         info_state_closure : IVarSet.t
       }
+   (* %%MAGICEND%% *)
 
    module StateArg =
    struct
@@ -571,6 +581,7 @@ struct
     * We also keep the precedence of the production,
     * and its semantic action name.
     *)
+
    (* %%MAGICBEGIN%% *)
 
    (*
@@ -600,9 +611,9 @@ struct
    (*
     * An action is shift, reduce, or accept.
     *)
-   type pda_action =
+   type 'a pda_action =
       ReduceAction of iaction * ivar * int  (* semantic action, production name, #args *)
-    | GotoAction   of State.t
+    | GotoAction   of 'a
     | AcceptAction
     | ErrorAction
 
@@ -632,7 +643,7 @@ struct
       }
 
    type pda_state =
-      { pda_delta   : pda_action IVarTable.t;
+      { pda_delta   : int pda_action IVarTable.t;
         pda_reduce  : pda_reduce;
         pda_info    : pda_state_info
       }
@@ -812,7 +823,7 @@ struct
          ReduceAction (action, _, _) ->
             fprintf buf "reduce %a" (pp_print_iaction hash) action
        | GotoAction state ->
-            fprintf buf "goto %d" (State.hash state)
+            fprintf buf "goto %d" state
        | ErrorAction ->
             pp_print_string buf "error"
        | AcceptAction  ->
@@ -2249,6 +2260,18 @@ struct
            pda_next      = next
          }
 
+   let pda_action action =
+      match action with
+         GotoAction state ->
+            GotoAction (State.hash state)
+       | ReduceAction _
+       | AcceptAction
+       | ErrorAction as action ->
+            action
+
+   let pda_delta table =
+      IVarTable.map pda_action table
+
    (*
     * Find the start state for a production.
     *)
@@ -2278,7 +2301,7 @@ struct
       let table =
          State.map_array (fun state core ->
                let { info_state_items = items } = core in
-                  { pda_delta  = StateTable.find trans_table state;
+                  { pda_delta  = pda_delta (StateTable.find trans_table state);
                     pda_reduce = reduce_early info prop_table state items;
                     pda_info   = pda_info_of_items info prop_table state items
                   }) info.info_hash.hash_state_state
@@ -2376,7 +2399,6 @@ struct
                    parse_error loc hash run stack state v)
          with
             GotoAction new_state ->
-               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: token %a: shift %d@." state (pp_print_ivar hash) v new_state;
                pda_no_lookahead hash run arg ((state, loc, x) :: stack) new_state
@@ -2405,7 +2427,6 @@ struct
       in
          match action with
             GotoAction new_state ->
-               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
                      state (pp_print_ivar hash) name
@@ -2447,7 +2468,6 @@ struct
       in
          match action with
             GotoAction new_state ->
-               let new_state = State.hash new_state in
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
                      state (pp_print_ivar hash) name new_state;
