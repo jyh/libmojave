@@ -1046,9 +1046,8 @@ struct
     * Get the elements of the list.
     *)
    let rec to_list_aux elements = function
-      Black (key, data, left, right, _) ->
-         to_list_aux ((key, data) :: to_list_aux elements right) left
-    | Red (key, data, left, right, _) ->
+      Black (key, data, left, right, _)
+    | Red (key, data, left, right, _)  ->
          to_list_aux ((key, data) :: to_list_aux elements right) left
     | Leaf ->
          elements
@@ -1057,6 +1056,15 @@ struct
       to_list_aux [] tree
 
    let elements = to_list
+
+   let rec keys_aux elements = function
+      Black (key, _, left, right, _)
+    | Red (key, _, left, right, _)  ->
+         keys_aux (key :: keys_aux elements right) left
+    | Leaf ->
+         elements
+
+   let keys = keys_aux []
 
    let rec reverse elements = function
       h :: t ->
@@ -1160,75 +1168,25 @@ struct
          else
             union_aux append s1 s2
 
-   (* n8: I think this was the result of a bad merge:
-   let union t1 t2 =
-      fold add t1 t2
-   *)
-
-   (*
-    * Build a path into a tree.
-    *)
-   let rec initial_path path node =
-      match node with
-         Black (_, _, Leaf, _, _) ->
-            Left node :: path
-       | Red (_, _, Leaf, _, _) ->
-            Left node :: path
-       | Black (_, _, left, _, _) ->
-            initial_path (Left node :: path) left
-       | Red (_, _, left, _, _) ->
-            initial_path (Left node :: path) left
-       | Leaf ->
-            raise (Invalid_argument "initial_path")
-
-   let key_of_path = function
-      Left (Black (key, _, _, _, _)) :: _
-    | Left (Red (key, _, _, _, _)) :: _
-    | Right (Black (key, _, _, _, _)) :: _
-    | Right (Red (key, _, _, _, _)) :: _ ->
-         key
-    | _ ->
-         raise (Invalid_argument "key_of_path")
-
-   let rec next_path = function
-      Left (Black (_, _, _, Leaf, _)) :: path
-    | Left (Red (_, _, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Black (_, _, _, right, _)) :: path
-    | Left (Red (_, _, _, right, _)) :: path ->
-         initial_path path right
-    | Right  _ :: path ->
-         next_path path
-    | [] ->
-         raise Not_found
-    | _ ->
-         raise (Invalid_argument "next_path")
-
    (*
     * See if two sets intersect.
     *)
-   let rec intersect_aux path1 path2 =
-      let key1 = key_of_path path1 in
-      let key2 = key_of_path path2 in
-      let comp = Base.compare key1 key2 in
-         if comp = 0 then
-            true
-         else if comp < 0 then
-            intersect_aux (next_path path1) path2
-         else
-            intersect_aux path1 (next_path path2)
+   let rec intersect_aux elems1 elems2 =
+      match elems1, elems2 with
+         elem1 :: elems1', elem2 :: elems2' ->
+            let comp = Base.compare elem1 elem2 in
+               if comp = 0 then
+                  true
+               else if comp < 0 then
+                  intersect_aux elems1' elems2
+               else
+                  intersect_aux elems1 elems2'
+       | [], _
+       | _, [] ->
+            false
 
    let intersectp s1 s2 =
-      match s1, s2 with
-         Leaf, _
-       | _, Leaf ->
-            false
-       | _ ->
-            let path1 = initial_path [] s1 in
-            let path2 = initial_path [] s2 in
-               try intersect_aux path1 path2 with
-                  Not_found ->
-                     false
+      intersect_aux (keys s1) (keys s2)
 
    (************************************************************************
     * IMPLEMENTATION                                                       *

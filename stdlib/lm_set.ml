@@ -1077,67 +1077,24 @@ struct
             union_aux s1 s2
 
    (*
-    * Build a path into a tree.
-    *)
-   let rec initial_path path node =
-      match node with
-         Black (_, Leaf, _, _)
-       | Red (_, Leaf, _, _) ->
-            Left node :: path
-       | Black (_, left, _, _)
-       | Red (_, left, _, _) ->
-            initial_path (Left node :: path) left
-       | Leaf ->
-            raise (Invalid_argument "initial_path")
-
-   let key_of_path = function
-      Left (Black (key, _, _, _)) :: _
-    | Left (Red (key, _, _, _)) :: _
-    | Right (Black (key, _, _, _)) :: _
-    | Right (Red (key, _, _, _)) :: _ ->
-         key
-    | _ ->
-         raise (Invalid_argument "key_of_path")
-
-   let rec next_path = function
-      Left (Black (_, _, Leaf, _)) :: path
-    | Left (Red (_, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Black (_, _, right, _)) :: path
-    | Left (Red (_, _, right, _)) :: path ->
-         initial_path path right
-    | Right  _ :: path ->
-         next_path path
-    | [] ->
-         raise Not_found
-    | _ ->
-         raise (Invalid_argument "next_path")
-
-   (*
     * See if two sets intersect.
     *)
-   let rec intersect_aux path1 path2 =
-      let key1 = key_of_path path1 in
-      let key2 = key_of_path path2 in
-      let comp = Ord.compare key1 key2 in
-         if comp = 0 then
-            true
-         else if comp < 0 then
-            intersect_aux (next_path path1) path2
-         else
-            intersect_aux path1 (next_path path2)
+   let rec intersect_aux elems1 elems2 =
+      match elems1, elems2 with
+         elem1 :: elems1', elem2 :: elems2' ->
+            let comp = Ord.compare elem1 elem2 in
+               if comp = 0 then
+                  true
+               else if comp < 0 then
+                  intersect_aux elems1' elems2
+               else
+                  intersect_aux elems1 elems2'
+       | [], _
+       | _, [] ->
+            false
 
    let intersectp s1 s2 =
-      match s1, s2 with
-         Leaf, _
-       | _, Leaf ->
-            false
-       | _ ->
-            let path1 = initial_path [] s1 in
-            let path2 = initial_path [] s2 in
-               try intersect_aux path1 path2 with
-                  Not_found ->
-                     false
+      intersect_aux (to_list s1) (to_list s2)
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
