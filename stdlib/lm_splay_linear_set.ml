@@ -123,6 +123,16 @@ struct
     | { tree = Offset (i,t) } ->
          iter f t
 
+   let rec map ( f : elt -> elt ) = function
+      { tree = Leaf } -> { tree = Leaf }
+    | { tree = Node (ind, e, t1, t2, i) } ->
+         { tree = Node (ind, f e, map f t1, map f t2, i) }
+    | { tree = Lazy (f', tree) } as t ->
+         t.tree <- go_down f' tree;
+         map f t
+    | { tree = Offset (i, t) } ->
+         { tree = Offset (i, map f t) }
+
    let rec of_list_aux max start lst =
       match max, lst with
          _,[]

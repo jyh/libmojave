@@ -1,5 +1,5 @@
 (*
- * This module provides a signature for a linearly ordered numbered set 
+ * This module provides a signature for a linearly ordered numbered set
  * with lazy application. Such sets are used, for example, to keep
  * hypothesis in a sequent
  *
@@ -46,6 +46,7 @@ sig
    val to_list : t -> elt list
    val of_list : elt list -> t
    val iter : (elt -> unit) -> t -> unit
+   val map : (elt -> elt) -> t -> t
    val split : t -> index -> t * elt * t
    val append : t -> elt -> t -> t
    val append_list : t -> elt list -> t -> t

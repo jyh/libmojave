@@ -45,6 +45,7 @@ struct
    let create = Array.create
    let make = Array.create
    let iter = Array.iter
+   let map = Array.map
    let of_list = Array.of_list
    let to_list = Array.to_list
    let lazy_apply = Array.map
@@ -68,5 +69,4 @@ struct
    let mapi = Array.mapi
    let init = Array.init
    let collect = Lm_array_util.collect
-
 end
