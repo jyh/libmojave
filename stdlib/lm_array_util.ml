@@ -215,15 +215,13 @@ let sub_map f a i len =
 let rec parts_length len = function
    [] ->
       len
- | part :: parts ->
-      match part with
-         ArrayElement _ ->
-            parts_length (len + 1) parts
-       | ArrayArray (a, i, len') ->
-            if i < 0 || len' < 0 || i + len' > Array.length a then
-               raise (Invalid_argument "Array.collect")
-            else
-               parts_length (len + len') parts
+ | ArrayElement _ :: parts ->
+      parts_length (len + 1) parts
+ | ArrayArray (a, i, len') :: parts ->
+      if i < 0 || len' < 0 || i + len' > Array.length a then
+         raise (Invalid_argument "Array.collect")
+      else
+         parts_length (len + len') parts
 
 (*
  * Add the parts to the array.
@@ -232,15 +230,14 @@ let rec parts_length len = function
 let rec collect_append a off = function
    [] ->
       a
- | part :: parts ->
-      match part with
-         ArrayElement x ->
-            Array.unsafe_set a off x;
-            collect_append a (off + 1) parts
-       | ArrayArray (a', i, len) ->
-            if len <> 0 then
-               Array.blit a' i a off len;
-            collect_append a (off + len) parts
+ | ArrayElement x :: parts ->
+      Array.unsafe_set a off x;
+      collect_append a (off + 1) parts
+ | ArrayArray (_, _, 0) :: parts ->
+      collect_append a off parts
+ | ArrayArray (a', i, len) :: parts ->
+      Array.blit a' i a off len;
+      collect_append a (off + len) parts
 
 (*
  * Collect function works in two parts.
@@ -250,23 +247,20 @@ let rec collect_append a off = function
 let rec collect = function
    [] ->
       [||]
- | part :: parts ->
-      match part with
-         ArrayElement x ->
-            let len = parts_length 1 parts in
-            let a' = Array.create len x in
-               collect_append a' 1 parts
-
-       | ArrayArray (a, i, len) ->
-            match len with
-               0 ->
-                  collect parts
-             | len ->
-                  let len' = parts_length len parts in
-                  let a' = Array.create len' a.(i) in
-                     if len > 1 then
-                        Array.blit a (i + 1) a' 1 (len - 1);
-                     collect_append a' len parts
+ | ArrayElement x :: parts ->
+      let len = parts_length 1 parts in
+      let a' = Array.create len x in
+         collect_append a' 1 parts
+ | ArrayArray (_, _, 0) :: parts ->
+      collect parts
+ | [ArrayArray(a, 0, len)] when len = Array.length a ->
+      a
+ | ArrayArray (a, i, len) :: parts ->
+      let len' = parts_length len parts in
+      let a' = Array.create len' a.(i) in
+         if len > 1 then
+            Array.blit a (i + 1) a' 1 (len - 1);
+         collect_append a' len parts
 
 (*
  * Sorts an array, than eliminates the duplicate elements
