@@ -653,7 +653,7 @@ value lm_ssl_get_addr(value v_info)
     Field(addr, 0) = a;
     Field(addr, 1) = Val_int(ntohs(sin.sin_port));
     End_roots();
-    return a;
+    return addr;
 }
 
 /*

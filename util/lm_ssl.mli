@@ -34,7 +34,7 @@ exception SSLSigPipe
 (*
  * SSL interface.
  *)
-val enabled        : unit -> bool
+val enabled        : bool
 val socket         : string -> t
 val bind           : t -> Unix.inet_addr -> int -> unit
 val getsockname    : t -> Unix.inet_addr * int

@@ -34,7 +34,6 @@ type ssl = t
 
 exception SSLSigPipe
 
-external enabled        : unit -> bool                       = "lm_ssl_enabled"
 external socket         : string -> t                        = "lm_ssl_socket"
 external bind           : t -> Unix.inet_addr -> int -> unit = "lm_ssl_bind"
 external getsockname    : t -> Unix.inet_addr * int          = "lm_ssl_get_addr"
@@ -47,6 +46,7 @@ external close          : t -> unit                          = "lm_ssl_close"
 (*
  * Private functions.
  *)
+external lm_ssl_enabled  : unit -> bool                       = "lm_ssl_enabled"
 external lm_ssl_init     : unit -> unit                       = "lm_ssl_init"
 external lm_ssl_read     : t -> string -> int -> int -> int   = "lm_ssl_read"
 external lm_ssl_write    : t -> string -> int -> int -> int   = "lm_ssl_write"
@@ -55,6 +55,7 @@ external lm_ssl_write    : t -> string -> int -> int -> int   = "lm_ssl_write"
  * Initialize.
  *)
 let () = lm_ssl_init ()
+let enabled = lm_ssl_enabled ()
 
 (*
  * Buffered output channel.
