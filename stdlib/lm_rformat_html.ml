@@ -224,10 +224,10 @@ let html_print_atomic buf s =
    Queue.add (AtomicString s) buf.html_line
 
 let html_tag buf s =
-   buf.html_print_string ("<" ^ s ^ ">")
+   Queue.add (InvisibleString (Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">" s)) buf.html_line
 
 let html_etag buf s =
-   buf.html_print_string ("</" ^ s ^ ">")
+   Queue.add (InvisibleString "</span>") buf.html_line
 
 (*
  * An HTML printer.
