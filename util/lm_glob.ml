@@ -348,7 +348,10 @@ let add_shell_pattern options buf s =
              | '+'
              | '^'
              | '$'
-             | '|' ->
+             | '('
+             | ')'
+             | '{'
+             | '}' ->
                   Buffer.add_char buf '\\';
                   Buffer.add_char buf c;
                   collect (succ i)
