@@ -431,25 +431,6 @@ let parse_args s =
     | _ -> raise (Invalid_argument ("Lm_string_util.parse_args - line includes \\\\:" ^ s))
 
 (*
- * Concatenate strings.
- *)
-let concat sep sl =
-   let rec collect sl =
-      match sl with
-         [s] ->
-            Buffer.add_string scratch_buf s
-       | [] ->
-            ()
-       | s :: sl ->
-            Buffer.add_string scratch_buf s;
-            Buffer.add_string scratch_buf sep;
-            collect sl
-   in
-      Buffer.clear scratch_buf;
-      collect sl;
-      Buffer.contents scratch_buf
-
-(*
  * Read a file into a string.
  *)
 let string_of_file name =

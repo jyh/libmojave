@@ -229,7 +229,7 @@ let split_path = Lm_string_util.split separators
 (*
  * Put it back together.
  *)
-let concat_path = Lm_string_util.concat separator_string
+let concat_path = String.concat separator_string
 
 (*
  * Simplify, remove leading directory.
