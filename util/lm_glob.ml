@@ -179,6 +179,7 @@ type glob_options =
  | GlobIgnoreFun of (string -> bool)  (* Ignore the files specified by the function *)
  | GlobAllowFun of (string -> bool)   (* Allow only the files specified by the function *)
  | GlobHomeDir of string              (* Home directory for ~ expansion *)
+ | GlobProperSubdirs                  (* Include only proper subdirs in listing *)
 
 type glob_check =
    NoMatchError
@@ -196,7 +197,8 @@ type glob_option_bits =
      glob_ignore    : (string -> bool);
      glob_allow     : (string -> bool);
      glob_cvsignore : (string -> bool);
-     glob_home      : string
+     glob_home      : string;
+     glob_proper    : bool
    }
 
 let default_glob_options =
@@ -210,7 +212,8 @@ let default_glob_options =
      glob_ignore    = (fun _ -> false);
      glob_allow     = (fun _ -> true);
      glob_cvsignore = (fun _ -> false);
-     glob_home      = home_dir
+     glob_home      = home_dir;
+     glob_proper    = false
    }
 
 (************************************************************************
@@ -511,6 +514,7 @@ let glob_options_of_list l =
                 | GlobIgnore sl   -> { options with glob_ignore = make_filter options sl false }
                 | GlobAllow sl    -> { options with glob_allow = make_filter options sl true }
                 | GlobHomeDir dir -> { options with glob_home = dir }
+                | GlobProperSubdirs -> { options with glob_proper = true }
             in
                collect options l
        | [] ->
@@ -902,7 +906,13 @@ let subdirs_of_dirs options dirs =
        | [], [] ->
             listing
    in
-      collect [] [] dirs
+   let hidden_dirs, dirs =
+      if options.glob_proper then
+         dirs, []
+      else
+         [], dirs
+   in
+      collect [] hidden_dirs dirs
 
 (*!
  * @docoff

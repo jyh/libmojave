@@ -39,6 +39,7 @@ type glob_options =
  | GlobIgnoreFun of (string -> bool)  (* Ignore the files specified by the function *)
  | GlobAllowFun of (string -> bool)   (* Allow only the files specified by the function *)
  | GlobHomeDir of string              (* Home directory for ~ expansion *)
+ | GlobProperSubdirs                  (* Include only proper subdirs in listing *)
 
 (*
  * The initial home directory for tilde expansion.
