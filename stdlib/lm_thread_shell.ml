@@ -25,7 +25,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_int_set
 open Lm_thread
 open Lm_thread_sig
 open Lm_printf
@@ -33,37 +32,53 @@ open Lm_printf
 (*
  * List of states, indexed by pid.
  *)
-type pid = int
+type pid = string * int
+
+module PidCompare =
+struct
+   type t = pid
+
+   let compare ((s1, i1) : pid) ((s2, i2) : pid) =
+      let cmp = i1 - i2 in
+         if cmp = 0 then
+            compare s1 s2
+         else
+            cmp
+end
+
+module PidTable = Lm_map.LmMake (PidCompare)
+
+type job_type =
+   HiddenJob
+ | VisibleJob
 
 type job =
-   { job_hidden : bool;
+   { job_type   : job_type;
      job_state  : State.t
    }
 
 type info =
-   { mutable info_index         : int;
-     mutable info_jobs          : job IntTable.t;
-   }
+   { mutable info_jobs  : job PidTable.t }
 
 type current =
-   { mutable current_pid   : int;
+   { mutable current_pid   : pid;
      mutable current_state : State.t
    }
 
 (*
  * Common state for all threads.
  *)
+let root_id = "id", 1
+
 let info_entry =
    let current = State.current () in
    let job =
-      { job_hidden = false;
+      { job_type   = VisibleJob;
         job_state  = current
       }
    in
    let info =
-      { info_index = 2;
-        info_jobs  = IntTable.add IntTable.empty 1 job
-      }
+      { info_jobs  = PidTable.add PidTable.empty root_id job }
    in
       State.shared_val "Lm_thread_shell.info" info
 
@@ -72,7 +87,7 @@ let info_entry =
  *)
 let current_entry =
    let current =
-      { current_pid = 1;
+      { current_pid = root_id;
         current_state = State.current ()
       }
    in
@@ -82,17 +97,29 @@ let current_entry =
       State.private_val "Lm_thread_shell.current" current fork
 
 (*
+ * Get a process name that is not used.
+ *)
+let new_pid info name =
+   let jobs = info.info_jobs in
+   let rec search i =
+      let pid = name, i in
+         if PidTable.mem jobs pid then
+            search (succ i)
+         else
+            pid
+   in
+      search 1
+
+(*
  * Create a new pid with its own state.
  *)
-let create hidden =
+let create name job_type =
    State.write info_entry (fun info ->
-         let { info_index = pid;
-               info_jobs = jobs
-             } = info
-         in
+         let pid = new_pid info name in
+         let { info_jobs = jobs } = info in
          let state = State.create () in
          let job =
-            { job_hidden = hidden;
+            { job_type  = job_type;
               job_state = state
             }
          in
@@ -100,21 +127,49 @@ let create hidden =
                   State.write current_entry (fun current ->
                         current.current_pid <- pid;
                         current.current_state <- state)) ();
-            info.info_jobs <- IntTable.add jobs pid job;
-            info.info_index <- succ pid;
+            info.info_jobs <- PidTable.add jobs pid job;
             pid)
 
 (*
  * Get the pid for a string.
  * Check that it is defined.
  *)
-let pid_of_string s =
-   State.read info_entry (fun info ->
-         let pid = int_of_string s in
-            if IntTable.mem info.info_jobs pid then
+let pid_of_string pid =
+   (* Split the string based in integer suffix *)
+   let len = String.length pid in
+   let pid =
+      let rec search i =
+         if i = 0 then
+            raise Not_found;
+         let j = pred i in
+            match pid.[j] with
+               '0'..'9' ->
+                  search j
+             | _ ->
+                  if i = len then
+                     raise Not_found;
+                  let id = String.sub pid 0 i in
+                  let i = int_of_string (String.sub pid i (len - i)) in
+                     id, i
+      in
+         search len
+   in
+      State.read info_entry (fun info ->
+            if PidTable.mem info.info_jobs pid then
                pid
             else
                raise Not_found)
+
+let string_of_pid (id, i) =
+   id ^ string_of_int i
+
+(*
+ * Create a job with an exact id.
+ *)
+let create_or_find pid mode =
+   try pid_of_string pid with
+      Not_found ->
+         create pid mode
 
 (*
  * Return the current pid.
@@ -124,11 +179,12 @@ let get_pid () =
 
 let get_pids () =
    List.rev (State.read info_entry (fun info ->
-                   IntTable.fold (fun pids i job ->
-                         if job.job_hidden then
-                            pids
-                         else
-                            i :: pids) [] info.info_jobs))
+                   PidTable.fold (fun pids pid job ->
+                         match job.job_type with
+                            HiddenJob ->
+                               pids
+                          | VisibleJob ->
+                               pid :: pids) [] info.info_jobs))
 
 (*
  * Set the pid used by all processes.
@@ -136,7 +192,7 @@ let get_pids () =
 let set_pid pid =
    State.read info_entry (fun info ->
    State.write current_entry (fun current ->
-         let state = (IntTable.find info.info_jobs pid).job_state in
+         let state = (PidTable.find info.info_jobs pid).job_state in
             current.current_state <- state;
             current.current_pid <- pid;
             State.set state))
@@ -154,7 +210,7 @@ let with_current f x =
 let with_pid pid f x =
    let job =
       State.read info_entry (fun info ->
-            IntTable.find info.info_jobs pid)
+            PidTable.find info.info_jobs pid)
    in
       State.with_state job.job_state f x
 

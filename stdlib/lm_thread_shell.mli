@@ -24,13 +24,17 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-type pid = int
+type pid
 
-val create : bool -> pid
-val set_pid : pid -> unit
-val get_pid : unit -> pid
-val get_pids : unit -> pid list
-val with_pid : pid -> ('a -> 'b) -> 'a -> 'b
+type job_type =
+   HiddenJob
+ | VisibleJob
+
+val create       : string -> job_type -> pid
+val set_pid      : pid -> unit
+val get_pid      : unit -> pid
+val get_pids     : unit -> pid list
+val with_pid     : pid -> ('a -> 'b) -> 'a -> 'b
 val with_current : ('a -> 'b) -> 'a -> 'b
 
 (*
@@ -38,6 +42,12 @@ val with_current : ('a -> 'b) -> 'a -> 'b
  * Raises Not_found if the string is not a current pid.
  *)
 val pid_of_string : string -> pid
+val string_of_pid : pid -> string
+
+(*
+ * Create, or find a previous job with this name.
+ *)
+val create_or_find : string -> job_type -> pid
 
 (*!
  * @docoff
