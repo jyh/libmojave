@@ -115,12 +115,19 @@ let stop s =
 
 let char0 = Char.code '0'
 
+let rec zeros s i =
+   (i < 0) ||
+   match s.[i] with
+      '1'..'9' -> false
+    | '0' -> zeros s (pred i)
+    | _ -> true
 let rec pad_with_underscore s i =
    if i <= 0 then true else
    let i = pred i in
    match s.[i] with
       '_' -> pad_with_underscore s i
-    | '0' .. '9' -> true
+    | '0' -> not (zeros s (pred i))
+    | '1' .. '9' -> true
     | _ -> false
 
 let add =
@@ -131,6 +138,8 @@ let add =
          match s.[i] with
             '_' ->
                n, String.sub s 0 (if pad_with_underscore s i then i else i + 1)
+          | '0' when zeros s (i - 1) ->
+               n, String.sub s 0 (succ i)
           | '0'..'9' as c ->
                loop s (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
           | _ ->
