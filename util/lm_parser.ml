@@ -527,13 +527,10 @@ struct
     * have to insert some levels, and we have to figure out
     * where to put them.
     *
-    * The basic idea is to sort the
-    * in the first grammar, and these variables have precedences.
-    * Then we have to figure where to put them.
-    *
-    * We only have to figure this out for new variables.
-    * So, construct an inverse map for precedences in the second
-    * grammar.  Then, for each new variable
+    * The basic idea is to build an inverse table for the
+    * second grammar.  Then sort this grammar, and walk
+    * through each level.  If it exists in the first grammar,
+    * keep it.  Otherwise add a new level, and continue.
     *)
    let rec find_existing_prec precs vars =
       match vars with
@@ -563,14 +560,14 @@ struct
                         v :: vars)) PrecTable.empty prec2
       in
 
-      (*
-       * Sort the precedences in grammar2.
-       *)
+      (* Sort the precedences in grammar2 *)
       let prec_list =
          PrecTable.fold (fun prec_list pre _ ->
                pre :: prec_list) [] inv_table
       in
       let prec_list = List.sort (Precedence.compare table2) prec_list in
+
+      (* Walk through each level, and create it if it doesn't already exist *)
       let precs, table, _ =
          List.fold_left (fun (precs, table, prev_prec) pre ->
                let vars = PrecTable.find inv_table pre in
