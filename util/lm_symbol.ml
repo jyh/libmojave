@@ -44,12 +44,15 @@ type var = symbol
 (* An "empty" variable name *)
 let empty_var = (0,"")
 
-let new_number =
+let new_number, make =
    let count = ref 100 in
       (fun () ->
             let i = !count in
                count := succ i;
-               i)
+               i),
+      (fun s i ->
+         if i >= !count then count := succ i;
+         (i, s))
 
 (*
  * Get the integer prefix.
@@ -139,17 +142,15 @@ let add =
       else
          match s.[i] with
             '_' ->
-               n, String.sub s 0 (if pad_with_underscore s i then i else i + 1)
+               make (String.sub s 0 (if pad_with_underscore s i then i else i + 1)) n
           | '0' when zeros s (i - 1) ->
-               n, String.sub s 0 (succ i)
+               make (String.sub s 0 (succ i)) n
           | '0'..'9' as c ->
                loop s (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
           | _ ->
-               n, String.sub s 0 (succ i)
+               make (String.sub s 0 (succ i)) n
    in
       fun s -> loop s 1 0 (String.length s - 1)
-
-let make s i = (i, s)
 
 let add_mangle s =
    add (mangle s)
@@ -181,7 +182,7 @@ let new_symbol_pre pre (_, v) =
  *)
 let new_name (_, v) pred =
    let rec search i =
-      let nv = i, v in
+      let nv = make v i in
          if pred nv then
             search (succ i)
          else
@@ -195,7 +196,7 @@ let new_name (_, v) pred =
  *)
 let new_name_gen (_, v) f =
    let rec search i =
-      let nv = i, v in
+      let nv = make v i in
          match f nv with
             Some x ->
                x
