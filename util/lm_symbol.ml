@@ -42,6 +42,9 @@ let debug_symbol = ref false
 type symbol = int * string
 type var = symbol
 
+(* An "empty" variable name *)
+let empty_var = (0,"")
+
 let new_number =
    let count = ref 100 in
       (fun () ->

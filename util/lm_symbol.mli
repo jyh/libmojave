@@ -42,6 +42,11 @@ type var = symbol
 val debug_symbol : bool ref
 
 (*
+ * An "empty" variable name
+ *)
+val empty_var : symbol
+
+(*
  * Add a symbol to the table.
  *)
 val add : string -> symbol
