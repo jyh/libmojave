@@ -92,6 +92,12 @@ type pathname = string list
 val split_path : string -> pathname
 val simplify_path : pathname -> pathname
 
+(*
+ * Path searching.
+ *)
+val is_executable : string -> bool
+val which : string -> string
+
 (*!
  * @docoff
  *

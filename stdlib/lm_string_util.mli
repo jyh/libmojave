@@ -37,6 +37,14 @@ val unhexify_int : string -> int
 val strchr : string -> char -> int
 
 (*
+ * Membership.
+ *    contains s c : true iff c appears in s
+ *    contains_string s1 s2 : true iff any char in s2 appears in s1
+ *)
+val contains : string -> char -> bool
+val contains_any : string -> string -> bool
+
+(*
  * Standard definition of white space.
  *)
 val white : string

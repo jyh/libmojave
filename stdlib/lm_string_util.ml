@@ -71,13 +71,28 @@ let strchr s c =
    in
       aux 0
 
-(* A more efficient reimplementation of String.contains *)
+(*
+ * A more efficient reimplementation of String.contains.
+ *)
 let contains =
    let rec contains_aux s limit c i =
       (i < limit) && ((String.unsafe_get s i) = c || contains_aux s limit c (i+1))
    in
       fun s c ->
          contains_aux s (String.length s) c 0
+
+(*
+ * contains_string s1 s2
+ * true iff any one of the characters in s2 appears in s1.
+ *)
+let contains_any =
+   let rec search2 s2 len2 c i =
+      (i < len2) && ((String.unsafe_get s2 i) = c || search2 s2 len2 c (i + 1))
+   and search1 s1 len1 s2 len2 i =
+      (i < len1) && (search2 s2 len2 (String.unsafe_get s1 i) 0 || search1 s1 len1 s2 len2 (i + 1))
+   in
+      (fun s1 s2 ->
+            search1 s1 (String.length s1) s2 (String.length s2) 0)
 
 (*
  * Index of first char in a set.
