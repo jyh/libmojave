@@ -25,6 +25,8 @@
  * @end[license]
  *)
 
+type pathname = string list
+
 (*
  * System-dependent config.
  * On win32, use lowercase names, and watch for drive letters.
@@ -164,6 +166,37 @@ let tail name =
                   0
    in
       String.sub name start (String.length name - start)
+
+(*
+ * Pathname separator chars.
+ *)
+let separators = "/\\"
+
+(*
+ * Split a pathname.
+ *)
+let split_path = Lm_string_util.split separators
+
+(*
+ * Simplify, remove leading directory.
+ *)
+let simplify_path path =
+   let rec simplify path' = function
+      dir::tl ->
+         if dir = "" or dir = "." then
+            simplify path' tl
+         else if dir = ".." then
+            match path' with
+               [] ->
+                  simplify path' tl
+             | _::path'' ->
+                  simplify path'' tl
+         else
+            simplify (dir :: path') tl
+    | [] ->
+         List.rev path'
+   in
+      simplify [] path
 
 (*!
  * @docoff

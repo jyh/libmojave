@@ -83,6 +83,16 @@ val root : string -> string
 val tail : string -> string
 val strip_suffixes : string -> string
 
+
+(*
+ * Path simplification.
+ * Remove . and .. entries.
+ *)
+type pathname = string list
+
+val split_path : string -> pathname
+val simplify_path : pathname -> pathname
+
 (*!
  * @docoff
  *
