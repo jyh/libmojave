@@ -338,7 +338,7 @@ struct
 
    type prop_entry =
       { prop_prod_item    : prod_item;
-        mutable prop_info : prop_info option;
+        mutable prop_info : prop_info list;
         mutable prop_vars : VarSet.t
       }
 
@@ -965,7 +965,11 @@ struct
     * by (state, index).
     *)
    let build_prop_table info shift_table state_table =
-      let { info_nullable = nullable; info_first = first } = info in
+      let { info_nullable = nullable;
+            info_first = first;
+            info_grammar = { gram_prod = prods }
+          } = info
+      in
       let state_count = IntTable.cardinal state_table in
       let prop_table = Array.create state_count [||] in
          IntTable.iter (fun state_index prod_table ->
@@ -981,6 +985,27 @@ struct
                            match right with
                               v :: right ->
                                  let lookahead = lookahead nullable first VarSet.empty right in
+
+                                 (* If v is a nonterminal, add the self-edges *)
+                                 let prop_infos =
+                                    try
+                                       let prods = VarMTable.find_all prods v in
+                                          List.fold_left (fun prop_infos prod ->
+                                                let prod_item = prod_item_of_prod prod in
+                                                let item_index = ProdItemTable.find prod_table prod_item in
+                                                let prop_info =
+                                                   { prop_next_state = state_index;
+                                                     prop_next_item = item_index;
+                                                     prop_lookahead = lookahead
+                                                   }
+                                                in
+                                                   prop_info :: prop_infos) [] prods
+                                    with
+                                       Not_found ->
+                                          []
+                                 in
+
+                                 (* Get the goto state *)
                                  let next_state_index = VarTable.find goto_table v in
                                  let next_item =
                                     { prod_item with prod_item_left = v :: left;
@@ -996,12 +1021,12 @@ struct
                                     }
                                  in
                                     { prop_prod_item = prod_item;
-                                      prop_info      = Some prop_info;
+                                      prop_info      = prop_info :: prop_infos;
                                       prop_vars      = VarSet.empty
                                     }
                             | [] ->
                                  { prop_prod_item = prod_item;
-                                   prop_info      = None;
+                                   prop_info      = [];
                                    prop_vars      = VarSet.empty
                                  }
                         in
@@ -1031,11 +1056,12 @@ struct
                            prop_vars = vars
                          } = prop
                      in
-                        match info with
-                           Some { prop_next_state = next_state_index;
-                                  prop_next_item  = next_item_index;
-                                  prop_lookahead  = lookahead
-                           } ->
+                        List.fold_left (fun changed info ->
+                              let { prop_next_state = next_state_index;
+                                    prop_next_item  = next_item_index;
+                                    prop_lookahead  = lookahead
+                                  } = info
+                              in
                               let vars1 = lookahead_vars lookahead vars in
                               let next_entry = prop_table.(next_state_index).(next_item_index) in
                               let vars2 = next_entry.prop_vars in
@@ -1046,9 +1072,7 @@ struct
                                        true
                                     end
                                  else
-                                    changed
-                         | None ->
-                              changed) changed prod_table) false prop_table
+                                    changed) changed info) changed prod_table) false prop_table
       in
       let rec fixpoint () =
          if step () then
@@ -1079,7 +1103,8 @@ struct
                  info_item_table = info_table
                }
             in
-               IntTable.add state_table state_index info_item
+            let state_table = IntTable.add state_table state_index info_item in
+               collect state_table (succ state_index)
       in
          collect IntTable.empty 0
 
@@ -1127,6 +1152,9 @@ struct
               prod_item_name = name;
               prod_item_left = left
             }, lookahead ->
+               eprintf "reduce_early: %a: lookahead = %d@." pp_print_action action (VarSet.cardinal lookahead);
+               if VarSet.cardinal lookahead = 1 then
+                  eprintf "lookahead: %a/%a@." pp_print_symbol (VarSet.choose lookahead) pp_print_symbol eof;
                if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
                   ReduceAccept (action, name, List.length left)
                else
@@ -1301,6 +1329,10 @@ struct
             eprintf "Calling action %a@." pp_print_action action
       in
       let arg, value = eval arg action loc args in
+      let () =
+         if !debug_parse then
+            eprintf "Called action %a@." pp_print_action action
+      in
          state, arg, loc, value, stack
 
    (*
