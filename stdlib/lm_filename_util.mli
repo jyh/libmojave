@@ -28,7 +28,9 @@
 (*
  * Search for the index after the drive letter.
  *)
-type root
+type root =
+   NullRoot
+ | DriveRoot of char
 
 type 'a path =
    RelativePath of 'a
@@ -78,16 +80,8 @@ val split : string -> string * string
  * Get the name without suffix.
  *)
 val root : string -> string
+val tail : string -> string
 val strip_suffixes : string -> string
-
-(*
- * Path simplification.
- * Remove . and .. entries.
- *)
-type pathname = string list
-
-val split_path : string -> pathname
-val simplify_path : pathname -> pathname
 
 (*!
  * @docoff
