@@ -38,6 +38,8 @@
 #  include <winsock2.h>
 #  define SHUT_RD 0
 #  define SHUT_WR 1
+
+typedef long socklen_t;
 #else /* !WIN32 */
 #  include <unistd.h>
 #  include <sys/types.h>
@@ -277,7 +279,7 @@ value lm_ssl_bind(value v_info, value v_addr, value v_port)
     /* Get the address */
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = *(uint32 *)v_addr;
-    sin.sin_port = htons(Int_val(v_port));
+    sin.sin_port = htons((short) Int_val(v_port));
 
     /* Perform the bind */
     info = SslInfo_val(v_info);
@@ -392,7 +394,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     /* Get the address */
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = *(uint32 *)v_addr;
-    sin.sin_port = htons(Int_val(v_port));
+    sin.sin_port = htons((short) Int_val(v_port));
 
     /* Make the connection */
     enter_blocking_section();

@@ -1,3 +1,4 @@
 *.cmxa
 *.cma
 *.a
+*.lib
