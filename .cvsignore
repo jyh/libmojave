@@ -2,3 +2,7 @@
 *.cma
 *.a
 *.lib
+*.omc
+*.omo
+*.obj
+CVS

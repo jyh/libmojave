@@ -6,3 +6,7 @@
 *-native.*
 *.lib
 Makefile.dep
+*.omc
+*.omo
+*.obj
+CVS

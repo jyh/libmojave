@@ -18,3 +18,7 @@ lm_pervasives.ml
 lm_thread_core.ml
 lm_thread_sig.ml
 lm_thread_sig.mli
+*.omc
+*.omo
+*.obj
+CVS

@@ -1,4 +1,4 @@
-/*
+/*cxxx
  * Readline Interface for MCC
  * Copyright(c) 2002 Justin David Smith, Caltech
  * Derived from MetaPRL readline code
