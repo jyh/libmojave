@@ -4,3 +4,4 @@
 *.a
 *-byte.*
 *-native.*
+Makefile.dep
