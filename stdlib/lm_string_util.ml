@@ -194,7 +194,7 @@ let js_escaped s =
          let _ =
             match c with
                '\'' ->
-                  Buffer.add_string buf "\\\'"
+                  Buffer.add_string buf "\\'"
              | ' '..'~' ->
                   Buffer.add_char buf c
              | _ ->
