@@ -222,19 +222,23 @@ let default_glob_options =
  *)
 let is_glob_name options name =
    let len = String.length name in
-   let rec search i =
+   let rec search lbrack i =
       if i >= len then
          false
       else
          match name.[i] with
-            '*' | '?' | '[' | '~' ->
+            '*' | '?' | '~' ->
                true
+          | '[' ->
+               search true (succ i)
+          | ']' ->
+               lbrack || search lbrack (succ i)
           | '\\' when options.glob_escape ->
-               search (i + 2)
+               search lbrack (i + 2)
           | _ ->
-               search (succ i)
+               search lbrack (succ i)
    in
-      search 0
+      search false 0
 
 (*
  * Unescape a name.
