@@ -1,4 +1,14 @@
 #
+# Threads are optional
+#
+if $(THREADS_ENABLED)
+    lm_threads.ml: lm_threads_system.ml
+	$(symlink $<, $@)
+else
+    lm_threads.ml: lm_threads_null.ml
+	$(symlink $<, $@)
+
+#
 # Library
 #
 include Files
