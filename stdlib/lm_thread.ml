@@ -38,26 +38,8 @@ let debug_lock =
         debug_value = false
       }
 
-module Mutex =
-struct
-   type t = MutexCore.t
-
-   let create   = MutexCore.create
-   let lock     = MutexCore.lock
-   let try_lock = MutexCore.try_lock
-   let unlock   = MutexCore.unlock
-end
-
-module Condition =
-struct
-   type t     = ConditionCore.t
-   type mutex = MutexCore.t
-
-   let create    = ConditionCore.create
-   let wait      = ConditionCore.wait
-   let signal    = ConditionCore.signal
-   let broadcast = ConditionCore.broadcast
-end
+module Mutex = MutexCore
+module Condition = ConditionCore
 
 (*
  * The state identifier is just an integer.

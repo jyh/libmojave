@@ -31,6 +31,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_thread
 
 let debug_symbol = ref false
 
@@ -46,12 +47,19 @@ let empty_var = (0,"")
 
 let new_number, make =
    let count = ref 100 in
+   let lock = Mutex.create () in
       (fun () ->
+            Mutex.lock lock;
             let i = !count in
                count := succ i;
+               Mutex.unlock lock;
                i),
       (fun s i ->
-         if i >= !count then count := succ i;
+         if i >= !count then begin
+            Mutex.lock lock;
+            count := max (!count) (succ i);
+            Mutex.unlock lock
+         end;
          (i, s))
 
 (*
