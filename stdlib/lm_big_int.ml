@@ -371,13 +371,13 @@ let div10 (sign, mag) =
       rem, (sign, List.rev mag)
 
 (*
- * Multiply a mag by 10.
+ * Multiply a mag by a small int.
  *)
-let rec mult10_mag digits =
+let rec mult_mag_i i =
    let rec collect carry = function
       digit :: digits ->
          let z =
-            digit * 10 + carry
+            digit * i + carry
          in
             z land max_int :: collect (z lsr shift_int) digits
     | [] ->
@@ -386,15 +386,19 @@ let rec mult10_mag digits =
          else
             [carry]
    in
-      collect 0 digits
+      collect 0
+
+let mult2_mag = mult_mag_i 2
+let mult8_mag = mult_mag_i 8
+let mult10_mag = mult_mag_i 10
+let mult16_mag = mult_mag_i 16
 
 let mult10 (sign, mag) =
    sign, mult10_mag mag
 
 let zero_code = Char.code '0'
 
-let add_char mag c =
-   let i = Char.code c - zero_code in
+let add_int mag i =
    let rec collect carry digits =
       if carry = 0 then
          digits
@@ -443,20 +447,53 @@ let string_of_big_int (sign, mag) =
 (*
  * Produce it from a string.
  *)
-let big_int_of_string s =
-   let len = String.length s in
-   let rec collect i mag =
+let big_int_of_string =
+   let inv () = raise (Invalid_argument "Lm_big_int.big_int_of_string") in
+   let rec collect mult char_code s len i mag =
       if i = len then
          mag
       else
-         collect (succ i) (add_char (mult10_mag mag) s.[i])
+         collect mult char_code s len (succ i) (add_int (mult mag) (char_code s.[i]))
    in
-      if len = 0 then
-         true, []
-      else if s.[0] = '-' then
-         false, collect 1 []
-      else
-         true, collect 0 []
+   let char_code2 = function
+      '0' -> 0
+    | '1' -> 1
+    | _ -> inv ()
+   in
+   let char_code8 = function
+      '0'..'7' as c -> Char.code c - zero_code
+    | _ -> inv ()
+   in
+   let char_code10 = function
+      '0'..'9' as c -> Char.code c - zero_code
+    | _ -> inv ()
+   in
+   let char_code16 = function
+      '0'..'9' as c -> Char.code c - zero_code
+    | 'a' | 'A' -> 10
+    | 'b' | 'B' -> 11
+    | 'c' | 'C' -> 12
+    | 'd' | 'D' -> 13
+    | 'e' | 'E' -> 14
+    | 'f' | 'F' -> 15
+    | _ -> inv ()
+   in
+   fun s ->
+      let len = String.length s in
+      if len = 0 then inv ();
+      let sign = not (s.[0] = '-') in
+      if not sign && len = 1 then inv ();
+      sign, begin
+         let i = if sign then 0 else 1 in
+         if s.[i] = '0' && len >= (i+3) then
+            match s.[i+1] with
+              'b' | 'B' -> collect mult2_mag char_code2 s len (i+2) []
+            | 'o' | 'O' -> collect mult8_mag char_code8 s len (i+2) []
+            | 'x' | 'X' -> collect mult16_mag char_code16 s len (i+2) []
+            | _         -> collect mult10_mag char_code10 s len (i+2) []
+         else
+            collect mult10_mag char_code10 s len i []
+      end
 
 (*
  * Additional names.
