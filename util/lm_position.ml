@@ -91,7 +91,7 @@ sig
 
    (* Utilities *)
    val loc_of_pos : t pos -> loc
-   val output_pos : out_channel -> t pos -> unit
+   val pp_print_pos : formatter -> t pos -> unit
 end
 
 module type NameSig =
@@ -103,7 +103,7 @@ sig
 
    (* Utilities for managing values *)
    val loc_of_value : t -> loc
-   val output_value  : out_channel -> t -> unit
+   val pp_print_value  : formatter -> t -> unit
 end
 
 (************************************************************************
@@ -138,54 +138,54 @@ struct
    (*
     * Print debugging info.
     *)
-   let rec output_pos buf (name, e) =
+   let rec pp_print_pos buf (name, e) =
       match e with
          DebugLoc _ ->
             ()
 
        | DebugBase x ->
-            fprintf buf "@ %s.%a" name output_value x
+            fprintf buf "@ %s.%a" name pp_print_value x
 
        | DebugCons (x, pos) ->
-            output_pos buf pos;
-            fprintf buf "@ /%s.%a" name output_value x
+            pp_print_pos buf pos;
+            fprintf buf "@ /%s.%a" name pp_print_value x
 
        | DebugConsLoc (_, pos) ->
-            output_pos buf pos
+            pp_print_pos buf pos
 
        | DebugPos (pos1, pos2) ->
             fprintf buf "@ @[<v 3>Called from: %s%a@]%a" (**)
                name
-               output_pos pos1
-               output_pos pos2
+               pp_print_pos pos1
+               pp_print_pos pos2
 
        | DebugString (s, pos) ->
-            output_pos buf pos;
+            pp_print_pos buf pos;
             fprintf buf "@ /%s.%s" name s
 
        | DebugInt (i, pos) ->
-            output_pos buf pos;
+            pp_print_pos buf pos;
             fprintf buf "@ %s.%d" name i
 
        | DebugSymbol (v, pos) ->
-            output_pos buf pos;
+            pp_print_pos buf pos;
             fprintf buf "@ %s.%a" name output_symbol v
 
        | DebugDel (f, _) ->
             fprintf buf "@ %t" f
 
        | DebugDelExp (f, pos) ->
-            output_pos buf pos;
+            pp_print_pos buf pos;
             fprintf buf "@ %t" f
 
    (*
     * Real error printer.
     *)
-   let output_pos buf pos =
+   let pp_print_pos buf pos =
       let loc = loc_of_pos pos in
-         fprintf buf "@[<v 3>%a" output_location (loc_of_pos pos);
+         fprintf buf "@[<v 3>%a" pp_print_location (loc_of_pos pos);
          if !debug_pos then
-            output_pos buf pos;
+            pp_print_pos buf pos;
          fprintf buf "@]"
 
    (*
@@ -193,7 +193,7 @@ struct
     *)
    let loc_exp_pos loc =
       if !trace_pos then
-         eprintf "Lm_trace: %s.%a@." name output_location loc;
+         eprintf "Lm_trace: %s.%a@." name pp_print_location loc;
       name, DebugLoc loc
 
    let loc_pos loc pos =

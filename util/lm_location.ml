@@ -65,7 +65,7 @@ let union_loc loc1 loc2 =
 (*
  * Print a file location.
  *)
-let output_location buf (file, start_line, start_char, end_line, end_char) =
+let pp_print_location buf (file, start_line, start_char, end_line, end_char) =
    fprintf buf "File %a: " output_symbol file;
    if start_line = end_line then
       fprintf buf "line %d, characters %d-%d" start_line start_char end_char

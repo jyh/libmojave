@@ -64,7 +64,7 @@ sig
 
    (* Utilities *)
    val loc_of_pos  : t pos -> loc
-   val output_pos  : out_channel -> t pos -> unit
+   val pp_print_pos  : formatter -> t pos -> unit
 end
 
 module type NameSig =
@@ -76,7 +76,7 @@ sig
 
    (* Utilities for managing values *)
    val loc_of_value : t -> loc
-   val output_value : out_channel -> t -> unit
+   val pp_print_value : formatter -> t -> unit
 end
 
 module MakePos (Name : NameSig) : PosSig with type t = Name.t

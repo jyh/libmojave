@@ -54,7 +54,7 @@ val union_loc : loc -> loc -> loc
 (*
  * Print a file location.
  *)
-val output_location : out_channel -> loc -> unit
+val pp_print_location : out_channel -> loc -> unit
 
 (*!
  * @docoff
