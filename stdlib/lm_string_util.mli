@@ -86,7 +86,6 @@ val tokens_std : string -> string list
  *)
 val parse_args_list : string -> string list list
 val parse_args : string -> string list
-val quote: string -> string
 
 (*
  * Concatenate strings with a separator.
@@ -137,18 +136,6 @@ val sub : string -> string -> int -> int -> string
 val blit : string -> string -> int -> string -> int -> int -> unit
 val set : string -> string -> int -> char -> unit
 val get : string -> string -> int -> char
-
-(*
- * Locale queries.
- * See man pages for isdigit, isprint, isalnum, isupper and isgraph for more information.
- *)
-val is_digit : char -> bool
-val is_print : char -> bool
-val is_alnum : char -> bool
-val is_upper : char -> bool
-val is_graph : char -> bool
-
-val is_capitalized : string -> bool
 
 (*
  * -*-

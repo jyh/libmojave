@@ -1,4 +1,5 @@
 UTIL_FILES =\
+	lm_ctype\
 	lm_symbol\
 	lm_flags\
 	lm_interval_set\
