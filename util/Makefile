@@ -4,15 +4,18 @@ ROOT := ../..
 
 include $(ROOT)/mk/preface
 
-INCLUDE := -I $(ROOT)/lm_libmojave/naml/stdlib
+INCLUDE := -I ../stdlib
 
 # Library files
 include Files
+
 LMFILES := $(UTIL_FILES)
 LMIFILES := $(UTIL_FILES)
 
 # Name of library
 MAIN := lmutil
+
+INSTALL_LIBS := $(MAIN)
 
 all: lib
 
@@ -25,8 +28,10 @@ include Makefile.dep
 #
 # Rules
 #
-lib: $(MAIN).cma $(RMLIFLES) $(RCMIFILES) Files
-opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
+lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
+
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
+	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)

@@ -15,7 +15,7 @@ LCFILES :=\
 	lm_terminfo
 
 # Name of library
-MAIN := cutil
+MAIN := liblmcutil
 
 all: $(ROOT)/lib/$(MAIN)-byte$(EXT_LIB)
 

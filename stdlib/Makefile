@@ -14,6 +14,10 @@ LMIFILES := $(STDLIB_FILES)
 # Name of library
 MAIN := lmstdlib
 
+INSTALL_LIBS := $(MAIN)
+
+.PHONY: lib
+
 all: lib
 
 #
@@ -25,8 +29,10 @@ include Makefile.dep
 #
 # Rules
 #
-lib: $(MAIN).cma $(RMLIFLES) $(RCMIFILES) Files
-opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
+lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
+
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
+	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
