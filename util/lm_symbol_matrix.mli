@@ -134,6 +134,9 @@ module SymbolMatrix : SymbolMatrixSetSig
  *)
 module MakeSymbolMatrixTable (Order : OrderSig) : SymbolMatrixTableSig
 
+module SymSymbolMatrix : SymbolMatrixTableSig
+module AsymSymbolMatrix : SymbolMatrixTableSig
+
 (*!
  * @docoff
  *
