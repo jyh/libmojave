@@ -1177,7 +1177,10 @@ struct
    (*
     * Take the closure of a production.
     *)
-   let closure info (set : ProdItemSet.t) =
+   let closure_count = ref 0
+
+   let build_closure info memo set =
+      incr closure_count;
       let { info_grammar  = { gram_prod = prods } } = info in
       let rec close examined unexamined closure =
          if VarSet.is_empty unexamined then
@@ -1196,9 +1199,9 @@ struct
                                     List.fold_left (fun (unexamined, closure) prod ->
                                           let unexamined =
                                              match (ProdItem.get prod).prod_item_right with
-                                                v :: _ ->
+                                                v :: _ when not (VarSet.mem examined v) ->
                                                    VarSet.add unexamined v
-                                              | [] ->
+                                              | _ ->
                                                    unexamined
                                           in
                                           let closure = ProdItemSet.add closure prod in
@@ -1211,20 +1214,27 @@ struct
             in
                close examined unexamined closure
       in
+      let items = ProdItemSetHash.get set in
       let unexamined =
          ProdItemSet.fold (fun unexamined prod_item ->
                match (ProdItem.get prod_item).prod_item_right with
                   v :: _ ->
                      VarSet.add unexamined v
                 | [] ->
-                     unexamined) VarSet.empty set
+                     unexamined) VarSet.empty items
       in
-      let item = close VarSet.empty unexamined set in
-         ProdItemSetHash.create item
+      let item = close VarSet.empty unexamined items in
+      let item = ProdItemSetHash.create item in
+      let memo = ProdItemSetTable.add memo set item in
+         memo, item
+
+   let closure info memo (set : ProdItemSetHash.t) =
+      try memo, ProdItemSetTable.find memo set with
+         Not_found ->
+            build_closure info memo set
 
    (*
-    * Add the state identified by the closure to the set
-    * of known LR(0) states.
+    * Add the state to the set of known LR(0) states.
     *)
    let add_state examined unexamined closure =
       try ProdItemSetTable.find examined closure, unexamined with
@@ -1240,39 +1250,39 @@ struct
     * by shifting.
     *)
    let shift_symbols item =
-      ProdItemSet.fold (fun syms prod_item ->
-            match (ProdItem.get prod_item).prod_item_right with
-               v :: _ ->
-                  VarSet.add syms v
-             | [] ->
-                  syms) VarSet.empty (ProdItemSetHash.get item)
-
-   (*
-    * Perform the shift by a symbol.
-    *)
-   let shift_item item v =
-      ProdItemSet.fold (fun set prod_item ->
-            let core = ProdItem.get prod_item in
-            let { prod_item_left = left;
-                  prod_item_right = right
-                } = core
-            in
-               match right with
-                  v' :: right when v' = v ->
-                     let core =
-                        { core with prod_item_left = v :: left;
-                                    prod_item_right = right
-                        }
-                     in
-                     let prod_item = ProdItem.create core in
-                        ProdItemSet.add set prod_item
-                | _ ->
-                     set) ProdItemSet.empty (ProdItemSetHash.get item)
+      let syms =
+         ProdItemSet.fold (fun syms prod_item ->
+               let core = ProdItem.get prod_item in
+               let { prod_item_left = left;
+                     prod_item_right = right
+                   } = core
+               in
+                  match right with
+                     v :: right ->
+                        let core =
+                           { core with prod_item_left = v :: left;
+                                       prod_item_right = right
+                           }
+                        in
+                        let item = ProdItem.create core in
+                           VarTable.filter_add syms v (fun items ->
+                                 match items with
+                                    Some items ->
+                                       ProdItemSet.add items item
+                                  | None ->
+                                       ProdItemSet.singleton item)
+                   | [] ->
+                        syms) VarTable.empty (ProdItemSetHash.get item)
+      in
+         VarTable.map ProdItemSetHash.create syms
 
    (*
     * Compute the transition table, only for shift operations.
     *)
-   let rec shift_closure info shift_table examined unexamined =
+   let shift_closure_count = ref 0
+
+   let rec shift_closure_memo info closure_memo shift_table examined unexamined =
+      incr shift_closure_count;
       let { info_grammar = { gram_prod = prods } } = info in
          if ProdItemSetTable.is_empty unexamined then
             shift_table, examined
@@ -1284,16 +1294,18 @@ struct
 
             (* Compute the goto states *)
             let syms = shift_symbols item in
-            let goto_table, unexamined =
-               VarSet.fold (fun (goto_table, unexamined) v ->
-                     let item = shift_item item v in
-                     let item = closure info item in
+            let closure_memo, goto_table, unexamined =
+               VarTable.fold (fun (closure_memo, goto_table, unexamined) v items ->
+                     let closure_memo, item = closure info closure_memo items in
                      let next, unexamined = add_state examined unexamined item in
                      let goto_table = VarTable.add goto_table v next in
-                        goto_table, unexamined) (VarTable.empty, unexamined) syms
+                        closure_memo, goto_table, unexamined) (closure_memo, VarTable.empty, unexamined) syms
             in
             let shift_table = IntTable.add shift_table index goto_table in
-               shift_closure info shift_table examined unexamined
+               shift_closure_memo info closure_memo shift_table examined unexamined
+
+   let shift_closure info closure_memo unexamined =
+      shift_closure_memo info closure_memo IntTable.empty ProdItemSetTable.empty unexamined
 
    (************************************************************************
     * LALR(1) construction.
@@ -1579,11 +1591,15 @@ struct
    (*
     * Construct the LALR(1) table from the LR(0) table.
     *)
-   let build_lalr_table info start_table unexamined =
+   let build_lalr_table info closure_memo start_table unexamined =
       let start = time_start () in
       let now = start in
-      let shift_table, states = shift_closure info IntTable.empty ProdItemSetTable.empty unexamined in
+      let shift_table, states = shift_closure info closure_memo unexamined in
       let now = time_print "Closure" start now in
+      let () =
+         if !debug_parsetiming then
+            eprintf "Shift steps: %d, closures: %d@." !shift_closure_count !closure_count
+      in
       let state_table = build_item_indices states in
       let state_table = build_state_index state_table in
       let now = time_print "Indexes" start now in
@@ -1744,7 +1760,7 @@ struct
    (*
     * Find the start state for a production.
     *)
-   let create_start info start_table unexamined start =
+   let create_start info closure_memo start_table unexamined start =
       let gram = info.info_grammar in
       let prods =
          try VarMTable.find_all gram.gram_prod start with
@@ -1755,10 +1771,11 @@ struct
          List.fold_left (fun set prod_item ->
                ProdItemSet.add set prod_item) ProdItemSet.empty prods
       in
-      let closure = closure info set in
+      let set = ProdItemSetHash.create set in
+      let closure_memo, closure = closure info closure_memo set in
       let state_index, unexamined = add_state ProdItemSetTable.empty unexamined closure in
       let start_table = VarTable.add start_table start state_index in
-         start_table, unexamined
+         closure_memo, start_table, unexamined
 
    let create_core gram =
       let start = time_start () in
@@ -1768,13 +1785,13 @@ struct
          if !debug_parsegen then
             eprintf "@[<hv 3>Grammar:@ %a@]@." pp_print_info info
       in
-      let start_table, unexamined =
-         VarSet.fold (fun (start_table, unexamined) start ->
-               create_start info start_table unexamined start) (**)
-            (VarTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
+      let closure_memo, start_table, unexamined =
+         VarSet.fold (fun (closure_memo, start_table, unexamined) start ->
+               create_start info closure_memo start_table unexamined start) (**)
+            (ProdItemSetTable.empty, VarTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
       in
       let now = time_print "Start states" start now in
-      let trans_table, states = build_lalr_table info start_table unexamined in
+      let trans_table, states = build_lalr_table info closure_memo start_table unexamined in
       let now = time_print "LALR total" start now in
       let trans_table = reduce info trans_table states in
       let now = time_print "Shift/reduce table" start now in
