@@ -349,7 +349,8 @@ let search_path =
          Not_found ->
             "."
    in
-      Lm_string_util.split search_separator_string path
+   let path = Lm_string_util.split search_separator_string path in
+      List.filter (fun name -> not (Filename.is_relative name)) path
 
 (*
  * Search for the file in the path.
