@@ -2,10 +2,10 @@
 # Threads are optional
 #
 if $(THREADS_ENABLED)
-    lm_threads.ml: lm_threads_system.ml
+    lm_thread_core.ml: lm_thread_core_system.ml
 	$(symlink $<, $@)
 else
-    lm_threads.ml: lm_threads_null.ml
+    lm_thread_core.ml: lm_thread_core_null.ml
 	$(symlink $<, $@)
 
 #

@@ -1,5 +1,5 @@
 (*
- * Our personal implementation of threads.
+ * An null implementation of threads.
  *
  * ----------------------------------------------------------------
  *
@@ -24,16 +24,11 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-module type MutexSig =
-sig
-   type t
 
-   val create : unit -> t
-   val lock : t -> unit
-   val unlock : t -> unit
-end
-
-module Mutex =
+(*
+ * Locks are not required when not using threads.
+ *)
+module MutexCore =
 struct
    type t = unit
 
@@ -43,22 +38,20 @@ struct
    let lock () =
       ()
 
+   let try_lock () =
+      false
+
    let unlock () =
       ()
 end
 
-module type ConditionSig =
-sig
-   type t
-
-   val create : unit -> t
-   val wait : t -> Mutex.t -> unit
-   val signal : t -> unit
-end
-
-module Condition =
+(*
+ * Conditions are not required when not using threads.
+ *)
+module ConditionCore =
 struct
    type t = unit
+   type mutex = MutexCore.t
 
    let create () =
       ()
@@ -70,22 +63,19 @@ struct
       ()
 end
 
-module type ThreadSig =
-sig
-   type t
-   type id
-   val create : ('a -> 'b) -> 'a -> t
-   val self : unit -> t
-   val id : t -> int
-end
-
-module Thread =
+(*
+ * Threads are null.  The create function doesn't work without
+ * threads, so raise an exception.
+ *)
+module ThreadCore =
 struct
    type t = unit
    type id = unit
 
+   let enabled = false
+
    let create f x =
-      raise (Invalid_argument "Lm_threads.Thread.create: threads are not enabled in this application")
+      raise (Invalid_argument "Lm_thread.Thread.create: threads are not enabled in this application")
 
    let self () =
       ()

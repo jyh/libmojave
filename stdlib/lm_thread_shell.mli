@@ -1,16 +1,10 @@
 (*
- * Useful utilities for threads.
+ * A simple process-id interface to threads.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * @begin[license]
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,27 +21,30 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
-open Lm_thread
+type pid = int
+
+val create : bool -> pid
+val set_pid : pid -> unit
+val get_pid : unit -> pid
+val get_pids : unit -> pid list
+val with_pid : pid -> ('a -> 'b) -> 'a -> 'b
+val with_current : ('a -> 'b) -> 'a -> 'b
 
 (*
- * Printer locking.
+ * Raises Failure if the string is not well-formed.
+ * Raises Not_found if the string is not a current pid.
  *)
-let print_lock = Mutex.create ()
+val pid_of_string : string -> pid
 
-let lock_printer () =
-   Mutex.lock print_lock
-
-let unlock_printer () =
-   flush stdout;
-   flush stderr;
-   Mutex.unlock print_lock
-
-(*
+(*!
+ * @docoff
+ *
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

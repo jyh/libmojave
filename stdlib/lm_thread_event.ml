@@ -32,7 +32,7 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_threads
+open Lm_thread
 
 (************************************************************************
  * TYPES                                                                *
@@ -120,9 +120,11 @@ let alloc_lock, free_lock =
 let global_lock = Mutex.create ()
 
 let sync_lock () =
+   eprintf "Lm_thread_event.lock@.";
    Mutex.lock global_lock
 
 let sync_unlock () =
+   eprintf "Lm_thread_event.unlock@.";
    Mutex.unlock global_lock
 
 let sync_wait lock =

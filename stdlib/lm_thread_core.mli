@@ -24,75 +24,11 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-module type MutexSig =
-sig
-   type t
+open Lm_thread_sig
 
-   val create : unit -> t
-   val lock : t -> unit
-   val unlock : t -> unit
-end
-
-module Mutex =
-struct
-   type t = unit
-
-   let create () =
-      ()
-
-   let lock () =
-      ()
-
-   let unlock () =
-      ()
-end
-
-module type ConditionSig =
-sig
-   type t
-
-   val create : unit -> t
-   val wait : t -> Mutex.t -> unit
-   val signal : t -> unit
-end
-
-module Condition =
-struct
-   type t = unit
-
-   let create () =
-      ()
-
-   let wait _ _ =
-      ()
-
-   let signal () =
-      ()
-end
-
-module type ThreadSig =
-sig
-   type t
-   type id
-   val create : ('a -> 'b) -> 'a -> t
-   val self : unit -> t
-   val id : t -> int
-end
-
-module Thread =
-struct
-   type t = unit
-   type id = unit
-
-   let create f x =
-      raise (Invalid_argument "Lm_threads.Thread.create: threads are not enabled in this application")
-
-   let self () =
-      ()
-
-   let id () =
-      0
-end
+module MutexCore     : MutexSig
+module ConditionCore : ConditionSig with type mutex = MutexCore.t
+module ThreadCore    : ThreadSig
 
 (*!
  * @docoff

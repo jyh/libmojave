@@ -35,17 +35,17 @@ lm_pervasives.ml: lm_pervasives.mlp lm_pervasives.h
 
 ifeq ($(THREADS_ENABLED),YES)
 
-lm_threads.ml: lm_threads_system.ml
+lm_thread_core.ml: lm_thread_core_system.ml
 	$(LN) $< $@
 else
 
-lm_threads.ml: lm_threads_null.ml
+lm_thread_core.ml: lm_threads_core_null.ml
 	$(LN) $< $@
 
 endif
 
 clean::
-	$(RM) lm_threads.ml
+	$(RM) lm_thread_core.ml
 
 #
 # Rules

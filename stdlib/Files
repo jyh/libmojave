@@ -3,7 +3,8 @@ STDLIB_MLZFILES =\
 	lm_dag_sig\
 	lm_linear_set_sig\
 	lm_map_sig\
-	lm_set_sig
+	lm_set_sig\
+	lm_thread_sig
 
 STDLIB_FILES =\
 	lm_debug\
@@ -27,9 +28,6 @@ STDLIB_FILES =\
 	lm_int_util\
 	lm_hashtbl_util\
 	lm_ref_util\
-	lm_threads\
-	lm_thread_util\
-	lm_thread_event\
 	lm_array_sig\
 	lm_large_array\
 	lm_large_array_weak\
@@ -48,6 +46,12 @@ STDLIB_FILES =\
 	lm_splay_table\
 	lm_string_set\
 	lm_int_set\
+	lm_thread_sig\
+	lm_thread_core\
+	lm_thread\
+	lm_thread_util\
+	lm_thread_event\
+	lm_thread_shell\
 	lm_array_linear_set\
 	lm_splay_linear_set\
 	lm_index\
