@@ -28,6 +28,6 @@ if $(equal $(FORMAT), Lm_format)
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
 
 clean:
-    $(CLEAN)
+    $(CLEAN) lm_pervasives.ml
 
 all: lmstdlib$(LIB_SUFFIX)
