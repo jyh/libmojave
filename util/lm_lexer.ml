@@ -327,6 +327,8 @@ struct
    (*
     * A simplified regular expression.
     *)
+
+   (* %%MAGICBEGIN%% *)
    type regex =
       RegexAnySymbol
     | RegexSymbol       of int list
@@ -491,6 +493,7 @@ struct
       { lex_exp         : exp;
         mutable lex_dfa : dfa option
       }
+   (* %%MAGICEND%% *)
 
    (*
     * When we are collecting an arg, it may be in several states.

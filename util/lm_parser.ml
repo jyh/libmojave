@@ -179,6 +179,8 @@ struct
     *    prod_rhs    : the right-hand-side
     *    prod_prec   : the precedence
     *)
+
+   (* %%MAGICBEGIN%% *)
    type prod =
       { prod_action  : action;
         prod_name    : var;
@@ -249,6 +251,8 @@ struct
       { parse_grammar     : grammar;
         mutable parse_pda : pda option
       }
+
+   (* %%MAGICEND%% *)
 
    (************************************************
     * Building the PDA.
