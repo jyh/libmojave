@@ -57,6 +57,12 @@ let new_number () =
       index
 
 (*
+ * Get the integer suffix.
+ *)
+let to_int (i, _) =
+   i
+
+(*
  * Mangle a string so it uses printable characters.
  *)
 let is_special s =
@@ -108,38 +114,28 @@ let stop s =
    eprintf "Bogus symbol %s@." s;
    false
 
+let char0 = Char.code '0'
+
 let add s =
-   0, s
+   let rec loop fact n i =
+      if i < 0 then
+         0, s
+      else
+         match s.[i] with
+            '_' ->
+               n, String.sub s 0 i
+          | '0'..'9' as c ->
+               loop (fact * 10) (n + fact * (Char.code c - char0)) (pred i)
+          | _ ->
+               n, String.sub s 0 (succ i)
+   in
+      loop 1 0 (String.length s - 1)
 
 let add_mangle s =
    add (mangle s)
 
 let reintern (_, s) =
    add s
-
-(*
- * Add a debugging symbol.
- *)
-let debug_add s =
-   try
-      let len = String.length s in
-      let i = String.rindex s '_' in
-      let j = int_of_string (String.sub s (i + 1) (len - i - 1)) in
-      let s = String.sub s 0 i in
-         j, s
-   with
-      Not_found
-    | Failure _ ->
-         add s
-
-(*
- * Get the symbol name.
- *)
-let to_string (_, s) =
-   s
-
-let to_int (i, _) =
-   i
 
 (*
  * Create a new symbol.
@@ -191,7 +187,13 @@ let string_of_symbol = function
    (0, s) ->
       s
  | (i, s) ->
-      Printf.sprintf "%s_%05d" s i
+      let len = String.length s in
+         if len = 0 then
+            "_" ^ string_of_int i
+         else if Lm_string_util.is_digit s.[pred len] then
+            s ^ "_" ^ string_of_int i
+         else
+            s ^ string_of_int i
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
@@ -241,7 +243,7 @@ let string_of_ext_symbol (i, s) =
       if i = 0 then
          s
       else
-         Printf.sprintf "%s_%05d" s i
+         Printf.sprintf "%s%d" s i
    in
       if has_special_char s then
          Printf.sprintf "`\"%s\"" s

@@ -52,17 +52,12 @@ val is_interned : symbol -> bool
 val reintern : symbol -> symbol
 
 (*
- * Adding for debugging.
- * Don't use this normally.
- *)
-val debug_add : string -> symbol
-
-(*
  * Make a new symbol.
  *)
 val new_symbol : symbol -> symbol
 val new_symbol_pre : string -> symbol -> symbol
 val new_symbol_string : string -> symbol
+val to_int : symbol -> int
 
 (*
  * Find a symbol for which the predicate is false.
@@ -72,8 +67,6 @@ val new_name : symbol -> (symbol -> bool) -> symbol
 (*
  * Get back the string.
  *)
-val to_int : symbol -> int
-val to_string : symbol -> string
 val string_of_symbol : symbol -> string
 val string_of_ext_symbol : symbol -> string
 

@@ -12,7 +12,7 @@ LMFILES := $(STDLIB_FILES)
 LMIFILES := $(STDLIB_FILES)
 
 # Name of library
-MAIN := lmstdlib
+MAIN := lmlib
 
 INSTALL_LIBS := $(MAIN)
 

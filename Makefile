@@ -48,11 +48,11 @@ include stdlib/Files
 #
 # Optimization
 #
-NAML_STDLIB_CMXFILES := $(addprefix stdlib/, $(addsuffix .cmx, $(NAML_STDLIB_FILES)))
-UTIL_CMXFILES        := $(addprefix util/,   $(addsuffix .cmx, $(UTIL_FILES)))
+STDLIB_CMXFILES := $(addprefix stdlib/, $(addsuffix .cmx, $(STDLIB_FILES)))
+UTIL_CMXFILES   := $(addprefix util/,   $(addsuffix .cmx, $(UTIL_FILES)))
 
 CMXFILES :=\
-	$(NAML_STDLIB_CMXFILES)\
+	$(STDLIB_CMXFILES)\
 	$(UTIL_CMXFILES)
 
 #
@@ -71,7 +71,7 @@ $(MAINLIB).cmxa: $(CMXFILES)
 #
 lib:
 	+ @for i in $(ADIRS); do\
-		if (echo Making $(DIR)/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making $(DIR)/$$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 optlib:

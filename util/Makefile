@@ -13,7 +13,7 @@ LMFILES := $(UTIL_FILES)
 LMIFILES := $(UTIL_FILES)
 
 # Name of library
-MAIN := lmutil
+MAIN := lmlib
 
 INSTALL_LIBS := $(MAIN)
 
