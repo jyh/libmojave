@@ -132,6 +132,7 @@ type ('elt, 'data, 'table) table_methods =
      not_mem_filt : 'table -> 'elt list -> 'elt list;
      intersectp : 'table -> 'table -> bool;
      of_list : ('elt * 'data list) list -> 'table;
+	  deletemax : 'table -> ('elt * 'data list * 'table);
 
      (* Debugging *)
      print : 'table -> unit
@@ -187,6 +188,7 @@ sig
    val remove : t -> elt -> t
    val iter : (elt -> data -> unit) -> t -> unit
    val map : (elt -> data -> data) -> t -> t
+	val deletemax : t -> (elt * data list * t)
    val print : t -> unit
 end
 

@@ -545,6 +545,11 @@ let create
             fst_mem_filt s t
    in
 
+   let deletemax t =
+		let k,d,t'=lift_right !t in
+		k,d,ref t'
+	in
+
    (*
     * Debugging.
     *)
@@ -586,6 +591,7 @@ let create
         not_mem_filt = not_mem_filt;
         intersectp = intersectp;
         of_list = of_list;
+		  deletemax = deletemax;
         print = print
       }
 
