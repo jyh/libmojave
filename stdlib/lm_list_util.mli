@@ -58,7 +58,7 @@ val fold_left : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
  * Find the element that satisfies a predicate
  *)
 val find : ('a -> bool) -> 'a list -> 'a
-(* Now find its inxed *)
+(* Now find its index *)
 val find_item : ('a -> bool) -> 'a list -> int
 (* By equality *)
 val find_index : 'a -> 'a list -> int
