@@ -155,19 +155,6 @@ let strip_suffixes name =
             name
 
 (*
- * Get the name, without the directory.
- *)
-let tail name =
-   let start =
-      try String.rindex name '/' with
-         Not_found ->
-            try String.rindex name '\\' with
-               Not_found ->
-                  0
-   in
-      String.sub name start (String.length name - start)
-
-(*
  * Pathname separator chars.
  *)
 let separators = "/\\"

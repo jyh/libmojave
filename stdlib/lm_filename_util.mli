@@ -80,7 +80,6 @@ val split : string -> string * string
  * Get the name without suffix.
  *)
 val root : string -> string
-val tail : string -> string
 val strip_suffixes : string -> string
 
 
