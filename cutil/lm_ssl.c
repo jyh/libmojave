@@ -270,7 +270,7 @@ value lm_ssl_socket(value v_keyfile)
     }
 
     /* Allow the address to be reused */
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *) &one, sizeof(one));
 
     return ssl_info_new(SSL_INFO_MASTER, s, context, 0);
 }
@@ -293,7 +293,7 @@ value lm_ssl_serve(value v_fd, value v_keyfile, value v_dhfile)
     s = Int_val(v_fd);
 
     /* Allow the address to be reused */
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *) &one, sizeof(one));
 
     /* Allocate the context */
     v_info = ssl_info_new(SSL_INFO_MASTER, s, context, 0);
