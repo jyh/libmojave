@@ -758,15 +758,6 @@ struct
     | LookAheadProp of IVarSet.t
 
    (*
-    * A head summary is a summary of the
-    * transition function and lookaheads for a production.
-    *)
-   type head_info =
-      { head_delta     : ProdItemSet.t IVarTable.t;
-        head_lookahead : lookahead IVarTable.t
-      }
-
-   (*
     * The info for constructing the PDA.
     *    info_gram     : the grammar
     *    info_nullable : the nonterminals that derive epsilon
@@ -779,7 +770,8 @@ struct
         info_prec                : precedence IVarTable.t;
         info_nullable            : IVarSet.t;
         info_first               : IVarSet.t IVarTable.t;
-        info_head_table          : head_info IVarTable.t;
+        info_head_delta          : ProdItemSet.t IVarTable.t IVarTable.t;
+        info_head_lookahead      : lookahead IVarTable.t IVarTable.t;
         info_eof                 : IVar.t;
         info_hash                : hash_state
       }
@@ -833,7 +825,8 @@ struct
     *)
    type info_item =
       { info_item_index   : int;
-        info_item_closure : IVarSet.t;
+        info_item_empties : prop_entry list;
+        info_item_closure : prop_entry list;
         info_item_entries : prop_entry array
       }
 
@@ -891,11 +884,11 @@ struct
             prod_right  = right
           } = item
       in
-         fprintf buf "%a[%a]    %a ::= %a" (**)
-            pp_print_action action
-            (Precedence.pp_print_prec gram.gram_prec_table) pre
+         fprintf buf "@[<v 3>%a ::=%a [%a, %a]@]" (**)
             pp_print_var name
             pp_print_vars right
+            pp_print_action action
+            (Precedence.pp_print_prec gram.gram_prec_table) pre
 
    let pp_print_grammar buf gram =
       let { gram_prod = prods;
@@ -904,7 +897,7 @@ struct
             gram_start_symbols = starts
           } = gram
       in
-         fprintf buf "@[<hv 3>Grammar:";
+         fprintf buf "@[<v 3>Grammar:";
          VarTable.iter (fun v pre ->
                fprintf buf "@ prec %a = %a" (**)
                   pp_print_var v
@@ -939,15 +932,18 @@ struct
           } = item
       in
       let hash = info.info_hash in
-         fprintf buf "%a[%a]    %a ::=%a .%a" (**)
-            (pp_print_iaction hash) action
-            (Precedence.pp_print_prec info.info_grammar.gram_prec_table) pre
+         fprintf buf "%a ::=%a .%a (%a)" (**)
             (pp_print_ivar hash) name
             (pp_print_ivars hash) (List.rev left)
             (pp_print_ivars hash) right
+            (pp_print_iaction hash) action
 
    let pp_print_prod_item info buf item =
       pp_print_prod_item_core info buf (ProdItem.get info.info_hash.hash_prod_item_state item)
+
+   let pp_print_prod_item_set info buf items =
+      ProdItemSet.iter (fun item ->
+            fprintf buf "@ %a" (pp_print_prod_item info) item) items
 
    let pp_print_closure info buf closure =
       let gram = info.info_grammar in
@@ -958,7 +954,7 @@ struct
                   fprintf buf "@ @[<hv 3>%a@]" (pp_print_prod_item info) prod_item
                else
                   IVarSet.iter (fun v ->
-                        fprintf buf "@ @[<hv 3>%a # %a@]" (**)
+                        fprintf buf "@ @[<hv 3>%a@ @[<b 3>#%a@]@]" (**)
                            (pp_print_prod_item info) prod_item (pp_print_ivar hash) v) lookahead) closure;
          fprintf buf "@]"
 
@@ -977,7 +973,7 @@ struct
                      prop_vars = lookahead
                    } = entry
                in
-                  fprintf buf "@ %a @[<b 2>#%a@]" (pp_print_prod_item info) prod_item (pp_print_ivar_set hash) lookahead) entries;
+                  fprintf buf "@ @[<hv 3>%a@ @[<b 2>#%a@]@]" (pp_print_prod_item info) prod_item (pp_print_ivar_set hash) lookahead) entries;
          fprintf buf "@]"
 
    let pp_print_info buf info =
@@ -989,7 +985,7 @@ struct
       in
          fprintf buf "@[<v 0>%a" pp_print_grammar gram;
          fprintf buf "@ @[<b 3>Nullable:%a@]" (pp_print_ivar_set hash) nullable;
-         fprintf buf "@ @[<hv 3>First:%a@]" (pp_print_ivar_table hash) first;
+         fprintf buf "@ @[<v 3>First:%a@]" (pp_print_ivar_table hash) first;
          fprintf buf "@]"
 
    let pp_print_lookahead hash buf look =
@@ -1000,39 +996,29 @@ struct
             fprintf buf "@[<b 3>prop%a@]" (pp_print_ivar_set hash) set
 
    (*
-    * Error messages.
+    * Print a transition table.
     *)
-   let shift_reduce_conflict info info_item actions v id prod_item =
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
-         eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
-            (pp_print_ivar hash) v
-            id
-            (pp_print_iaction hash) (ProdItem.get hash.hash_prod_item_state prod_item).prod_item_action;
-         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
-            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
-               (pp_print_info_item info) info_item
-               (pp_print_pda_actions hash) actions;
-         if not !debug_parse_conflict_is_warning then
-            raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
+   let pp_print_delta info buf delta =
+      let pp_print_ivar = pp_print_ivar info.info_hash in
+      let pp_print_prod_item_set = pp_print_prod_item_set info in
+         IVarTable.iter (fun v delta ->
+               fprintf buf "@ @[<v 3>%a ->" pp_print_ivar v;
+               IVarTable.iter (fun v item ->
+                     fprintf buf "@ @[<v 3>%a ->%a@]" pp_print_ivar v pp_print_prod_item_set item) delta;
+               fprintf buf "@]") delta
 
-   let reduce_reduce_conflict info info_item actions v action1 action2 =
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
-         eprintf "reduce/reduce conflict on %a: reduce %a, reduce %a@." (**)
-            (pp_print_ivar hash) v
-            (pp_print_iaction hash) action1
-            (pp_print_iaction hash) action2;
-         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
-            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
-               (pp_print_info_item info) info_item
-               (pp_print_pda_actions hash) actions;
-         if not !debug_parse_conflict_is_warning then
-            raise (Invalid_argument "Lm_parser.reduce_reduce_conflict:\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
+   (*
+    * Print the lookahead table.
+    *)
+   let pp_print_look_table info buf table =
+      let hash = info.info_hash in
+      let pp_print_ivar = pp_print_ivar hash in
+      let pp_print_lookahead = pp_print_lookahead hash in
+         IVarTable.iter (fun v table ->
+            fprintf buf "@ @[<v 3>%a ->" pp_print_ivar v;
+               IVarTable.iter (fun v look ->
+                     fprintf buf "@ %a -> %a" pp_print_ivar v pp_print_lookahead look) table;
+               fprintf buf "@]") table
 
    (************************************************************************
     * Grammar construction.
@@ -1171,17 +1157,6 @@ struct
                let precs = add_precs precs vars current_prec in
                   translate, precs, table, current_prec) (translate, prec1, table1, Precedence.prec_min) prec_list
       in
-(*
-         PrecTable.iter (fun pre1 pre2 ->
-               eprintf "Translate %d -> %d@." (Obj.magic pre1) (Obj.magic pre2)) translate;
-         eprintf "Pre: %d Table1: %d Table2: %d@." (**)
-            (IntTable.cardinal (Obj.magic table))
-            (IntTable.cardinal (Obj.magic table1))
-            (IntTable.cardinal (Obj.magic table2));
-         VarTable.iter (fun _ pre ->
-               eprintf "Checking precedence for %d@." (Obj.magic pre);
-               ignore (Precedence.assoc table pre)) precs;
- *)
          translate, precs, table
 
    (*
@@ -1263,7 +1238,7 @@ struct
          changed, gram
 
    (************************************************************************
-    * Initial PDA construction.
+    * Initial info for LALR(1) construction.
     *)
 
    (*
@@ -1434,9 +1409,12 @@ struct
     *    you can goto on v2,
     *    with the resulting items.
     *
-    * The lookahead gives a similar table.  It provides
-    * the lookahead if looking at v1, and hence v2, because
-    * v1 has an item that begins with v2.
+    * The pre-lookahead gives a similar table.  The entry
+    * (v1 -> v2 -> look) means:
+    *    For nonterminal v1, there is an item
+    *       . v2 right_2
+    *    where v2 is a nonterminal and
+    *       look = LOOKAHEAD(right_2)
     *)
 
    (*
@@ -1484,6 +1462,14 @@ struct
    (*
     * Solve the lookahead functions.
     * This is a fixpoint, but it should be pretty cheap.
+    *
+    * This flatten lookahead is defined as follows.
+    * The table has an entry (v1 -> v2 -> look) iff:
+    *    1. There is a derivation (v1 --> v2 right2)
+    *    2. v2 is a nonterminal
+    *    3. look = LOOKAHEAD(right2)
+    * The main issue is that right2 may be constructed from
+    * the right-hand-sides of several productions.
     *)
    let build_lookahead_item info table v =
       (* Fixpoint *)
@@ -1527,36 +1513,21 @@ struct
                let look_table = IVarTable.add look_table v lookaheads in
                   delta_table, look_table) (IVarTable.empty, IVarTable.empty) info.info_prod
       in
-      let now = time_print "Head items" start now in
-      let lookaheads = build_lookaheads info look_table in
-      let now = time_print "Lookaheads" start now in
-      let table =
-         IVarTable.mapi (fun v delta ->
-               { head_delta = delta;
-                 head_lookahead = IVarTable.find lookaheads v
-               }) delta_table
+      let () =
+         if !debug_parsegen then
+            eprintf "@[<v 3>Head table:@ @[<v 3>Delta:%a@]@ @[<v 3>Lookahead:%a@]@]@." (**)
+               (pp_print_delta info) delta_table
+               (pp_print_look_table info) look_table
       in
-         if !debug_parsegen then begin
-            let hash = info.info_hash in
-               eprintf "@[<v 3>Head table:";
-               IVarTable.iter (fun v head ->
-                     let { head_delta = delta;
-                           head_lookahead = look
-                         } = head
-                     in
-                        eprintf "@ @ @[<v 3>%a =" (pp_print_ivar hash) v;
-                        IVarTable.iter (fun v items ->
-                              eprintf "@ @[<hv 3>%a ->" (pp_print_ivar hash) v;
-                              ProdItemSet.iter (fun item ->
-                                    eprintf "@ %a" (pp_print_prod_item info) item) items;
-                              eprintf "@]") delta;
-                        eprintf "@]@ @[<v 3>Lookahead:";
-                        IVarTable.iter (fun v look ->
-                              eprintf "@ @[<b 3>%a = %a@]" (pp_print_ivar hash) v (pp_print_lookahead hash) look) look;
-                        eprintf "@]") table;
-               eprintf "@]@."
-         end;
-         now, table
+      let now = time_print "Head items" start now in
+      let look_table = build_lookaheads info look_table in
+      let () =
+         if !debug_parsegen then
+            eprintf "@[<v 3>Closed lookahead:%a@]@." (**)
+               (pp_print_look_table info) look_table
+      in
+      let now = time_print "Lookaheads" start now in
+         now, delta_table, look_table
 
    (************************************************
     * Producing the state table.
@@ -1568,28 +1539,29 @@ struct
     * containing the next states.
     *)
    let shift_items info items =
-      ProdItemSet.fold (fun delta prod_item ->
-            let core = ProdItem.get info.info_hash.hash_prod_item_state prod_item in
-            let { prod_item_left = left;
-                  prod_item_right = right
-                } = core
-            in
-               match right with
-                  v :: right ->
-                     let core =
-                        { core with prod_item_left = v :: left;
-                                    prod_item_right = right
-                        }
-                     in
-                     let item = ProdItem.create info.info_hash.hash_prod_item_state core in
-                        IVarTable.filter_add delta v (fun items ->
-                              match items with
-                                 Some items ->
-                                    ProdItemSet.add items item
-                               | None ->
-                                    ProdItemSet.singleton item)
-                | [] ->
-                     delta) IVarTable.empty items
+      let hash = info.info_hash.hash_prod_item_state in
+         ProdItemSet.fold (fun delta prod_item ->
+               let core = ProdItem.get hash prod_item in
+               let { prod_item_left = left;
+                     prod_item_right = right
+                   } = core
+               in
+                  match right with
+                     v :: right ->
+                        let core =
+                           { core with prod_item_left = v :: left;
+                                       prod_item_right = right
+                           }
+                        in
+                        let item = ProdItem.create hash core in
+                           IVarTable.filter_add delta v (fun items ->
+                                 match items with
+                                    Some items ->
+                                       ProdItemSet.add items item
+                                  | None ->
+                                       ProdItemSet.singleton item)
+                   | [] ->
+                        delta) IVarTable.empty items
 
    (*
     * Shift a closure, given the current state.
@@ -1602,10 +1574,10 @@ struct
             info_state_closure = next
           } = core
       in
-      let head_table = info.info_head_table in
+      let head_table = info.info_head_delta in
       let delta = shift_items info items in
          IVarSet.fold (fun delta v ->
-               let head_delta = (IVarTable.find head_table v).head_delta in
+               let head_delta = IVarTable.find head_table v in
                   IVarTable.fold (fun delta v items ->
                         IVarTable.filter_add delta v (fun current_items ->
                               match current_items with
@@ -1621,13 +1593,13 @@ struct
     * is at the front.
     *)
    let closure info items =
-      let head_table = info.info_head_table in
+      let look_table = info.info_head_lookahead in
       let closure =
          ProdItemSet.fold (fun closure item ->
                let core = ProdItem.get info.info_hash.hash_prod_item_state item in
                   match core.prod_item_right with
-                     v :: _ when IVarTable.mem head_table v ->
-                        let look = (IVarTable.find head_table v).head_lookahead in
+                     v :: _ when IVarTable.mem look_table v ->
+                        let look = IVarTable.find look_table v in
                            IVarTable.fold (fun closure v _ ->
                                  IVarSet.add closure v) (IVarSet.add closure v) look
                    | _ ->
@@ -1655,14 +1627,11 @@ struct
    (*
     * Compute the transition table, only for shift operations.
     *)
-   let shift_closure_count = ref 0
-
    let build_delta info unexamined =
       let prods = info.info_grammar.gram_prod in
 
       (* Perform the closure *)
       let rec build shift_table examined unexamined =
-         incr shift_closure_count;
          if StateTable.is_empty unexamined then
             shift_table, examined
          else
@@ -1746,7 +1715,8 @@ struct
       let state_count = IntTable.cardinal state_table in
       let info_item_none =
          { info_item_index = 0;
-           info_item_closure = IVarSet.empty;
+           info_item_empties = [];
+           info_item_closure = [];
            info_item_entries = [||]
          }
       in
@@ -1765,8 +1735,9 @@ struct
                in
                let prop_entry_array = Array.of_list (List.rev prop_entry_list) in
                let info_item =
-                  { info_item_index = state_index;
-                    info_item_closure = closure;
+                  { info_item_index   = state_index;
+                    info_item_empties = [];
+                    info_item_closure = [];
                     info_item_entries = prop_entry_array
                   }
                in
@@ -1779,54 +1750,73 @@ struct
     * We are looking at an item.
     *     item = left . v1 right
     *
-    * Suppose v is a nonterminal, and we have some derivation
-    * with head nonterminal v2.
+    * Suppose v1 is a nonterminal, and we have some derivation
+    * with head nonterminal v2 (perhaps v1 = v2, and right_1
+    * is empty).
     *
     *     v1 --> . v2 right_1
     *
     * Suppose v2 has the following production.
     *
-    *     v2 = X right_2
+    *     v2 = v3 right_2
     *
     * Then the goto(X) state contains an item:
     *
-    *     X . right_2
+    *     v3 . right_2
     *
     * We need to propagate lookaheads to this item.
+    * Propagate FIRST(right_2 right_1) as spontaneous
+    * lookaheads.  If NULLABLE(right_2 right_1), then
+    * propagate lookaheads from this item.
+    *
+    * By definition, the lookahead entry for v1 contains
+    * and entry (v2 -> look) for each nonterminal v2
+    * for which (v1 --> v2 right2), and "look" is the
+    * lookahead to be used in such a case.
+    *
+    * So the algorithm works as follows:
+    * Let look1 be LOOKAHEAD(right1):
+    *    For each entry (v2, look2) in the lookahead table:
+    *       For each transition (v2 -X-> X . right):
+    *          Add lookaheads (look2 look1) to the item "X . right"
     *)
-   let build_prop_head info prop_table state_table goto_table state_index prod_index v1 right1 =
+   let build_prop_head info prop_table state_table goto_table state_index prod_index prod_item v1 right1 =
       (* Look up the derivations for v *)
-      let head_info = IVarTable.find info.info_head_table v1 in
-      let { head_delta = head_delta;
-            head_lookahead = look_table
-          } = head_info
-      in
-      let look2 = lookahead info right1 in
-         IVarTable.fold (fun prop_items v2 items ->
-               ProdItemSet.fold (fun prop_items next_item ->
-                     (* Get the lookahead for the item *)
-                     let core = ProdItem.get info.info_hash.hash_prod_item_state next_item in
-                     let look1 = IVarTable.find look_table core.prod_item_name in
-                     let look = lookahead_concat look1 look2 in
-                     let prop, vars = lookahead_pair look in
+      let delta_table = info.info_head_delta in
+      let look_table = IVarTable.find info.info_head_lookahead v1 in
+      let look1 = lookahead info right1 in
+      let hash = info.info_hash.hash_prod_item_state in
+         IVarTable.fold (fun prop_items v2 look2 ->
+               let look = lookahead_concat look2 look1 in
+               let prop, vars = lookahead_pair look in
+               let delta = IVarTable.find delta_table v2 in
+                  IVarTable.fold (fun prop_items v3 items ->
+                        ProdItemSet.fold (fun prop_items next_item ->
+                              (* Add the edge *)
+                              let next_state_index = IVarTable.find goto_table v3 in
+                              let next_table, _ = IntTable.find state_table next_state_index in
+                              let next_item_index = ProdItemTable.find next_table next_item in
 
-                     (* Add the edge *)
-                     let next_state_index = IVarTable.find goto_table v2 in
-                     let next_table, _ = IntTable.find state_table next_state_index in
-                     let next_item_index = ProdItemTable.find next_table next_item in
+                              let () =
+                                 if !debug_parsegen then
+                                    eprintf "@[<hv 3>Prop %a@ %a ->@ %a@]@." (**)
+                                       (pp_print_prod_item info) prod_item
+                                       (pp_print_lookahead info.info_hash) look
+                                       (pp_print_prod_item info) next_item
+                              in
 
-                     (* Add the edge if we need to propagate *)
-                     let prop_items =
-                        if prop then
-                           (next_state_index, next_item_index) :: prop_items
-                        else
-                           prop_items
-                     in
+                              (* Add the edge if we need to propagate *)
+                              let prop_items =
+                                 if prop then
+                                    (next_state_index, next_item_index) :: prop_items
+                                 else
+                                    prop_items
+                              in
 
-                     (* Initial propagation *)
-                     let prop_entry = prop_table.(next_state_index).info_item_entries.(next_item_index) in
-                        prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars vars;
-                        prop_items) prop_items items) [] head_delta
+                              (* Initial propagation *)
+                              let prop_entry = prop_table.(next_state_index).info_item_entries.(next_item_index) in
+                                 prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars vars;
+                                 prop_items) prop_items items) prop_items delta) [] look_table
 
    (*
     * Add the propagation info for all the items in a state.
@@ -1856,7 +1846,7 @@ struct
                         (* If v is a nonterminal, then also propagate to initial items *)
                         let prop_items =
                            if IVarTable.mem prods v then
-                              build_prop_head info prop_table state_table goto_table state_index prod_index v right
+                              build_prop_head info prop_table state_table goto_table state_index prod_index prod_item v right
                            else
                               []
                         in
@@ -1900,7 +1890,8 @@ struct
       let eof_set = IVarSet.singleton info.info_eof in
          IVarTable.iter (fun _ state_index ->
                Array.iter (fun prop_entry ->
-                     prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars eof_set) prop_table.(state_index).info_item_entries) start_table
+                     prop_entry.prop_vars <- IVarSet.union prop_entry.prop_vars eof_set) (**)
+                  prop_table.(state_index).info_item_entries) start_table
 
    (*
     * The fixpoint is a forward-dataflow problem.
@@ -2049,18 +2040,19 @@ struct
            info_prec            = prec_table;
            info_nullable        = nullable;
            info_first           = first;
-           info_head_table      = IVarTable.empty;
-
            info_eof             = IVar.create hash.hash_ivar_state Arg.eof;
-           info_hash            = hash
+           info_hash            = hash;
+
+           (* Temporary placeholders *)
+           info_head_delta      = IVarTable.empty;
+           info_head_lookahead  = IVarTable.empty
          }
       in
-      let now, head_table = build_head_table info start now in
+      let now, head_delta, head_lookahead = build_head_table info start now in
       let now = time_print "Head table" start now in
       let info =
-         { info with info_nullable   = nullable;
-                     info_first      = first;
-                     info_head_table = head_table
+         { info with info_head_delta     = head_delta;
+                     info_head_lookahead = head_lookahead
          }
       in
          now, info
@@ -2074,28 +2066,144 @@ struct
     *)
    let empty_productions info =
       let hash = info.info_hash.hash_prod_item_state in
-         IVarTable.fold (fun empty v items ->
-               let empty_flag =
-                  List.exists (fun item ->
+         IVarTable.fold (fun empties v items ->
+               let rec search items =
+                  match items with
+                     item :: items ->
                         let core = ProdItem.get hash item in
+                        let empty_flag =
                            match core with
                               { prod_item_left = []; prod_item_right = [] } ->
                                  true
                             | _ ->
-                                 false) items
+                                 false
+                        in
+                           if empty_flag then
+                              IVarTable.add empties v item
+                           else
+                              search items
+                   | [] ->
+                        empties
                in
-                  if empty_flag then
-                     IVarSet.add empty v
-                  else
-                     empty) IVarSet.empty info.info_prod
+                  search items) IVarTable.empty info.info_prod
 
    (*
     * Get the empty productions associated with a state.
     *)
-   let find_empty_productions info empties state =
-      let { info_item_closure = closure } = state in
-      let empties = IVarSet.inter empties closure in
-         true
+   let find_empty_productions info empties entries =
+      let { info_head_lookahead = look_table } = info in
+      let hash = info.info_hash.hash_prod_item_state in
+      let prods =
+         Array.fold_left (fun prods entry ->
+               let { prop_prod_item = item;
+                     prop_vars = look3
+                   } = entry
+               in
+               let core = ProdItem.get hash item in
+                  match core.prod_item_right with
+                     v :: right when IVarTable.mem look_table v ->
+                        let look_table = IVarTable.find look_table v in
+                        let look2 = lookahead_concat (lookahead info right) (LookAheadConst look3) in
+                        let prods =
+                           if IVarTable.mem empties v then
+                              IVarTable.add prods v look2
+                           else
+                              prods
+                        in
+                           IVarTable.fold (fun prods v look1 ->
+                                 if IVarTable.mem empties v then
+                                    let look = lookahead_concat look1 look2 in
+                                       IVarTable.filter_add prods v (fun current_look ->
+                                             match current_look with
+                                                Some current_look ->
+                                                   lookahead_union current_look look
+                                              | None ->
+                                                   look)
+                                 else
+                                    prods) prods look_table
+                   | _ ->
+                        prods) IVarTable.empty entries
+      in
+         (* Now create the prod_entries *)
+         IVarTable.fold (fun empty v look ->
+               let item = IVarTable.find empties v in
+               let _, look = lookahead_pair look in
+               let entry =
+                  { prop_prod_item = item;
+                    prop_changed = false;
+                    prop_vars = look
+                  }
+               in
+                  entry :: empty) [] prods
+
+   (*
+    * !!!DEBUGGING/PRINTING ONLY!!!
+    * Add the complete closure to the item.
+    *)
+   let close_item info info_item =
+      let { info_head_delta = delta_table;
+            info_head_lookahead = look_table
+          } = info
+      in
+      let { info_item_index = state_index;
+            info_item_entries = entries
+          } = info_item
+      in
+      let hash = info.info_hash.hash_prod_item_state in
+         Array.fold_left (fun closure entry ->
+               let { prop_prod_item = prod_item;
+                     prop_vars = look_vars
+                   } = entry
+               in
+               let core = ProdItem.get hash prod_item in
+                  match core.prod_item_right with
+                     v :: right when IVarTable.mem look_table v ->
+                        let look_table = IVarTable.find look_table v in
+                           IVarTable.fold (fun closure v look1 ->
+                                 let look2 = lookahead_concat (lookahead info right) (LookAheadConst look_vars) in
+                                    IVarTable.filter_add closure v (fun look1 ->
+                                          match look1 with
+                                             Some look1 ->
+                                                lookahead_concat look1 look2
+                                           | None ->
+                                                look2)) closure look_table
+                   | _ ->
+                        closure) IVarTable.empty entries
+
+   (*
+    * Error messages.
+    *)
+   let shift_reduce_conflict info info_item actions v id prod_item =
+      let { info_grammar = gram;
+            info_hash = hash
+          } = info
+      in
+         eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
+            (pp_print_ivar hash) v
+            id
+            (pp_print_iaction hash) (ProdItem.get hash.hash_prod_item_state prod_item).prod_item_action;
+         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
+               (pp_print_info_item info) info_item
+               (pp_print_pda_actions hash) actions;
+         if not !debug_parse_conflict_is_warning then
+            raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
+
+   let reduce_reduce_conflict info info_item actions v action1 action2 =
+      let { info_grammar = gram;
+            info_hash = hash
+          } = info
+      in
+         eprintf "reduce/reduce conflict on %a: reduce %a, reduce %a@." (**)
+            (pp_print_ivar hash) v
+            (pp_print_iaction hash) action1
+            (pp_print_iaction hash) action2;
+         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
+               (pp_print_info_item info) info_item
+               (pp_print_pda_actions hash) actions;
+         if not !debug_parse_conflict_is_warning then
+            raise (Invalid_argument "Lm_parser.reduce_reduce_conflict:\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
    (*
     * If a state has only one production,
@@ -2148,7 +2256,7 @@ struct
                         let cmp =
                            try Precedence.compare prec_table prec_name (IVarTable.find var_prec_table v) with
                               Not_found ->
-                              0
+                                 0
                         in
                            if cmp < 0 then
                               actions
@@ -2178,13 +2286,23 @@ struct
    (*
     * Compute the reduce actions.
     *)
-   let reduce info trans_table states =
+   let reduce info empties trans_table states =
       Array.fold_left (fun trans_table info_item ->
             let { info_item_index = index;
                   info_item_entries = prop_entries
                 } = info_item
             in
             let actions = IntTable.find trans_table index in
+            let empties = find_empty_productions info empties prop_entries in
+            let info_item = { info_item with info_item_empties = empties } in
+            let actions =
+               List.fold_left (fun actions prop_entry ->
+                     let { prop_prod_item = prod_item;
+                           prop_vars = lookahead
+                         } = prop_entry
+                     in
+                        reduce_action info info_item actions prod_item lookahead) actions empties
+            in
             let actions =
                Array.fold_left (fun actions prop_entry ->
                      let { prop_prod_item = prod_item;
@@ -2249,7 +2367,8 @@ struct
       let now = start in
       let now, info = info_of_grammar gram start now in
       let now, start_table, trans_table, states = build_lalr_table info start now in
-      let trans_table = reduce info trans_table states in
+      let empty_table = empty_productions info in
+      let trans_table = reduce info empty_table trans_table states in
       let now = time_print "Shift/reduce table" start now in
 
       (* Build the PDA states *)
