@@ -55,6 +55,7 @@ val union_loc : loc -> loc -> loc
  * Print a file location.
  *)
 val pp_print_location : out_channel -> loc -> unit
+val string_of_location : loc -> string
 
 (*!
  * @docoff
