@@ -180,10 +180,10 @@ let default_writer fd buf off len =
 (*
  * Readers and writers for string channels.
  *)
-let null_reader buf off len =
+let null_reader _ _ _ =
    0
 
-let null_writer buf off len =
+let null_writer _ _ _ =
    0
 
 (*
@@ -299,7 +299,7 @@ let set_binary_mode =
    if Sys.os_type = "Win32" then
       (fun info flag -> info.channel_binary <- flag)
    else
-      (fun info _ -> ())
+      (fun _ _ -> ())
 
 let set_io_functions info reader writer =
    info.read_fun <- reader;
@@ -355,7 +355,7 @@ let squash_text buffer off amount =
                '\r' when string_get buffer (succ src) = '\n' ->
                   string_set buffer dst '\n';
                   copy2 (succ dst) (src + 2)
-             | c ->
+             | _ ->
                   string_set buffer dst (string_get buffer src);
                   copy2 (succ dst) (succ src)
       in
@@ -463,33 +463,23 @@ let flush_input info =
  * Start the write buffer.
  *)
 let setup_write_buffer info =
-   let { write_index    = windex;
-         write_max      = wmax;
-         write_buffer   = wbuffer;
-         out_max        = omax;
-         out_buffer     = obuffer;
-         channel_binary = binary
-       } = info
-   in
-      if wmax = 0 then
-         if binary then
-            begin
-               info.write_index <- 0;
-               info.write_max <- omax
-            end
-         else
-            let wmax = expand_text obuffer omax wbuffer in
-               info.write_index <- 0;
-               info.write_max <- wmax
-
+   if info.write_max = 0 then
+      if info.channel_binary then
+         begin
+            info.write_index <- 0;
+            info.write_max <- info.out_max
+         end
+      else
+         let wmax = expand_text info.out_buffer info.out_max info.write_buffer in
+            info.write_index <- 0;
+            info.write_max <- wmax
 
 (*
  * Flush the buffer, but write only once.
  *)
 let flush_output_once info =
-   let () = setup_write_buffer info in
-   let { channel_fd   = fd;
-         write_index  = off;
+   setup_write_buffer info;
+   let { write_index  = off;
          write_max    = max;
          write_buffer = buf;
          write_fun    = write
@@ -506,9 +496,8 @@ let flush_output_once info =
  * Flush the buffer.
  *)
 let flush_aux info =
-   let () = setup_write_buffer info in
-   let { channel_fd = fd;
-         write_buffer = buf;
+   setup_write_buffer info;
+   let { write_buffer = buf;
          write_fun  = writer
        } = info
    in
@@ -673,7 +662,6 @@ let rec input_char info =
    let { in_index = index;
          in_max = max;
          in_buffer = buf;
-         channel_binary = binary
        } = info
    in
       flush_output info;
@@ -758,8 +746,7 @@ let input_entire_line info =
  * Read allows for partial reading.
  *)
 let read info s off len =
-   let { channel_fd = fd;
-         in_index = index;
+   let { in_index = index;
          in_max = max;
          in_buffer = buf;
          read_fun = reader
@@ -800,8 +787,7 @@ let seek info pos whence =
  * Get the current location.
  *)
 let loc info =
-   let { in_max = in_max;
-         out_max = out_max;
+   let { out_max = out_max;
          in_index = in_index;
          in_buffer = in_buffer;
          out_buffer = out_buffer;
@@ -1008,8 +994,7 @@ struct
     * Start lex mode.
     *)
    let lex_start channel =
-      let { in_max = max;
-            in_index = index;
+      let { in_index = index;
             in_buffer = buffer
           } = channel
       in

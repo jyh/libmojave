@@ -55,7 +55,7 @@ let blocking_section f x =
 (*
  * Start a thread doing something.
  *)
-let create f =
+let create _ =
    raise (Invalid_argument "Lm_thread_pool_null.create: threads are not enabled")
 
 (*
