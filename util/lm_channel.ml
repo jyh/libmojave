@@ -304,45 +304,58 @@ let set_io_functions info reader writer =
 (************************************************************************
  * Line envding translation.
  *)
+let debug_get s i =
+   eprintf "String.get: %d[%d]@." (String.length s) i;
+   String.get s i
+
+let debug_set s i c =
+   eprintf "String.set: %d[%d]@." (String.length s) i;
+   String.set s i c
+
+let string_get = String.unsafe_get
+let string_set = String.unsafe_set
+
 let rec expand_text obuffer omax wbuffer =
    assert (omax >= 0 && omax <= String.length obuffer && omax * 2 <= String.length wbuffer);
-   let rec copy src dst =
+   let rec copy1 src dst =
       if src = omax then
          dst
       else
-         match String.unsafe_get obuffer src with
+         match string_get obuffer src with
             '\n' ->
-               String.unsafe_set wbuffer dst '\r';
-               String.unsafe_set wbuffer (succ dst) '\n';
-               copy (succ src) (dst + 2)
+               string_set wbuffer dst '\r';
+               string_set wbuffer (succ dst) '\n';
+               copy1 (succ src) (dst + 2)
           | c ->
-               String.unsafe_set wbuffer dst c;
-               copy (succ src) (succ dst)
+               string_set wbuffer dst c;
+               copy1 (succ src) (succ dst)
    in
-      copy 0 0
+      copy1 0 0
 
 let squash_text buffer off amount =
-   assert (off >= 0 && amount >= 0 && off + amount < String.length buffer);
+   assert (off >= 0 && amount >= 0 && off + amount <= String.length buffer);
    if amount = 0 then
       0
    else
-      let plength = off + amount - 1 in
-      let rec copy dst src =
-         if src = plength then
+      let max = off + amount in
+      let rec copy2 dst src =
+         if src = max then
+            dst - off
+         else if src = max - 1 then
             begin
-               String.unsafe_set buffer dst (String.unsafe_get buffer src);
+               string_set buffer dst (string_get buffer src);
                succ dst - off
             end
          else
-            match String.unsafe_get buffer src with
-               '\r' when String.unsafe_get buffer (succ src) = '\n' ->
-                  String.unsafe_set buffer dst '\n';
-                  copy (succ dst) (src + 2)
+            match string_get buffer src with
+               '\r' when string_get buffer (succ src) = '\n' ->
+                  string_set buffer dst '\n';
+                  copy2 (succ dst) (src + 2)
              | c ->
-                  String.unsafe_set buffer dst (String.unsafe_get buffer src);
-                  copy (succ dst) (succ src)
+                  string_set buffer dst (string_get buffer src);
+                  copy2 (succ dst) (succ src)
       in
-         copy off off
+         copy2 off off
 
 (************************************************************************
  * Line numbers.
