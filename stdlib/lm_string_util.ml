@@ -167,6 +167,8 @@ let c_escaped s =
             match c with
                '"' ->
                   Buffer.add_string buf "\\\""
+             | '\\' ->
+                  Buffer.add_string buf "\\\\"
              | ' '..'~' ->
                   Buffer.add_char buf c
              | _ ->
@@ -195,6 +197,8 @@ let js_escaped s =
             match c with
                '\'' ->
                   Buffer.add_string buf "\\'"
+             | '\\' ->
+                  Buffer.add_string buf "\\\\"
              | ' '..'~' ->
                   Buffer.add_char buf c
              | _ ->
