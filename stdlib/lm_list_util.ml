@@ -715,12 +715,6 @@ let rec nth l i =
             raise (Failure "Lm_list_util.nth")
 
 (*
- * Inherited.
- *)
-let allp = List.for_all
-let existsp = List.exists
-
-(*
  * Map a function over two lists.
  *)
 let rec map2 f l1 l2 = match (l1,l2) with

@@ -178,8 +178,6 @@ val compare_cmp : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
  * but they raise Failure, not Invalid_argument.
  *)
 val nth : 'a list -> int -> 'a
-val allp : ('a -> bool) -> 'a list -> bool
-val existsp : ('a -> bool) -> 'a list -> bool
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
