@@ -36,23 +36,20 @@ open Lm_debug
 let debug_symbol = ref false
 
 (*
- * We use a hashtable to manage symbols we have seen.
+ * We no longer use a hashtable.
+ * Symbols with a 0 index are interned.
  *)
 type symbol = int * string
 type var = symbol
 
 type t =
-   { hash : (string, symbol) Hashtbl.t;
-     mutable count : int
-   }
+   { mutable count : int }
 
 (*
  * A new symbol table.
  *)
 let table =
-   { hash = Hashtbl.create 19;
-     count = 100
-   }
+   { count = 100 }
 
 let new_number () =
    let index = succ table.count in
@@ -112,14 +109,7 @@ let stop s =
    false
 
 let add s =
-   (* assert (if (is_special s) then stop s else true); *)
-   try Hashtbl.find table.hash s with
-      Not_found ->
-         let index = succ table.count in
-         let symbol = index, s in
-            table.count <- index;
-            Hashtbl.add table.hash s symbol;
-            symbol
+   0, s
 
 let add_mangle s =
    add (mangle s)
@@ -189,29 +179,19 @@ let new_name (_, v) pred =
 (*
  * Check if the symbol is in the table.
  *)
-let is_interned (i, s) =
-   try
-      let i', _ = Hashtbl.find table.hash s in
-         i' = i
-   with
-      Not_found ->
-         false
+let is_interned (i, _) =
+   i = 0
 
 (*
  * Printer.
  * If the symbol is not a defined symbol,
  * print the index.
  *)
-let string_of_symbol (i, s) =
-   try
-      let i', _ = Hashtbl.find table.hash s in
-         if i' = i then
-            s
-         else
-            Printf.sprintf "%s_%05d" s i
-   with
-      Not_found ->
-         Printf.sprintf "%s_%05d" s i
+let string_of_symbol = function
+   (0, s) ->
+      s
+ | (i, s) ->
+      Printf.sprintf "%s_%05d" s i
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
@@ -258,15 +238,10 @@ let string_of_ext_symbol (i, s) =
             true
    in
    let s =
-      try
-         let i', _ = Hashtbl.find table.hash s in
-            if i' = i then
-               s
-            else
-               Printf.sprintf "%s_%05d" s i
-      with
-         Not_found ->
-            Printf.sprintf "%s_%05d" s i
+      if i = 0 then
+         s
+      else
+         Printf.sprintf "%s_%05d" s i
    in
       if has_special_char s then
          Printf.sprintf "`\"%s\"" s
@@ -279,18 +254,17 @@ let pp_print_ext_symbol buf v =
 (*
  * Compare for equality.
  *)
-let eq (i1, _) (i2, _) =
-   i1 = i2
+let eq (s1 : symbol) (s2 : symbol) =
+   s1 = s2
 
-let compare (i1, _) (i2, _) =
-   i1 - i2
+let compare = Pervasives.compare
 
 (*
  * Compare pair of symbols for equality.
  *)
 let compare_pair (s1, s2) (s1', s2') =
    let res = compare s1 s1' in
-   if (res = 0) then
+   if res = 0 then
       compare s2 s2'
    else
       res
@@ -300,7 +274,7 @@ let compare_pair (s1, s2) (s1', s2') =
  *)
 let compare_triple (s1, s2, s3) (s1', s2', s3') =
    let res = compare_pair (s1, s2) (s1, s2') in
-   if (res = 0) then
+   if res = 0 then
       compare s3 s3'
    else
       res
