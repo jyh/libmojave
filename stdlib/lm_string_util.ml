@@ -439,7 +439,10 @@ let prepend sep sl =
       Buffer.add_string scratch_buf s
    in
       Buffer.clear scratch_buf;
-      List.iter collect sl;
+      if sl = [] then
+         Buffer.add_string scratch_buf sep
+      else
+         List.iter collect sl;
       Buffer.contents scratch_buf
 
 (*

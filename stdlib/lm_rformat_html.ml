@@ -134,7 +134,7 @@ let html_tab buf (col, _) _ =
             else
                String.sub tabline 0 col
          in
-         let spacer = Printf.sprintf "<font color=white style=\"visibility:hidden\">%s</font>" prefix in
+         let spacer = Printf.sprintf "<span style=\"visibility:hidden\">%s</span>" prefix in
             buf.html_prefix <- prefix;
             buf.html_print_newline ();
             buf.html_print_string "<br>\n";
