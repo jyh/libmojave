@@ -161,9 +161,7 @@ struct
       Red (_, Red _, _, _)
    |  Red (_, _, Red _, _) ->
          raise (Failure "Lm_set.check_red")
-   |  Red (_, left, right, _) ->
-         check_red left;
-         check_red right
+   |  Red (_, left, right, _)
     | Black (_, left, right, _) ->
          check_red left;
          check_red right
@@ -199,12 +197,7 @@ struct
     * Check that all the nodes are sorted.
     *)
    let rec check_sort_lt key = function
-      Black (key', left, right, _) ->
-         if Ord.compare key' key >= 0 then
-            raise (Failure "Lm_set.check_sort");
-         check_sort_lt key' left;
-         check_sort_gt_lt key' key right
-
+      Black (key', left, right, _)
     | Red (key', left, right, _) ->
          if Ord.compare key' key >= 0 then
             raise (Failure "Lm_set.check_sort");
@@ -215,12 +208,7 @@ struct
          ()
 
    and check_sort_gt key = function
-      Black (key', left, right, _) ->
-         if Ord.compare key' key <= 0 then
-            raise (Failure "Lm_set.check_sort");
-         check_sort_gt_lt key key' left;
-         check_sort_gt key right
-
+      Black (key', left, right, _)
     | Red (key', left, right, _) ->
          if Ord.compare key' key <= 0 then
             raise (Failure "Lm_set.check_sort");
@@ -231,12 +219,7 @@ struct
          ()
 
    and check_sort_gt_lt key key' = function
-      Black (key'', left, right, _) ->
-         if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
-            raise (Failure "Lm_set.check_sort");
-         check_sort_gt_lt key key'' left;
-         check_sort_gt_lt key'' key' right
-
+      Black (key'', left, right, _)
     | Red (key'', left, right, _) ->
          if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
             raise (Failure "Lm_set.check_sort");
@@ -986,8 +969,7 @@ struct
     * Get the elements of the list.
     *)
    let rec to_list_aux elements = function
-      Black (key, left, right, _) ->
-         to_list_aux (key :: to_list_aux elements right) left
+      Black (key, left, right, _)
     | Red (key, left, right, _) ->
          to_list_aux (key :: to_list_aux elements right) left
     | Leaf ->
@@ -1080,8 +1062,7 @@ struct
     * merges them, then creates a new tree.
     *)
    let rec union_aux s1 = function
-      Black (key, left, right, _) ->
-         union_aux (add (union_aux s1 left) key) right
+      Black (key, left, right, _)
     | Red (key, left, right, _) ->
          union_aux (add (union_aux s1 left) key) right
     | Leaf ->
@@ -1100,36 +1081,29 @@ struct
     *)
    let rec initial_path path node =
       match node with
-         Black (_, Leaf, _, _) ->
-            Left node :: path
+         Black (_, Leaf, _, _)
        | Red (_, Leaf, _, _) ->
             Left node :: path
-       | Black (_, left, _, _) ->
-            initial_path (Left node :: path) left
+       | Black (_, left, _, _)
        | Red (_, left, _, _) ->
             initial_path (Left node :: path) left
        | Leaf ->
             raise (Invalid_argument "initial_path")
 
    let key_of_path = function
-      Left (Black (key, _, _, _)) :: _ ->
-         key
-    | Left (Red (key, _, _, _)) :: _ ->
-         key
-    | Right (Black (key, _, _, _)) :: _ ->
-         key
+      Left (Black (key, _, _, _)) :: _
+    | Left (Red (key, _, _, _)) :: _
+    | Right (Black (key, _, _, _)) :: _
     | Right (Red (key, _, _, _)) :: _ ->
          key
     | _ ->
          raise (Invalid_argument "key_of_path")
 
    let rec next_path = function
-      Left (Black (_, _, Leaf, _)) :: path ->
-         next_path path
+      Left (Black (_, _, Leaf, _)) :: path
     | Left (Red (_, _, Leaf, _)) :: path ->
          next_path path
-    | Left (Black (_, _, right, _)) :: path ->
-         initial_path path right
+    | Left (Black (_, _, right, _)) :: path
     | Left (Red (_, _, right, _)) :: path ->
          initial_path path right
     | Right  _ :: path ->
@@ -1173,15 +1147,7 @@ struct
     * Search without reorganizing the tree.
     *)
    let rec mem t key = match t with
-      Black (key', left, right, _) ->
-         let comp = Ord.compare key key' in
-            if comp = 0 then
-               true
-            else if comp < 0 then
-               mem left key
-            else
-               mem right key
-
+      Black (key', left, right, _)
     | Red (key', left, right, _) ->
          let comp = Ord.compare key key' in
             if comp = 0 then
@@ -1212,10 +1178,7 @@ struct
     * Iterate a function over the hashtable.
     *)
    let rec iter f = function
-      Black (key, left, right, _) ->
-         iter f left;
-         f key;
-         iter f right
+      Black (key, left, right, _)
     | Red (key, left, right, _) ->
          iter f left;
          f key;
@@ -1458,9 +1421,7 @@ struct
       fst (XSet.partition f s)
 end
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"
