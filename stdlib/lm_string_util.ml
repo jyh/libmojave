@@ -434,7 +434,6 @@ let tokens_atomic info x =
  *)
 let tokens_add info x =
    let { tokens_unwrap = unwrap;
-         tokens_list = tokens;
          tokens_prefix = prefix
        } = info
    in
@@ -487,7 +486,7 @@ let tokens_string info s =
                scan_quote tokens c i (succ i)
           | '\\' ->
                scan_word tokens i (i + 2)
-          | c ->
+          | _ ->
                scan_word tokens i (succ i)
 
     (* Scanning a quoted word *)

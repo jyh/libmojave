@@ -802,7 +802,7 @@ let rec zip a b = match (a,b) with
  *)
 let rec fst_split = function
    [] -> []
- | (a, b) :: tl -> a :: fst_split tl
+ | (a, _) :: tl -> a :: fst_split tl
 
 (*
  * Apply a function to the key in an assoc list.

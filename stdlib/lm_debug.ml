@@ -105,13 +105,12 @@ let debuggers () =
       in
          { debug_name = name; debug_description = info; debug_value = !flag }
    in
-   let collect' (name, info, flag) =
-      { debug_name = name; debug_description = info; debug_value = flag }
-   in
       Array.append (**)
          (Array.of_list (List.map collect !info))
 (*
-         (Array.map collect' (ml_debuggers ()))
+         (Array.map  (**)
+            (fun name, info, flag -> { debug_name = name; debug_description = info; debug_value = flag })
+            (ml_debuggers ()))
  *)
          [||]
 

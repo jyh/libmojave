@@ -73,46 +73,40 @@ struct
       Empty ->
          0
     | Element x ->
-         begin
-            try Hashtbl.find table x; 0 with
-               Not_found ->
-                  Hashtbl.add table x x;
-                  1
+         if Hashtbl.mem table x then 0
+         else begin
+            Hashtbl.add table x x;
+            1
          end
     | Union (s1, s2) ->
          compile table s1 + compile table s2
     | Add (s1, x) ->
-         begin
-            let count = compile table s1 in
-               try
-                  let _ = Hashtbl.find table x
-                  in count
-               with
-                  Not_found ->
-                     Hashtbl.add table x x;
-                     succ count
-         end
+         let count = compile table s1 in
+            if Hashtbl.mem table x then
+               count
+            else begin
+               Hashtbl.add table x x;
+               succ count
+            end
     | Remove (s1, x) ->
-         begin
-            let count = compile table s1 in
-               try
-                  let _ = Hashtbl.find table x in
-                  Hashtbl.remove table x;
-                  pred count
-               with
-                  Not_found ->
-                     count
-         end
-    | Hash (hash, count) ->
+         let was_there = Hashtbl.mem table x in
+         let count = compile table s1 in
+            if (not was_there) && Hashtbl.mem table x then begin
+               Hashtbl.remove table x;
+               pred count
+            end else
+               count
+    | Hash (hash, _) ->
          let count = ref 0 in
          let add x y =
-            try let _ = Hashtbl.find table x in () with
-               Not_found ->
-                  Hashtbl.add table x y;
-                  incr count
-         in
+            if not (Hashtbl.mem table x) then begin
+               Hashtbl.add table x y;
+               incr count
+            end
+         in begin
             Hashtbl.iter add hash;
             !count
+         end
 
    let flush s1 =
       match s1.table with

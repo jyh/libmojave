@@ -306,7 +306,7 @@ let create
        | SplayNotFound tree ->
             begin
                match tree with
-                  Node (key', data', left, right, size) ->
+                  Node (key', data', left, right, _) ->
                      if ord_compare key key' < 0 then
                         (* Root should become right child *)
                         new_node key data left (new_node key' data' empty right)
@@ -367,7 +367,7 @@ let create
                   add_list s1 key2 data2
                else
                   match splay key1 [] s2 with
-                     SplayFound (Node (key2, data2, left2, right2, _)) ->
+                     SplayFound (Node (_, data2, left2, right2, _)) ->
                         let left3 = union_aux left1 left2 in
                         let right3 = union_aux right1 right2 in
                            new_node key1 (ord_append data1 data2) left3 right3
@@ -386,7 +386,7 @@ let create
                add_list s2 key1 data1
             else
                match splay key2 [] s1 with
-                  SplayFound (Node (key1, data1, left1, right1, _)) ->
+                  SplayFound (Node (_, data1, left1, right1, _)) ->
                      let left3 = union_aux left1 left2 in
                      let right3 = union_aux right1 right2 in
                         new_node key2 (ord_append data1 data2) left3 right3

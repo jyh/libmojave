@@ -169,7 +169,7 @@ let unescape_string s =
                let buf = Buffer.create len in
                   Buffer.add_substring buf s 0 i;
                   squote buf (succ i)
-          | c ->
+          | _ ->
                start (succ i)
 
    and dquote buf i =

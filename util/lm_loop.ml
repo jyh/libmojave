@@ -403,7 +403,7 @@ let set_label node l =
 let set_sdno node i =
    node.node_sdno <- i
 
-let set_idom state s node idom =
+let set_idom _ _ node idom =
    node.node_idom <- idom.node_id
 
 let add_to_bucket node w =
@@ -695,7 +695,7 @@ let classify_nodes state dtree =
 (*
  * Perform a second DFS, building the loop contents.
  *)
-let collect_natural_loops state loops classes dtree =
+let collect_natural_loops _ loops classes dtree =
    let rec collect loops id =
       let parent =
          try fst (NodeIdTable.find classes id) with
@@ -786,13 +786,12 @@ let loop_nest state node_name =
          pp_print_trace err_formatter node_name trace;
       trace
 
-let dominators state node_name =
-   Array.fold_left (fun dom { node_name = name;
-                              node_idom = id;
-                              node_pred = pred
-                        } ->
+let dominators state _ =
+   Array.fold_left (**)
+      (fun dom { node_name = name; node_idom = id } ->
          let idom = state.state_nodes.(id) in
-            SymbolTable.add dom name idom.node_name) SymbolTable.empty state.state_nodes
+            SymbolTable.add dom name idom.node_name)
+      SymbolTable.empty state.state_nodes
 
 (*!
  * @docoff

@@ -149,10 +149,10 @@ struct
    let is_total s =
       s = [LeftInfinity, RightInfinity]
 
-   let is_enum s _ =
+   let is_enum _ _ =
       false
 
-   let to_enum s =
+   let to_enum _ =
       raise (Invalid_argument "to_enum")
 
    (*

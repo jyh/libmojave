@@ -148,7 +148,7 @@ struct
     * Search without reorganizing the tree.
     *)
    let rec search key0 = function
-      Node (key, left, right, _) as node ->
+      Node (key, left, right, _) ->
          let comp = Ord.compare key0 key in
             if comp = 0 then
                true
@@ -214,37 +214,31 @@ struct
       match splay key [] tree with
          SplayFound tree ->
             tree
-       | SplayNotFound tree ->
-            begin
-               match tree with
-                  Node (key', left, right, size) ->
-                     if Ord.compare key key' < 0 then
-                        new_node key left (new_node key' Leaf right)
-                     else
-                        new_node key (new_node key' left Leaf) right
-                | Leaf ->
-                     (* Tree is empty, so make a new root *)
-                     new_node key Leaf Leaf
-            end
+       | SplayNotFound (Node (key', left, right, _)) ->
+            if Ord.compare key key' < 0 then
+               new_node key left (new_node key' Leaf right)
+            else
+               new_node key (new_node key' left Leaf) right
+       |  SplayNotFound  Leaf ->
+            (* Tree is empty, so make a new root *)
+            new_node key Leaf Leaf
 
    let add t key =
       match splay key [] t.splay_tree with
          SplayFound tree ->
             t.splay_tree <- tree;
             t
-       | SplayNotFound tree ->
+       | SplayNotFound (Node (key', left, right, _)) ->
             let tree =
-               match tree with
-                  Node (key', left, right, size) ->
-                     if Ord.compare key key' < 0 then
-                        new_node key left (new_node key' Leaf right)
-                     else
-                        new_node key (new_node key' left Leaf) right
-                | Leaf ->
-                     (* Tree is empty, so make a new root *)
-                     new_node key Leaf Leaf
+               if Ord.compare key key' < 0 then
+                  new_node key left (new_node key' Leaf right)
+               else
+                  new_node key (new_node key' left Leaf) right
             in
                { splay_tree = tree }
+       | SplayNotFound Leaf ->
+            (* Tree is empty, so make a new root *)
+            { splay_tree = new_node key Leaf Leaf }
 
    (*
     * Remove the first entry from the hashtable.
@@ -292,7 +286,7 @@ struct
                   add_aux s1 key2
                else
                   match splay key1 [] s2 with
-                     SplayFound (Node (key2, left2, right2, _)) ->
+                     SplayFound (Node (_, left2, right2, _)) ->
                         let left3 = union_aux left1 left2 in
                         let right3 = union_aux right1 right2 in
                            new_node key1 left3 right3
@@ -311,7 +305,7 @@ struct
                add_aux s2 key1
             else
                match splay key2 [] s1 with
-                  SplayFound (Node (key1, left1, right1, _)) ->
+                  SplayFound (Node (_, left1, right1, _)) ->
                      let left3 = union_aux left1 left2 in
                      let right3 = union_aux right1 right2 in
                         new_node key2 left3 right3
@@ -345,9 +339,9 @@ struct
                   search key2 s1
                else
                   match splay key1 [] s2 with
-                     SplayFound tree ->
+                     SplayFound _ ->
                         true
-                   | SplayNotFound (Node (key2, left2, right2, _) as tree) ->
+                   | SplayNotFound (Node (key2, left2, right2, _)) ->
                         if compare key1 key2 < 0 then
                            (intersects left1 left2)
                            || (intersects right1 (new_node key2 Leaf right2))

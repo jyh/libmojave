@@ -463,7 +463,7 @@ let menu_select numbered title entries =
 
    (* Setup the help text. *)
    let help = "Up/Dn highlight  Enter selects  ^D cancels  ^U page-up  ^V page-dn  ^L redraw" in
-   let scroll_help row selrow =
+   let scroll_help selrow =
       update_status_deferred (sprintf "%s   Type ? for help   sel%-4dli%-4d   %s"
          title (selrow + 1) entry_count (entry_desc selrow))
    in
@@ -555,7 +555,7 @@ let menu_select numbered title entries =
          Some status ->
             update_status_deferred status
        | None ->
-            scroll_help row selrow);
+            scroll_help selrow);
       flush_all ();
       let ch = getchar () in
          match match_key ch with

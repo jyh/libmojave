@@ -62,7 +62,7 @@ struct
       print_aux (s^"/") t1;
       printf "%s%d\n" s i;
       print_aux (s^"\\") t2;
-    | { tree = Lazy (f',tree) } as t ->
+    | { tree = Lazy (_,t) } ->
          printf "%s Lazy\n" s;
          print_aux (s^"|") t
     | { tree = Offset (i,t) } ->
@@ -106,7 +106,7 @@ struct
     | { tree = Lazy (f,tree) } as t ->
          t.tree <- go_down f tree;
          to_list_aux collect t
-    | { tree = Offset (i,t) } ->
+    | { tree = Offset (_,t) } ->
          to_list_aux collect t
 
    let to_list t = to_list_aux [] t
@@ -120,7 +120,7 @@ struct
     | { tree = Lazy (f',tree) } as t ->
          t.tree <- go_down f' tree;
          iter f t
-    | { tree = Offset (i,t) } ->
+    | { tree = Offset (_,t) } ->
          iter f t
 
    let rec map ( f : elt -> elt ) = function
@@ -140,7 +140,7 @@ struct
             empty, start, lst
        | _ -> begin
             match of_list_aux (max/2) start lst with
-               (left,lend,[]) as c -> c
+               _, _, [] as c -> c
              | left, lend, h::t ->
                   let right, rend, rlst = of_list_aux (max - max/2 - 1) (succ lend) t in
                   { tree = Node (lend,h,left,right,rend-start) },rend,rlst
@@ -181,7 +181,7 @@ struct
       { tree = Offset (off, t') } as t ->
          t.tree <- offset_down off t'
     | { tree = Lazy (f,t') } as t ->
-         t.tree <- func_down f t
+         t.tree <- func_down f t'
     | _ -> ()
 
    let new_node i e l r =

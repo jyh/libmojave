@@ -182,11 +182,10 @@ struct
     * Real error printer.
     *)
    let pp_print_pos buf pos =
-      let loc = loc_of_pos pos in
-         fprintf buf "@[<v 3>%a" pp_print_location (loc_of_pos pos);
-         if !debug_pos then
-            pp_print_pos buf pos;
-         fprintf buf "@]"
+      fprintf buf "@[<v 3>%a" pp_print_location (loc_of_pos pos);
+      if !debug_pos then
+         pp_print_pos buf pos;
+      fprintf buf "@]"
 
    (*
     * Base values.
