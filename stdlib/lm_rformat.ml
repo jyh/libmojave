@@ -60,7 +60,7 @@ let eflush outx =
 let debug_rformat =
    create_debug (**)
       { debug_name = "rformat";
-        debug_description = "print formatting operations";
+        debug_description = "display text formatting operations";
         debug_value = false
       }
 
