@@ -219,7 +219,7 @@ struct
     *)
    type pda_reduce =
       ReduceNone
-    | ReduceNow of action * var * int
+    | ReduceNow    of action * var * int
     | ReduceAccept of action * var * int
 
    (*
@@ -236,6 +236,15 @@ struct
       }
 
    (*
+    * The actual machine has a grammar and an optional pda.
+    *)
+   type t =
+      { parse_grammar     : grammar;
+        mutable parse_pda : pda option
+      }
+   (* %%MAGICEND%% *)
+
+   (*
     * Run time info.
     *)
    type ('a, 'b) run =
@@ -243,16 +252,6 @@ struct
         run_lexer         : ('a, 'b) lexer;
         run_eval          : ('a, 'b) eval
       }
-
-   (*
-    * The actual machine has a grammar and an optional pda.
-    *)
-   type t =
-      { parse_grammar     : grammar;
-        mutable parse_pda : pda option
-      }
-
-   (* %%MAGICEND%% *)
 
    (************************************************
     * Building the PDA.
@@ -699,10 +698,11 @@ struct
    let rec first_rhs nullable first set rhs =
       match rhs with
          v :: rhs ->
-            if VarSet.mem nullable v then
-               first_rhs nullable first set rhs
-            else
-               VarSet.union set (VarTable.find first v)
+            let set = VarSet.union set (VarTable.find first v) in
+               if VarSet.mem nullable v then
+                  first_rhs nullable first set rhs
+               else
+                  set
        | [] ->
             set
 
@@ -793,15 +793,16 @@ struct
    (*
     * Get the set of first symbols that can being a list.
     *)
-   let rec first_list nullable first rhs lookahead =
+   let rec first_list nullable first set rhs lookahead =
       match rhs with
          v :: rhs ->
-            if VarSet.mem nullable v then
-               first_list nullable first rhs lookahead
-            else
-               VarTable.find first v
+            let set = VarSet.union (VarTable.find first v) set in
+               if VarSet.mem nullable v then
+                  first_list nullable first set rhs lookahead
+               else
+                  set
        | [] ->
-            lookahead
+            VarSet.union set lookahead
 
    (*
     * Take the union of a state and a closure.
@@ -845,7 +846,7 @@ struct
                                     prod_rhs = rhs
                                   } = prod
                               in
-                              let lookahead = first_list nullable first rest lookahead in
+                              let lookahead = first_list nullable first VarSet.empty rest lookahead in
                               let prod_item = prod_item_of_prod prod in
                               let lookahead, changed =
                                  try
