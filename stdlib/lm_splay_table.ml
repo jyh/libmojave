@@ -31,7 +31,7 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_map_sig
-open Lm_format
+open Lm_printf
 
 (************************************************************************
  * TYPES                                                                *
@@ -81,7 +81,7 @@ type ('elt, 'data) splay_result =
  * Build the set from an ordered type.
  *)
 let create
-    (ord_print : 'elt -> 'data list -> unit)
+    (ord_print : out_channel -> 'elt -> 'data list -> unit)
     (ord_compare : 'elt -> 'elt -> int)
     (ord_append : 'data list -> 'data list -> 'data list) =
 
@@ -557,32 +557,26 @@ let create
    in
 
    let deletemax t =
-		let k,d,t'=lift_right !t in
-		k,d,ref t'
-	in
+      let k,d,t'=lift_right !t in
+         k,d,ref t'
+   in
 
    (*
     * Debugging.
     *)
-   let rec print_aux = function
+   let rec print_aux out = function
       Leaf ->
-         print_space ();
-         print_string "Leaf"
+         fprintf out "@ Leaf"
     | Node (key, data, left, right, size) ->
-         print_space ();
-         print_string "(";
-         open_hvbox 0;
-         ord_print key data;
-         print_string ":";
-         print_int size;
-         print_aux left;
-         print_aux right;
-         print_string ")";
-         close_box ()
+         fprintf out "@ (@[<hv 0>%t:%d%a%a)@]" (**)
+            (fun out -> ord_print out key data)
+            size
+            print_aux left
+            print_aux right
    in
 
-   let print table =
-      print_aux !table
+   let print out table =
+      print_aux out !table
 
    in
       { empty = ref empty;
@@ -603,7 +597,7 @@ let create
         intersectp = intersectp;
         of_list = of_list;
         list_of = list_of;
-		  deletemax = deletemax;
+        deletemax = deletemax;
         print = print
       }
 

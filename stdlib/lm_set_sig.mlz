@@ -122,7 +122,7 @@ module type LmSetDebug =
 sig
    include LmSet
 
-   val print : t -> unit
+   val print : out_channel -> t -> unit
 end
 
 (*
@@ -133,7 +133,7 @@ sig
    include MinimalSetSig
 
    (* Debugging function *)
-   val print : t -> unit
+   val print : out_channel -> t -> unit
 end
 
 (*

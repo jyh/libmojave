@@ -2,7 +2,7 @@
  * This module implements dominator calculations and
  * loop-nest trees.  We use the Lengauer-Tarjen method, dreived
  * from Appel, "Modern Compiler Implementation in ML", 1998,
- * Cambirdge University Press.
+ * Cambridge University Press.
  *
  * ----------------------------------------------------------------
  *
@@ -28,9 +28,10 @@
  * @end[license]
  *)
 open Lm_debug
-open Lm_symbol
 open Lm_trace
 open Lm_format
+open Lm_symbol
+open Lm_symbol_format
 
 (*
  * Lm_debug flag.

@@ -1440,7 +1440,7 @@ struct
        | Leaf ->
             output_string out "Leaf"
 
-   let print = pp_print stdout
+   let print = pp_print
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t =

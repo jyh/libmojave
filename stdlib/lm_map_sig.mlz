@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_printf
 
 (************************************************************************
  * Maps.
@@ -133,19 +134,19 @@ type ('elt, 'data, 'table) table_methods =
      intersectp : 'table -> 'table -> bool;
      of_list : ('elt * 'data list) list -> 'table;
      list_of : 'table -> ('elt * 'data list) list;
-	  deletemax : 'table -> ('elt * 'data list * 'table);
+     deletemax : 'table -> ('elt * 'data list * 'table);
 
      (* Debugging *)
-     print : 'table -> unit
+     print : out_channel -> 'table -> unit
    }
 
 (*
  * Creation functions.
  *)
 type ('elt, 'data, 'table) table_create_type =
-   ('elt -> 'data list -> unit) ->              (* printer *)
-   ('elt -> 'elt -> int) ->                     (* comparison function *)
-   ('data list -> 'data list -> 'data list) ->          (* append during union *)
+   (out_channel -> 'elt -> 'data list -> unit) ->    (* printer *)
+   ('elt -> 'elt -> int) ->                          (* comparison function *)
+   ('data list -> 'data list -> 'data list) ->       (* append during union *)
    ('elt, 'data, 'table) table_methods
 
 (*
@@ -166,7 +167,7 @@ sig
    type elt
    type data
 
-   val print : elt -> data list -> unit
+   val print : out_channel -> elt -> data list -> unit
    val compare : elt -> elt -> int
    val append : data list -> data list -> data list
 end
@@ -190,8 +191,8 @@ sig
    val iter : (elt -> data -> unit) -> t -> unit
    val map : (elt -> data -> data) -> t -> t
    val list_of : t -> (elt * data list) list
-	val deletemax : t -> (elt * data list * t)
-   val print : t -> unit
+   val deletemax : t -> (elt * data list * t)
+   val print : out_channel -> t -> unit
 end
 
 (*

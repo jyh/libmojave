@@ -1,5 +1,5 @@
 (*
- * Override Pervasives IO with Lm_format IO
+ * Override Pervasives IO with Format IO
  *
  * ----------------------------------------------------------------
  *

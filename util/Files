@@ -1,9 +1,9 @@
 UTIL_FILES =\
 	lm_ctype\
 	lm_symbol\
+	lm_symbol_format\
 	lm_flags\
 	lm_interval_set\
-	lm_print_util\
 	lm_rawint\
 	lm_digraph\
 	lm_dlist\

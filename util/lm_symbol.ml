@@ -29,8 +29,8 @@
  *                               Added sets, tables, indices for
  *                               symbol pairs and triples
  *)
-open Lm_format
 open Lm_debug
+open Lm_printf
 
 let debug_symbol = ref false
 
@@ -223,18 +223,6 @@ let string_of_symbol (i,s) =
       else
          s ^ string_of_int i
 
-let pp_print_symbol buf v =
-   Lm_format.pp_print_string buf (string_of_symbol v)
-
-let rec pp_print_symbol_list buf vl =
-   match vl with
-      [v] ->
-         pp_print_symbol buf v
-    | v :: vl ->
-         fprintf buf "%a, %a" pp_print_symbol v pp_print_symbol_list vl
-    | [] ->
-         ()
-
 let output_symbol out v =
    Lm_printf.output_string out (string_of_symbol v)
 
@@ -278,9 +266,6 @@ let string_of_ext_symbol (i, s) =
          sprintf "`\"%s\"" s
       else
          s
-
-let pp_print_ext_symbol buf v =
-   Lm_format.pp_print_string buf (string_of_ext_symbol v)
 
 (*
  * Compare for equality.

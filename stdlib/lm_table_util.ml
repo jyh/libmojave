@@ -54,8 +54,8 @@ struct
    let remove = methods.remove
    let iter = methods.iter
    let map = methods.map
-	let deletemax = methods.deletemax
-	let list_of = methods.list_of
+   let deletemax = methods.deletemax
+   let list_of = methods.list_of
    let print = methods.print
 end
 
