@@ -428,7 +428,6 @@ let default_patterns =
     "*.Z";
     "*.elc";
     "*.ln";
-    "core";
     "core.*"]
 
 let stdignore =
