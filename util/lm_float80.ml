@@ -55,7 +55,7 @@ let minus_one  = of_float ~-.1.0
 (* Implemented functions *)
 let to_int64 f = Int64.of_float (to_float f)
 let of_int64 i = of_float (Int64.to_float i)
-let rem x y    = raise (Failure "Not supported: Lm_float80.rem")
+let rem _ _    = raise (Failure "Not supported: Lm_float80.rem")
 let succ f     = add f one
 let pred f     = sub f one
 let is_zero f  = (compare f zero) = 0

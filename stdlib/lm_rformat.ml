@@ -1048,7 +1048,6 @@ let refresh_breaks buf =
                   formatted_col = col;
                   formatted_maxx = rmargin;
                   formatted_lmargin = lmargin;
-                  formatted_search = search
       } ->
          search_zone buf [] lmargin rmargin col col breaks false
 
@@ -1115,7 +1114,7 @@ and print_tzone buf rmargin col printer tags =
       eprintf "Lm_rformat.print_tzone@.";
    let { formatted_commands = commands;
          formatted_breaks = breaks;
-         formatted_lmargin = ((lmargin', str) as lmargin)
+         formatted_lmargin = ((lmargin', _) as lmargin)
        } = get_formatted buf
    in
    let rec print col = function
@@ -1126,7 +1125,7 @@ and print_tzone buf rmargin col printer tags =
                   printer.print_string s;
                   print (col + len) t
 
-             | Break (index, take_len, notake_len, take, notake) ->
+             | Break (index, _, notake_len, take, notake) ->
                   if breaks.(index) then
                      begin
                         printer.print_tab lmargin tags;
@@ -1139,7 +1138,7 @@ and print_tzone buf rmargin col printer tags =
                         print (col + notake_len) t
                      end
 
-             | CBreak (index, take_len, notake_len, take, notake) ->
+             | CBreak (index, _, notake_len, take, notake) ->
                   if breaks.(index) then
                      begin
                         printer.print_tab lmargin tags;
@@ -1202,7 +1201,7 @@ and print_zone buf rmargin col printer linear tags =
             printer.print_atomic (Buffer.contents buffer);
             col
 
-    | MZoneTag (off, str) ->
+    | MZoneTag (off, _) ->
          (print_ltzone linear buf rmargin col printer tags) + off
 
     | TZoneTag tag ->

@@ -422,7 +422,7 @@ struct
     *)
    let fold f arg table =
       SymbolMTable.fold_all (fun arg v_ext defs ->
-            List.fold_left (fun arg (v_int, x, index) ->
+            List.fold_left (fun arg (v_int, x, _) ->
                   f arg v_ext v_int x) arg defs) arg table.table_ext
 end
 

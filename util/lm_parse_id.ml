@@ -21,7 +21,7 @@
 let parse_id id =
    let parts = Lm_string_util.split " " id in
       match parts with
-         [prologue; name; rev; date; time; user; ty; epilogue] ->
+         [_; name; rev; date; time; user; ty; _] ->
             name, rev, date, time, user, ty
        | _ ->
             raise (Failure "parse_id:  Malformed ID string")
