@@ -1075,39 +1075,106 @@ struct
                      prop_entry.prop_vars <- eof_set) prop_table.(state_index)) start_table
 
    (*
+    * The fixpoint is a forward-dataflow problem.
+    * Try to order the states so that dependencies are in
+    * order.  Use depth-first-search to find an approximate
+    * order.
+    *)
+   let int_set_of_interval lower upper =
+      let rec collect set i =
+         if i = upper then
+            set
+         else
+            collect (IntSet.add set i) (succ i)
+      in
+         collect IntSet.empty lower
+
+   let propagate_order_core prop_table =
+      let next_table =
+         Array.map (fun prod_table ->
+               Array.fold_left (fun next prop ->
+                     List.fold_left (fun next info ->
+                           IntSet.add next info.prop_next_state) next prop.prop_info) IntSet.empty prod_table) prop_table
+      in
+      let rec search order examined unexamined index =
+         let unexamined = IntSet.remove unexamined index in
+            if IntSet.mem examined index then
+               order, examined, unexamined
+            else
+               let order = index :: order in
+               let examined = IntSet.add examined index in
+               let next = next_table.(index) in
+                  IntSet.fold (fun (order, examined, unexamined) index ->
+                        search order examined unexamined index) (order, examined, unexamined) next
+      in
+      let rec fixpoint order examined unexamined =
+         if IntSet.is_empty unexamined then
+            List.rev order
+         else
+            let index = IntSet.choose unexamined in
+            let order, examined, unexamined = search order examined unexamined index in
+               fixpoint order examined unexamined
+      in
+      let unexamined = int_set_of_interval 0 (Array.length prop_table) in
+         fixpoint [] IntSet.empty unexamined
+
+   let check_order order =
+      let len  = List.length order in
+      let set1 = List.fold_left IntSet.add IntSet.empty order in
+      let set2 = int_set_of_interval 0 len in
+         assert (IntSet.equal set1 set2)
+
+   let propagate_order prop_table =
+      if !debug_parsetiming then
+         let start = Unix.gettimeofday () in
+         let order = propagate_order_core prop_table in
+            check_order order;
+            eprintf "propagate_order: %g secs@." (Unix.gettimeofday () -. start);
+            order
+      else
+         propagate_order_core prop_table
+
+   (*
     * Now solve the lookahead fixpoint.
     *)
-   let propagate_lookahead prop_table =
+   let propagate_lookahead prop_table order =
       let step () =
-         Array.fold_left (fun changed prod_table ->
-               Array.fold_left (fun changed prop ->
-                     let { prop_info = info;
-                           prop_vars = vars
-                         } = prop
-                     in
-                        List.fold_left (fun changed info ->
-                              let { prop_next_state = next_state_index;
-                                    prop_next_item  = next_item_index;
-                                    prop_lookahead  = lookahead
-                                  } = info
-                              in
-                              let vars1 = lookahead_vars lookahead vars in
-                              let next_entry = prop_table.(next_state_index).(next_item_index) in
-                              let vars2 = next_entry.prop_vars in
-                              let vars = VarSet.union vars1 vars2 in
-                                 if VarSet.cardinal vars <> VarSet.cardinal vars2 then
-                                    begin
-                                       next_entry.prop_vars <- vars;
-                                       true
-                                    end
-                                 else
-                                    changed) changed info) changed prod_table) false prop_table
+         List.fold_left (fun changed index ->
+               let prod_table = prop_table.(index) in
+                  Array.fold_left (fun changed prop ->
+                        let { prop_info = info;
+                              prop_vars = vars
+                            } = prop
+                        in
+                           List.fold_left (fun changed info ->
+                                 let { prop_next_state = next_state_index;
+                                       prop_next_item  = next_item_index;
+                                       prop_lookahead  = lookahead
+                                     } = info
+                                 in
+                                 let vars1 = lookahead_vars lookahead vars in
+                                 let next_entry = prop_table.(next_state_index).(next_item_index) in
+                                 let vars2 = next_entry.prop_vars in
+                                 let vars = VarSet.union vars1 vars2 in
+                                    if VarSet.cardinal vars <> VarSet.cardinal vars2 then
+                                       begin
+                                          next_entry.prop_vars <- vars;
+                                          true
+                                       end
+                                    else
+                                       changed) changed info) changed prod_table) false order
       in
       let rec fixpoint () =
          if step () then
             fixpoint ()
       in
-         fixpoint ()
+         if !debug_parsetiming then
+            let start = Unix.gettimeofday () in
+               eprintf "Lm_parser: solving fixpoint@.";
+               fixpoint ();
+               eprintf "Fixpoint: %g secs@." (Unix.gettimeofday () -. start)
+         else
+            fixpoint ()
 
    (*
     * Rebuild the traditional table from the propagation network.
@@ -1159,7 +1226,8 @@ struct
       let state_table = build_state_index state_table in
       let prop_table = build_prop_table info shift_table state_table in
       let () = set_start_lookahead start_table prop_table in
-      let () = propagate_lookahead prop_table in
+      let order = propagate_order prop_table in
+      let () = propagate_lookahead prop_table order in
       let states = rebuild_state_table prop_table in
       let trans_table = rebuild_trans_table info shift_table in
          trans_table, states
