@@ -9,4 +9,5 @@ FILES =\
 	lm_terminfo\
 	lm_mmap\
 	lm_marshal_shared\
-	lm_ssl
+	lm_ssl\
+	lm_config

@@ -254,6 +254,7 @@ value lm_ssl_socket(value v_keyfile)
 {
     SOCKET s;
     SSL_CTX *context;
+    int one = 1;
 
     /* Add context */
     context = lm_ssl_ctx_new(String_val(v_keyfile));
@@ -264,6 +265,9 @@ value lm_ssl_socket(value v_keyfile)
         SSL_CTX_free(context);
         failwith("lm_ssl_socket: socket call failed");
     }
+
+    /* Allow the address to be reused */
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
     return ssl_info_new(SSL_INFO_MASTER, s, context, 0);
 }
@@ -354,6 +358,7 @@ value lm_ssl_accept(value v_info)
     /* Start SSL operations */
     ssl = SSL_new(info->context);
     if(ssl == 0) {
+        close(fd);
         print_errors();
         failwith("lm_ssl_accept");
     }
@@ -361,6 +366,8 @@ value lm_ssl_accept(value v_info)
     /* Set the descriptor */
     code = SSL_set_fd(ssl, fd);
     if(code <= 0) {
+        close(fd);
+        SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_accept: set_fd failed");
     }
@@ -368,6 +375,8 @@ value lm_ssl_accept(value v_info)
     /* Negotiate */
     code = SSL_accept(ssl);
     if(code <= 0) {
+        close(fd);
+        SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_accept: negotiation failed");
     }
@@ -411,11 +420,11 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
         print_errors();
         failwith("lm_ssl_connect");
     }
-    info->ssl = ssl;
 
     /* Set the descriptor */
     code = SSL_set_fd(ssl, info->fd);
     if(code <= 0) {
+        SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_connect: set_fd failed");
     }
@@ -423,10 +432,12 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     /* Negotiate */
     code = SSL_connect(ssl);
     if(code <= 0) {
+        SSL_free(ssl);
         print_errors();
         failwith("lm_ssl_connect: negotiation failed");
     }
 
+    info->ssl = ssl;
     return Val_unit;
 }
 

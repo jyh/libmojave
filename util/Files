@@ -28,4 +28,5 @@ UTIL_FILES =\
 	lm_format_util\
 	lm_command_util\
 	lm_arg\
-	lm_ssl
+	lm_ssl\
+	lm_config

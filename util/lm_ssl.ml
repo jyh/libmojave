@@ -97,6 +97,11 @@ struct
          flush 0;
          out.windex <- 0
 
+   (* Close the output channel *)
+   let close out =
+      flush out;
+      close out.ssl
+
    (*
     * Add a single character.
     *)
@@ -177,6 +182,7 @@ let output_buffer out buf =
    output_string out (Buffer.contents buf)
 let output = OutChannel.output
 let flush = OutChannel.flush
+let close_out = OutChannel.close
 
 let fprintf = Printf.fprintf
 
@@ -206,6 +212,9 @@ struct
         buffer = String.create buf_length;
         ssl = ssl
       }
+
+   let close inx =
+      close inx.ssl
 
    (*
     * Fill input.
@@ -350,6 +359,7 @@ let in_channel_of_ssl = InChannel.create
 let input_char = InChannel.input_char
 let input_line = InChannel.input_line
 let really_input = InChannel.really_input
+let close_in = InChannel.close
 
 (*!
  * @docoff

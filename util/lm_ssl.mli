@@ -56,6 +56,7 @@ val output_string : ssl_out -> string -> unit
 val output_buffer : ssl_out -> Buffer.t -> unit
 val output : ssl_out -> string -> int -> int -> unit
 val flush : ssl_out -> unit
+val close_out : ssl_out -> unit
 
 (*
  * Buffered input.
@@ -64,6 +65,7 @@ val in_channel_of_ssl : t -> ssl_in
 val input_char : ssl_in -> char
 val input_line : ssl_in -> string
 val really_input : ssl_in -> string -> int -> int -> unit
+val close_in : ssl_in -> unit
 
 (*!
  * @docoff
