@@ -87,6 +87,7 @@ let flush_form form =
             let printer = make_text_printer raw_printer in
                format_flush buf;
                print_to_printer buf margin printer;
+               flush ();
                form.form_buffer <- new_buffer ()
 
 (*
@@ -160,13 +161,11 @@ let pp_force_newline form () =
    format_newline form.form_buffer
 
 let pp_print_flush form () =
-   flush_form form;
-   form.form_out_flush ()
+   flush_form form
 
 let pp_print_newline form () =
-   flush_form form;
-   form.form_out_newline ();
-   form.form_out_flush ()
+   format_newline form.form_buffer;
+   flush_form form
 
 let pp_print_if_newline form () =
    ()

@@ -195,10 +195,9 @@ let tex_etag buf _ =
 (*
  * A TeX printer.
  *)
-let make_tex_printer raw =
+let make_tex_printer_aux raw =
    let { raw_print_string  = output_string;
-         raw_print_newline = output_newline;
-         raw_print_flush   = output_flush
+         raw_print_newline = output_newline
        } = raw
    in
    let print_string s =
@@ -211,30 +210,32 @@ let make_tex_printer raw =
         tex_print_newline = output_newline
       }
    in
-   let print_flush () =
-      tex_flush buf;
-      output_flush ()
-   in
+   let info =
       { print_string    = tex_print_string buf;
         print_invis     = tex_print_invis buf;
         print_tab       = tex_tab buf;
         print_begin_tag = tex_tag buf;
-        print_end_tag   = tex_etag buf;
-        print_flush     = print_flush
+        print_end_tag   = tex_etag buf
       }
+   in
+      buf, info
+
+let make_tex_printer raw =
+   snd (make_tex_printer_aux raw)
 
 (*
  * Raw printer.
  *)
 let print_tex_raw rmargin buf raw =
-   let info = make_tex_printer raw in
+   let tbuf, info = make_tex_printer_aux raw in
    let print_string s =
       raw.raw_print_string s 0 (String.length s)
    in
       print_string "\\iftex\\begin{tabbing}\n";
       print_to_printer buf rmargin info;
+      tex_flush tbuf;
       print_string "\\end{tabbing}\\fi\n";
-      info.print_flush ()
+      raw.raw_print_flush ()
 
 (*
  * The channel and buffer versions.
@@ -249,6 +250,7 @@ let print_tex_string rmargin buf =
    let out = Buffer.create 100 in
       print_tex_buffer rmargin buf out;
       Buffer.contents out
+
 (*!
  * @docoff
  *

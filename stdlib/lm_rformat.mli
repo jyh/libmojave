@@ -81,8 +81,7 @@ type printer =
      print_invis     : string -> unit;
      print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
-     print_end_tag   : string -> unit;
-     print_flush     : unit -> unit
+     print_end_tag   : string -> unit
    }
 
 (************************************************************************

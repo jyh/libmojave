@@ -212,8 +212,7 @@ type printer =
      print_invis     : string -> unit;
      print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
-     print_end_tag   : string -> unit;
-     print_flush     : unit -> unit
+     print_end_tag   : string -> unit
    }
 
 (*
@@ -1184,14 +1183,6 @@ let print_buf buf rmargin printer =
 let print_to_printer buf rmargin printer =
    ignore (compute_breaks buf rmargin);
    ignore (print_buf buf rmargin printer [])
-
-(************************************************************************
- * Three printers.
- *    text: normal text-based printer
- *    html: html output
- *    tex: LaTeX output
- *)
-
 
 (*
  * -*-

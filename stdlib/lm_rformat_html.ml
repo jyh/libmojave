@@ -149,10 +149,9 @@ let html_etag buf s =
 (*
  * An HTML printer.
  *)
-let make_html_printer raw =
+let make_html_printer_aux raw =
    let { raw_print_string  = output_string;
-         raw_print_newline = output_newline;
-         raw_print_flush   = output_flush
+         raw_print_newline = output_newline
        } = raw
    in
    let print_string s =
@@ -165,22 +164,24 @@ let make_html_printer raw =
         html_print_newline = output_newline
       }
    in
-   let print_flush () =
-      html_flush buf;
-      output_flush ()
-   in
+   let info =
       { print_string    = html_print_string buf;
         print_invis     = html_print_invis buf;
         print_tab       = html_tab buf;
         print_begin_tag = html_tag buf;
-        print_end_tag   = html_etag buf;
-        print_flush     = print_flush
+        print_end_tag   = html_etag buf
       }
+   in
+      buf, info
+
+let make_html_printer raw =
+   snd (make_html_printer_aux raw)
 
 let print_html_raw rmargin buf raw =
-   let info = make_html_printer raw in
+   let hbuf, info = make_html_printer_aux raw in
       print_to_printer buf rmargin info;
-      info.print_flush ()
+      html_flush hbuf;
+      raw.raw_print_flush ()
 
 let print_html_channel rmargin buf out =
    print_html_raw rmargin buf (raw_channel_printer out)

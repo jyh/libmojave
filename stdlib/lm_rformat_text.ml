@@ -57,8 +57,7 @@ let make_text_printer raw =
         print_invis     = print_string;
         print_tab       = print_tab;
         print_begin_tag = print_arg1_invis;
-        print_end_tag   = print_arg1_invis;
-        print_flush     = output_flush;
+        print_end_tag   = print_arg1_invis
       }
 
 (*
@@ -67,7 +66,7 @@ let make_text_printer raw =
 let print_text_raw rmargin buf raw =
    let info = make_text_printer raw in
       print_to_printer buf rmargin info;
-      info.print_flush ()
+      raw.raw_print_flush ()
 
 let print_text_channel rmargin buf out =
    print_text_raw rmargin buf (raw_channel_printer out)
