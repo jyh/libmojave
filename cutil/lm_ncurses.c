@@ -2,8 +2,6 @@
  * Simple NCurses Interface for MCC
  * Copyright(c) 2002 Justin David Smith, Caltech
  */
-
-
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
