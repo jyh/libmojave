@@ -19,7 +19,7 @@ CFILES =\
 READLINE_CFLAGS =
 READLINE_LDFLAGS =
 
-if $(equal $(READLINE), YES)
+if $(READLINE)
     READLINE_CFLAGS =\
 	-DREADLINE\
         -DRL_COMPLETION_MATCHES=rl_completion_matches\
@@ -34,7 +34,7 @@ if $(equal $(READLINE), YES)
 NCURSES_CFLAGS =
 NCURSES_LDFLAGS =
 
-if $(equal $(NCURSES), YES)
+if $(NCURSES)
     NCURSES_CFLAGS = -DNCURSES
     NCURSES_LDFLAGS = -cclib -lncurses
     export
