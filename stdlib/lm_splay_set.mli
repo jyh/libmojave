@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Alexey Nogin, Cornell University
+ * Copyright (C) 1998-2005 Jason Hickey, Alexey Nogin, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000 Jason Hickey, Caltech
+ * Copyright (C) 2000-2005 Jason Hickey, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@ val create_matrix : int -> int -> 'a -> 'a array array
 val append : 'a array -> 'a array -> 'a array
 val concat : 'a array list -> 'a array
 val sub : 'a array -> int -> int -> 'a array
-val copy : 'a array -> 'a array 
+val copy : 'a array -> 'a array
 val fill : 'a array -> int -> int -> 'a -> unit
 val blit : 'a array -> int -> 'a array -> int -> int -> unit
 val to_list : 'a array -> 'a list

@@ -8,7 +8,7 @@
  * ----------------------------------------------------------------
  *
  * Copyright (C) 2002, Justin David Smith, Caltech
- * Based on original code, Copyright (C) 2000 Jason Hickey, Caltech
+ * Based on original code, Copyright (C) 2000-2005 Jason Hickey, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

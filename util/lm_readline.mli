@@ -1,7 +1,7 @@
 (*
  * Simple readline interface.
  * Copyright (C) 2002 Justin David Smith, Caltech
- * Copyright (C) 2000 Jason Hickey, Alexey Nogin, Cornell University
+ * Copyright (C) 2000-2005 Jason Hickey, Alexey Nogin, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003 Jason Hickey, Caltech
+ * Copyright (C) 2003-2005 Jason Hickey, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
