@@ -25,8 +25,8 @@ let rec print_sep_list sep printer = function
       printer h
  | h :: t ->
       printer h;
-      Lm_format.print_string sep;
-      Lm_format.print_space ();
+      print_string sep;
+      print_space ();
       print_sep_list sep printer t
 
 let rec print_sep_list_no_space sep printer = function
@@ -36,23 +36,23 @@ let rec print_sep_list_no_space sep printer = function
       printer h
  | h :: t ->
       printer h;
-      Lm_format.print_string sep;
+      print_string sep;
       print_sep_list_no_space sep printer t
 
 let rec print_sep_list_box sep printer = function
    [] ->
       ()
  | [h] ->
-      Lm_format.open_box tabstop;
+      open_box tabstop;
       printer h;
-      Lm_format.close_box ()
+      close_box ()
  | h :: t ->
-      Lm_format.open_box tabstop;
+      open_box tabstop;
       printer h;
-      Lm_format.print_string sep;
-      Lm_format.close_box ();
-      Lm_format.print_space ();
+      print_string sep;
+      close_box ();
+      print_space ();
       print_sep_list_box sep printer t
 
 let print_fst_symbol pair =
-    pp_print_symbol Lm_format.std_formatter (fst pair)
+    pp_print_symbol std_formatter (fst pair)

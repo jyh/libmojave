@@ -24,7 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_format
+open Lm_printf
 
 type 'a trace = 'a trace_node list
 

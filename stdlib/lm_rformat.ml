@@ -1041,7 +1041,7 @@ let print_arg2_invis _ _ =
    ()
 
 (*
- * Lm_format a linear zone.
+ * Format a linear zone.
  * Stop when the right margin is exceeded.
  *)
 let rec print_lzone buf rmargin col printer tags =
@@ -1077,7 +1077,7 @@ let rec print_lzone buf rmargin col printer tags =
       print col (get_formatted buf).formatted_commands
 
 (*
- * Lm_format a tagged zone.
+ * Format a tagged zone.
  *)
 and print_tzone buf rmargin col printer tags =
    if !debug_rformat then

@@ -152,5 +152,5 @@ let clock_reset name =
 let clock_report msg name =
    let ttime = clock_ttime name in
    let tcalls = clock_tcalls name in
-   Lm_format.print_string (Lm_printf.sprintf "%sTotal time in %s = %.2f sec, %d calls, %.5f sec/call\n" (**)
+   Lm_printf.print_string (Lm_printf.sprintf "%sTotal time in %s = %.2f sec, %d calls, %.5f sec/call\n" (**)
       msg name ttime tcalls (ttime /. (float_of_int tcalls)))

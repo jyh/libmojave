@@ -17,7 +17,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *)
 open Lm_ncurses
-open Lm_format
+open Lm_printf
 
 
 (***  Configuration  ***)

@@ -387,7 +387,7 @@ let divert formatter divert =
  ************************************************************************)
 
 (*
- * Lm_format args.
+ * Format args.
  *)
 module Args =
 struct

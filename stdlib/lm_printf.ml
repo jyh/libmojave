@@ -22,7 +22,7 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Format
+include Format
 
 (*
  * For now, just use normal output channels.
@@ -81,6 +81,15 @@ let eprintf = eprintf
 let sprintf = sprintf
 let fprintf = fprintf
 let bprintf = bprintf
+
+(*
+ * Formatting functions.
+ *)
+let set_all_formatter_output_functions out flush newline spaces =
+   set_all_formatter_output_functions ~out ~flush ~newline ~spaces
+
+let pp_set_all_formatter_output_functions buf out flush newline spaces =
+   pp_set_all_formatter_output_functions buf ~out ~flush ~newline ~spaces
 
 (*
  * List separated by semicolons.

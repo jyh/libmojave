@@ -129,9 +129,16 @@ module SymbolListTable : Lm_map_sig.LmMap with type key = symbol list
 (*
  * This printer uses printf.
  *)
-val output_symbol : out_channel -> symbol -> unit
-val output_symbol_list : out_channel -> symbol list -> unit
-val output_symbol_set : out_channel -> SymbolSet.t -> unit
+val output_symbol        : out_channel -> symbol -> unit
+val output_symbol_list   : out_channel -> symbol list -> unit
+val output_symbol_set    : out_channel -> SymbolSet.t -> unit
+
+(*
+ * Format versions.
+ *)
+val pp_print_symbol      : formatter -> symbol -> unit
+val pp_print_symbol_list : formatter -> symbol list -> unit
+val pp_print_ext_symbol  : formatter -> symbol -> unit
 
 (*
  * -*-

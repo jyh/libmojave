@@ -25,7 +25,7 @@
  * @end[license]
  *)
 open Lm_string_set
-open Lm_format
+open Lm_printf
 
 
 (***  Environment to Store Lm_flags  ***)

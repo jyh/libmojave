@@ -1,7 +1,6 @@
 UTIL_FILES =\
 	lm_ctype\
 	lm_symbol\
-	lm_symbol_format\
 	lm_flags\
 	lm_interval_set\
 	lm_rawint\

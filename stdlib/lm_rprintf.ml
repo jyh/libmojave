@@ -23,7 +23,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_format
+include Lm_format
 
 (*
  * For now, just use normal output channels.

@@ -25,7 +25,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_format
+open Lm_printf
 open Lm_symbol
 open Lm_trace
 

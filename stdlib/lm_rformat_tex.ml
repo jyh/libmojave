@@ -29,7 +29,7 @@ open Lm_rformat
 
 (*
  * We hack the indentation in the TeX printer.
- * Lm_format the data into lines, and print the tabstops in
+ * Format the data into lines, and print the tabstops in
  * the background color.
  *
  * The prefix is the white space that is inserted to

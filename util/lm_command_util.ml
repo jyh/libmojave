@@ -18,7 +18,7 @@
  *)
 open Lm_format_util
 open Lm_string_util
-open Lm_format
+open Lm_printf
 
 
 (***  Command Processing (Extract Commands)  ***)
@@ -97,7 +97,7 @@ let bold_text text =
 
 
 (* title_text appname text
-   Lm_format text to be displayed in a title, as in an xterm title.  If the
+   Format text to be displayed in a title, as in an xterm title.  If the
    terminal is not an xterm, then this returns an empty string.  This will
    NOT format the text to display anything to the console itself, under
    any circumstance.  This may prepend the application name to the text. *)

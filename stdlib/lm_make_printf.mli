@@ -31,7 +31,7 @@
  *       by a decimal number.
  *    4. A format specifier
  *
- * For Lm_format:
+ * For Format:
  *    @]: close_box
  *    @,: print_cut
  *    @ : print_space
@@ -81,7 +81,7 @@ sig
    val print_char : t -> char -> unit
    val print_string : t -> string -> unit
 
-   (* Lm_format functions *)
+   (* Format functions *)
    val open_box : t -> int -> unit
    val open_hbox : t -> unit
    val open_vbox : t -> int -> unit

@@ -21,7 +21,7 @@
  * Author: Justin David Smith
  * justins@chaos2.org
  *)
-open Lm_format
+open Lm_printf
 
 
 (* pp_print_paragraph_bare buf text
