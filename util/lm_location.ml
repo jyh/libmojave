@@ -27,6 +27,8 @@
 open Lm_symbol
 open Lm_printf
 
+(* XXX: TODO: we should switch to using MLast.loc instead *)
+
 (*
  * A location is a character range
  *    filename, start_line, start_char, end_line, end_char
