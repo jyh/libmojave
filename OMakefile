@@ -46,6 +46,7 @@ if $(not $(defined LM_STANDALONE))
 
 if $(not $(defined CAMLLIB))
     CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(shell $(OCAMLC) -where))))
+    INCLUDES += $(CAMLLIB)
     export
 
 if $(LM_STANDALONE)
@@ -62,8 +63,6 @@ if $(not $(defined CamlSubDirs))
     CamlSubDirs(dirs) =
         .SUBDIRS: $(dirs)
     export
-
-INCLUDES = $(CAMLLIB)
 
 #
 # Subdirectories of this project

@@ -16,6 +16,5 @@ else
 if $(LM_STANDALONE)
     .DEFAULT: liblmcutil$(EXT_LIB)
 
-
 clean:
     $(CLEAN)
