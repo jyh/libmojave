@@ -759,7 +759,7 @@ struct
     *)
    let rec regex_interval n s i len =
       if i = len then
-         raise (Failure "interval expression is not terminated");
+         raise (Failure "Lm_lexer: regex: interval expression is not terminated");
       let j = succ i in
       let c = s.[i] in
          match c with
@@ -770,11 +770,11 @@ struct
           | '}' ->
                n, n, j
           | _ ->
-               raise (Failure "interval expression is not terminated")
+               raise (Failure "Lm_lexer: regex: interval expression is not terminated")
 
    and regex_interval_bound n m s i len =
       if i = len then
-         raise (Failure "interval expression is not terminated");
+         raise (Failure "Lm_lexer: regex: interval expression is not terminated");
       let j = succ i in
       let c = s.[i] in
          match c with
@@ -783,7 +783,7 @@ struct
           | '}' ->
                n, m, j
           | _ ->
-               raise (Failure "interval expression is not terminated")
+               raise (Failure "Lm_lexer: regex: interval expression is not terminated")
 
    (*
     * Character constants.
@@ -820,7 +820,7 @@ struct
     *)
    let rec regex_chars s i len =
       if i = len then
-         raise (Failure "character sequence is not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       let j = succ i in
          match s.[i] with
             '^' ->
@@ -835,7 +835,7 @@ struct
     *)
    and regex_chars_head s i len =
       if i = len then
-         raise (Failure "character sequence is not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       match s.[i] with
          ']' ->
             regex_chars_rest [Char.code ']'] s (succ i) len
@@ -848,7 +848,7 @@ struct
     *)
    and regex_chars_rest chars s i len =
       if i = len then
-         raise (Failure "character sequence is not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       let j = succ i in
          match s.[i] with
             '[' ->
@@ -865,7 +865,7 @@ struct
     *)
    and regex_chars_escape chars s i len =
       if i = len then
-         raise (Failure "character sequence is not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       let j = succ i in
       let c, j =
          match s.[i] with
@@ -897,7 +897,7 @@ struct
     *)
    and regex_chars_possible_range chars c1 s i len =
       if i = len then
-         raise (Failure "character sequence not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence not terminated");
       let j = succ i in
          match s.[i] with
             '-' ->
@@ -916,7 +916,7 @@ struct
     *)
    and regex_chars_range chars c1 s i len =
       if i = len then
-         raise (Failure "character sequence not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence not terminated");
       let j = succ i in
       let c2 = Char.code s.[i] in
       let rec collect chars i =
@@ -933,7 +933,7 @@ struct
     *)
    and regex_chars_possible_class chars s i len =
       if i = len then
-         raise (Failure "character sequence is not terminated");
+         raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       let j = succ i in
          match s.[i] with
             ':' ->
@@ -952,7 +952,7 @@ struct
       let start = i in
       let rec get_name i =
          if i + 1 >= len then
-            raise (Failure "character class is not terminated");
+            raise (Failure "Lm_lexer: regex: character class is not terminated");
          let c = s.[i] in
          let j = succ i in
             match c with
@@ -963,9 +963,9 @@ struct
                   if s.[j] = ']' then
                      regex_chars_get_class chars (String.sub s start (i - start)) s (succ j) len
                   else
-                     raise (Failure "character class: syntax error")
+                     raise (Failure "Lm_lexer: regex: character class: syntax error")
              | _ ->
-                  raise (Failure "character class: syntax error")
+                  raise (Failure "Lm_lexer: regex: character class: syntax error")
       in
          get_name i
 
@@ -1000,7 +1000,7 @@ struct
           | "xdigit" ->
                xdigit_chars
           | name ->
-               raise (Failure ("unknown character class: " ^ name))
+               raise (Failure ("Lm_lexer: regex: unknown character class: " ^ name))
       in
          regex_chars_rest (charclass @ chars) s i len
 
@@ -1026,7 +1026,7 @@ struct
                regex, i
           | RegexTermRightArg _
           | RegexTermEof ->
-               raise (Failure "mismatched parenthesis")
+               raise (Failure "Lm_lexer: regex: mismatched parenthesis")
           | RegexTermPipe _ ->
                raise (Invalid_argument "regex_left_paren")
 
@@ -1037,7 +1037,7 @@ struct
                regex, i
           | RegexTermRightParen _
           | RegexTermEof ->
-               raise (Failure "mismatched parenthesis")
+               raise (Failure "Lm_lexer: regex: mismatched parenthesis")
           | RegexTermPipe _ ->
                raise (Invalid_argument "regex_left_arg")
 
@@ -1094,7 +1094,7 @@ struct
     *)
    and regex_of_escape stack s i len =
       if i = len then
-         raise (Failure "illegal backslash at end of string");
+         raise (Failure "Lm_lexer: illegal backslash at end of string");
 
       let j = succ i in
          match s.[i] with
@@ -1172,7 +1172,7 @@ struct
                regex
           | RegexTermRightParen _
           | RegexTermRightArg _ ->
-               raise (Failure "mismatched parenthesis")
+               raise (Failure "Lm_lexer: regex: mismatched parenthesis")
           | RegexTermPipe _ ->
                raise (Invalid_argument "regex_of_string")
       in
@@ -1508,7 +1508,7 @@ struct
                in
                let info =
                   if info1.nfa_arg_number <> info2.nfa_arg_number then
-                     raise (Failure "Regular expression has mismatched argument counts");
+                     raise (Failure "Lm_lexer: Regular expression has mismatched argument counts");
                   { info1 with nfa_arg_depends = IntSet.union info1.nfa_arg_depends info2.nfa_arg_depends }
                in
                   accum, info, start :: starts, final :: finals, states) (**)
@@ -2141,7 +2141,7 @@ struct
          if clause < 0 then
             begin
                Input.lex_stop channel 0;
-               raise (Failure "lex: no clause matched")
+               raise (Failure "Lm_lexer: lex: no clause matched")
             end;
 
          (*
