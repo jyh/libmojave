@@ -57,6 +57,10 @@ val tilde_collapse : string -> string
  *    1. a list of directories
  *    2. a list of files of other types
  *
+ * The second argument to the glob and the glob_argv functions is the directory
+ * where to perform expansion. If the glob pattern is relative, the results are
+ * left relative (to that directory) as well.
+ *
  * Raises Failure if the syntax is ill-formed.
  *)
 val glob : glob_options list -> string -> string list -> string list * string list
