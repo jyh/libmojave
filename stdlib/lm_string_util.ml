@@ -165,7 +165,37 @@ let c_escaped s =
          let c = s.[i] in
          let _ =
             match c with
-               ' '..'~' ->
+               '"' ->
+                  Buffer.add_string buf "\\\""
+             | ' '..'~' ->
+                  Buffer.add_char buf c
+             | _ ->
+                  let code = Char.code c in
+                     Buffer.add_char buf '\\';
+                     Buffer.add_char buf (Char.chr (((code / 64) mod 8) + code0));
+                     Buffer.add_char buf (Char.chr (((code / 8) mod 8) + code0));
+                     Buffer.add_char buf (Char.chr ((code mod 8) + code0))
+         in
+            loop (succ i)
+   in
+      loop 0
+
+(*
+ * Escape a string using the Javascript single-quote conventions.
+ *)
+let js_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let _ =
+            match c with
+               '\'' ->
+                  Buffer.add_string buf "\\\'"
+             | ' '..'~' ->
                   Buffer.add_char buf c
              | _ ->
                   let code = Char.code c in

@@ -94,6 +94,17 @@ val split_string : string -> string -> string list
 val split_mime_string : string -> string -> string list
 
 (*
+ * Escape a string so that it can be read back in C.
+ *)
+val c_escaped : string -> string
+
+(*
+ * Escape a string so that it can be read back in Javascript.
+ * This assumes single quotes.
+ *)
+val js_escaped : string -> string
+
+(*
  * Unescape a string.  Convert all escape sequences,
  * and remove outer double quotes.
  *)
@@ -151,11 +162,6 @@ val trim : string -> string
  *)
 val trim_all : string -> string -> string -> string
 val trim_std : string -> string
-
-(*
- * C version of a string.
- *)
-val c_escaped : string -> string
 
 (*
  * Read the file into a string.
