@@ -110,6 +110,11 @@ val which_dir : string -> string -> string
  *)
 val mkdirhier : string -> int -> unit
 
+(*
+ * Get the listing in a directory.
+ *)
+val lsdir : string -> string list
+
 (*!
  * @docoff
  *

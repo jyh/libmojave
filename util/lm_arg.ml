@@ -84,6 +84,10 @@ type sections = unit poly_sections
    Thrown by option processing when something goes wrong...  *)
 exception BogusArg of string
 
+(* UsageError
+   Thrown on --help *)
+exception UsageError
+
 
 (***  Option Table  ***)
 
@@ -370,7 +374,7 @@ let fold_argv argv spec arg default usage_msg =
             if opt = "-help" || opt = "--help" then
                begin
                   usage spec usage_msg;
-                  exit 1
+                  raise UsageError
                end
             else if String.length opt > 0 && opt.[0] = '-' then
                (* Get information on the option *)
@@ -467,11 +471,9 @@ let fold_argv argv spec arg default usage_msg =
                in
                   current, arg
             else
-               begin
-                  (* Not an option; pass to the default function *)
-                  default opt;
+               (* Not an option; pass to the default function *)
+               let arg = default arg opt in
                   current, arg
-               end
          in
             (* We're done with this option, advance to next *)
             parse_option arg current
@@ -482,17 +484,11 @@ let fold_argv argv spec arg default usage_msg =
       arg
 
 let fold spec arg default usage_msg =
-   try
-      fold_argv Sys.argv spec arg default usage_msg
-   with
-      BogusArg s ->
-         prerr_string "Error: ";
-         prerr_endline s;
-         exit 1
+   fold_argv Sys.argv spec arg default usage_msg
 
 let parse_argv argv spec default usage_msg =
-   fold_argv argv spec () default usage_msg
+   fold_argv argv spec () (fun () opt -> default opt) usage_msg
 
 let parse spec default usage_msg =
-   fold spec () default usage_msg
+   fold spec () (fun () opt -> default opt) usage_msg
 

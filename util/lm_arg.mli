@@ -55,12 +55,13 @@ type section = unit poly_section
 type sections = unit poly_sections
 
 exception BogusArg of string
+exception UsageError
 
 (*
  * Folding versions.
  *)
-val fold_argv : string array -> 'a poly_sections -> 'a -> (string -> unit) -> string -> 'a
-val fold      : 'a poly_sections -> 'a -> (string -> unit) -> string -> 'a
+val fold_argv : string array -> 'a poly_sections -> 'a -> ('a -> string -> 'a) -> string -> 'a
+val fold      : 'a poly_sections -> 'a -> ('a -> string -> 'a) -> string -> 'a
 
 (*
  * Non-folding versions.
