@@ -186,6 +186,7 @@ sig
 
    val empty :  t
    val is_empty : t -> bool
+	val length : t -> int
    val add : t -> elt -> data -> t
    val union : t -> t -> t
    val mem : t -> elt -> bool

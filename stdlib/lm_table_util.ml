@@ -47,6 +47,7 @@ struct
     *)
    let empty = methods.empty
    let is_empty = methods.is_empty
+	let length = methods.cardinal
    let add = methods.add
    let union = methods.union
    let mem = methods.mem
