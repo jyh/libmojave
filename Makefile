@@ -71,28 +71,28 @@ $(MAINLIB).cmxa: $(CMXFILES)
 #
 lib:
 	+ @for i in $(ADIRS); do\
-		if (echo Making lm_libmojave/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making $(DIR)/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 optlib:
 	+ @for i in $(ADIRS); do\
-		if (echo Making lm_libmojave/$$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
+		if (echo Making $(DIR)/$$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 install::
 	+ @for i in $(ADIRS); do\
-		if (echo Making lm_libmojave/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making $(DIR)/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 	$(INSTALL) $(MAINLIB).cma $(INSTALLLIB)
 
 clean::
 	+ @for i in $(ADIRS); do\
-		if (echo Cleaning lm_libmojave/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Cleaning $(DIR)/$$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 depend::
 	@$(RM) Makefile.dep
 	@for i in $(ADIRS); do\
-		if (echo Making lm_libmojave/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
+		if (echo Making $(DIR)/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
 
