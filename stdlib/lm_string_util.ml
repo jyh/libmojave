@@ -71,6 +71,14 @@ let strchr s c =
    in
       aux 0
 
+(* A more efficient reimplementation of String.contains *)
+let contains =
+   let rec contains_aux s limit c i =
+      (i < limit) && ((String.unsafe_get s i) = c || contains_aux s limit c (i+1))
+   in
+      fun s c ->
+         contains_aux s (String.length s) c 0
+
 (*
  * Index of first char in a set.
  *)
@@ -181,7 +189,7 @@ let split delims str =
          strlen
       else
          let c = String.get str pos in
-            if String.contains delims c then
+            if contains delims c then
                pos
             else
                next_split (pos + 1)
@@ -217,7 +225,7 @@ let tokens_fold f x quotes delims str =
          strlen
       else
          let c = str.[pos] in
-            if String.contains delims c then
+            if contains delims c then
                skip_split (succ pos)
             else
                pos
@@ -231,9 +239,9 @@ let tokens_fold f x quotes delims str =
          strlen
       else
          let c = str.[pos] in
-            if String.contains delims c then
+            if contains delims c then
                pos
-            else if String.contains quotes c then
+            else if contains quotes c then
                next_quote (succ pos)
             else
                next_split (succ pos)
@@ -243,7 +251,7 @@ let tokens_fold f x quotes delims str =
          strlen
       else
          let c = str.[pos] in
-            if String.contains quotes c then
+            if contains quotes c then
                next_split (succ pos)
             else if c = '\\' && pos < pred strlen then
                next_quote (pos + 2)
