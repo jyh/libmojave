@@ -42,7 +42,7 @@ $(ROOT)/lib/$(MAIN)-native$(EXT_LIB): $(MAIN)-native$(EXT_LIB)
 # Actual makefile
 include $(ROOT)/mk/rules
 
-ifeq ($(READLINE),$(YES))
+ifeq ($(READLINE),YES)
 	CFLAGS := $(CFLAGS)\
 		-DREADLINE\
 		-DRL_COMPLETION_MATCHES=rl_completion_matches\
