@@ -29,9 +29,6 @@
  *                               Added sets, tables, indices for
  *                               symbol pairs and triples
  *)
-open Format
-
-open Lm_debug
 
 (*
  * Representation of symbols.

@@ -29,7 +29,6 @@
  *
  * Author: Alexey Nogin
  *)
-open Lm_set_sig
 open Lm_linear_set_sig
 
 type 'a linear_set

@@ -21,7 +21,6 @@
  * Author: Adam Granicz
  * Email: granicz@cs.caltech.edu
  *)
-open Lm_profile
 
 type clock_data_type =
    { clock_active : bool;

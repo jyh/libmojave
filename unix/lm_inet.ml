@@ -30,8 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-
 open Lm_debug
 
 let debug_inet =
@@ -105,7 +103,6 @@ let get_server_host fd =
             host, port
     | Unix.ADDR_UNIX _ ->
          raise (Failure "Mp_inet.get_client_host")
-
 
 (*
  * Accept a connection on the server socket.

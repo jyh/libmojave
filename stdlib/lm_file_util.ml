@@ -30,9 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
-open Lm_pervasives
 
 (*
  * Show the file loading.

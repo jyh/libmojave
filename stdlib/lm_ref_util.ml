@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
 (*
  * Show the file loading.

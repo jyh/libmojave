@@ -25,7 +25,6 @@
  * @end[license]
  *)
 open Format
-open Lm_debug
 
 (*
  * All items eventually become ints, floats, or strings.

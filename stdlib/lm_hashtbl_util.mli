@@ -23,8 +23,6 @@
  * jyh@cs.caltech.edu
  *)
 
-open Hashtbl
-
 (*
  * Convert to an association list.
  * Order is random, but the is only one entry

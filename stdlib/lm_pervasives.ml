@@ -30,9 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Lm_debug
-
 let open_in = Pervasives.open_in
 let open_in_bin = Pervasives.open_in_bin
 

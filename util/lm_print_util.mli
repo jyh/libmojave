@@ -4,8 +4,6 @@
  * 12apr01
  *)
 
-open Format
-
 open Lm_symbol
 
 val tabstop : int

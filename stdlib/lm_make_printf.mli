@@ -67,7 +67,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Printf
 
 (*
  * Argument module.

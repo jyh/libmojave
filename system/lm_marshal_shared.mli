@@ -30,9 +30,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_marshal_sig
 
 (*
+open Lm_marshal_sig
 module Marshal : MarshalSig
 *)
 

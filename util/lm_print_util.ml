@@ -3,7 +3,6 @@
  * Taken from code by Jason Hickey
  * 12apr01
  *)
-open Format
 
 open Lm_symbol
 

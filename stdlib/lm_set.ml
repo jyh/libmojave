@@ -48,7 +48,6 @@
  *)
 open Format
 
-open Lm_array_util
 open Lm_set_sig
 
 (*
@@ -856,7 +855,6 @@ struct
                                          left1,
                                          new_black key0 (Red (key3, c, d, size3)) right,
                                          pred size0))
-
 
                          | Red _
                          | Leaf ->
