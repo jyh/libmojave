@@ -297,6 +297,132 @@ let tokens quotes delims str =
 let tokens_std = tokens quotes white
 
 (*
+ * Split a string based on a bounary.
+ *)
+let split_string boundary s =
+   let len_s = String.length s in
+   let len_b = String.length boundary in
+   let c =
+      if len_b = 0 then
+         raise (Invalid_argument "split_string");
+      boundary.[0]
+   in
+   let rec matches i j =
+      if j = len_b then
+         true
+      else
+         s.[i] = boundary.[j] && matches (succ i) (succ j)
+   in
+   let buf = Buffer.create 17 in
+   let rec split l i =
+      if len_s - i < len_b then
+         begin
+            Buffer.add_substring buf s i (len_s - i);
+            Buffer.contents buf :: l
+         end
+      else if s.[i] = c && matches i 0 then
+         let s' = Buffer.contents buf in
+            Buffer.clear buf;
+            split (s' :: l) (i + len_b)
+      else
+         begin
+            Buffer.add_char buf s.[i];
+            split l (succ i)
+         end
+   in
+      List.rev (split [] 0)
+
+(*
+ * Split a string based on a MIME boundary.
+ *)
+let split_mime_string boundary s =
+   let len_s = String.length s in
+   let len_b = String.length boundary in
+   let rec matches i j =
+      if j = len_b then
+         true
+      else
+         s.[i] = boundary.[j] && matches (succ i) (succ j)
+   in
+   let buf = Buffer.create 17 in
+
+   (* Collect the delimited text *)
+   let rec split l i =
+      if len_s - i < len_b - 2 then
+         l
+      else if s.[i] = '-' && s.[i + 1] = '-' && matches (i + 2) 0 then
+         let l = Buffer.contents buf :: l in
+            Buffer.clear buf;
+            skip l (i + 2 + len_b)
+      else
+         begin
+            Buffer.add_char buf s.[i];
+            split l (succ i)
+         end
+
+   (* Skip over garbage after the delimiter *)
+   and skip l i =
+      if len_s - i < 2 || (s.[i] = '-' && s.[i + 1] = '-') then
+         l
+      else
+         split l (i + 2)
+
+   (* Skip to the first delimiter *)
+   and skip_start i =
+      if len_s - i < len_b - 2 then
+         []
+      else if s.[i] = '-' && s.[i + 1] = '-' && matches (i + 2) 0 then
+         skip [] (i + 2 + len_b)
+      else
+         skip_start (succ i)
+   in
+      List.rev (skip_start 0)
+
+(*
+ * Unescape a quoted string.
+ *)
+let unescape s =
+   let slen = String.length s in
+   let buf = Buffer.create slen in
+   let off, len =
+      if slen < 2 then
+         0, slen
+      else if s.[0] = '"' && s.[slen - 1] = '"' then
+         1, slen - 1
+      else
+         0, slen
+   in
+   let rec collect i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let c, i =
+            if c = '\\' && i + 1 < len then
+               match s.[i + 1] with
+                  't' -> '\t', i + 2
+                | 'r' -> '\r', i + 2
+                | 'n' -> '\n', i + 2
+                | '\\' -> '\\', i + 2
+                | ('0'..'9') when i + 3 < len ->
+                     let code =
+                        100 * Char.code s.[i + 1]
+                        + 10 * Char.code s.[i + 2]
+                        + Char.code s.[i + 3]
+                        - 111 * Char.code '0'
+                     in
+                        Char.chr (code land 0xff), i + 4
+                | _ ->
+                     c, i + 2
+            else
+               c, i + 1
+         in
+            Buffer.add_char buf c;
+            collect i
+   in
+      collect off
+
+(*
  * Trim all whitespace from a string, respecting quotes.
  *)
 let trim_all quotes delims str =

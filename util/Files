@@ -27,4 +27,5 @@ UTIL_FILES =\
 	lm_ncurses_display\
 	lm_format_util\
 	lm_command_util\
-	lm_arg
+	lm_arg\
+	lm_ssl

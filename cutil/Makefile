@@ -4,17 +4,9 @@ DIR := libmojave/cutil
 
 include $(ROOT)/mk/preface
 
-LCFILES :=\
-	lm_abstract\
-	lm_float\
-	lm_ncurses\
-	lm_printf\
-	lm_raw\
-	lm_mmap\
-	lm_readline\
-	lm_rusage\
-	lm_terminfo\
-	lm_marshal_shared
+include Files
+
+LCFILES := $(FILES)
 
 # Name of library
 MAIN := liblmcutil

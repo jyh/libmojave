@@ -72,6 +72,33 @@ val rindex_set : string -> string -> int
 val split : string -> string -> string list
 
 (*
+ * Split a string based on a string delimiter.
+ * For example:
+ *    split_string "ABC" "fooAB.ABCbar"
+ * returns
+ *    ["fooAB."; "bar"]
+ *)
+val split_string : string -> string -> string list
+
+(*
+ * Split a string based on a MIME string delimiter.
+ * This is similar to the above, but the delimiter is
+ * prefixed by a "--", and the 2 characters after the
+ * delimiter are always dropped.
+ * For example:
+ *    split_mime_string "ABC" "--ABC\r\nfooAB.--ABC\r\nbar--ABC--"
+ * returns
+ *    ["fooAB."; "bar"]
+ *)
+val split_mime_string : string -> string -> string list
+
+(*
+ * Unescape a string.  Convert all escape sequences,
+ * and remove outer double quotes.
+ *)
+val unescape : string -> string
+
+(*
  * Split a string str into a list of substrings.
  * The string is split on any character in delims.  Quotations
  * are not split.

@@ -82,7 +82,6 @@ val split : string -> string * string
 val root : string -> string
 val strip_suffixes : string -> string
 
-
 (*
  * Path simplification.
  * Remove . and .. entries.

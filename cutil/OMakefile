@@ -1,17 +1,9 @@
 #
 # LibMojave C files
 #
-CFILES =\
-	lm_abstract\
-	lm_float\
-	lm_ncurses\
-	lm_printf\
-	lm_raw\
-	lm_readline\
-	lm_rusage\
-	lm_terminfo\
-	lm_mmap\
-	lm_marshal_shared
+include Files
+
+CFILES = $(FILES)
 
 #
 # Do you want to include readline support in libmojave?
@@ -40,9 +32,21 @@ if $(NCURSES_ENABLED)
     export
 
 #
+# Do you want to include curses support?
+#
+SSL_CFLAGS =
+SSL_LDFLAGS =
+
+if $(SSL_ENABLED)
+    SSL_CFLAGS = -DSSL_ENABLED
+    SSL_LDFLAGS = -cclib -lssl
+    INCLUDES += -I/usr/kerberos/include
+    export
+
+#
 # Special CFLAGS
 #
-CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS)
+CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) $(SSL_CFLAGS)
 
 #
 # Libraries
