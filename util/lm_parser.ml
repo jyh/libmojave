@@ -26,6 +26,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_location
 
 let debug_parse =
    create_debug (**)
@@ -63,6 +64,8 @@ type assoc =
  | RightAssoc
  | NonAssoc
 
+exception ParseError of loc
+
 (*
  * The parser is parameterized over symbol and action names.
  *)
@@ -97,10 +100,11 @@ struct
    (*
     * Type of lexing tokens.
     *)
-   type ('a, 'b) lexer = 'a -> symbol * 'a * 'b
+   type ('a, 'b) lexer = 'a -> symbol * loc * 'a * 'b
    type ('a, 'b) eval =
       'a ->                     (* The argument *)
       action ->                 (* The name of the action *)
+      loc ->                    (* Location of the production *)
       'b list ->                (* The arguments to the action *)
       'a * 'b                   (* The result of the semantic action *)
 
@@ -1044,26 +1048,33 @@ struct
 
    (*
     * Execute a semantic action.
-    * For now this does nothing, except pop the values from the stack.
     *)
-   let rec collect_args state args stack i =
+   let loc_of_stack stack =
+      match stack with
+         (_, loc, _) :: _ ->
+            loc
+       | [] ->
+            bogus_loc "null"
+
+   let rec collect_args state args loc1 stack i =
       if i = 0 then
-         state, args, stack
+         state, loc1, args, stack
       else
          match stack with
-            (state, arg) :: stack ->
-               collect_args state (arg :: args) stack (pred i)
+            (state, loc2, arg) :: stack ->
+               collect_args state (arg :: args) (union_loc loc1 loc2) stack (pred i)
           | [] ->
                raise (Invalid_argument "semantic_action: stack is empty")
 
    let semantic_action eval arg action stack state tokens =
-      let state, args, stack = collect_args 0 [] stack tokens in
+      let loc = loc_of_stack stack in
+      let state, loc, args, stack = collect_args 0 [] loc stack tokens in
       let () =
          if !debug_parse then
             eprintf "Calling action %a@." pp_print_action action
       in
-      let arg, value = eval arg action args in
-         state, arg, value, stack
+      let arg, value = eval arg action loc args in
+         state, arg, loc, value, stack
 
    (*
     * Execution.
@@ -1072,40 +1083,51 @@ struct
     * state is the state of the machine when that token was pushed.
     *
     *)
+   let fst3 (v, _, _) = v
+
    let rec pda_lookahead run arg stack state token =
       let { pda_delta = delta } = run.run_states.(state) in
-      let v, x = token in
+      let v, loc, x = token in
+      let action =
+         try IntTable.find delta v with
+            Not_found ->
+               raise (ParseError loc)
+      in
          match IntTable.find delta v with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: token %a: shift %d@." state pp_print_symbol (VarTable.find run.run_symbol_of_var v) new_state;
-               pda_no_lookahead run arg ((state, x) :: stack) new_state
+               pda_no_lookahead run arg ((state, loc, x) :: stack) new_state
           | ReduceAction (action, name, tokens) ->
                if !debug_parse then
                   eprintf "State %d: reduce %a@." state pp_print_action action;
-               let state, arg, x, stack = semantic_action run.run_eval arg action stack state tokens in
-                  pda_goto_lookahead run arg stack state name x token
+               let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
+                  pda_goto_lookahead run arg loc stack state name x token
           | AcceptAction ->
                match stack with
-                  [_, x] ->
+                  [_, _, x] ->
                      arg, x
                 | _ ->
                      raise (Invalid_argument "pda_lookahead")
 
-   and pda_goto_lookahead run arg stack state name x token =
+   and pda_goto_lookahead run arg loc stack state name x token =
       if !debug_parse then
          eprintf "State %d: Goto lookahead: production %a@." (**)
             state pp_print_symbol (VarTable.find run.run_symbol_of_var name);
-      let action = IntTable.find run.run_states.(state).pda_delta name in
+      let action =
+         try IntTable.find run.run_states.(state).pda_delta name with
+            Not_found ->
+               raise (ParseError loc)
+      in
          match action with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
                      state pp_print_symbol (VarTable.find run.run_symbol_of_var name)
-                     new_state pp_print_symbol (VarTable.find run.run_symbol_of_var (fst token));
-               let stack = (state, x) :: stack in
+                     new_state pp_print_symbol (VarTable.find run.run_symbol_of_var (fst3 token));
+               let stack = (state, loc, x) :: stack in
                   pda_lookahead run arg stack new_state token
           | ReduceAction _
           | AcceptAction ->
@@ -1117,31 +1139,39 @@ struct
          ReduceNow (action, name, tokens) ->
             if !debug_parse then
                eprintf "State %d: ReduceNow: %a@." state pp_print_action action;
-            let state, arg, x, stack = semantic_action run.run_eval arg action stack state tokens in
-               pda_goto_no_lookahead run arg stack state name x
+            let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
+               pda_goto_no_lookahead run arg loc stack state name x
        | ReduceAccept (action, name, tokens) ->
             if !debug_parse then
                eprintf "State %d: ReduceAccept: %a@." state pp_print_action action;
-            let _, arg, x, _ = semantic_action run.run_eval arg action stack state tokens in
+            let _, arg, _, x, _ = semantic_action run.run_eval arg action stack state tokens in
                arg, x
        | ReduceNone ->
-            let sym, arg, x = run.run_lexer arg in
+            let sym, loc, arg, x = run.run_lexer arg in
             let () =
                if !debug_parse then
                   eprintf "State %d: Read token: %a@." state pp_print_symbol sym
             in
-            let v = SymbolTable.find run.run_var_of_symbol sym in
-               pda_lookahead run arg stack state (v, x)
+            let v =
+               try SymbolTable.find run.run_var_of_symbol sym with
+                  Not_found ->
+                     raise (ParseError loc)
+            in
+               pda_lookahead run arg stack state (v, loc, x)
 
-   and pda_goto_no_lookahead run arg stack state name x =
-      let action = IntTable.find run.run_states.(state).pda_delta name in
+   and pda_goto_no_lookahead run arg loc stack state name x =
+      let action =
+         try IntTable.find run.run_states.(state).pda_delta name with
+            Not_found ->
+               raise (ParseError loc)
+      in
          match action with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
                      state pp_print_symbol (VarTable.find run.run_symbol_of_var name) new_state;
-               let stack = (state, x) :: stack in
+               let stack = (state, loc, x) :: stack in
                   pda_no_lookahead run arg stack new_state
           | ReduceAction _
           | AcceptAction ->

@@ -25,6 +25,7 @@
  * @end[license]
  *)
 open Lm_printf
+open Lm_location
 
 val debug_parse    : bool ref
 val debug_parsegen : bool ref
@@ -36,6 +37,8 @@ type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
+
+exception ParseError of loc
 
 module type ParserArg =
 sig
@@ -72,10 +75,11 @@ sig
    (* Grammar operations *)
    type t
    type precedence
-   type ('a, 'b) lexer = 'a -> symbol * 'a * 'b
+   type ('a, 'b) lexer = 'a -> symbol * loc * 'a * 'b
    type ('a, 'b) eval =
       'a ->                     (* The argument *)
       action ->                 (* The name of the action *)
+      loc ->                    (* Location of the production *)
       'b list ->                (* The arguments to the action *)
       'a * 'b                   (* The result of the semantic action *)
 

@@ -25,6 +25,7 @@
  * @end[license]
  *)
 open Lm_printf
+open Lm_location
 
 (*
  * Debug flags.
@@ -83,8 +84,9 @@ sig
     * characters in the lexeme, the same as the argument
     * to lex_stop.
     *)
-   val lex_string : t -> int -> string
+   val lex_string    : t -> int -> string
    val lex_substring : t -> int -> int -> string
+   val lex_loc       : t -> int -> loc
 end
 
 (*
@@ -128,7 +130,7 @@ sig
     *    lexeme: the entire string that matched
     *    args: the arguments for \(...\) patterns.
     *)
-   val lex : t -> Input.t -> action * string * string list
+   val lex : t -> Input.t -> action * loc * string * string list
 
    (*
     * Search for the first occurrence of a match.

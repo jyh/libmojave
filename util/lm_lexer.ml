@@ -26,6 +26,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_location
 
 let debug_lex =
    create_debug (**)
@@ -279,8 +280,9 @@ sig
     * characters in the lexeme, the same as the argument
     * to lex_stop.
     *)
-   val lex_string : t -> int -> string
+   val lex_string    : t -> int -> string
    val lex_substring : t -> int -> int -> string
+   val lex_loc       : t -> int -> loc
 end
 
 module type LexerAction =
@@ -2043,10 +2045,11 @@ struct
           *   2. Get the entire string.
           *   3. Get the arguments.
           *)
+         let loc = Input.lex_loc channel stop in
          let lexeme = Input.lex_string channel stop in
          let args = dfa_args dfa dfa_info lexeme clause in
             Input.lex_stop channel stop;
-            IntTable.find dfa.dfa_action_table clause, lexeme, args
+            IntTable.find dfa.dfa_action_table clause, loc, lexeme, args
 
    (*
     * Return the input followed by a regular expression
