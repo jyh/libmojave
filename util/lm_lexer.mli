@@ -108,7 +108,17 @@ sig
    val pp_print_action : out_channel -> action -> unit
 
    (* Sets *)
-   module ActionSet : Lm_set_sig.LmSet with type elt = action
+   module ActionSet : Lm_set_sig.LmSet with type elt = action;;
+
+   (*
+    * You can use the function to decide which clauses take
+    * precedence for a match of equal length.  The function
+    * gets two clause numbers.  If you use the min function,
+    * then you get the first clause that matched.  If you
+    * use the max function, you get the second clause that
+    * matched.
+    *)
+   val choose : int -> int -> int
 end
 
 module MakeLexer (Input : LexerInput) (Action : LexerAction) :
@@ -140,6 +150,12 @@ sig
     * marshaling it to a file).
     *)
    val compile : t -> unit
+
+   (*
+    * Print the lexer.
+    * This is mainly for debugging.
+    *)
+   val pp_print_lexer : out_channel -> t -> unit
 
    (*
     * Now match against an input channel.

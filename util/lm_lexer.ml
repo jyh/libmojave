@@ -31,14 +31,14 @@ open Lm_int_set
 
 let debug_lex =
    create_debug (**)
-      { debug_name = "debug-lex";
+      { debug_name = "lex";
         debug_description = "Debug the lexer";
         debug_value = false
       }
 
 let debug_lexgen =
    create_debug (**)
-      { debug_name = "debug-lexgen";
+      { debug_name = "lexgen";
         debug_description = "Debug the lexer generator";
         debug_value = false
       }
@@ -304,6 +304,16 @@ sig
 
    (* Sets *)
    module ActionSet : Lm_set_sig.LmSet with type elt = action
+
+   (*
+    * You can use the function to decide which clauses take
+    * precedence for a match of equal length.  The function
+    * gets two clause numbers.  If you use the min function,
+    * then you get the first clause that matched.  If you
+    * use the max function, you get the second clause that
+    * matched.
+    *)
+   val choose : int -> int -> int
 end
 
 module MakeLexer (Input : LexerInput) (Action : LexerAction) =
@@ -1149,6 +1159,20 @@ struct
                s pp_print_regex regex;
          regex
 
+   (************************************************************************
+    * Expressions.
+    *)
+
+   let pp_print_exp buf exp =
+      let { exp_clauses = clauses;
+            exp_id = id
+          } = exp
+      in
+         fprintf buf "Id: %d" id;
+         List.iter (fun (action, id, regex) ->
+               fprintf buf "@ @[<hv 3>Clause:@ id = %d@ action = %a@ @[<hv 3>regex =@ %a@]@]" (**)
+                  id pp_print_action action pp_print_regex regex) clauses
+
    (*
     * An expression is a set of clauses.
     *)
@@ -1638,10 +1662,7 @@ struct
    let dfa_action_add_stop action clause =
       match action.dfa_action_stop with
          Some clause' ->
-            if clause < clause' then
-               { action with dfa_action_stop = Some clause }
-            else
-               action
+            { action with dfa_action_stop = Some (Action.choose clause clause') }
        | None ->
             { action with dfa_action_stop = Some clause }
 
@@ -1683,7 +1704,7 @@ struct
       let stop =
          match stop1, stop2 with
             Some stop1, Some stop2 ->
-               Some (min stop1 stop2)
+               Some (Action.choose stop1 stop2)
           | None, _ ->
                stop2
           | _, None ->
@@ -2266,6 +2287,14 @@ struct
 
    let compile info =
       ignore (dfa_of_info info)
+
+   let pp_print_lexer buf info =
+      let { lex_exp = exp } = info in
+      let dfa = dfa_of_info info in
+         fprintf buf "@[<v 0>@[<hv 3>Lexer:@ %a@]" pp_print_exp exp;
+         fprintf buf "@ @[<hv 3>NFA:";
+         Array.iter (fun nfa_state -> fprintf buf "@ %a" pp_print_nfa_state nfa_state) dfa.dfa_table;
+         fprintf buf "@]@]";
 end
 
 (************************************************************************
@@ -2277,7 +2306,9 @@ struct
 
    let pp_print_action = pp_print_int
 
-   module ActionSet = IntSet
+   module ActionSet = IntSet;;
+
+   let choose = min
 end
 
 module LmLexer = MakeLexer (Lm_channel.LexerInput) (LmAction)

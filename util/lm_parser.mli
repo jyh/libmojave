@@ -172,6 +172,9 @@ sig
    (* Force a parser build, possibly in debug mode *)
    val build : t -> bool -> unit
 
+   (* Print the grammar *)
+   val pp_print_parser : out_channel -> t -> unit
+
    (* Now the actual machine *)
    val parse :
       t ->                      (* The machine *)

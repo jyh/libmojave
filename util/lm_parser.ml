@@ -30,14 +30,14 @@ open Lm_location
 
 let debug_parse =
    create_debug (**)
-      { debug_name = "debug-parse";
+      { debug_name = "parse";
         debug_description = "Debug the parseer";
         debug_value = false
       }
 
 let debug_parsegen =
    create_debug (**)
-      { debug_name = "debug-parsegen";
+      { debug_name = "parsegen";
         debug_description = "Debug the parseer generator";
         debug_value = false
       }
@@ -1344,6 +1344,9 @@ struct
       let pda = create info.parse_grammar in
          debug_parse := prev_debug;
          info.parse_pda <- Some pda
+
+   let pp_print_parser buf info =
+      pp_print_grammar buf info.parse_grammar
 end
 
 (*
