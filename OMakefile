@@ -36,4 +36,4 @@ clean:
 #
 # Subdirectories of this project
 #
-.SUBDIRS: cutil stdlib unix system util
+CamlSubDirs(cutil stdlib unix system util)
