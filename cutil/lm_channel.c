@@ -34,6 +34,23 @@
 #include <windows.h>
 
 /*
+ * HACK: this gets the handle from a file_descr.
+ * This depends on the OCaml implementation, but
+ * it is unlikely to change.
+ */
+struct filedescr {
+  union {
+    HANDLE handle;
+    SOCKET socket;
+  } fd;
+  enum { KIND_HANDLE, KIND_SOCKET } kind;
+};
+
+#define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
+#define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
+#define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
+
+/*
  * Utilities for pipes, used by Omake_channel.
  * Returns true if the pipe has available input.
  */
