@@ -235,15 +235,15 @@ let rec pp_print_symbol_list buf vl =
     | [] ->
          ()
 
-let print_symbol out v =
+let output_symbol out v =
    Lm_printf.output_string out (string_of_symbol v)
 
-let rec print_symbol_list out vl =
+let rec output_symbol_list out vl =
    match vl with
       [v] ->
-         print_symbol out v
+         output_symbol out v
     | v :: vl ->
-         Lm_printf.fprintf out "%a, %a" print_symbol v print_symbol_list vl
+         Lm_printf.fprintf out "%a, %a" output_symbol v output_symbol_list vl
     | [] ->
          ()
 
@@ -376,8 +376,8 @@ end
 module SymbolListSet = Lm_set.LmMake (SymbolListCompare)
 module SymbolListTable = Lm_map.LmMake (SymbolListCompare)
 
-let print_symbol_set out s =
-   print_symbol_list out (SymbolSet.to_list s)
+let output_symbol_set out s =
+   output_symbol_list out (SymbolSet.to_list s)
 
 (*
  * -*-

@@ -26,7 +26,7 @@
  *)
 open Lm_symbol
 open Lm_location
-open Lm_format
+open Lm_printf
 
 (*
  * Lm_debug flags.
@@ -59,12 +59,12 @@ sig
    val int_pos     : int -> t pos -> t pos
    val string_pos  : string -> t pos -> t pos
    val symbol_pos  : symbol -> t pos -> t pos
-   val del_pos     : (formatter -> unit) -> loc -> t pos
-   val del_exp_pos : (formatter -> unit) -> t pos -> t pos
+   val del_pos     : (out_channel -> unit) -> loc -> t pos
+   val del_exp_pos : (out_channel -> unit) -> t pos -> t pos
 
    (* Utilities *)
-   val loc_of_pos : t pos -> loc
-   val pp_print_pos : formatter -> t pos -> unit
+   val loc_of_pos  : t pos -> loc
+   val output_pos  : out_channel -> t pos -> unit
 end
 
 module type NameSig =
@@ -76,7 +76,7 @@ sig
 
    (* Utilities for managing values *)
    val loc_of_value : t -> loc
-   val pp_print_value  : formatter -> t -> unit
+   val output_value : out_channel -> t -> unit
 end
 
 module MakePos (Name : NameSig) : PosSig with type t = Name.t

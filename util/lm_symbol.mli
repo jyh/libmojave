@@ -123,22 +123,22 @@ module SymbolTripleIndex : Lm_index.LmIndex with type key = symbol * symbol * sy
 (*
  * Symbol lists.
  *)
-module SymbolListSet : Lm_set_sig.LmSet with type elt = symbol list
+module SymbolListSet   : Lm_set_sig.LmSet with type elt = symbol list
 module SymbolListTable : Lm_map_sig.LmMap with type key = symbol list
 
 (*
  * Printer uses Lm_format library.
  *)
-val pp_print_symbol : Lm_format.formatter -> symbol -> unit
+val pp_print_symbol      : Lm_format.formatter -> symbol -> unit
 val pp_print_symbol_list : Lm_format.formatter -> symbol list -> unit
-val pp_print_ext_symbol : Lm_format.formatter -> symbol -> unit
+val pp_print_ext_symbol  : Lm_format.formatter -> symbol -> unit
 
 (*
  * This printer uses printf.
  *)
-val print_symbol : out_channel -> symbol -> unit
-val print_symbol_list : out_channel -> symbol list -> unit
-val print_symbol_set : out_channel -> SymbolSet.t -> unit
+val output_symbol : out_channel -> symbol -> unit
+val output_symbol_list : out_channel -> symbol list -> unit
+val output_symbol_set : out_channel -> SymbolSet.t -> unit
 
 (*
  * -*-

@@ -24,7 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_format
+open Lm_printf
 open Lm_symbol
 
 type loc
@@ -54,7 +54,7 @@ val union_loc : loc -> loc -> loc
 (*
  * Print a file location.
  *)
-val pp_print_location : formatter -> loc -> unit
+val output_location : out_channel -> loc -> unit
 
 (*!
  * @docoff

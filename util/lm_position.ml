@@ -27,7 +27,7 @@
 open Lm_debug
 open Lm_symbol
 open Lm_location
-open Lm_format
+open Lm_printf
 
 let debug_pos =
    create_debug (**)
@@ -63,8 +63,8 @@ and 'a exn_loc =
  | DebugInt     of int * 'a pos
  | DebugString  of string * 'a pos
  | DebugSymbol  of symbol * 'a pos
- | DebugDel     of (formatter -> unit) * loc
- | DebugDelExp  of (formatter -> unit) * 'a pos
+ | DebugDel     of (out_channel -> unit) * loc
+ | DebugDelExp  of (out_channel -> unit) * 'a pos
 
 (*
  * Module for creating positions.
@@ -86,12 +86,12 @@ sig
    val int_pos     : int -> t pos -> t pos
    val string_pos  : string -> t pos -> t pos
    val symbol_pos  : symbol -> t pos -> t pos
-   val del_pos     : (formatter -> unit) -> loc -> t pos
-   val del_exp_pos : (formatter -> unit) -> t pos -> t pos
+   val del_pos     : (out_channel -> unit) -> loc -> t pos
+   val del_exp_pos : (out_channel -> unit) -> t pos -> t pos
 
    (* Utilities *)
    val loc_of_pos : t pos -> loc
-   val pp_print_pos : formatter -> t pos -> unit
+   val output_pos : out_channel -> t pos -> unit
 end
 
 module type NameSig =
@@ -103,7 +103,7 @@ sig
 
    (* Utilities for managing values *)
    val loc_of_value : t -> loc
-   val pp_print_value  : formatter -> t -> unit
+   val output_value  : out_channel -> t -> unit
 end
 
 (************************************************************************
@@ -138,54 +138,54 @@ struct
    (*
     * Print debugging info.
     *)
-   let rec pp_print_pos buf (name, e) =
+   let rec output_pos buf (name, e) =
       match e with
          DebugLoc _ ->
             ()
 
        | DebugBase x ->
-            fprintf buf "@ %s.%a" name pp_print_value x
+            fprintf buf "@ %s.%a" name output_value x
 
        | DebugCons (x, pos) ->
-            pp_print_pos buf pos;
-            fprintf buf "@ /%s.%a" name pp_print_value x
+            output_pos buf pos;
+            fprintf buf "@ /%s.%a" name output_value x
 
        | DebugConsLoc (_, pos) ->
-            pp_print_pos buf pos
+            output_pos buf pos
 
        | DebugPos (pos1, pos2) ->
             fprintf buf "@ @[<v 3>Called from: %s%a@]%a" (**)
                name
-               pp_print_pos pos1
-               pp_print_pos pos2
+               output_pos pos1
+               output_pos pos2
 
        | DebugString (s, pos) ->
-            pp_print_pos buf pos;
+            output_pos buf pos;
             fprintf buf "@ /%s.%s" name s
 
        | DebugInt (i, pos) ->
-            pp_print_pos buf pos;
+            output_pos buf pos;
             fprintf buf "@ %s.%d" name i
 
        | DebugSymbol (v, pos) ->
-            pp_print_pos buf pos;
-            fprintf buf "@ %s.%a" name pp_print_symbol v
+            output_pos buf pos;
+            fprintf buf "@ %s.%a" name output_symbol v
 
        | DebugDel (f, _) ->
             fprintf buf "@ %t" f
 
        | DebugDelExp (f, pos) ->
-            pp_print_pos buf pos;
+            output_pos buf pos;
             fprintf buf "@ %t" f
 
    (*
     * Real error printer.
     *)
-   let pp_print_pos buf pos =
+   let output_pos buf pos =
       let loc = loc_of_pos pos in
-         fprintf buf "@[<v 3>%a" pp_print_location (loc_of_pos pos);
+         fprintf buf "@[<v 3>%a" output_location (loc_of_pos pos);
          if !debug_pos then
-            pp_print_pos buf pos;
+            output_pos buf pos;
          fprintf buf "@]"
 
    (*
@@ -193,7 +193,7 @@ struct
     *)
    let loc_exp_pos loc =
       if !trace_pos then
-         eprintf "Lm_trace: %s.%a@." name pp_print_location loc;
+         eprintf "Lm_trace: %s.%a@." name output_location loc;
       name, DebugLoc loc
 
    let loc_pos loc pos =
@@ -240,7 +240,7 @@ struct
 
    let symbol_pos v pos =
       if !trace_pos then
-         eprintf "Lm_trace: %s.symbol: %a@." name pp_print_symbol v;
+         eprintf "Lm_trace: %s.symbol: %a@." name output_symbol v;
       if !debug_pos then
          name, DebugSymbol (v, pos)
       else
