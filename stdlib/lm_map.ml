@@ -1054,6 +1054,19 @@ struct
     ************************************************************************)
 
    (*
+    * Get the smallest element.
+    *)
+   let rec choose = function
+      Black (key, data, Leaf, _, _)
+    | Red (key, data, Leaf, _, _) ->
+         key, data
+    | Black (_, _, left, _, _)
+    | Red (_, _, left, _, _) ->
+         choose left
+    | Leaf ->
+         raise Not_found
+
+   (*
     * Get the elements of the list.
     *)
    let rec to_list_aux elements = function
@@ -1544,6 +1557,16 @@ struct
    let mapi_all = MMap.mapi
    let fold_all = MMap.fold
    let data_all = MMap.data
+
+   let choose t =
+      let key, data = MMap.choose t in
+         match data with
+            [] ->
+               raise Not_found
+          | h :: _ ->
+               key, h
+
+   let choose_all = MMap.choose
 
    (*
     * find_all is a total function.

@@ -62,6 +62,7 @@ sig
    val exists : (key -> 'a -> bool) -> 'a t -> bool
    val find_iter : (key -> 'a -> 'b option) -> 'a t -> 'b option
    val isect_mem : 'a t -> (key -> bool) -> 'a t
+   val choose : 'a t -> key * 'a
 
    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t
@@ -99,14 +100,15 @@ module type LmMapList =
 sig
    include LmMapBase
 
-   val filter : 'a t -> key -> ('a list -> 'a list) -> 'a t
-   val find_all : 'a t -> key -> 'a list
+   val filter     : 'a t -> key -> ('a list -> 'a list) -> 'a t
+   val find_all   : 'a t -> key -> 'a list
    val find_all_partial : 'a t -> key -> 'a list
-   val iter_all : (key -> 'a list -> unit) -> 'a t -> unit
-   val mapi_all : (key -> 'a list -> 'b list) -> 'a t -> 'b t
-   val fold_all : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
-   val data_all : 'a t -> 'a list list
-   val union    : (key -> 'a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
+   val iter_all   : (key -> 'a list -> unit) -> 'a t -> unit
+   val mapi_all   : (key -> 'a list -> 'b list) -> 'a t -> 'b t
+   val fold_all   : ('a -> key -> 'b list -> 'a) -> 'a -> 'b t -> 'a
+   val data_all   : 'a t -> 'a list list
+   val union      : (key -> 'a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
+   val choose_all : 'a t -> key * 'a list
 end
 
 (************************************************************************
