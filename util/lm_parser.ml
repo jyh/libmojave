@@ -122,6 +122,9 @@ sig
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
+
+   (* Set of actions *)
+   module ActionSet : Lm_set_sig.LmSet with type elt = action
 end
 
 module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) =
@@ -186,8 +189,6 @@ struct
    (*
     * A grammar has a set of symbols, productions,
     * and precedences.
-    *
-    * The precedences have a level of indirection.
     *)
    type grammar =
      { gram_var_of_symbol : var SymbolTable.t;
@@ -566,6 +567,117 @@ struct
                List.filter (fun prod -> prod.prod_action <> action) prods) gram.gram_prod
       in
          { gram with gram_prod = table }
+
+   (*
+    * Translate a variable in the translation table.
+    *)
+   let translate_var table v =
+      try VarTable.find table v with
+         Not_found ->
+            v
+
+   let translate_vars table vars =
+      List.map (translate_var table) vars
+
+   (*
+    * Union of two grammars.
+    *)
+   let union_grammar gram1 gram2 =
+      let { gram_var_of_symbol = var_of_symbol1;
+            gram_symbol_of_var = symbol_of_var1;
+            gram_prod          = prod1;
+            gram_prec          = prec1;
+            gram_prec_table    = prec_table1;
+            gram_start_symbols = start1
+          } = gram1
+      in
+      let { gram_var_of_symbol = var_of_symbol2;
+            gram_symbol_of_var = symbol_of_var2;
+            gram_prod          = prod2;
+            gram_prec          = prec2;
+            gram_prec_table    = prec_table2;
+            gram_start_symbols = start2
+          } = gram2
+      in
+
+      (* Find the new symbols *)
+      let var_trans, var_of_symbol, symbol_of_var =
+         SymbolTable.fold (fun (var_trans, var_of_symbol, symbol_of_var) sym v ->
+               try
+                  let v' = SymbolTable.find var_of_symbol1 sym in
+                     if v' <> v then
+                        raise (Failure "union_grammar: the grammars share a variable, but declare it separately");
+                     var_trans, var_of_symbol, symbol_of_var
+               with
+                  Not_found ->
+                     let v' = SymbolTable.cardinal var_of_symbol in
+                     let var_trans = VarTable.add var_trans v v' in
+                     let var_of_symbol = SymbolTable.add var_of_symbol sym v' in
+                     let symbol_of_var = VarTable.add symbol_of_var v' sym in
+                        var_trans, var_of_symbol, symbol_of_var) (VarTable.empty, var_of_symbol1, symbol_of_var1) var_of_symbol2
+      in
+
+      (* Union of the precedences *)
+      let precs =
+         VarTable.fold (fun precs v pre ->
+               VarTable.add precs (translate_var var_trans v) pre) prec1 prec2
+      in
+
+      (*
+       * JYH: this is not right, but I'm just working with it to get started.
+       *)
+      let prec_table = prec_table1 in
+
+      (* Get the complete set of actions for the first parser *)
+      let actions =
+         VarMTable.fold_all (fun actions _ prods ->
+               List.fold_left (fun actions { prod_action = action } ->
+                     ActionSet.add actions action) actions prods) ActionSet.empty prod1
+      in
+
+      (* Take the union of the productions *)
+      let changed, prods =
+         VarMTable.fold_all (fun (changed, prods) _ prodlist ->
+               List.fold_left (fun (changed, prods) prod ->
+                     let { prod_action = action;
+                           prod_name   = name;
+                           prod_rhs    = rhs;
+                           prod_prec   = pre
+                         } = prod
+                     in
+                        if ActionSet.mem actions prod.prod_action then
+                           changed, prods
+                        else
+                           let name = translate_var var_trans name in
+                           let prod =
+                              { prod with prod_name = name;
+                                          prod_rhs  = translate_vars var_trans rhs
+                              }
+                           in
+                              true, VarMTable.add prods name prod) (changed, prods) prodlist) (false, prod1) prod2
+      in
+
+      (* Union of the start symbols *)
+      let start = SymbolSet.union start1 start2 in
+
+      (* Has anything changed? *)
+      let changed =
+         changed
+         || not (VarTable.is_empty var_trans)
+         || (VarTable.cardinal precs <> VarTable.cardinal prec1)
+      in
+
+      (* New grammar *)
+      let gram =
+         { gram_var_of_symbol = var_of_symbol;
+           gram_symbol_of_var = symbol_of_var;
+           gram_prod          = prods;
+           gram_prec          = precs;
+           gram_prec_table    = prec_table;
+           gram_start_symbols = start
+         }
+      in
+         changed, gram
 
    (************************************************************************
     * Initial PDA construction.
@@ -1225,6 +1337,13 @@ struct
    let remove_production info action =
       let gram = remove_production info.parse_grammar action in
          { parse_grammar = gram; parse_pda = None }
+
+   let union info1 info2 =
+      let changed, gram = union_grammar info1.parse_grammar info2.parse_grammar in
+         if changed then
+            { parse_grammar = gram; parse_pda = None }
+         else
+            info1
 
    let parse info start lexer eval =
       let pda =

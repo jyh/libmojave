@@ -106,6 +106,9 @@ sig
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
+
+   (* Sets *)
+   module ActionSet : Lm_set_sig.LmSet with type elt = action
 end
 
 module MakeLexer (Input : LexerInput) (Action : LexerAction) :
@@ -122,6 +125,13 @@ sig
 
    (* Remove a clause by action name *)
    val remove_clause : t -> action -> t
+
+   (*
+    * Union of two lexers.
+    * The union assumes that actions with the same name
+    * have the same regular expression.
+    *)
+   val union : t -> t -> t
 
    (*
     * Now match against an input channel.

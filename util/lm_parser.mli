@@ -94,6 +94,9 @@ sig
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
+
+   (* Set of actions *)
+   module ActionSet : Lm_set_sig.LmSet with type elt = action
 end
 
 module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) :
@@ -143,6 +146,12 @@ sig
       t ->                      (* The initial grammar *)
       action ->                 (* The name of the semantic action *)
       t
+
+   (*
+    * Take the union of two parsers.
+    * Assumes that productions with the same action name are the same.
+    *)
+   val union : t -> t -> t
 
    (* Force a parser build, possibly in debug mode *)
    val build : t -> bool -> unit
