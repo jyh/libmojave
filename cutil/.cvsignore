@@ -8,3 +8,5 @@
 Makefile.dep
 *.omc
 *.omo
+*.obj
+CVS

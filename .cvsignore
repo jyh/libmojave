@@ -4,3 +4,5 @@
 *.lib
 *.omc
 *.omo
+*.obj
+CVS
