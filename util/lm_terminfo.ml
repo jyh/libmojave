@@ -20,19 +20,26 @@
 
 (* The C function takes a string ID, and returns the escape sequence
    (or an empty string if the ID is not defined for this terminal).  *)
+external caml_tgetstr_enabled : unit -> bool = "caml_tgetstr_enabled"
 external caml_tgetstr : string -> string = "caml_tgetstr"
 
+
+(* Tgetstr is enabled only if the terminal is defined *)
+let tgetstr_enabled = caml_tgetstr_enabled ()
 
 (* tgetstr id
    Lookup the terminal capability with indicated id.  This assumes the
    terminfo to lookup is given in the TERM environment variable.  This
    function returns None if the terminal capability is not defined.  *)
 let tgetstr id =
-   let result = caml_tgetstr id in
-      if result = "" then
-         None
-      else
-         Some result
+   if tgetstr_enabled then
+      let result = caml_tgetstr id in
+         if result = "" then
+            None
+         else
+            Some result
+   else
+      None
 
 
 (* Various terminfo identifier names for use with tgetstr *)

@@ -39,6 +39,15 @@ static int load_terminfo() {
 
 #endif /* NCURSES support? */
 
+/*
+ * Terminfo is enabled only of TERM is defined.
+ */
+value caml_tgetstr_enabled(value unit)
+{
+   CAMLparam1(unit);
+   CAMLreturn(getenv("TERM") ? Val_true : Val_false);
+}
+
 
 /*
  * Read the indicated terminfo by string.

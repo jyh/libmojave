@@ -87,7 +87,7 @@ static int translate_attr(int attr) {
 value caml_curses_enabled(value unit) {
 
    CAMLparam1(unit);
-   CAMLreturn(Val_true);
+   CAMLreturn(getenv("TERM") ? Val_true : Val_false);
    
 }
 
