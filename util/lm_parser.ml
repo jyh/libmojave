@@ -803,8 +803,6 @@ struct
    (*
     * Take the closure of a production.
     *)
-   let closure_count = ref 0   (* For performance measurements *)
-
    let closure info (set : ProdItemSet.t) =
       let { info_grammar  = { gram_prod = prods };
             info_nullable = nullable;
@@ -812,7 +810,6 @@ struct
           } = info
       in
       let rec close examined unexamined closure =
-         incr closure_count;
          if VarSet.is_empty unexamined then
             closure
          else
@@ -902,8 +899,6 @@ struct
    (*
     * Compute the transition table, only for shift operations.
     *)
-   let shift_count = ref 0
-
    let rec shift_closure info shift_table examined unexamined =
       let { info_grammar = { gram_prod = prods } } = info in
          if ProdItemSetTable.is_empty unexamined then
@@ -925,7 +920,6 @@ struct
                         goto_table, unexamined) (VarTable.empty, unexamined) syms
             in
             let shift_table = IntTable.add shift_table index goto_table in
-               incr shift_count;
                shift_closure info shift_table examined unexamined
 
    (************************************************************************
@@ -1170,9 +1164,6 @@ struct
               prod_item_name = name;
               prod_item_left = left
             }, lookahead ->
-               eprintf "reduce_early: %a: lookahead = %d@." pp_print_action action (VarSet.cardinal lookahead);
-               if VarSet.cardinal lookahead = 1 then
-                  eprintf "lookahead: %a/%a@." pp_print_symbol (VarSet.choose lookahead) pp_print_symbol eof;
                if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
                   ReduceAccept (action, name, List.length left)
                else
@@ -1279,20 +1270,15 @@ struct
       let start_table = SymbolTable.add start_table start state_index in
          start_table, unexamined
 
-   let create gram =
-      eprintf "PDA: creating@.";
-      let start = Unix.gettimeofday () in
+   let create_core gram =
       let info = info_of_grammar gram in
       let start_table, unexamined =
          SymbolSet.fold (fun (start_table, unexamined) start ->
                create_start info start_table unexamined start) (**)
             (SymbolTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
       in
-      eprintf "PDA: step1: %g secs@." (Unix.gettimeofday () -. start);
       let trans_table, states = build_lalr_table info start_table unexamined in
-      eprintf "PDA: step2: %d closures: %d shifts: %d states: %g secs@." !closure_count !shift_count (IntTable.cardinal states) (Unix.gettimeofday () -. start);
       let trans_table = reduce info trans_table states in
-      eprintf "PDA: step3: %g secs@." (Unix.gettimeofday () -. start);
 
       (* Build the PDA states *)
       let null_state =
@@ -1314,10 +1300,19 @@ struct
                in
                   table.(index) <- state) states
       in
-         eprintf "PDA: created: %g secs@." (Unix.gettimeofday () -. start);
          { pda_start_states  = start_table;
            pda_states        = table
          }
+
+   let create gram =
+      if !debug_parsegen then
+         let start = Unix.gettimeofday () in
+         let () = eprintf "Creating grammar@." in
+         let pda = create_core gram in
+            eprintf "Created grammar: %g secs@." (Unix.gettimeofday () -. start);
+            pda
+      else
+         create_core gram
 
    (*
     * Execute a semantic action.
