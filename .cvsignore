@@ -6,3 +6,4 @@
 *.omo
 *.obj
 CVS
+.omakedb
