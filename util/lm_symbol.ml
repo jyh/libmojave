@@ -131,6 +131,8 @@ let add s =
    in
       loop 1 0 (String.length s - 1)
 
+let make s i = (i, s)
+
 let add_mangle s =
    add (mangle s)
 

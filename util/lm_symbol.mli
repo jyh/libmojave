@@ -48,6 +48,7 @@ val debug_symbol : bool ref
  * Add a symbol to the table.
  *)
 val add : string -> symbol
+val make : string -> int -> symbol
 val is_interned : symbol -> bool
 val reintern : symbol -> symbol
 
