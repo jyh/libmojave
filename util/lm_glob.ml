@@ -914,6 +914,12 @@ let subdirs_of_dirs options dirs =
    in
       collect [] hidden_dirs dirs
 
+(*
+ * Regular expression export.
+ *)
+let regex_of_shell_pattern options s =
+   regexp_of_shell_pattern (glob_options_of_list options) s
+
 (*!
  * @docoff
  *

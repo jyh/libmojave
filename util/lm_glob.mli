@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_lexer
 
 type glob_options =
    GlobNoBraces         (* Do not perform csh-style brace expansion *)
@@ -78,6 +79,11 @@ val glob_argv : glob_options list -> string -> string list -> string list
 val list_dirs : glob_options list -> string list -> string list * string list
 val list_dirs_rec : glob_options list -> string list -> string list * string list
 val subdirs_of_dirs : glob_options list -> string list -> string list
+
+(*
+ * Utilities.
+ *)
+val regex_of_shell_pattern : glob_options list -> string -> LmStr.t
 
 (*!
  * @docoff
