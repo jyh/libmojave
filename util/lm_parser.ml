@@ -174,57 +174,91 @@ struct
    type elt = Arg.elt
 
    (*
+    * Build a graph from an input list.
+    *)
+   type node =
+      { node_name : int;
+        node_next : IntSet.t;
+        node_item : elt
+      }
+
+   let build_graph nodes =
+      let domain =
+         List.fold_left (fun domain node ->
+               IntSet.add domain (Arg.name node)) IntSet.empty nodes
+      in
+         List.fold_left (fun graph node ->
+               let name = Arg.name node in
+               let next =
+                  List.fold_left (fun next node ->
+                        if IntSet.mem domain node then
+                           IntSet.add next node
+                        else
+                           next) IntSet.empty (Arg.next node)
+               in
+               let node =
+                  { node_name = name;
+                    node_next = next;
+                    node_item = node
+                  }
+               in
+                  IntTable.add graph name node) IntTable.empty nodes
+
+   (*
     * Find the roots if there are any.
     * If there are none, just pick a node at random.
     *)
-   let roots nodes =
+   let roots graph nodes =
       let roots =
-         IntTable.fold (fun roots index node ->
-               IntSet.add roots index) IntSet.empty nodes
+         IntSet.fold (fun roots node ->
+               let node = IntTable.find graph node in
+                  IntSet.diff roots node.node_next) nodes nodes
       in
-      let roots =
-         IntTable.fold (fun roots _ node ->
-               List.fold_left IntSet.remove roots (Arg.next node)) roots nodes
-      in
-         (* If the graph is cyclic, just choost the first node *)
+         (* If the graph is cyclic, just choose the first node *)
          if IntSet.is_empty roots then
-            IntSet.singleton (fst (IntTable.choose nodes))
+            IntSet.singleton (IntSet.choose nodes)
          else
             roots
 
    (*
-    * Shift a node from the unexamined to the examined list.
+    * Produce a sort in DFS order.
     *)
-   let shift sorted unexamined index =
-      if IntTable.mem unexamined index then
-         let node = IntTable.find unexamined index in
-         let unexamined = IntTable.remove unexamined index in
-         let sorted = node :: sorted in
-            sorted, unexamined
-      else
-         sorted, unexamined
+   let rec dfs_sort_node graph marked items next node =
+      let next = IntSet.remove next node in
+         if IntSet.mem marked node then
+            marked, items, next
+         else
+            let marked = IntSet.add marked node in
+            let node = IntTable.find graph node in
+            let marked, items, next = dfs_sort_nodes graph marked items next node.node_next in
+               marked, node.node_item :: items, next
+
+   and dfs_sort_nodes graph marked items next nodes =
+      IntSet.fold (fun (marked, items, next) node ->
+            dfs_sort_node graph marked items next node) (marked, items, next) nodes
 
    (*
-    * Sorter.
-    * Find the roots, then use a depth-first search to flatten.
+    * The tree may have disconnected components,
+    * so repeat until done.
+    *)
+   let rec dfs_sort graph marked items nodes =
+      if IntSet.is_empty nodes then
+         items
+      else
+         let roots = roots graph nodes in
+         let marked, items, nodes = dfs_sort_nodes graph marked items nodes roots in
+            dfs_sort graph marked items nodes
+
+   (*
+    * Main sort functions.
     *)
    let sort nodes =
-      let rec sort sorted unexamined =
-         if IntTable.is_empty unexamined then
-            sorted
-         else
-            let roots = roots unexamined in
-            let sorted, unexamined =
-               IntSet.fold (fun (sorted, unexamined) index ->
-                     shift sorted unexamined index) (sorted, unexamined) roots
-            in
-               sort sorted unexamined
+      let graph = build_graph nodes in
+      let nodes =
+         List.fold_left (fun nodes node ->
+               IntSet.add nodes (Arg.name node)) IntSet.empty nodes
       in
-      let unexamined =
-         List.fold_left (fun unexamined node ->
-               IntTable.add unexamined (Arg.name node) node) IntTable.empty nodes
-      in
-         List.rev (sort [] unexamined)
+         dfs_sort graph IntSet.empty [] nodes
 end
 
 (************************************************************************
@@ -1367,11 +1401,7 @@ struct
                                        let prods = VarMTable.find_all prods v in
                                           List.fold_left (fun prop_self prod ->
                                                 let prod_item = prod_item_of_prod prod in
-                                                let item_index =
-                                                   try ProdItemTable.find prod_table prod_item with
-                                                      Not_found ->
-                                                         raise (Invalid_argument "Lm_parser.build_prop_table")
-                                                in
+                                                let item_index = ProdItemTable.find prod_table prod_item in
                                                 let prop_self =
                                                    if prop then
                                                       item_index :: prop_self
@@ -1450,9 +1480,12 @@ struct
    (*
     * Now solve the lookahead fixpoint.
     *)
+   let step_count = ref 0
+
    let propagate_lookahead prop_table prop_infos =
       (* Propagate self edges in a fixpoint *)
       let step_self items item_index self_edges =
+         incr step_count;
          let item1 = items.(item_index) in
          let vars1 = item1.prop_vars in
             List.fold_left (fun changed next_index ->
@@ -1523,7 +1556,7 @@ struct
             let start = Unix.gettimeofday () in
                eprintf "Lm_parser: solving fixpoint for %d states@." (List.length prop_infos);
                let index = fixpoint 1 in
-                  eprintf "Fixpoint %d iterations in %g secs@." index (Unix.gettimeofday () -. start)
+                  eprintf "Fixpoint %d iterations, %d steps, in %g secs@." index !step_count (Unix.gettimeofday () -. start)
          else
             ignore (fixpoint 1)
 
