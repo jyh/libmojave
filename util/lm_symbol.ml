@@ -329,10 +329,11 @@ let string_of_ext_symbol (i, s) =
 let eq (s1 : symbol) (s2 : symbol) =
    s1 = s2
 
-let compare (i1, s1) (i2, s2) =
-   match i1 - i2 with
-      0 -> Pervasives.compare s1 s2
-    | i -> i
+let compare ((i1:int), (s1:string)) (i2, s2) =
+   if i1 = i2 then
+      Pervasives.compare s1 s2
+   else
+      if i1 < i2 then -1 else 1
 
 (*
  * Compare pair of symbols for equality.
