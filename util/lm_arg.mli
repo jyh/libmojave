@@ -28,7 +28,6 @@
  * jyh@cs.caltech.edu
  *)
 
-
 type 'a poly_spec =
    (* Non-folding versions *)
    Unit       of (unit -> unit)

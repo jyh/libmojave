@@ -27,8 +27,7 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Lm_format
-open Lm_format_util
+open Lm_printf
 
 
 (***  Basic Specifications  ***)
@@ -327,7 +326,7 @@ let usage spec =
             else
                printf "@ %-20s" opt;
             printf ":  ";
-            pp_print_paragraph std_formatter doc) spec
+            print_string doc) spec
 
 let usage spec usage_msg =
    (* Display help for all sections. *)

@@ -1,4 +1,6 @@
 (*
+ * JYH: we should port this to Lm_printf.
+ *
  * Utilities for use with the format library.
  * Copyright (C) 2002, Justin David Smith, Caltech
  *
@@ -16,10 +18,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Justin David Smith
+ * justins@chaos2.org
  *)
 open Lm_format
+
 
 (* pp_print_paragraph_bare buf text
    Prints a paragraph of text.  Normally, the text is allowed to break at
@@ -73,7 +76,9 @@ let pp_print_paragraph buf text =
    Builds a Y formatter given two other formatters.  Data printed to the Y
    formatter will be written to *both* formatters that are given as input.
    As a result, this acts as a `Y'' which splits the output.  Pretty nice,
-   eh?  *)
+   eh?
+
+   JYH: actually, to be consistent, this should be called "tee" *)
 let y_formatter buf1 buf2 =
    let y_out s i j =
       let buf1_out, _ = pp_get_formatter_output_functions buf1 () in
