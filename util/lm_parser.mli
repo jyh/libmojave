@@ -31,12 +31,37 @@ val debug_parse    : bool ref
 val debug_parsegen : bool ref
 
 (*
- * Associativity.
+ * Associativity and precedence.
  *)
 type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
+
+module type PrecedenceArg =
+sig
+   type t
+   type precedence
+
+   (* Precedence control *)
+   val prec_min       : precedence
+   val prec_max       : precedence
+
+   (* Precedence tables *)
+   val empty          : t
+   val create_prec_lt : t -> precedence -> assoc  -> t * precedence
+   val create_prec_gt : t -> precedence -> assoc  -> t * precedence
+
+   (* Print a precedence *)
+   val pp_print_prec  : t -> out_channel -> precedence -> unit
+
+   (* Comparison *)
+   val assoc          : t -> precedence -> assoc
+   val compare        : t -> precedence -> precedence -> int
+end
+
+(* Default implementation *)
+module Precedence : PrecedenceArg
 
 exception ParseError of loc
 
@@ -68,13 +93,13 @@ sig
    val pp_print_action : out_channel -> action -> unit
 end
 
-module MakeParser (Arg : ParserArg) :
+module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) :
 sig
    open Arg
+   open Precedence
 
    (* Grammar operations *)
    type t
-   type precedence
    type ('a, 'b) lexer = 'a -> symbol * loc * 'a * 'b
    type ('a, 'b) eval =
       'a ->                     (* The argument *)

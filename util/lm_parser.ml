@@ -64,6 +64,40 @@ type assoc =
  | RightAssoc
  | NonAssoc
 
+let pp_print_assoc buf assoc =
+   let s =
+      match assoc with
+         LeftAssoc ->
+            "left "
+       | RightAssoc ->
+            "right"
+       | NonAssoc ->
+            "nona "
+   in
+      pp_print_string buf s
+
+module type PrecedenceArg =
+sig
+   type t
+   type precedence
+
+   (* Precedence control *)
+   val prec_min       : precedence
+   val prec_max       : precedence
+
+   (* Precedence tables *)
+   val empty          : t
+   val create_prec_lt : t -> precedence -> assoc  -> t * precedence
+   val create_prec_gt : t -> precedence -> assoc  -> t * precedence
+
+   (* Print a precedence *)
+   val pp_print_prec  : t -> out_channel -> precedence -> unit
+
+   (* Comparison *)
+   val assoc          : t -> precedence -> assoc
+   val compare        : t -> precedence -> precedence -> int
+end
+
 exception ParseError of loc
 
 (*
@@ -89,9 +123,10 @@ sig
    val pp_print_action : out_channel -> action -> unit
 end
 
-module MakeParser (Arg : ParserArg) =
+module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) =
 struct
    open Arg
+   open Precedence
 
    (************************************************************************
     * Types.
@@ -107,15 +142,6 @@ struct
       loc ->                    (* Location of the production *)
       'b list ->                (* The arguments to the action *)
       'a * 'b                   (* The result of the semantic action *)
-
-   (*
-    * A precedence has a name and associativity.
-    * The integer gives the *name* of a precedence,
-    * not the actual priority.
-    *)
-   type precedence = int
-
-   module PrecTable = IntTable;;
 
    (*
     * Internally, we represent variables with integers.
@@ -153,7 +179,7 @@ struct
       { prod_action  : action;
         prod_name    : var;
         prod_rhs     : var list;
-        prod_prec    : var
+        prod_prec    : precedence
       }
 
    (*
@@ -167,7 +193,7 @@ struct
        gram_symbol_of_var : symbol VarTable.t;
        gram_prod          : prod VarMTable.t;
        gram_prec          : precedence VarTable.t;
-       gram_prec_table    : (assoc * int) PrecTable.t;
+       gram_prec_table    : Precedence.t;
        gram_start_symbols : SymbolSet.t
      }
 
@@ -352,18 +378,6 @@ struct
                (pp_print_var gram) v
                (pp_print_var_set gram) s) table
 
-   let pp_print_assoc buf assoc =
-      let s =
-         match assoc with
-            LeftAssoc ->
-               "left "
-          | RightAssoc ->
-               "right"
-          | NonAssoc ->
-               "nona "
-      in
-         pp_print_string buf s
-
    let pp_print_prod gram buf prod =
       let { prod_action = action;
             prod_name   = name;
@@ -373,7 +387,7 @@ struct
       in
          fprintf buf "@[<hv 3>(production@ action: %a@ prec: %a@ target: %a@ sources:@ %a)@]" (**)
             pp_print_action action
-            (pp_print_var gram) pre
+            (Precedence.pp_print_prec gram.gram_prec_table) pre
             (pp_print_var gram) name
             (pp_print_vars gram) rhs
 
@@ -386,8 +400,9 @@ struct
       in
          fprintf buf "@[<hv 3>Grammar:";
          VarTable.iter (fun v pre ->
-               let assoc, prio = PrecTable.find prec_table pre in
-                  fprintf buf "@ prec %a = %a, %d" (pp_print_var gram) v pp_print_assoc assoc prio) precs;
+               fprintf buf "@ prec %a = %a" (**)
+                  (pp_print_var gram) v
+                  (Precedence.pp_print_prec prec_table) pre) precs;
          SymbolSet.iter (fun v ->
                fprintf buf "@ start %a" pp_print_symbol v) starts;
          VarMTable.iter_all (fun _ prods ->
@@ -403,11 +418,9 @@ struct
           } = item
       in
       let gram = info.info_grammar in
-      let assoc, prio = PrecTable.find gram.gram_prec_table pre in
-         fprintf buf "%a[%a %d]    %a ::=%a .%a" (**)
+         fprintf buf "%a[%a]    %a ::=%a .%a" (**)
             pp_print_action action
-            pp_print_assoc assoc
-            prio
+            (Precedence.pp_print_prec gram.gram_prec_table) pre
             (pp_print_var gram) name
             (pp_print_vars gram) (List.rev left)
             (pp_print_vars gram) right
@@ -483,25 +496,16 @@ struct
     *)
 
    (*
-    * Degenerate precedences.
-    *)
-   let prec_min    = 0
-   let prec_max    = 1
-
-   (*
     * Empty grammar has the basic precedences.
     *)
    let empty_grammar =
-      let prec_table = VarTable.empty in
-      let prec_table = VarTable.add prec_table prec_min (NonAssoc, 0) in
-      let prec_table = VarTable.add prec_table prec_max (NonAssoc, 1) in
-         { gram_var_of_symbol = SymbolTable.empty;
-           gram_symbol_of_var = VarTable.empty;
-           gram_prod          = VarMTable.empty;
-           gram_prec          = VarTable.empty;
-           gram_prec_table    = prec_table;
-           gram_start_symbols = SymbolSet.empty
-         }
+      { gram_var_of_symbol = SymbolTable.empty;
+        gram_symbol_of_var = VarTable.empty;
+        gram_prod          = VarMTable.empty;
+        gram_prec          = VarTable.empty;
+        gram_prec_table    = Precedence.empty;
+        gram_start_symbols = SymbolSet.empty
+      }
 
    (*
     * Add a start symbol.
@@ -522,41 +526,6 @@ struct
    let find_prec gram sym =
       let v = var_of_symbol_exn gram sym in
          VarTable.find gram.gram_prec v
-
-   (*
-    * Shift all the precedence levels at least the given level
-    * up by one.
-    *)
-   let prec_shift table prio =
-      PrecTable.map (fun (assoc, prio2) ->
-            let prio =
-               if prio2 >= prio then
-                  succ prio2
-               else
-                  prio2
-            in
-               assoc, prio) table
-
-   (*
-    * Create a new precedence level after the given one.
-    *)
-   let create_prec_lt gram pre assoc =
-      let table = gram.gram_prec_table in
-      let index = PrecTable.cardinal table in
-      let _, prio = PrecTable.find table pre in
-      let table = prec_shift table prio in
-      let table = PrecTable.add table index (assoc, prio) in
-      let gram = { gram with gram_prec_table = table } in
-         gram, index
-
-   let create_prec_gt gram pre assoc =
-      let table = gram.gram_prec_table in
-      let index = PrecTable.cardinal table in
-      let _, prio = PrecTable.find table pre in
-      let table = prec_shift table (succ prio) in
-      let table = PrecTable.add table index (assoc, succ prio) in
-      let gram = { gram with gram_prec_table = table } in
-         gram, index
 
    (*
     * Add a production.
@@ -916,14 +885,18 @@ struct
     * Found a reduce action, resolve conflicts.
     *)
    let reduce_action info actions prod_item lookahead =
-      let { info_grammar = { gram_prec_table = prec_table } } = info in
+      let { info_grammar = { gram_prec = var_prec_table;
+                             gram_prec_table = prec_table
+                           }
+          } = info
+      in
       let { prod_item_name   = name;
             prod_item_action = action;
             prod_item_left   = left;
             prod_item_prec   = prec_name
           } = prod_item
       in
-      let assoc, prio = PrecTable.find prec_table prec_name in
+      let assoc = Precedence.assoc prec_table prec_name in
       let reduce = ReduceAction (action, name, List.length left) in
          VarSet.fold (fun actions v ->
                try
@@ -931,18 +904,14 @@ struct
                      ShiftAction id
                    | GotoAction id ->
                         (* Shift/reduce conflict *)
-                        let prio' =
-                           try snd (VarTable.find prec_table v) with
+                        let cmp =
+                           try Precedence.compare prec_table prec_name (VarTable.find var_prec_table v) with
                               Not_found ->
-                                 0
+                              0
                         in
-                           if false && !debug_parsegen then
-                              eprintf "Potential shift/reduce conflict: shift %d (prio %d), reduce %a (prio %d)@." (**)
-                                 id prio'
-                                 pp_print_action action prio;
-                           if prio' > prio then
+                           if cmp < 0 then
                               actions
-                           else if prio' = prio then
+                           else if cmp = 0 then
                               match assoc with
                                  LeftAssoc ->
                                     VarTable.add actions v reduce
@@ -1214,13 +1183,22 @@ struct
       let gram = add_start info.parse_grammar sym in
          { parse_grammar = gram; parse_pda = None }
 
+   let prec_min = Precedence.prec_min
+   let prec_max = Precedence.prec_max
+
    let create_prec_lt info pre assoc =
-      let gram, pre = create_prec_lt info.parse_grammar pre assoc in
+      let { parse_grammar = gram } = info in
+      let { gram_prec_table = prec_table } = gram in
+      let prec_table, pre = Precedence.create_prec_lt prec_table pre assoc in
+      let gram = { gram with gram_prec_table = prec_table } in
       let info = { parse_grammar = gram; parse_pda = None } in
          info, pre
 
    let create_prec_gt info pre assoc =
-      let gram, pre = create_prec_gt info.parse_grammar pre assoc in
+      let { parse_grammar = gram } = info in
+      let { gram_prec_table = prec_table } = gram in
+      let prec_table, pre = Precedence.create_prec_gt prec_table pre assoc in
+      let gram = { gram with gram_prec_table = prec_table } in
       let info = { parse_grammar = gram; parse_pda = None } in
          info, pre
 
@@ -1257,6 +1235,86 @@ struct
       let pda = create info.parse_grammar in
          debug_parse := prev_debug;
          info.parse_pda <- Some pda
+end
+
+(*
+ * Default precedence module.
+ *)
+module Precedence : PrecedenceArg =
+struct
+   (*
+    * A precedence has a name and associativity.
+    * The integer gives the *name* of a precedence,
+    * not the actual priority.
+    *)
+   type precedence = int
+
+   module PrecTable = IntTable;;
+   type t = (assoc * int) PrecTable.t
+
+   (*
+    * Degenerate precedences.
+    *)
+   let prec_min    = 0
+   let prec_max    = 1
+
+   let empty =
+      let prec_table = PrecTable.empty in
+      let prec_table = PrecTable.add prec_table prec_min (NonAssoc, 0) in
+      let prec_table = PrecTable.add prec_table prec_max (NonAssoc, 1) in
+         prec_table
+
+   (*
+    * Shift all the precedence levels at least the given level
+    * up by one.
+    *)
+   let prec_shift table prio =
+      PrecTable.map (fun (assoc, prio2) ->
+            let prio =
+               if prio2 >= prio then
+                  succ prio2
+               else
+                  prio2
+            in
+               assoc, prio) table
+
+   (*
+    * Create a new precedence level after the given one.
+    *)
+   let create_prec_lt table pre assoc =
+      let index = PrecTable.cardinal table in
+      let _, prio = PrecTable.find table pre in
+      let table = prec_shift table prio in
+      let table = PrecTable.add table index (assoc, prio) in
+         table, index
+
+   let create_prec_gt table pre assoc =
+      let index = PrecTable.cardinal table in
+      let _, prio = PrecTable.find table pre in
+      let table = prec_shift table (succ prio) in
+      let table = PrecTable.add table index (assoc, succ prio) in
+         table, index
+
+   (*
+    * Get the associativity of a precedence operator.
+    *)
+   let assoc table pre =
+      fst (PrecTable.find table pre)
+
+   (*
+    * Compare two precedences.
+    *)
+   let compare table pre1 pre2 =
+      let _, prio1 = PrecTable.find table pre1 in
+      let _, prio2 = PrecTable.find table pre2 in
+         prio1 - prio2
+
+   (*
+    * Print the precedence.
+    *)
+   let pp_print_prec table buf pre =
+      let assoc, prio = PrecTable.find table pre in
+         fprintf buf "%a, %d" pp_print_assoc assoc prio
 end
 
 (*!
