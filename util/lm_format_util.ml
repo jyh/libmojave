@@ -21,8 +21,7 @@
  * Author: Justin David Smith
  * justins@chaos2.org
  *)
-open Lm_printf
-
+open Format
 
 (* pp_print_paragraph_bare buf text
    Prints a paragraph of text.  Normally, the text is allowed to break at

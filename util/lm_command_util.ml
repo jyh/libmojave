@@ -18,8 +18,7 @@
  *)
 open Lm_format_util
 open Lm_string_util
-open Lm_printf
-
+open Format
 
 (***  Command Processing (Extract Commands)  ***)
 

@@ -10,6 +10,8 @@ CFILES = $(FILES)
 #
 if $(defined LMINSTALL)
     StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
+else
+    StaticCLibrary(liblmcutil, $(CFILES))
 
 clean:
     $(CLEAN)
