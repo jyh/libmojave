@@ -17,3 +17,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *)
 val difference_of : Unix.process_times -> Unix.process_times -> float
+val profile : string -> ('a -> 'b) -> 'a -> 'b
+val profile_file_opened : bool ref
+val profile_file : string ref
+val profile_out : out_channel ref

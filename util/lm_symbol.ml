@@ -50,10 +50,17 @@ let new_number =
                i)
 
 (*
- * Get the integer suffix.
+ * Get the integer prefix.
  *)
 let to_int (i, _) =
    i
+
+(*
+ * Get the string suffix.
+ *)
+let to_string (_, s) =
+   s
+
 
 (*
  * Mangle a string so it uses printable characters.

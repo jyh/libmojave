@@ -56,6 +56,7 @@ val new_symbol : symbol -> symbol
 val new_symbol_pre : string -> symbol -> symbol
 val new_symbol_string : string -> symbol
 val to_int : symbol -> int
+val to_string : symbol -> string
 
 (*
  * Find a symbol for which the predicate is false.
