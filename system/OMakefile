@@ -3,7 +3,7 @@
 #
 include Files
 
-OCAMLINCLUDES = $(OCAMLINCLUDES) -I ../stdlib -I ../unix
+OCAMLINCLUDES += ../stdlib ../unix
 
 OCamlLibraryInstall($(LMINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
 
