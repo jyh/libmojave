@@ -180,6 +180,7 @@ sig
 
    (* States *)
    val create_state : unit -> state
+   val length : state -> int
 
    (* Normal creation *)
    val icreate : state -> hash -> t
@@ -226,6 +227,9 @@ struct
       { key_table = KeyTable.empty;
         int_table = [||]
       }
+
+   let length state =
+      KeyTable.cardinal state.key_table
 
    let set state i x =
       let table = state.int_table in
@@ -280,129 +284,6 @@ end;;
  *)
 let hash_combine i1 i2 =
     (i1 lsl 2) lxor (i1 lsr 2) lxor i2
-
-(************************************************************************
- * Sorter.
- *)
-module type SortArg =
-sig
-   type key
-   type elt
-
-   val name : elt -> key
-   val next : elt -> key list
-
-   val compare : key -> key -> int
-end
-
-module type SortSig =
-sig
-   type elt
-
-   val sort : elt list -> elt list
-end
-
-module MakeSort (Arg : SortArg) : SortSig with type elt = Arg.elt =
-struct
-   type key = Arg.key
-   type elt = Arg.elt
-
-   module KeyCompare =
-   struct
-      type t = Arg.key
-      let compare = Arg.compare
-   end;;
-
-   module KeySet = Lm_set.LmMake (KeyCompare);;
-   module KeyTable = Lm_map.LmMake (KeyCompare);;
-
-   (*
-    * Build a graph from an input list.
-    *)
-   type node =
-      { node_name : key;
-        node_next : KeySet.t;
-        node_item : elt
-      }
-
-   let build_graph nodes =
-      let domain =
-         List.fold_left (fun domain node ->
-               KeySet.add domain (Arg.name node)) KeySet.empty nodes
-      in
-         List.fold_left (fun graph node ->
-               let name = Arg.name node in
-               let next =
-                  List.fold_left (fun next node ->
-                        if KeySet.mem domain node then
-                           KeySet.add next node
-                        else
-                           next) KeySet.empty (Arg.next node)
-               in
-               let node =
-                  { node_name = name;
-                    node_next = next;
-                    node_item = node
-                  }
-               in
-                  KeyTable.add graph name node) KeyTable.empty nodes
-
-   (*
-    * Find the roots if there are any.
-    * If there are none, just pick a node at random.
-    *)
-   let roots graph nodes =
-      let roots =
-         KeySet.fold (fun roots node ->
-               let node = KeyTable.find graph node in
-                  KeySet.diff roots node.node_next) nodes nodes
-      in
-         (* If the graph is cyclic, just choose the first node *)
-         if KeySet.is_empty roots then
-            KeySet.singleton (KeySet.choose nodes)
-         else
-            roots
-
-   (*
-    * Produce a sort in DFS order.
-    *)
-   let rec dfs_sort_node graph marked items next node =
-      let next = KeySet.remove next node in
-         if KeySet.mem marked node then
-            marked, items, next
-         else
-            let marked = KeySet.add marked node in
-            let node = KeyTable.find graph node in
-            let marked, items, next = dfs_sort_nodes graph marked items next node.node_next in
-               marked, node.node_item :: items, next
-
-   and dfs_sort_nodes graph marked items next nodes =
-      KeySet.fold (fun (marked, items, next) node ->
-            dfs_sort_node graph marked items next node) (marked, items, next) nodes
-
-   (*
-    * The tree may have disconnected components,
-    * so repeat until done.
-    *)
-   let rec dfs_sort graph marked items nodes =
-      if KeySet.is_empty nodes then
-         items
-      else
-         let roots = roots graph nodes in
-         let marked, items, nodes = dfs_sort_nodes graph marked items nodes roots in
-            dfs_sort graph marked items nodes
-
-   (*
-    * Main sort functions.
-    *)
-   let sort nodes =
-      let graph = build_graph nodes in
-      let nodes =
-         List.fold_left (fun nodes node ->
-               KeySet.add nodes (Arg.name node)) KeySet.empty nodes
-      in
-         dfs_sort graph KeySet.empty [] nodes
-end
 
 (************************************************************************
  * Precedences.
@@ -828,22 +709,6 @@ struct
       { prop_edge_src   : StateItem.t;          (* state, item *)
         prop_edge_dst   : StateItemSet.t        (* state, item *)
       }
-
-   module PropEdgeSortArg =
-   struct
-      type key = StateItem.t
-      type elt = prop_edge
-
-      let name edge =
-         edge.prop_edge_src
-
-      let next edge =
-         StateItemSet.to_list edge.prop_edge_dst
-
-      let compare = StateItem.compare
-   end;;
-
-   module PropEdgeSort = MakeSort (PropEdgeSortArg);;
 
    (*
     * The prop_entry is the lookahead we are computing.
@@ -1847,8 +1712,9 @@ struct
                let next_item = ProdItem.create prod_item_hash next_item_core in
                let next = StateItem.create state_item_hash (next_state, next_item) in
 
-               (* Add the edges *)
+               (* Add the edges, but remove any self-edge (because it is useless) *)
                let prop_items = StateItemSet.add prop_items next in
+               let prop_items = StateItemSet.remove prop_items state_item in
                let prop_edge =
                   { prop_edge_src = state_item;
                     prop_edge_dst = prop_items
@@ -1891,8 +1757,80 @@ struct
     * order.  Use depth-first-search to find an approximate
     * order.
     *)
-   let propagate_order prop_edges =
-      PropEdgeSort.sort prop_edges
+   let propagate_order info prop_edges =
+      (*
+       * Build an array of the edges.
+       *)
+      let length = StateItem.length info.info_hash_state_item in
+      let marked = Array.create length false in
+      let graph =
+         match prop_edges with
+            [] ->
+               [||]
+          | edge :: _ ->
+               let graph = Array.create length edge in
+                  List.iter (fun edge ->
+                        graph.(StateItem.hash edge.prop_edge_src) <- edge) prop_edges;
+                  graph
+      in
+
+      (*
+       * Find the roots if there are any.
+       * If there are none, just pick a node at random.
+       *)
+      let roots nodes =
+         let roots =
+            StateItemSet.fold (fun roots node ->
+                  StateItemSet.diff roots graph.(StateItem.hash node).prop_edge_dst) nodes nodes
+         in
+            (* If the graph is cyclic, just choose the first node *)
+            if StateItemSet.is_empty roots then
+               StateItemSet.singleton (StateItemSet.choose nodes)
+            else
+               roots
+      in
+
+      (*
+       * Produce a sort in DFS order.
+       *)
+      let rec dfs_sort_node (items, next) node =
+         let next = StateItemSet.remove next node in
+         let items, next = dfs_sort_nodes items next graph.(StateItem.hash node).prop_edge_dst in
+            node :: items, next
+
+      and dfs_sort_nodes items next nodes =
+         StateItemSet.fold (fun items_next node ->
+               if marked.(StateItem.hash node) then
+                  items_next
+               else begin
+                  marked.(StateItem.hash node) <- true;
+                  dfs_sort_node items_next node
+               end) (items, next) nodes
+      in
+
+      (*
+       * The tree may have disconnected components,
+       * so repeat until done.
+       *)
+      let rec dfs_sort items nodes =
+         if StateItemSet.is_empty nodes then
+            items
+         else
+            let roots = roots nodes in
+            let items, nodes = dfs_sort_nodes items nodes roots in
+               dfs_sort items nodes
+      in
+
+      (*
+       * Main sort functions.
+       *)
+      let nodes =
+         List.fold_left (fun nodes node ->
+               StateItemSet.add nodes node.prop_edge_src) StateItemSet.empty prop_edges
+      in
+      let items = dfs_sort [] nodes in
+         List.map (fun item ->
+               graph.(StateItem.hash item)) items
 
    (*
     * Now solve the lookahead fixpoint.
@@ -1954,7 +1892,7 @@ struct
       in
       let () = set_start_lookahead info prop_table start_table in
       let now = time_print "Start state lookaheads" start now in
-      let prop_edges = propagate_order prop_edges in
+      let prop_edges = propagate_order info prop_edges in
       let now = time_print "Propagation ordering" start now in
 
       (* Take the fixpoint *)
