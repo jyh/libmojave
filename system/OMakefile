@@ -7,8 +7,8 @@ OCAMLINCLUDES += ../stdlib ../unix
 
 if $(defined LMINSTALL)
     OCamlLibraryInstall($(LMINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
+else
+    OCamlLibrary(lmsystem, $(SYSTEM_FILES))
 
 clean:
     $(CLEAN)
-
-all: lmstdlib$(LIB_SUFFIX)

@@ -13,5 +13,9 @@ if $(defined LMINSTALL)
 else
     StaticCLibrary(liblmcutil, $(CFILES))
 
+if $(LM_STANDALONE)
+    .DEFAULT: liblmcutil$(EXT_LIB)
+
+
 clean:
     $(CLEAN)

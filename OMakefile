@@ -27,6 +27,8 @@ FILES =\
 	$(SYSTEM_FILES)\
 	$(UTIL_FILES)
 
+USE_OCAMLFIND = false
+
 OCamlLibrary(lm, $(FILES))
 
 if $(defined LMINSTALL)
@@ -38,6 +40,20 @@ clean:
 #
 # Configuration
 #
+if $(not $(defined LM_STANDALONE))
+    LM_STANDALONE = false
+    export
+
+if $(not $(defined CAMLLIB))
+    CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(shell $(OCAMLC) -where))))
+    export
+
+if $(LM_STANDALONE)
+   if $(NATIVE_ENABLED)
+      .DEFAULT: lm.cmxa lm$(EXT_LIB)
+   if $(BYTE_ENABLED)
+      .DEFAULT: lm.cmx
+
 if $(not $(defined THREADS_ENABLED))
     THREADS_ENABLED = false
     export
@@ -46,6 +62,8 @@ if $(not $(defined CamlSubDirs))
     CamlSubDirs(dirs) =
         .SUBDIRS: $(dirs)
     export
+
+INCLUDES = $(CAMLLIB)
 
 #
 # Subdirectories of this project
