@@ -61,6 +61,9 @@ sig
    val add_assoc      : t -> precedence -> assoc -> t
    val assoc          : t -> precedence -> assoc
    val compare        : t -> precedence -> precedence -> int
+
+   (* Tables and sets *)
+   module PrecTable   : Lm_map_sig.LmMap with type key = precedence
 end
 
 (* Default implementation *)

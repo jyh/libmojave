@@ -97,6 +97,9 @@ sig
    val add_assoc      : t -> precedence -> assoc -> t
    val assoc          : t -> precedence -> assoc
    val compare        : t -> precedence -> precedence -> int
+
+   (* Tables and sets *)
+   module PrecTable   : Lm_map_sig.LmMap with type key = precedence
 end
 
 exception ParseError of loc
@@ -580,6 +583,73 @@ struct
       List.map (translate_var table) vars
 
    (*
+    * Precedence union is a little hard.
+    * Suppose the second grammar contains some precedence
+    * levels that do not occur in the first grammar.  We
+    * have to insert some levels, and we have to figure out
+    * where to put them.
+    *
+    * The basic idea is to sort the
+    * in the first grammar, and these variables have precedences.
+    * Then we have to figure where to put them.
+    *
+    * We only have to figure this out for new variables.
+    * So, construct an inverse map for precedences in the second
+    * grammar.  Then, for each new variable
+    *)
+   let rec find_existing_prec precs vars =
+      match vars with
+         [] ->
+            None
+       | v :: vars ->
+            try Some (VarTable.find precs v) with
+               Not_found ->
+                  find_existing_prec precs vars
+
+   let add_precs precs vars pre =
+      List.fold_left (fun precs v ->
+            VarTable.add precs v pre) precs vars
+
+   let union_prec var_trans prec1 table1 prec2 table2 =
+      (* Build an inverse precedence table for grammar2 *)
+      let inv_table =
+         VarTable.fold (fun inv_table v pre ->
+               PrecTable.filter_add inv_table pre (fun vars ->
+                     let vars =
+                        match vars with
+                           Some vars ->
+                              vars
+                         | None ->
+                              []
+                     in
+                        translate_var var_trans v :: vars)) PrecTable.empty prec2
+      in
+
+      (*
+       * Sort the precedences in grammar2.
+       *)
+      let prec_list =
+         PrecTable.fold (fun prec_list pre _ ->
+               pre :: prec_list) [] inv_table
+      in
+      let prec_list = List.sort (Precedence.compare table2) prec_list in
+      let precs, table, _ =
+         List.fold_left (fun (precs, table, prev_prec) pre ->
+               let vars = PrecTable.find inv_table pre in
+               let table, current_prec =
+                  match find_existing_prec precs vars with
+                     Some current_prec ->
+                        table, current_prec
+                   | None ->
+                        let assoc = Precedence.assoc table2 pre in
+                           Precedence.create_prec_gt table prev_prec assoc
+               in
+               let precs = add_precs precs vars current_prec in
+                  precs, table, current_prec) (prec1, table1, Precedence.prec_min) prec_list
+      in
+         precs, table
+
+   (*
     * Union of two grammars.
     *)
    let union_grammar gram1 gram2 =
@@ -617,16 +687,8 @@ struct
                         var_trans, var_of_symbol, symbol_of_var) (VarTable.empty, var_of_symbol1, symbol_of_var1) var_of_symbol2
       in
 
-      (* Union of the precedences *)
-      let precs =
-         VarTable.fold (fun precs v pre ->
-               VarTable.add precs (translate_var var_trans v) pre) prec1 prec2
-      in
-
-      (*
-       * JYH: this is not right, but I'm just working with it to get started.
-       *)
-      let prec_table = prec_table1 in
+      (* Compute the new precedence table *)
+      let precs, prec_table = union_prec var_trans prec1 prec_table1 prec2 prec_table2 in
 
       (* Get the complete set of actions for the first parser *)
       let actions =
@@ -665,6 +727,7 @@ struct
          changed
          || not (VarTable.is_empty var_trans)
          || (VarTable.cardinal precs <> VarTable.cardinal prec1)
+         || (SymbolSet.cardinal start <> SymbolSet.cardinal start1)
       in
 
       (* New grammar *)
