@@ -94,8 +94,17 @@ type printer =
  * Buffer creation.
  *)
 val new_buffer : unit -> buffer
+val clone_buffer : buffer -> buffer
 val clear_buffer : buffer -> unit
 val buffer_is_empty : buffer -> bool
+
+(*
+ * Marshaling.
+ * This will raise Failure if the marshal
+ * version changes.
+ *)
+val marshal_buffers : buffer list -> string
+val unmarshal_buffers : string -> buffer list
 
 (*
  * Specify the max number of characters in the buffer.

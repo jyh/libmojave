@@ -256,6 +256,19 @@ let new_buffer () =
         buf_root = root
       }
 
+let clone_format_info info =
+   match info with
+      Formatted _
+    | Unformatted _ ->
+         info
+    | Formatting { formatting_stack = stack } ->
+         Formatting { formatting_stack =
+                         List.map (fun info ->
+                               { info with formatting_commands = info.formatting_commands }) stack }
+
+let clone_buffer buf =
+   { buf with buf_info = clone_format_info buf.buf_info }
+
 (*
  * Empty the buffer.
  * The parents are unchanged.
@@ -1215,6 +1228,60 @@ let print_buf buf rmargin printer =
 let print_to_printer buf rmargin printer =
    ignore (compute_breaks buf rmargin);
    ignore (print_buf buf rmargin printer [])
+
+(************************************************************************
+ * Marshaling.
+ *)
+
+(*
+ * Marshaling includes info.
+ *)
+type marshal_info =
+   { marshal_version : string;
+     marshal_buffers : buffer list
+   }
+
+(*
+ * Identifier.
+ *)
+let marshal_version = "$Id$"
+
+(*
+ * Place in unformatted mode for marshaling.
+ *)
+let squash_buffer buf =
+   let unformatted = get_unformatted buf in
+      { buf with buf_info = Unformatted unformatted }
+
+(*
+ * Marshal a list of buffers.
+ *)
+let marshal_buffers bufs =
+   let marshal =
+      { marshal_version = marshal_version;
+        marshal_buffers = List.map squash_buffer bufs
+      }
+   in
+      Marshal.to_string marshal []
+
+(*
+ * Recover the buffers.
+ *)
+let unmarshal_buffers s =
+   (* Check buffer *)
+   let length = String.length s in
+   let () =
+      if length <= Marshal.header_size || length < Marshal.total_size s 0 then
+         raise (Failure "Lm_rformat.unmarshal_buffers")
+   in
+   let marshal = Marshal.from_string s 0 in
+   let { marshal_version = version;
+         marshal_buffers = bufs
+       } = marshal
+   in
+      if version <> marshal_version then
+         raise (Failure "Lm_rformat.unmarshal_buffers");
+      bufs
 
 (*
  * -*-

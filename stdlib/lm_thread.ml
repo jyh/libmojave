@@ -339,18 +339,19 @@ let rec fork_handle thread info =
             (* Prevent recursion *)
             let () = info.info_forks <- IntSet.add info.info_forks state_id in
 
-            (* Get the parent's value *)
+            (* Get the new value *)
             let handle_value =
-               if thread.thread_parent = thread.thread_id then
+               if state_id = 1 then
                   info.info_default
+               else if thread.thread_parent = thread.thread_id then
+                  with_unlock "fork_handle" info.info_fork info.info_default
                else
                   let parent = get_parent_info thread in
                   let parent_handle = fork_handle parent info in
-                     parent_handle.handle_value
+                     with_unlock "fork_handle" info.info_fork parent_handle.handle_value
             in
 
             (* Call the fork function *)
-            let handle_value = with_unlock "fork_hancle" info.info_fork handle_value in
             let handle =
                { handle_value      = handle_value;
                  handle_debug      = Printf.sprintf "%s[%d]" info.info_debug state_id;

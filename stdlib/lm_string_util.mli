@@ -28,6 +28,7 @@
  *)
 val unhex : char -> int
 val hexify : string -> string
+val hexify_sub : string -> int -> int -> string
 val unhexify : string -> string
 val unhexify_int : string -> int
 

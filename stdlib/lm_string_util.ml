@@ -410,7 +410,7 @@ let unescape s =
                         - 111 * Char.code '0'
                      in
                         Char.chr (code land 0xff), i + 4
-                | _ ->
+                | c ->
                      c, i + 2
             else
                c, i + 1
@@ -692,6 +692,15 @@ let hexify s =
    let buf = String.create (2 * len) in
       for i = 0 to pred len do
          let code = Char.code s.[i] in
+            buf.[2 * i] <- hex_char ((code lsr 4) land 15);
+            buf.[2 * i + 1] <- hex_char (code land 15)
+      done;
+      buf
+
+let hexify_sub s off len =
+   let buf = String.create (2 * len) in
+      for i = 0 to pred len do
+         let code = Char.code s.[off + i] in
             buf.[2 * i] <- hex_char ((code lsr 4) land 15);
             buf.[2 * i + 1] <- hex_char (code land 15)
       done;
