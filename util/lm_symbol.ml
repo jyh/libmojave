@@ -271,7 +271,10 @@ let pp_print_ext_symbol buf v =
 let eq (s1 : symbol) (s2 : symbol) =
    s1 = s2
 
-let compare = Pervasives.compare
+let compare (i1, s1) (i2, s2) =
+   match i1 - i2 with
+      0 -> Pervasives.compare s1 s2
+    | i -> i
 
 (*
  * Compare pair of symbols for equality.
