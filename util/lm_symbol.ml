@@ -44,7 +44,10 @@ type var = symbol
 
 let new_number =
    let count = ref 100 in
-      fun () -> incr count; !count
+      (fun () ->
+            let i = !count in
+               count := succ i;
+               i)
 
 (*
  * Get the integer suffix.
@@ -142,8 +145,7 @@ let reintern (_, s) =
  * Don't add it to the table.
  *)
 let new_symbol_string s =
-   (* assert (if is_special s then stop s else true); *)
-      new_number (), s
+   new_number (), s
 
 let new_symbol (_, v) =
    new_symbol_string v
@@ -184,7 +186,10 @@ let is_interned (i, _) =
 let string_of_symbol (i,s) =
    let len = String.length s in
    let s = if pad_with_underscore s len then s ^ "_" else s in
-      if i=0 then s else s ^ string_of_int i
+      if i = 0 then
+         s
+      else
+         s ^ string_of_int i
 
 let pp_print_symbol buf v =
    Format.pp_print_string buf (string_of_symbol v)
@@ -221,8 +226,9 @@ let string_of_ext_symbol (i, s) =
          for i = 0 to String.length s - 1 do
             let c = Char.lowercase (String.get s i) in
                if not ((Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z')
-               || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
-               || c = '_') then
+                       || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
+                       || c = '_')
+               then
                   raise Has
          done;
          false
