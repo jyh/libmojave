@@ -292,16 +292,26 @@ let search_command name =
  * The filename must be simple, no path separators.
  *)
 let which name =
-   (* Check for a simple filename *)
-   if Lm_string_util.contains_any name separators then
-      raise (Failure ("Lm_filename_util.which: path filenames are not allowed: " ^ name));
-
-   (* Check the hashtable *)
-   try Hashtbl.find search_table name with
-      Not_found ->
-         let fullname = search_command name in
-            Hashtbl.add search_table name fullname;
+   if Filename.is_relative name then
+      if Lm_string_util.contains_any name separators then
+         let name = Filename.concat (Sys.getcwd ()) name in
+            match is_executable name with
+               Some fullname ->
+                  fullname
+             | None ->
+                  raise Not_found
+      else
+         try Hashtbl.find search_table name with
+            Not_found ->
+               let fullname = search_command name in
+                  Hashtbl.add search_table name fullname;
+                  fullname
+   else
+      match is_executable name with
+         Some fullname ->
             fullname
+       | None ->
+            raise Not_found
 
 (*!
  * @docoff
