@@ -331,7 +331,7 @@ let parse_args_list line =
    let buf = String.create len in
    let rec skip i =
       if i = len then
-         []
+         [[]]
       else
          match line.[i] with
             ' ' | '\t' | '\n' | '\r' ->
@@ -366,7 +366,7 @@ let parse_args_list line =
             if c = '"' then
                let s = String.sub buf 0 j in
                match skip (succ k) with
-                  [] -> [[s]]
+                  [] -> raise (Invalid_argument "Lm_string_util.parse_args - internal error")
                 | h::tl -> (s::h)::tl
             else if c = '\\' then
                escape j (succ k)
