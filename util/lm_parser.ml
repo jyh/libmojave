@@ -1447,12 +1447,11 @@ struct
    let rec pda_lookahead run arg stack state tok =
       let { pda_delta = delta } = run.run_states.(state) in
       let v, loc, x = tok in
-      let action =
-         try VarTable.find delta v with
-            Not_found ->
-               raise (ParseError loc)
-      in
-         match VarTable.find delta v with
+         match
+            (try VarTable.find delta v with
+               Not_found ->
+                  raise (ParseError loc))
+         with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
