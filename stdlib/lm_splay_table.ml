@@ -485,15 +485,16 @@ let create
       iter_aux f !t
    in
 
-	let rec list_of_aux = function
-      Node (key, data, left, right, _) ->
-         (list_of_aux left)@((key,data)::(list_of_aux right))
-    | Leaf ->
-         []
+	let rec list_of_aux table l =
+		match table with
+			Node (key, data, left, right, _) ->
+				list_of_aux left ((key,data)::(list_of_aux right l))
+		 | Leaf ->
+				l
    in
 
    let list_of t =
-      list_of_aux !t
+      list_of_aux !t []
    in
 
 (*
