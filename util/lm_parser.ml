@@ -621,6 +621,16 @@ struct
    type lookahead = VarSet.t
 
    (*
+    * An info_prod is a flattened version of a production.
+    * This includes all items from all nonterminals after
+    * the .
+    *)
+   type info_prod =
+      { info_prod_syms          : VarSet.t;
+        info_prod_items         : ProdItemSet.t
+      }
+
+   (*
     * The info for constructing the PDA.
     *    info_gram     : the grammar
     *    info_nullable : the nonterminals that derive epsilon
@@ -629,7 +639,8 @@ struct
    type info =
      { info_grammar             : grammar;
        info_nullable            : VarSet.t;
-       info_first               : VarSet.t VarTable.t
+       info_first               : VarSet.t VarTable.t;
+       info_prod                : info_prod VarTable.t
      }
 
    (*
@@ -1159,79 +1170,134 @@ struct
       in
          fixpoint first prods
 
-   (*
-    * Build the grammar.
-    *)
-   let info_of_grammar gram =
-      let nullable = nullable gram in
-      let first = first gram nullable in
-         { info_grammar     = gram;
-           info_nullable    = nullable;
-           info_first       = first
-         }
-
    (************************************************************************
     * LR(0) construction.
     *)
 
    (*
-    * Take the closure of a production.
+    * Compute the next items for a production.
+    *)
+   let build_info_prod prods v items =
+      let next, items =
+         List.fold_left (fun (next, items) prod ->
+               let core = ProdItem.get prod in
+               let next =
+                  match core.prod_item_right with
+                     v :: _ when VarMTable.mem prods v ->
+                        VarSet.add next v
+                   | _ ->
+                        next
+               in
+               let items = ProdItemSet.add items prod in
+                  next, items) (VarSet.empty, ProdItemSet.empty) items
+      in
+         { info_prod_syms = next;
+           info_prod_items = items
+         }
+
+   (*
+    * Take the transitive closure of the next sets.
+    *)
+   let info_prod_close prods prod =
+      let rec search examined unexamined =
+         if VarSet.is_empty unexamined then
+            examined
+         else
+            let v = VarSet.choose unexamined in
+            let unexamined = VarSet.remove unexamined v in
+               if VarSet.mem examined v then
+                  search examined unexamined
+               else
+                  let examined = VarSet.add examined v in
+                  let next = (VarTable.find prods v).info_prod_syms in
+                  let unexamined = VarSet.union unexamined (VarSet.diff next examined) in
+                     search examined unexamined
+      in
+      let next = search VarSet.empty prod.info_prod_syms in
+         { prod with info_prod_syms = next }
+
+   (*
+    * Compute the initial closures.
+    *)
+   let flatten prods =
+      let prods =
+         VarMTable.fold_all (fun table v items ->
+               VarTable.add table v (build_info_prod prods v items)) VarTable.empty prods
+      in
+         VarTable.map (info_prod_close prods) prods
+
+   (*
+    * Produce a transition table by shifting.
+    *)
+   let shift_symbols items =
+      ProdItemSet.fold (fun next prod_item ->
+            let core = ProdItem.get prod_item in
+            let { prod_item_left = left;
+                  prod_item_right = right
+                } = core
+            in
+               match right with
+                  v :: right ->
+                     let core =
+                        { core with prod_item_left = v :: left;
+                                    prod_item_right = right
+                        }
+                     in
+                     let item = ProdItem.create core in
+                        VarTable.filter_add next v (fun items ->
+                              match items with
+                                 Some items ->
+                                    ProdItemSet.add items item
+                               | None ->
+                                    ProdItemSet.singleton item)
+                | [] ->
+                     next) VarTable.empty items
+
+   (*
+    * Get the set of next symbols.
+    *)
+   let closure_next prods items =
+      ProdItemSet.fold (fun next item ->
+            let core = ProdItem.get item in
+               match core.prod_item_right with
+                  v :: _ when VarTable.mem prods v ->
+                     let prod = VarTable.find prods v in
+                        VarSet.add (VarSet.union next prod.info_prod_syms) v
+                | _ ->
+                     next) VarSet.empty items
+
+   (*
+    * The the closure of a production.
+    *
+    * The items is the kernel, and the syms are the
+    * symbols after the dot.
     *)
    let closure_count = ref 0
 
-   let build_closure info memo set =
+   let closure info items =
       incr closure_count;
-      let { info_grammar  = { gram_prod = prods } } = info in
-      let rec close examined unexamined closure =
-         if VarSet.is_empty unexamined then
-            closure
-         else
-            let examined, unexamined, closure =
-               VarSet.fold (fun (examined, unexamined, closure) v ->
-                     let unexamined = VarSet.remove unexamined v in
-                        if VarSet.mem examined v then
-                           examined, unexamined, closure
-                        else
-                           let examined = VarSet.add examined v in
-                              try
-                                 let prods = VarMTable.find_all prods v in
-                                 let unexamined, closure =
-                                    List.fold_left (fun (unexamined, closure) prod ->
-                                          let unexamined =
-                                             match (ProdItem.get prod).prod_item_right with
-                                                v :: _ when not (VarSet.mem examined v) ->
-                                                   VarSet.add unexamined v
-                                              | _ ->
-                                                   unexamined
-                                          in
-                                          let closure = ProdItemSet.add closure prod in
-                                             unexamined, closure) (unexamined, closure) prods
-                                 in
-                                    examined, unexamined, closure
-                              with
-                                 Not_found ->
-                                    examined, unexamined, closure) (examined, unexamined, closure) unexamined
-            in
-               close examined unexamined closure
-      in
-      let items = ProdItemSetHash.get set in
-      let unexamined =
-         ProdItemSet.fold (fun unexamined prod_item ->
-               match (ProdItem.get prod_item).prod_item_right with
-                  v :: _ ->
-                     VarSet.add unexamined v
-                | [] ->
-                     unexamined) VarSet.empty items
-      in
-      let item = close VarSet.empty unexamined items in
-      let item = ProdItemSetHash.create item in
-      let memo = ProdItemSetTable.add memo set item in
-         memo, item
+      let prods = info.info_prod in
 
-   let closure info memo (set : ProdItemSetHash.t) =
-      try memo, ProdItemSetTable.find memo set with
-         Not_found ->
-            build_closure info memo set
+      (*
+       * Now include all the items from the productions.
+       *)
+      let rec flatten examined unexamined items =
+         if VarSet.is_empty unexamined then
+            items
+         else
+            let v = VarSet.choose unexamined in
+            let unexamined = VarSet.remove unexamined v in
+               if VarSet.mem examined v then
+                  flatten examined unexamined items
+               else
+                  let examined = VarSet.add examined v in
+                  let { info_prod_items = items2 } = VarTable.find prods v in
+                  let items = ProdItemSet.union items items2 in
+                     flatten examined unexamined items
+      in
+      let next = closure_next prods items in
+      let items = flatten VarSet.empty next items in
+         ProdItemSetHash.create items
 
    (*
     * Add the state to the set of known LR(0) states.
@@ -1246,42 +1312,11 @@ struct
                      index, unexamined
 
    (*
-    * Figure out all the symbols on which we can make a transition
-    * by shifting.
-    *)
-   let shift_symbols item =
-      let syms =
-         ProdItemSet.fold (fun syms prod_item ->
-               let core = ProdItem.get prod_item in
-               let { prod_item_left = left;
-                     prod_item_right = right
-                   } = core
-               in
-                  match right with
-                     v :: right ->
-                        let core =
-                           { core with prod_item_left = v :: left;
-                                       prod_item_right = right
-                           }
-                        in
-                        let item = ProdItem.create core in
-                           VarTable.filter_add syms v (fun items ->
-                                 match items with
-                                    Some items ->
-                                       ProdItemSet.add items item
-                                  | None ->
-                                       ProdItemSet.singleton item)
-                   | [] ->
-                        syms) VarTable.empty (ProdItemSetHash.get item)
-      in
-         VarTable.map ProdItemSetHash.create syms
-
-   (*
     * Compute the transition table, only for shift operations.
     *)
    let shift_closure_count = ref 0
 
-   let rec shift_closure_memo info closure_memo shift_table examined unexamined =
+   let rec shift_closure info shift_table examined unexamined =
       incr shift_closure_count;
       let { info_grammar = { gram_prod = prods } } = info in
          if ProdItemSetTable.is_empty unexamined then
@@ -1293,19 +1328,19 @@ struct
             let unexamined = ProdItemSetTable.remove unexamined item in
 
             (* Compute the goto states *)
-            let syms = shift_symbols item in
-            let closure_memo, goto_table, unexamined =
-               VarTable.fold (fun (closure_memo, goto_table, unexamined) v items ->
-                     let closure_memo, item = closure info closure_memo items in
+            let next = shift_symbols (ProdItemSetHash.get item) in
+            let goto_table, unexamined =
+               VarTable.fold (fun (goto_table, unexamined) v items ->
+                     let item = closure info items in
                      let next, unexamined = add_state examined unexamined item in
                      let goto_table = VarTable.add goto_table v next in
-                        closure_memo, goto_table, unexamined) (closure_memo, VarTable.empty, unexamined) syms
+                        goto_table, unexamined) (VarTable.empty, unexamined) next
             in
             let shift_table = IntTable.add shift_table index goto_table in
-               shift_closure_memo info closure_memo shift_table examined unexamined
+               shift_closure info shift_table examined unexamined
 
-   let shift_closure info closure_memo unexamined =
-      shift_closure_memo info closure_memo IntTable.empty ProdItemSetTable.empty unexamined
+   let shift_closure info unexamined =
+      shift_closure info IntTable.empty ProdItemSetTable.empty unexamined
 
    (************************************************************************
     * LALR(1) construction.
@@ -1351,6 +1386,71 @@ struct
     * each with a propagation entry to another item identified
     * by (state, index).
     *)
+   let build_prop_item info prop_entry_array prod_table state_table goto_table prop_items prod_item prod_index =
+      let { info_nullable = nullable;
+            info_first = first;
+            info_grammar = { gram_prod = prods }
+          } = info
+      in
+      let prod_item_core = ProdItem.get prod_item in
+      let { prod_item_left = left;
+            prod_item_right = right
+          } = prod_item_core
+      in
+         match right with
+            v :: right ->
+               (* If v is a nonterminal, add the self-edges *)
+               let prop, lookahead = lookahead nullable first VarSet.empty right in
+               let prop_self =
+                  try
+                     let prods = VarMTable.find_all prods v in
+                        List.fold_left (fun prop_self prod_item ->
+                              let item_index =
+                                 try ProdItemTable.find prod_table prod_item with
+                                    Not_found ->
+                                       raise (Invalid_argument "Lm_parser.build_prop_item")
+                              in
+                              let prop_self =
+                                 if prop then
+                                    item_index :: prop_self
+                                 else
+                                    prop_self
+                              in
+                              let prop_entry = prop_entry_array.(item_index) in
+                                 prop_entry.prop_vars <- VarSet.union prop_entry.prop_vars lookahead;
+                                 prop_self) [] prods
+                  with
+                     Not_found ->
+                        []
+               in
+
+               (* Get the goto state *)
+               let next_state_index = VarTable.find goto_table v in
+               let next_item_core =
+                  { prod_item_core with prod_item_left = v :: left;
+                                        prod_item_right = right
+                  }
+               in
+               let next_item = ProdItem.create next_item_core in
+               let next_table = IntTable.find state_table next_state_index in
+               let next_item_index = ProdItemTable.find next_table next_item in
+               let prop_goto =
+                  { prop_goto_state = next_state_index;
+                    prop_goto_item  = next_item_index
+                  }
+               in
+
+               (* Construct the entire item *)
+               let prop_item =
+                  { prop_item_item = prod_index;
+                    prop_item_next = prop_self;
+                    prop_item_goto = prop_goto
+                  }
+               in
+                  prop_item :: prop_items
+          | [] ->
+               prop_items
+
    let build_prop_table info shift_table state_table =
       let { info_nullable = nullable;
             info_first = first;
@@ -1381,60 +1481,8 @@ struct
                (* Now construct propagation info *)
                let prop_items =
                   ProdItemTable.fold (fun prop_items prod_item prod_index ->
-                        let prod_item_core = ProdItem.get prod_item in
-                        let { prod_item_left = left;
-                              prod_item_right = right
-                            } = prod_item_core
-                        in
-                           match right with
-                              v :: right ->
-                                 (* If v is a nonterminal, add the self-edges *)
-                                 let prop, lookahead = lookahead nullable first VarSet.empty right in
-                                 let prop_self =
-                                    try
-                                       let prods = VarMTable.find_all prods v in
-                                          List.fold_left (fun prop_self prod_item ->
-                                                let item_index = ProdItemTable.find prod_table prod_item in
-                                                let prop_self =
-                                                   if prop then
-                                                      item_index :: prop_self
-                                                   else
-                                                      prop_self
-                                                in
-                                                let prop_entry = prop_entry_array.(item_index) in
-                                                   prop_entry.prop_vars <- VarSet.union prop_entry.prop_vars lookahead;
-                                                   prop_self) [] prods
-                                    with
-                                       Not_found ->
-                                          []
-                                 in
-
-                                 (* Get the goto state *)
-                                 let next_state_index = VarTable.find goto_table v in
-                                 let next_item_core =
-                                    { prod_item_core with prod_item_left = v :: left;
-                                                          prod_item_right = right
-                                    }
-                                 in
-                                 let next_item = ProdItem.create next_item_core in
-                                 let next_table = IntTable.find state_table next_state_index in
-                                 let next_item_index = ProdItemTable.find next_table next_item in
-                                 let prop_goto =
-                                    { prop_goto_state = next_state_index;
-                                      prop_goto_item  = next_item_index
-                                    }
-                                 in
-
-                                 (* Construct the entire item *)
-                                 let prop_item =
-                                    { prop_item_item = prod_index;
-                                      prop_item_next = prop_self;
-                                      prop_item_goto = prop_goto
-                                    }
-                                 in
-                                    prop_item :: prop_items
-                            | [] ->
-                                 prop_items) [] prod_table
+                        build_prop_item info prop_entry_array prod_table state_table goto_table prop_items prod_item prod_index) (**)
+                     [] prod_table
                in
                let prop_info =
                   { prop_info_state = state_index;
@@ -1591,15 +1639,11 @@ struct
    (*
     * Construct the LALR(1) table from the LR(0) table.
     *)
-   let build_lalr_table info closure_memo start_table unexamined =
+   let build_lalr_table info start_table unexamined =
       let start = time_start () in
       let now = start in
-      let shift_table, states = shift_closure info closure_memo unexamined in
+      let shift_table, states = shift_closure info unexamined in
       let now = time_print "Closure" start now in
-      let () =
-         if !debug_parsetiming then
-            eprintf "Shift steps: %d, closures: %d@." !shift_closure_count !closure_count
-      in
       let state_table = build_item_indices states in
       let state_table = build_state_index state_table in
       let now = time_print "Indexes" start now in
@@ -1622,6 +1666,19 @@ struct
       let trans_table = rebuild_trans_table info shift_table in
       let _ = time_print "LALR reconstruction" start now in
          trans_table, states
+
+   (************************************************************************
+    * The info needed to build the grammar.
+    *)
+   let info_of_grammar gram =
+      let nullable = nullable gram in
+      let first = first gram nullable in
+      let prods = flatten gram.gram_prod in
+         { info_grammar     = gram;
+           info_nullable    = nullable;
+           info_first       = first;
+           info_prod        = prods
+         }
 
    (************************************************************************
     * Constructing the PDA.
@@ -1760,22 +1817,18 @@ struct
    (*
     * Find the start state for a production.
     *)
-   let create_start info closure_memo start_table unexamined start =
+   let create_start info start_table unexamined start =
       let gram = info.info_grammar in
       let prods =
          try VarMTable.find_all gram.gram_prod start with
             Not_found ->
                raise (Failure ("no such production: " ^ to_string start))
       in
-      let set =
-         List.fold_left (fun set prod_item ->
-               ProdItemSet.add set prod_item) ProdItemSet.empty prods
-      in
-      let set = ProdItemSetHash.create set in
-      let closure_memo, closure = closure info closure_memo set in
+      let set = List.fold_left ProdItemSet.add ProdItemSet.empty prods in
+      let closure = closure info set in
       let state_index, unexamined = add_state ProdItemSetTable.empty unexamined closure in
       let start_table = VarTable.add start_table start state_index in
-         closure_memo, start_table, unexamined
+         start_table, unexamined
 
    let create_core gram =
       let start = time_start () in
@@ -1785,13 +1838,13 @@ struct
          if !debug_parsegen then
             eprintf "@[<hv 3>Grammar:@ %a@]@." pp_print_info info
       in
-      let closure_memo, start_table, unexamined =
-         VarSet.fold (fun (closure_memo, start_table, unexamined) start ->
-               create_start info closure_memo start_table unexamined start) (**)
-            (ProdItemSetTable.empty, VarTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
+      let start_table, unexamined =
+         VarSet.fold (fun (start_table, unexamined) start ->
+               create_start info start_table unexamined start) (**)
+            (VarTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
       in
       let now = time_print "Start states" start now in
-      let trans_table, states = build_lalr_table info closure_memo start_table unexamined in
+      let trans_table, states = build_lalr_table info start_table unexamined in
       let now = time_print "LALR total" start now in
       let trans_table = reduce info trans_table states in
       let now = time_print "Shift/reduce table" start now in
