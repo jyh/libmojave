@@ -2,17 +2,20 @@
 # Include files from subdirectories
 #
 include stdlib/Files
+include system/Files
 include util/Files
 include unix/Files
 
 STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
+SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
 UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
 UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
 
 FILES =\
 	$(STDLIB_FILES)\
-	$(UTIL_FILES)\
-	$(UNIX_FILES)
+	$(UNIX_FILES)\
+	$(SYSTEM_FILES)\
+	$(UTIL_FILES)
 
 OCamlLibrary(lm, $(FILES))
 OCamlLibraryCopy($(MPINSTALL), $(LIB), lm, $(EMPTY))
@@ -20,4 +23,4 @@ OCamlLibraryCopy($(MPINSTALL), $(LIB), lm, $(EMPTY))
 #
 # Subdirectories of this project
 #
-.SUBDIRS: cutil stdlib util unix
+.SUBDIRS: cutil stdlib unix system util

@@ -113,26 +113,26 @@ val new_number : unit -> int
  * This table provides associations between symbols
  * and values.
  *)
-module SymbolSet : Lm_set.LmSet with type elt = symbol
-module SymbolTable : Lm_map.LmMap with type key = symbol
-module SymbolMTable : Lm_map.LmMapList with type key = symbol
-module SymbolIndex : Lm_index.McIndex with type key = symbol
+module SymbolSet : Lm_set_sig.LmSet with type elt = symbol
+module SymbolTable : Lm_map_sig.LmMap with type key = symbol
+module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol
+module SymbolIndex : Lm_index.LmIndex with type key = symbol
 
-module SymbolPairSet : Lm_set.LmSet with type elt = symbol * symbol
-module SymbolPairTable : Lm_map.LmMap with type key = symbol * symbol
-module SymbolPairMTable : Lm_map.LmMapList with type key = symbol * symbol
-module SymbolPairIndex : Lm_index.McIndex with type key = symbol * symbol
+module SymbolPairSet : Lm_set_sig.LmSet with type elt = symbol * symbol
+module SymbolPairTable : Lm_map_sig.LmMap with type key = symbol * symbol
+module SymbolPairMTable : Lm_map_sig.LmMapList with type key = symbol * symbol
+module SymbolPairIndex : Lm_index.LmIndex with type key = symbol * symbol
 
-module SymbolTripleSet : Lm_set.LmSet with type elt = symbol * symbol * symbol
-module SymbolTripleTable : Lm_map.LmMap with type key = symbol * symbol * symbol
-module SymbolTripleMTable : Lm_map.LmMapList with type key = symbol * symbol * symbol
-module SymbolTripleIndex : Lm_index.McIndex with type key = symbol * symbol * symbol
+module SymbolTripleSet : Lm_set_sig.LmSet with type elt = symbol * symbol * symbol
+module SymbolTripleTable : Lm_map_sig.LmMap with type key = symbol * symbol * symbol
+module SymbolTripleMTable : Lm_map_sig.LmMapList with type key = symbol * symbol * symbol
+module SymbolTripleIndex : Lm_index.LmIndex with type key = symbol * symbol * symbol
 
 (*
  * Symbol lists.
  *)
-module SymbolListSet : Lm_set.LmSet with type elt = symbol list
-module SymbolListTable : Lm_map.LmMap with type key = symbol list
+module SymbolListSet : Lm_set_sig.LmSet with type elt = symbol list
+module SymbolListTable : Lm_map_sig.LmMap with type key = symbol list
 
 (*
  * -*-

@@ -1,9 +1,17 @@
 (*
- * Map module based on red-black trees
+ * Marshal an object using the Obj module to access the
+ * data.
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 1999 Jason Hickey, Caltech
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +28,18 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * jyh@cs.cornell.edu
  *)
-open Lm_map_sig
+open Lm_marshal_sig
 
-module Make       (Ord : OrderedType) : (S         with type key = Ord.t)
-module LmMake     (Ord : OrderedType) : (LmMap     with type key = Ord.t)
-module LmMakeList (Ord : OrderedType) : (LmMapList with type key = Ord.t)
+(*
+module Marshal : MarshalSig
+*)
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "nl"
+ * End:
+ * -*-
+ *)

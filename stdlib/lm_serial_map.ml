@@ -23,7 +23,7 @@
  * Author: Adam Granicz
  * granicz@cs.caltech.edu
  *)
-
+open Lm_map_sig
 open Lm_map
 
 (*

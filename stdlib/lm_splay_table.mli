@@ -1,5 +1,6 @@
 (*
- * Set module, implemented using red-black trees
+ * A splay table is like a functional hash table.
+ * This code is derived from the Splay_set code.
  *
  * ----------------------------------------------------------------
  *
@@ -26,11 +27,32 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
+ * Author: Alexey Nogin, Jason Hickey
+ * nogin@cs.cornell.edu
  * jyh@cs.cornell.edu
  *)
-open Lm_set_sig
+open Lm_map_sig
 
-module LmMake (Ord : OrderedType) : (LmSet with type elt = Ord.t)
-module LmMakeDebug (Ord : OrderedTypeDebug) : (LmSetDebug with type elt = Ord.t)
-module Make (Ord : OrderedType) : (S with type elt = Ord.t)
+(*
+ * Create a table.
+ *)
+type ('elt, 'data) table
+
+val create : ('elt, 'data, ('elt, 'data) table) table_create_type
+
+(*
+ * Build the table over an ordered type.
+ *)
+module MakeTable (Base : TableBaseSig)
+: TableSig
+  with type t = (Base.elt, Base.data) table
+  with type elt = Base.elt
+  with type data = Base.data
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

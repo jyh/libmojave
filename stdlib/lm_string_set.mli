@@ -24,13 +24,15 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_set_sig
+open Lm_map_sig
 
 (*
  * String environments.
  *)
-module StringSet : Lm_set.LmSet with type elt = string
-module StringTable : Lm_map.LmMap with type key = string
-module StringMTable : Lm_map.LmMapList with type key = string
+module StringSet : LmSet with type elt = string
+module StringTable : LmMap with type key = string
+module StringMTable : LmMapList with type key = string
 
 (*!
  * @docoff

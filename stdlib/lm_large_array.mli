@@ -1,9 +1,10 @@
 (*
- * Map module based on red-black trees
+ * This is an array that can be larger than
+ * the default OCaml arrays.
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 1999 Jason Hickey, Caltech
+ * Copyright (C) 1999 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +21,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * jyh@cs.cornell.edu
  *)
-open Lm_map_sig
+open Lm_array_sig
 
-module Make       (Ord : OrderedType) : (S         with type key = Ord.t)
-module LmMake     (Ord : OrderedType) : (LmMap     with type key = Ord.t)
-module LmMakeList (Ord : OrderedType) : (LmMapList with type key = Ord.t)
+module LargeArray : ArraySig
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "nl"
+ * End:
+ * -*-
+ *)

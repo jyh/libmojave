@@ -23,8 +23,7 @@
  * Author: Adam Granicz
  * granicz@cs.caltech.edu
  *)
-
-open Lm_map
+open Lm_map_sig
 
 (*
  * These are the functions provided by the table.

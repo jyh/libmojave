@@ -1,3 +1,10 @@
+STDLIB_MLZFILES =\
+	lm_array_sig\
+	lm_dag_sig\
+	lm_linear_set_sig\
+	lm_map_sig\
+	lm_set_sig
+
 STDLIB_FILES =\
 	lm_pervasives\
 	lm_debug\
@@ -11,9 +18,25 @@ STDLIB_FILES =\
 	lm_ref_util\
 	lm_thread_util\
 	lm_thread_event\
+	lm_array_sig\
+	lm_large_array\
+	lm_large_array_weak\
+	lm_dag_sig\
+	lm_cycle_dag\
+	lm_imp_dag\
+	lm_set_sig\
+	lm_map_sig\
+	lm_linear_set_sig\
 	lm_set\
 	lm_map\
+	lm_table_util\
+	lm_small_set\
+	lm_hash_set\
+	lm_splay_set\
+	lm_splay_table\
 	lm_string_set\
+	lm_array_linear_set\
+	lm_splay_linear_set\
 	lm_index\
 	lm_serial_map\
 	lm_splay\

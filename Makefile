@@ -10,8 +10,9 @@ INCLUDE :=
 
 DIRS :=\
 	stdlib\
-	util\
-	unix
+	unix\
+	system\
+	util
 
 ADIRS :=\
 	cutil\

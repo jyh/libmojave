@@ -1,9 +1,17 @@
 (*
- * Map module based on red-black trees
+ * This module provides a linearly ordered numbered set implementation
+ * with lazy functions based on splay trees
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 1999 Jason Hickey, Caltech
+ * This file is part of MetaPRL, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,11 +27,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Alexey Nogin
  *)
-open Lm_map_sig
+open Lm_set_sig
+open Lm_linear_set_sig
 
-module Make       (Ord : OrderedType) : (S         with type key = Ord.t)
-module LmMake     (Ord : OrderedType) : (LmMap     with type key = Ord.t)
-module LmMakeList (Ord : OrderedType) : (LmMapList with type key = Ord.t)
+type 'a linear_set
+
+module Make (Type : TypeSig)
+: LinearSetSig
+  with type elt = Type.t
+  with type t = Type.t linear_set

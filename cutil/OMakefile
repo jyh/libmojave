@@ -10,7 +10,8 @@ CFILES =\
 	lm_readline\
 	lm_rusage\
 	lm_terminfo\
-	lm_mmap
+	lm_mmap\
+	lm_marshal_shared
 
 #
 # Do you want to include readline support in libmojave?
@@ -49,6 +50,6 @@ CFLAGS += $(READLINE_CFLAGS) $(NCURSES_CFLAGS) -Wno-unused-variable
 StaticCLibraryInstall($(MPINSTALL), $(LIB), liblmcutil, $(CFILES))
 
 clean:
-    $(CLEAN)
+    $(CLEAN) *-byte.c *-native.c
 
 all: liblmcutil$(LIB_SUFFIX)

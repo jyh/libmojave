@@ -1,5 +1,5 @@
 (*
- * Set module, implemented using red-black trees
+ * Utilities on tables.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,8 +29,38 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_set_sig
+open Lm_map_sig
 
-module LmMake (Ord : OrderedType) : (LmSet with type elt = Ord.t)
-module LmMakeDebug (Ord : OrderedTypeDebug) : (LmSetDebug with type elt = Ord.t)
-module Make (Ord : OrderedType) : (S with type elt = Ord.t)
+module MakeTable (Create : TableCreateSig) (Base : TableBaseSig) =
+struct
+   type elt = Base.elt
+   type data = Base.data
+   type t = (elt, data) Create.t
+
+   (*
+    * Get the methods.
+    *)
+   let methods = Create.create Base.print Base.compare Base.append
+
+   (*
+    * Now project them.
+    *)
+   let empty = methods.empty
+   let add = methods.add
+   let union = methods.union
+   let mem = methods.mem
+   let find = methods.find
+   let find_all = methods.find_all
+   let remove = methods.remove
+   let iter = methods.iter
+   let map = methods.map
+   let print = methods.print
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "nl"
+ * End:
+ * -*-
+ *)

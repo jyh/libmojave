@@ -1,5 +1,5 @@
-(*
- * Set module, implemented using red-black trees
+/*
+ * This file contains helper functions for the marshal module.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,9 +28,28 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
- *)
-open Lm_set_sig
+ */
 
-module LmMake (Ord : OrderedType) : (LmSet with type elt = Ord.t)
-module LmMakeDebug (Ord : OrderedTypeDebug) : (LmSetDebug with type elt = Ord.t)
-module Make (Ord : OrderedType) : (S with type elt = Ord.t)
+#ifdef __GNUC__
+#pragma implementation
+#endif __GNUC__
+
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
+
+/*
+ * Write the contents of the block to the string.
+ */
+value ml_write_block(value buf, value v_start, value v_stop, value obj);
+
+/*
+ *
+ *
+ * $Log$
+ * Revision 1.1  2003/07/12 21:59:10  jyh
+ * Migrated more code into libmojave.
+ *
+ * Revision 1.1  1999/05/03 12:11:20  jyh
+ * Added an initial incomplete version of the distributed marshaler.
+ *
+ */

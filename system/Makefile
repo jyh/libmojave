@@ -8,9 +8,9 @@ INCLUDE :=
 
 # Library files
 include Files
-MLZFILES := $(STDLIB_MLZFILES)
-LMFILES := $(STDLIB_FILES)
-LMIFILES := $(STDLIB_FILES)
+MLZFILES := $(SYSTEM_MLZFILES)
+LMFILES := $(SYSTEM_FILES)
+LMIFILES := $(SYSTEM_FILES)
 
 # Name of library
 MAIN := lmlib
