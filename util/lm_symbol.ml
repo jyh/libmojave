@@ -341,6 +341,9 @@ end
 module SymbolListSet = Lm_set.LmMake (SymbolListCompare)
 module SymbolListTable = Lm_map.LmMake (SymbolListCompare)
 
+let print_symbol_set out s =
+   print_symbol_list out (SymbolSet.to_list s)
+
 (*
  * -*-
  * Local Variables:

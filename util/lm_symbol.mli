@@ -72,19 +72,6 @@ val string_of_symbol : symbol -> string
 val string_of_ext_symbol : symbol -> string
 
 (*
- * Printer uses Format library.
- *)
-val pp_print_symbol : Format.formatter -> symbol -> unit
-val pp_print_symbol_list : Format.formatter -> symbol list -> unit
-val pp_print_ext_symbol : Format.formatter -> symbol -> unit
-
-(*
- * This printer uses printf.
- *)
-val print_symbol : out_channel -> symbol -> unit
-val print_symbol_list : out_channel -> symbol list -> unit
-
-(*
  * Compare two symbols for equality.
  *)
 val eq : symbol -> symbol -> bool
@@ -133,6 +120,20 @@ module SymbolTripleIndex : Lm_index.LmIndex with type key = symbol * symbol * sy
  *)
 module SymbolListSet : Lm_set_sig.LmSet with type elt = symbol list
 module SymbolListTable : Lm_map_sig.LmMap with type key = symbol list
+
+(*
+ * Printer uses Format library.
+ *)
+val pp_print_symbol : Format.formatter -> symbol -> unit
+val pp_print_symbol_list : Format.formatter -> symbol list -> unit
+val pp_print_ext_symbol : Format.formatter -> symbol -> unit
+
+(*
+ * This printer uses printf.
+ *)
+val print_symbol : out_channel -> symbol -> unit
+val print_symbol_list : out_channel -> symbol list -> unit
+val print_symbol_set : out_channel -> SymbolSet.t -> unit
 
 (*
  * -*-
