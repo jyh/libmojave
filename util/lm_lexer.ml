@@ -256,7 +256,7 @@ sig
    (*
     * The pos function returns the current position of
     * the input buffer within the lexeme
-    * (used for collecting \( ... \) arguments.
+    * (used for collecting \( ... \) arguments).
     *)
    val lex_pos : t -> int
 
@@ -1774,7 +1774,7 @@ struct
                   let actions = dfa_action_add_arg_stop_cur actions id in
                      close_prev table (nid, counters) c closure frontier actions
 
-               (* Reached the frontier *)
+              (* Reached the frontier *)
              | NfaActionArgStart _
              | NfaActionSymbol _
              | NfaActionAnySymbol _
