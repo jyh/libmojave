@@ -114,8 +114,9 @@ sig
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
 
-   (* Sets *)
-   module ActionSet : Lm_set_sig.LmSet with type elt = action;;
+   (* For creating sets and tables *)
+   val hash : action -> int
+   val compare : action -> action -> int
 
    (*
     * You can use the function to decide which clauses take

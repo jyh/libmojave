@@ -309,8 +309,9 @@ sig
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
 
-   (* Sets *)
-   module ActionSet : Lm_set_sig.LmSet with type elt = action
+   (* For creating sets and tables *)
+   val hash : action -> int
+   val compare : action -> action -> int
 
    (*
     * You can use the function to decide which clauses take
@@ -326,6 +327,17 @@ end
 module MakeLexer (Input : LexerInput) (Action : LexerAction) =
 struct
    open Action
+
+   (*
+    * For now, just create a default action set.
+    *)
+   module ActionCompare =
+   struct
+      type t = action
+      let compare = Action.compare
+   end
+
+   module ActionSet = Lm_set.LmMake (ActionCompare);;
 
    (************************************************************************
     * Types.
@@ -2328,7 +2340,14 @@ struct
 
    let pp_print_action = pp_print_int
 
-   module ActionSet = IntSet;;
+   let hash i = i
+   let compare (i : int) (j : int) =
+      if i < j then
+         -1
+      else if i > j then
+         1
+      else
+         0
 
    let choose = min
 end

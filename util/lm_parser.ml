@@ -81,6 +81,78 @@ let pp_print_assoc buf assoc =
    in
       pp_print_string buf s
 
+(************************************************************************
+ * A generic hash module to make comparisons faster.
+ *)
+
+(*
+ * The client needs to provide these functions.
+ *)
+module type HashArgSig =
+sig
+   type t
+
+   (* The client needs to provide hash and comparison functions *)
+   val hash : t -> int
+   val compare : t -> t -> int
+end
+
+(*
+ * This is what we get.
+ *)
+module type HashSig =
+sig
+   type elt
+   type t
+
+   (* Creation *)
+   val create : elt -> t
+   val get : t -> elt
+
+   (* Hash code *)
+   val hash : t -> int
+
+   (* Comparison *)
+   val compare : t -> t -> int
+end
+
+(*
+ * Make a hash item.
+ *)
+module MakeHash (Arg : HashArgSig)
+: HashSig with type elt = Arg.t =
+struct
+   type elt = Arg.t
+
+   type t = int * elt
+
+   let create x =
+      Arg.hash x, x
+
+   let get (_, x) =
+      x
+
+   let hash (i, _) =
+      i
+
+   let compare (i1, x1) (i2, x2) =
+      if i1 = i2 then
+         Arg.compare x1 x2
+      else if i1 < i2 then
+         -1
+      else
+         1
+end;;
+
+(*
+ * The default function for combinding hash values.
+ *)
+let hash_combine i1 i2 =
+    (i1 lsl 2) lxor (i1 lsr 2) lxor i2
+
+(************************************************************************
+ * Precedences.
+ *)
 module type PrecedenceArg =
 sig
    type t
@@ -125,9 +197,8 @@ sig
    val pp_print_symbol : out_channel -> symbol -> unit
 
    (* Sets and tables *)
-   module SymbolSet : Lm_set_sig.LmSet with type elt = symbol;;
-   module SymbolTable : Lm_map_sig.LmMap with type key = symbol;;
-   module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol;;
+   val hash_symbol : symbol -> int
+   val compare_symbol : symbol -> symbol -> int
 
    (* Names of semantic actions *)
    type action
@@ -135,13 +206,13 @@ sig
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
 
-   (* Set of actions *)
-   module ActionSet : Lm_set_sig.LmSet with type elt = action
+   (* For set and table building *)
+   val hash_action : action -> int
+   val compare_action : action -> action -> int
 end
 
 module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) =
 struct
-   open Arg
    open Precedence
 
    (************************************************************************
@@ -151,10 +222,10 @@ struct
    (*
     * Type of lexing tokens.
     *)
-   type ('a, 'b) lexer = 'a -> symbol * loc * 'a * 'b
+   type ('a, 'b) lexer = 'a -> Arg.symbol * loc * 'a * 'b
    type ('a, 'b) eval =
       'a ->                     (* The argument *)
-      action ->                 (* The name of the action *)
+      Arg.action ->             (* The name of the action *)
       loc ->                    (* Location of the production *)
       'b list ->                (* The arguments to the action *)
       'a * 'b                   (* The result of the semantic action *)
@@ -164,11 +235,68 @@ struct
     * integers.  However, this makes the union operation pretty hard,
     * so we just go ahead and use symbols directly.
     *)
-   type var = symbol
+   module VarArg =
+   struct
+      type t = Arg.symbol
 
-   module VarSet    = SymbolSet;;
-   module VarTable  = SymbolTable;;
-   module VarMTable = SymbolMTable;;
+      let hash = Arg.hash_symbol
+      let compare = Arg.compare_symbol
+   end;;
+
+   module Var = MakeHash (VarArg);;
+
+   type var = Var.t
+
+   module VarSet    = Lm_set.LmMake (Var);;
+   module VarTable  = Lm_map.LmMake (Var);;
+   module VarMTable = Lm_map.LmMakeList (Var);;
+
+   let var_list_hash hash vars =
+      List.fold_left (fun hash v ->
+            hash_combine hash (Var.hash v)) hash vars
+
+   let rec var_list_compare vars1 vars2 =
+      match vars1, vars2 with
+         v1 :: vars1, v2 :: vars2 ->
+            let cmp = Var.compare v1 v2 in
+               if cmp = 0 then
+                  var_list_compare vars1 vars2
+               else
+                  cmp
+       | [], [] ->
+            0
+       | _ :: _, [] ->
+            1
+       | [], _ :: _ ->
+            -1
+
+   let to_string v =
+      Arg.to_string (Var.get v)
+
+   let pp_print_symbol buf v =
+      Arg.pp_print_symbol buf (Var.get v)
+
+   let eof = Var.create Arg.eof
+
+   (*
+    * Also hash the actions.
+    *)
+   module ActionArg =
+   struct
+      type t = Arg.action
+
+      let hash = Arg.hash_action
+      let compare = Arg.compare_action
+   end;;
+
+   module Action = MakeHash (ActionArg);;
+
+   type action = Action.t
+
+   module ActionSet   = Lm_set.LmMake (Action);;
+
+   let pp_print_action buf action =
+      Arg.pp_print_action buf (Action.get action)
 
    (************************************************
     * The grammar.
@@ -198,7 +326,7 @@ struct
       { gram_prod          : prod VarMTable.t;
         gram_prec          : precedence VarTable.t;
         gram_prec_table    : Precedence.t;
-        gram_start_symbols : SymbolSet.t
+        gram_start_symbols : VarSet.t
       }
 
    (************************************************
@@ -226,7 +354,9 @@ struct
 
    (*
     * The PDA transition table.
-    * The pda_item is *purely* for debugging.
+    *
+    * The pda_item is *purely* for debugging, so access
+    * does not have to be fast.
     *)
    type pda_item =
       { pda_item_left      : var list;  (* Reverse order *)
@@ -245,7 +375,7 @@ struct
       }
 
    type pda =
-      { pda_start_states  : int SymbolTable.t;
+      { pda_start_states  : int VarTable.t;
         pda_states        : pda_state array
       }
 
@@ -279,8 +409,6 @@ struct
     *
     * We also keep the precedence of the production,
     * and its semantic action name.
-    *
-    * The hash is just to make comparisons faster.
     *)
    type prod_item_core =
       { prod_item_name   : var;
@@ -290,37 +418,81 @@ struct
         prod_item_prec   : precedence
       }
 
-   type prod_item =
-      { prod_item_hash   : int;
-        prod_item_core   : prod_item_core
-      }
-
-   module ProdItemCompare =
+   module ProdItemArg =
    struct
-      type t = prod_item
+      type t = prod_item_core
+
+      let hash item =
+         let { prod_item_name   = name;
+               prod_item_left   = left;
+               prod_item_right  = right;
+               prod_item_action = action
+             } = item
+         in
+         let hash = hash_combine (Var.hash name) (Action.hash action) in
+         let hash = var_list_hash hash left in
+         let hash = var_list_hash hash right in
+            hash
 
       let compare item1 item2 =
-         let cmp = item1.prod_item_hash - item2.prod_item_hash in
+         let { prod_item_name   = name1;
+               prod_item_left   = left1;
+               prod_item_right  = right1;
+               prod_item_action = action1;
+               prod_item_prec   = prec1
+             } = item1
+         in
+         let { prod_item_name   = name2;
+               prod_item_left   = left2;
+               prod_item_right  = right2;
+               prod_item_action = action2;
+               prod_item_prec   = prec2
+             } = item2
+         in
+         let cmp = Var.compare name1 name2 in
             if cmp = 0 then
-               Pervasives.compare item1.prod_item_core item2.prod_item_core
+               let cmp = Action.compare action1 action2 in
+                  if cmp = 0 then
+                     let cmp = var_list_compare left1 left2 in
+                        if cmp = 0 then
+                           let cmp = var_list_compare right1 right2 in
+                              if cmp = 0 then
+                                 Pervasives.compare prec1 prec2
+                              else
+                                 cmp
+                        else
+                           cmp
+                  else
+                     cmp
             else
                cmp
    end
 
-   module ProdItemSet   = Lm_set.LmMake (ProdItemCompare);;
-   module ProdItemTable = Lm_map.LmMake (ProdItemCompare);;
+   module ProdItem = MakeHash (ProdItemArg);;
+
+   type prod_item = ProdItem.t
+
+   module ProdItemSet   = Lm_set.LmMake (ProdItem);;
+   module ProdItemTable = Lm_map.LmMake (ProdItem);;
 
    (*
     * An LR(0) item is a set of ProdItemSet
     *)
-   module ProdItemSetCompare =
+   module ProdItemSetArg =
    struct
       type t = ProdItemSet.t
-      let compare = ProdItemSet.compare
-   end
 
-   module ProdItemSetSet = Lm_set.LmMake (ProdItemSetCompare);;
-   module ProdItemSetTable = Lm_map.LmMake (ProdItemSetCompare);;
+      let hash s =
+         ProdItemSet.fold (fun hash item ->
+               hash_combine hash (ProdItem.hash item)) 0 s
+
+      let compare = ProdItemSet.compare
+   end;;
+
+   module ProdItemSetHash = MakeHash (ProdItemSetArg);;
+
+   module ProdItemSetSet = Lm_set.LmMake (ProdItemSetHash);;
+   module ProdItemSetTable = Lm_map.LmMake (ProdItemSetHash);;
 
    (*
     * The lookahead is a set of variables.
@@ -413,7 +585,7 @@ struct
                fprintf buf "@ prec %a = %a" (**)
                   (pp_print_var gram) v
                   (Precedence.pp_print_prec prec_table) pre) precs;
-         SymbolSet.iter (fun v ->
+         VarSet.iter (fun v ->
                fprintf buf "@ start %a" pp_print_symbol v) starts;
          VarMTable.iter_all (fun _ prods ->
                List.iter (fun prod -> fprintf buf "@ %a" (pp_print_prod gram) prod) prods) prods;
@@ -436,7 +608,7 @@ struct
             (pp_print_vars gram) right
 
    let pp_print_prod_item info buf item =
-      pp_print_prod_item_core info buf item.prod_item_core
+      pp_print_prod_item_core info buf (ProdItem.get item)
 
    let pp_print_pda_action buf action =
       match action with
@@ -497,7 +669,7 @@ struct
          eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
             (pp_print_var gram) v
             id
-            pp_print_action prod_item.prod_item_core.prod_item_action;
+            pp_print_action (ProdItem.get prod_item).prod_item_action;
          if not !debug_parse_conflict_is_warning && not !debug_parsegen then
             eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
                (pp_print_info_item info) info_item
@@ -529,14 +701,14 @@ struct
       { gram_prod          = VarMTable.empty;
         gram_prec          = VarTable.empty;
         gram_prec_table    = Precedence.empty;
-        gram_start_symbols = SymbolSet.empty
+        gram_start_symbols = VarSet.empty
       }
 
    (*
     * Add a start symbol.
     *)
    let add_start gram sym =
-      { gram with gram_start_symbols = SymbolSet.add gram.gram_start_symbols sym }
+      { gram with gram_start_symbols = VarSet.add gram.gram_start_symbols (Var.create sym) }
 
    (*
     * Add a symbol at a given precedence level.
@@ -712,13 +884,13 @@ struct
       in
 
       (* Union of the start symbols *)
-      let start = SymbolSet.union start1 start2 in
+      let start = VarSet.union start1 start2 in
 
       (* Has anything changed? *)
       let changed =
          changed
          || (VarTable.cardinal precs <> VarTable.cardinal prec1)
-         || (SymbolSet.cardinal start <> SymbolSet.cardinal start1)
+         || (VarSet.cardinal start <> VarSet.cardinal start1)
       in
 
       (* New grammar *)
@@ -847,11 +1019,6 @@ struct
    (*
     * Build a prod_item from a production.
     *)
-   let prod_item_of_core core =
-      { prod_item_hash = Hashtbl.hash core;
-        prod_item_core = core
-      }
-
    let prod_item_of_prod prod =
       let { prod_action = action;
             prod_name   = name;
@@ -867,7 +1034,7 @@ struct
            prod_item_right  = rhs
          }
       in
-         prod_item_of_core core
+         ProdItem.create core
 
    (*
     * Take the closure of a production.
@@ -908,13 +1075,14 @@ struct
       in
       let unexamined =
          ProdItemSet.fold (fun unexamined prod_item ->
-               match prod_item.prod_item_core.prod_item_right with
+               match (ProdItem.get prod_item).prod_item_right with
                   v :: _ ->
                      VarSet.add unexamined v
                 | [] ->
                      unexamined) VarSet.empty set
       in
-         close VarSet.empty unexamined set
+      let item = close VarSet.empty unexamined set in
+         ProdItemSetHash.create item
 
    (*
     * Add the state identified by the closure to the set
@@ -935,18 +1103,18 @@ struct
     *)
    let shift_symbols item =
       ProdItemSet.fold (fun syms prod_item ->
-            match prod_item.prod_item_core.prod_item_right with
+            match (ProdItem.get prod_item).prod_item_right with
                v :: _ ->
                   VarSet.add syms v
              | [] ->
-                  syms) VarSet.empty item
+                  syms) VarSet.empty (ProdItemSetHash.get item)
 
    (*
     * Perform the shift by a symbol.
     *)
    let shift_item item v =
       ProdItemSet.fold (fun set prod_item ->
-            let core = prod_item.prod_item_core in
+            let core = ProdItem.get prod_item in
             let { prod_item_left = left;
                   prod_item_right = right
                 } = core
@@ -958,10 +1126,10 @@ struct
                                     prod_item_right = right
                         }
                      in
-                     let prod_item = prod_item_of_core core in
+                     let prod_item = ProdItem.create core in
                         ProdItemSet.add set prod_item
                 | _ ->
-                     set) ProdItemSet.empty item
+                     set) ProdItemSet.empty (ProdItemSetHash.get item)
 
    (*
     * Compute the transition table, only for shift operations.
@@ -1030,7 +1198,7 @@ struct
             let table, _ =
                ProdItemSet.fold (fun (table, index) prod_item ->
                      let table = ProdItemTable.add table prod_item index in
-                        table, succ index) (ProdItemTable.empty, 0) item
+                        table, succ index) (ProdItemTable.empty, 0) (ProdItemSetHash.get item)
             in
                table, index) states
 
@@ -1057,7 +1225,7 @@ struct
                let prod_count = ProdItemTable.cardinal prod_table in
                let prod_entry_list =
                   ProdItemTable.fold (fun prop_entry_list prod_item prod_index ->
-                        let prod_item_core = prod_item.prod_item_core in
+                        let prod_item_core = ProdItem.get prod_item in
                         let { prod_item_left = left;
                               prod_item_right = right
                             } = prod_item_core
@@ -1092,7 +1260,7 @@ struct
                                                           prod_item_right = right
                                     }
                                  in
-                                 let next_item = prod_item_of_core next_item_core in
+                                 let next_item = ProdItem.create next_item_core in
                                  let next_table = IntTable.find state_table next_state_index in
                                  let next_item_index = ProdItemTable.find next_table next_item in
                                  let prop_info =
@@ -1122,7 +1290,7 @@ struct
     *)
    let set_start_lookahead start_table prop_table =
       let eof_set = VarSet.singleton eof in
-         SymbolTable.iter (fun _ state_index ->
+         VarTable.iter (fun _ state_index ->
                Array.iter (fun prop_entry ->
                      prop_entry.prop_vars <- eof_set) prop_table.(state_index)) start_table
 
@@ -1315,20 +1483,19 @@ struct
     *)
    let reduce_early table =
       if ProdItemTable.cardinal table = 1 then
-         match ProdItemTable.choose table with
-            { prod_item_core =
-                 { prod_item_right = [];
-                   prod_item_action = action;
-                   prod_item_name = name;
-                   prod_item_left = left
-                 }
-            }, lookahead ->
-               if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
-                  ReduceAccept (action, name, List.length left)
-               else
-                  ReduceNow (action, name, List.length left)
-          | _ ->
-               ReduceNone
+         let item, lookahead = ProdItemTable.choose table in
+            match ProdItem.get item with
+               { prod_item_right = [];
+                 prod_item_action = action;
+                 prod_item_name = name;
+                 prod_item_left = left
+               } ->
+                  if VarSet.cardinal lookahead = 1 && VarSet.choose lookahead = eof then
+                     ReduceAccept (action, name, List.length left)
+                  else
+                     ReduceNow (action, name, List.length left)
+             | _ ->
+                  ReduceNone
       else
          ReduceNone
 
@@ -1345,7 +1512,7 @@ struct
             prod_item_action = action;
             prod_item_left   = left;
             prod_item_prec   = prec_name
-          } = prod_item.prod_item_core
+          } = ProdItem.get prod_item
       in
       let assoc = Precedence.assoc prec_table prec_name in
       let reduce = ReduceAction (action, name, List.length left) in
@@ -1397,7 +1564,7 @@ struct
             let actions = IntTable.find trans_table index in
             let actions =
                ProdItemTable.fold (fun actions prod_item lookahead ->
-                     match prod_item.prod_item_core.prod_item_right with
+                     match (ProdItem.get prod_item).prod_item_right with
                         [] ->
                            reduce_action info info_item actions prod_item lookahead
                       | _ ->
@@ -1415,7 +1582,7 @@ struct
    let pda_info_of_items items =
       let items, next =
          ProdItemTable.fold (fun (info, next) item lookahead ->
-               let { prod_item_core  = core } = item in
+               let core = ProdItem.get item in
                let { prod_item_left  = left;
                      prod_item_right = right
                    } = core
@@ -1456,7 +1623,7 @@ struct
       in
       let closure = closure info set in
       let state_index, unexamined = add_state ProdItemSetTable.empty unexamined closure in
-      let start_table = SymbolTable.add start_table start state_index in
+      let start_table = VarTable.add start_table start state_index in
          start_table, unexamined
 
    let create_core gram =
@@ -1466,9 +1633,9 @@ struct
             eprintf "@[<hv 3>Grammar:@ %a@]@." pp_print_info info
       in
       let start_table, unexamined =
-         SymbolSet.fold (fun (start_table, unexamined) start ->
+         VarSet.fold (fun (start_table, unexamined) start ->
                create_start info start_table unexamined start) (**)
-            (SymbolTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
+            (VarTable.empty, ProdItemSetTable.empty) gram.gram_start_symbols
       in
       let trans_table, states = build_lalr_table info start_table unexamined in
       let trans_table = reduce info trans_table states in
@@ -1541,7 +1708,7 @@ struct
          if !debug_parse then
             eprintf "Calling action %a@." pp_print_action action
       in
-      let arg, value = eval arg action loc args in
+      let arg, value = eval arg (Action.get action) loc args in
       let () =
          if !debug_parse then
             eprintf "Called action %a@." pp_print_action action
@@ -1646,6 +1813,7 @@ struct
                arg, x
        | ReduceNone ->
             let v, loc, arg, x = run.run_lexer arg in
+            let v = Var.create v in
             let () =
                if !debug_parse then
                   eprintf "State %d: Read token: %a@." state pp_print_symbol v
@@ -1684,7 +1852,7 @@ struct
          }
       in
       let start =
-         try SymbolTable.find start_states start with
+         try VarTable.find start_states start with
             Not_found ->
                raise (Failure ("not a start symbol: " ^ to_string start))
       in
@@ -1705,7 +1873,8 @@ struct
          { parse_grammar = gram; parse_pda = None }
 
    let get_start info =
-      SymbolSet.to_list info.parse_grammar.gram_start_symbols
+      VarSet.fold (fun vars v ->
+            Var.get v :: vars) [] (info.parse_grammar.gram_start_symbols)
 
    let prec_min = Precedence.prec_min
    let prec_max = Precedence.prec_max
@@ -1735,17 +1904,28 @@ struct
          info, pre
 
    let add_prec info pre v =
-      let gram = add_prec info.parse_grammar pre v in
+      let gram = add_prec info.parse_grammar pre (Var.create v) in
          { parse_grammar = gram; parse_pda = None }
 
    let find_prec info v =
-      find_prec info.parse_grammar v
+      find_prec info.parse_grammar (Var.create v)
 
    let add_production info action name rhs pre =
+      let action = Action.create action in
+      let name = Var.create name in
+      let rhs = List.map Var.create rhs in
+      let pre =
+         match pre with
+            Some v ->
+               Some (Var.create v)
+          | None ->
+               None
+      in
       let gram = add_production info.parse_grammar action name rhs pre in
          { parse_grammar = gram; parse_pda = None }
 
    let remove_production info action =
+      let action = Action.create action in
       let gram = remove_production info.parse_grammar action in
          { parse_grammar = gram; parse_pda = None }
 
@@ -1766,7 +1946,8 @@ struct
                pda
 
    let parse info start lexer eval =
-      parse info.parse_grammar (pda_of_info info) start lexer eval
+      let start = Var.create start in
+         parse info.parse_grammar (pda_of_info info) start lexer eval
 
    let compile info =
       ignore (pda_of_info info)

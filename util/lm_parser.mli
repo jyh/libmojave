@@ -73,12 +73,15 @@ module ParserPrecedence : PrecedenceArg
 
 exception ParseError of loc * string
 
+(*
+ * The parser is parameterized over symbol and action names.
+ *)
 module type ParserArg =
 sig
    (* Variable names: the names of terminals and nonterminals *)
    type symbol
 
-   (* A unique symbol to identify eof *)
+   (* A symbol to represent eof *)
    val eof : symbol
 
    (* For debugging *)
@@ -86,26 +89,18 @@ sig
    val pp_print_symbol : out_channel -> symbol -> unit
 
    (* Sets and tables *)
-   module SymbolSet : Lm_set_sig.LmSet with type elt = symbol;;
-   module SymbolTable : Lm_map_sig.LmMap with type key = symbol;;
-   module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol;;
+   val hash_symbol : symbol -> int
+   val compare_symbol : symbol -> symbol -> int
 
-   (*
-    * Semantic actions.
-    * Values of action type *must* be comparable with =,
-    * hopefully quickly.
-    *
-    * For example, functions are not allowed.
-    * If you want a function, you should make an array of functions,
-    * and use the index for the action name.
-    *)
+   (* Names of semantic actions *)
    type action
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
 
-   (* Set of actions *)
-   module ActionSet : Lm_set_sig.LmSet with type elt = action
+   (* For set and table building *)
+   val hash_action : action -> int
+   val compare_action : action -> action -> int
 end
 
 module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) :
