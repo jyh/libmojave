@@ -96,8 +96,7 @@ struct
     * Size of a table.
     *)
    let cardinality = function
-      Red (_, _, _, size) ->
-         size
+      Red (_, _, _, size)
     | Black (_, _, _, size) ->
          size
     | Leaf ->
@@ -159,21 +158,15 @@ struct
     * Check the red-invariant.
     *)
    let rec check_red = function
-      Red (_, left, right, _) ->
-         begin
-            match left, right with
-               Red _, _
-             | _, Red _ ->
-                  raise (Failure "Lm_set.check_red")
-
-             | _ ->
-                  check_red left;
-                  check_red right
-         end
+      Red (_, Red _, _, _)
+   |  Red (_, _, Red _, _) ->
+         raise (Failure "Lm_set.check_red")
+   |  Red (_, left, right, _) ->
+         check_red left;
+         check_red right
     | Black (_, left, right, _) ->
          check_red left;
          check_red right
-
     | Leaf ->
          ()
 
