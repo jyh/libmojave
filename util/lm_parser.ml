@@ -50,6 +50,13 @@ let debug_parsetiming =
         debug_value = false
       }
 
+let debug_parse_conflict_is_warning =
+   create_debug (**)
+      { debug_name = "parse_conflict_is_warning";
+        debug_description = "Do not abort on grammar conflicts";
+        debug_value = false
+      }
+
 (*
  * A precedence directive is left-associative, right-associative,
  * or nonassociative.
@@ -100,7 +107,7 @@ sig
    module PrecTable   : Lm_map_sig.LmMap with type key = precedence
 end
 
-exception ParseError of loc
+exception ParseError of loc * string
 
 (*
  * The parser is parameterized over symbol and action names.
@@ -219,10 +226,22 @@ struct
 
    (*
     * The PDA transition table.
+    * The pda_item is *purely* for debugging.
     *)
+   type pda_item =
+      { pda_item_left      : var list;  (* Reverse order *)
+        pda_item_right     : var list
+      }
+
+   type pda_state_info =
+      { pda_items     : pda_item list;
+        pda_next      : VarSet.t
+      }
+
    type pda_state =
       { pda_delta   : pda_action VarTable.t;
-        pda_reduce  : pda_reduce
+        pda_reduce  : pda_reduce;
+        pda_info    : pda_state_info
       }
 
    type pda =
@@ -467,19 +486,31 @@ struct
    (*
     * Error messages.
     *)
-   let shift_reduce_conflict info v id prod_item =
+   let shift_reduce_conflict info info_item actions v id prod_item =
       let gram = info.info_grammar in
          eprintf "shift/reduce conflict on %a: shift %d, reduce %a@." (**)
             (pp_print_var gram) v
             id
-            pp_print_action prod_item.prod_item_core.prod_item_action
+            pp_print_action prod_item.prod_item_core.prod_item_action;
+         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
+               (pp_print_info_item info) info_item
+               (pp_print_pda_actions info) actions;
+         if not !debug_parse_conflict_is_warning then
+            raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
-   let reduce_reduce_conflict info v action1 action2 =
+   let reduce_reduce_conflict info info_item actions v action1 action2 =
       let gram = info.info_grammar in
          eprintf "reduce/reduce conflict on %a: reduce %a, reduce %a@." (**)
             (pp_print_var gram) v
             pp_print_action action1
-            pp_print_action action2
+            pp_print_action action2;
+         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+            eprintf "@[<v 0>%a@ @[<v 3>%a@]@ @]@." (**)
+               (pp_print_info_item info) info_item
+               (pp_print_pda_actions info) actions;
+         if not !debug_parse_conflict_is_warning then
+            raise (Invalid_argument "Lm_parser.reduce_reduce_conflict:\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
    (************************************************************************
     * Grammar construction.
@@ -1278,7 +1309,7 @@ struct
    (*
     * Found a reduce action, resolve conflicts.
     *)
-   let reduce_action info actions prod_item lookahead =
+   let reduce_action info info_item actions prod_item lookahead =
       let { info_grammar = gram } = info in
       let { gram_prec = var_prec_table;
             gram_prec_table = prec_table
@@ -1314,12 +1345,12 @@ struct
                                | NonAssoc ->
                                     VarTable.add actions v ErrorAction
                                | NoneAssoc ->
-                                    shift_reduce_conflict info v id prod_item;
+                                    shift_reduce_conflict info info_item actions v id prod_item;
                                     actions
                            else
                               VarTable.add actions v reduce
                    | ReduceAction (action2, _, _) ->
-                        reduce_reduce_conflict info v action action2;
+                        reduce_reduce_conflict info info_item actions v action action2;
                         actions
                    | ErrorAction
                    | AcceptAction ->
@@ -1342,7 +1373,7 @@ struct
                ProdItemTable.fold (fun actions prod_item lookahead ->
                      match prod_item.prod_item_core.prod_item_right with
                         [] ->
-                           reduce_action info actions prod_item lookahead
+                           reduce_action info info_item actions prod_item lookahead
                       | _ ->
                            actions) actions prod_items
             in
@@ -1351,6 +1382,36 @@ struct
                      (pp_print_info_item info) info_item
                      (pp_print_pda_actions info) actions;
                IntTable.add trans_table index actions) trans_table states
+
+   (*
+    * Flatten a production state to a pda description.
+    *)
+   let pda_info_of_items items =
+      let items, next =
+         ProdItemTable.fold (fun (info, next) item lookahead ->
+               let { prod_item_core  = core } = item in
+               let { prod_item_left  = left;
+                     prod_item_right = right
+                   } = core
+               in
+               let item =
+                  { pda_item_left  = left;
+                    pda_item_right = right
+                  }
+               in
+               let info = item :: info in
+               let next =
+                  match right with
+                     v :: _ ->
+                        VarSet.add next v
+                   | [] ->
+                        VarSet.union next lookahead
+               in
+                  info, next) ([], VarSet.empty) items
+      in
+         { pda_items     = items;
+           pda_next      = next
+         }
 
    (*
     * Find the start state for a production.
@@ -1387,9 +1448,15 @@ struct
       let trans_table = reduce info trans_table states in
 
       (* Build the PDA states *)
+      let null_info =
+         { pda_items     = [];
+           pda_next      = VarSet.empty
+         }
+      in
       let null_state =
-         { pda_delta = VarTable.empty;
-           pda_reduce = ReduceNone
+         { pda_delta  = VarTable.empty;
+           pda_reduce = ReduceNone;
+           pda_info   = null_info
          }
       in
       let table = Array.create (IntTable.cardinal states) null_state in
@@ -1401,7 +1468,8 @@ struct
                in
                let state =
                   { pda_delta  = IntTable.find trans_table index;
-                    pda_reduce = reduce_early items
+                    pda_reduce = reduce_early items;
+                    pda_info   = pda_info_of_items items
                   }
                in
                   table.(index) <- state) states
@@ -1455,6 +1523,31 @@ struct
          state, arg, loc, value, stack
 
    (*
+    * Exceptions.
+    *)
+   let parse_error loc gram run stack state (v : var) =
+      let { pda_info = { pda_items = items; pda_next = next } } = run.run_states.(state) in
+      let pp_print_var = pp_print_var gram in
+      let buf = stdstr in
+         fprintf buf "@[<v 0>Syntax error on token %a" pp_print_var v;
+         fprintf buf "@ @[<v 3>Current state:";
+         List.iter (fun item ->
+               let { pda_item_left = left;
+                     pda_item_right = right
+                   } = item
+               in
+                  fprintf buf "@[<b 3>";
+                  Lm_list_util.rev_iter (fun v -> fprintf buf "@ %a" pp_print_var v) left;
+                  fprintf buf "@ .";
+                  List.iter (fun v -> fprintf buf "@ %a" pp_print_var v) right;
+                  fprintf buf "@]") items;
+         fprintf buf "@]";
+         fprintf buf "@ @[<b 3>The next possible tokens are:";
+         VarSet.iter (fun v -> fprintf buf "@ %a" pp_print_var v) next;
+         fprintf buf "@]@]";
+         raise (ParseError (loc, flush_stdstr ()))
+
+   (*
     * Execution.
     *
     * The stack contains (state * value) pairs, where the
@@ -1463,26 +1556,26 @@ struct
     *)
    let fst3 (v, _, _) = v
 
-   let rec pda_lookahead run arg stack state tok =
+   let rec pda_lookahead gram run arg stack state tok =
       let { pda_delta = delta } = run.run_states.(state) in
       let v, loc, x = tok in
          match
             (try VarTable.find delta v with
-               Not_found ->
-                  raise (ParseError loc))
+                Not_found ->
+                   parse_error loc gram run stack state v)
          with
             ShiftAction new_state
           | GotoAction new_state ->
                if !debug_parse then
                   eprintf "State %d: token %a: shift %d@." state pp_print_symbol v new_state;
-               pda_no_lookahead run arg ((state, loc, x) :: stack) new_state
+               pda_no_lookahead gram run arg ((state, loc, x) :: stack) new_state
           | ReduceAction (action, name, tokens) ->
                if !debug_parse then
                   eprintf "State %d: reduce %a@." state pp_print_action action;
                let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
-                  pda_goto_lookahead run arg loc stack state name x tok
+                  pda_goto_lookahead gram run arg loc stack state name x tok
           | ErrorAction ->
-               raise (ParseError loc)
+               parse_error loc gram run stack state v
           | AcceptAction ->
                match stack with
                   [_, _, x] ->
@@ -1490,14 +1583,14 @@ struct
                 | _ ->
                      raise (Invalid_argument "pda_lookahead")
 
-   and pda_goto_lookahead run arg loc stack state name x tok =
+   and pda_goto_lookahead gram run arg loc stack state name x tok =
       if !debug_parse then
          eprintf "State %d: Goto lookahead: production %a@." (**)
             state pp_print_symbol name;
       let action =
          try VarTable.find run.run_states.(state).pda_delta name with
             Not_found ->
-               raise (ParseError loc)
+               parse_error loc gram run stack state name
       in
          match action with
             ShiftAction new_state
@@ -1507,20 +1600,20 @@ struct
                      state pp_print_symbol name
                      new_state pp_print_symbol (fst3 tok);
                let stack = (state, loc, x) :: stack in
-                  pda_lookahead run arg stack new_state tok
+                  pda_lookahead gram run arg stack new_state tok
           | ErrorAction
           | ReduceAction _
           | AcceptAction ->
                eprintf "pda_goto_no_lookahead: illegal action: %a@." pp_print_pda_action action;
                raise (Invalid_argument "pda_goto_lookahead: illegal action")
 
-   and pda_no_lookahead run arg stack state =
+   and pda_no_lookahead gram run arg stack state =
       match run.run_states.(state).pda_reduce with
          ReduceNow (action, name, tokens) ->
             if !debug_parse then
                eprintf "State %d: ReduceNow: %a@." state pp_print_action action;
             let state, arg, loc, x, stack = semantic_action run.run_eval arg action stack state tokens in
-               pda_goto_no_lookahead run arg loc stack state name x
+               pda_goto_no_lookahead gram run arg loc stack state name x
        | ReduceAccept (action, _, tokens) ->
             if !debug_parse then
                eprintf "State %d: ReduceAccept: %a@." state pp_print_action action;
@@ -1532,13 +1625,13 @@ struct
                if !debug_parse then
                   eprintf "State %d: Read token: %a@." state pp_print_symbol v
             in
-               pda_lookahead run arg stack state (v, loc, x)
+               pda_lookahead gram run arg stack state (v, loc, x)
 
-   and pda_goto_no_lookahead run arg loc stack state name x =
+   and pda_goto_no_lookahead gram run arg loc stack state name x =
       let action =
          try VarTable.find run.run_states.(state).pda_delta name with
             Not_found ->
-               raise (ParseError loc)
+               parse_error loc gram run stack state name
       in
          match action with
             ShiftAction new_state
@@ -1547,14 +1640,14 @@ struct
                   eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
                      state pp_print_symbol name new_state;
                let stack = (state, loc, x) :: stack in
-                  pda_no_lookahead run arg stack new_state
+                  pda_no_lookahead gram run arg stack new_state
           | ErrorAction
           | ReduceAction _
           | AcceptAction ->
                eprintf "pda_goto_no_lookahead: illegal action: %a@." pp_print_pda_action action;
                raise (Invalid_argument "pda_goto_no_lookahead")
 
-   let parse pda start lexer eval arg =
+   let parse gram pda start lexer eval arg =
       let { pda_states        = states;
             pda_start_states  = start_states
           } = pda
@@ -1570,7 +1663,7 @@ struct
             Not_found ->
                raise (Failure ("not a start symbol: " ^ to_string start))
       in
-         try pda_no_lookahead run arg [] start with
+         try pda_no_lookahead gram run arg [] start with
             Not_found ->
                raise (Failure "syntax error")
 
@@ -1648,7 +1741,7 @@ struct
                pda
 
    let parse info start lexer eval =
-      parse (pda_of_info info) start lexer eval
+      parse info.parse_grammar (pda_of_info info) start lexer eval
 
    let compile info =
       ignore (pda_of_info info)
@@ -1744,9 +1837,7 @@ struct
     * Get the associativity of a precedence operator.
     *)
    let assoc table pre =
-      try fst (PrecTable.find table pre) with
-         Not_found ->
-            raise (Failure (Printf.sprintf "Lm_parser.assoc: associativity not found: %d out of %d" pre (PrecTable.cardinal table)))
+      fst (PrecTable.find table pre)
 
    (*
     * Compare two precedences.

@@ -71,7 +71,7 @@ end
 (* Default implementation *)
 module ParserPrecedence : PrecedenceArg
 
-exception ParseError of loc
+exception ParseError of loc * string
 
 module type ParserArg =
 sig
