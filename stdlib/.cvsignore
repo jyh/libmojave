@@ -2,3 +2,13 @@
 .#*
 *.cm*
 Makefile.dep
+lm_array_sig.ml
+lm_array_sig.mli
+lm_dag_sig.ml
+lm_dag_sig.mli
+lm_linear_set_sig.ml
+lm_linear_set_sig.mli
+lm_map_sig.ml
+lm_map_sig.mli
+lm_set_sig.ml
+lm_set_sig.mli
