@@ -50,6 +50,7 @@ val close         : t -> unit
 val info          : t -> int * kind * mode * bool
 val of_string     : string -> t
 val of_substring  : string -> int -> int -> t
+val of_loc_string : string -> int -> int -> string -> t
 
 (*
  * Set text vs binary mode.

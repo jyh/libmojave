@@ -37,6 +37,9 @@ type assoc =
    LeftAssoc
  | RightAssoc
  | NonAssoc
+ | NoneAssoc
+
+val pp_print_assoc : out_channel -> assoc -> unit
 
 module type PrecedenceArg =
 sig
@@ -56,12 +59,16 @@ sig
    val pp_print_prec  : t -> out_channel -> precedence -> unit
 
    (* Comparison *)
+   val add_assoc      : t -> precedence -> assoc -> t
    val assoc          : t -> precedence -> assoc
    val compare        : t -> precedence -> precedence -> int
+
+   (* Tables and sets *)
+   module PrecTable   : Lm_map_sig.LmMap with type key = precedence
 end
 
 (* Default implementation *)
-module Precedence : PrecedenceArg
+module ParserPrecedence : PrecedenceArg
 
 exception ParseError of loc
 
@@ -70,6 +77,9 @@ sig
    (* Variable names: the names of terminals and nonterminals *)
    type symbol
 
+   (* A unique symbol to identify eof *)
+   val eof : symbol
+
    (* For debugging *)
    val to_string : symbol -> string
    val pp_print_symbol : out_channel -> symbol -> unit
@@ -77,6 +87,7 @@ sig
    (* Sets and tables *)
    module SymbolSet : Lm_set_sig.LmSet with type elt = symbol;;
    module SymbolTable : Lm_map_sig.LmMap with type key = symbol;;
+   module SymbolMTable : Lm_map_sig.LmMapList with type key = symbol;;
 
    (*
     * Semantic actions.
@@ -91,6 +102,9 @@ sig
 
    (* For debugging *)
    val pp_print_action : out_channel -> action -> unit
+
+   (* Set of actions *)
+   module ActionSet : Lm_set_sig.LmSet with type elt = action
 end
 
 module MakeParser (Arg : ParserArg) (Precedence : PrecedenceArg) :
@@ -116,12 +130,14 @@ sig
     * but parsing can only be performed for start variables.
     *)
    val add_start      : t -> symbol -> t
+   val get_start      : t -> symbol list
 
    (* Precedence control *)
    val prec_min       : precedence
    val prec_max       : precedence
    val create_prec_lt : t -> precedence -> assoc  -> t * precedence
    val create_prec_gt : t -> precedence -> assoc  -> t * precedence
+   val add_assoc      : t -> precedence -> assoc  -> t
    val add_prec       : t -> precedence -> symbol -> t
    val find_prec      : t -> symbol -> precedence
 
@@ -140,8 +156,24 @@ sig
       action ->                 (* The name of the semantic action *)
       t
 
+   (*
+    * Take the union of two parsers.
+    * Assumes that productions with the same action name are the same.
+    *)
+   val union : t -> t -> t
+
+   (*
+    * Build the parser if it isn't already built.
+    * This step is entirely optional.  Call it if you want
+    * to check for errors in the current grammar.
+    *)
+   val compile : t -> unit
+
    (* Force a parser build, possibly in debug mode *)
    val build : t -> bool -> unit
+
+   (* Print the grammar *)
+   val pp_print_parser : out_channel -> t -> unit
 
    (* Now the actual machine *)
    val parse :

@@ -238,20 +238,20 @@ let create id file kind mode binary fd =
         write_fun      = default_writer fd
       }
 
-let of_string s =
+let of_string file line char s =
    let len = String.length s in
       { channel_id     = 0;
         channel_fd     = None;
         channel_kind   = FileChannel;
         channel_mode   = InChannel;
-        channel_file   = string_sym;
+        channel_file   = file;
         channel_binary = true;
 
-        start_line     = 1;
-        start_char     = 0;
+        start_line     = line;
+        start_char     = char;
         middle_index   = 0;
-        middle_line    = 1;
-        middle_char    = 0;
+        middle_line    = line;
+        middle_char    = char;
 
         in_index     = 0;
         in_max       = len;
@@ -270,11 +270,14 @@ let of_string s =
         write_fun    = null_writer
       }
 
-let of_string s =
-   of_string (String.copy s)
+let of_loc_string file line char s =
+   of_string (Lm_symbol.add file) line char s
 
 let of_substring s off len =
-   of_string (String.sub s off len)
+   of_string string_sym 1 0 (String.sub s off len)
+
+let of_string s =
+   of_string string_sym 1 0 (String.copy s)
 
 let info channel =
    let { channel_id = id;
