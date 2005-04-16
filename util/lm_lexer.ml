@@ -550,14 +550,14 @@ struct
    let bof = Input.bof
    let eof = Input.eof
 
-   let zero_char = Char.code '0'
-   let at_char   = Char.code '@'
-   let alert_char     = Char.code 'G' - at_char
-   let backspace_char = Char.code 'H' - at_char
-   let formfeed_char  = Char.code 'L' - at_char
-   let newline_char   = Char.code '\n'
-   let cr_char        = Char.code '\r'
-   let tab_char       = Char.code '\t'
+   let zero_char         = Char.code '0'
+   let at_char           = Char.code '@'
+   let alert_char        = Char.code 'G' - at_char
+   let backspace_char    = Char.code 'H' - at_char
+   let formfeed_char     = Char.code 'L' - at_char
+   let newline_char      = Char.code '\n'
+   let cr_char           = Char.code '\r'
+   let tab_char          = Char.code '\t'
    let vertical_tab_char = Char.code 'K' - at_char
    let hex_a_char        = Char.code 'a' - 10
    let hex_A_char        = Char.code 'A' - 10
@@ -1184,7 +1184,6 @@ struct
    (************************************************************************
     * Expressions.
     *)
-
    let pp_print_exp buf exp =
       let { exp_clauses = clauses;
             exp_id = id
@@ -1621,7 +1620,6 @@ struct
    (************************************************
     * Printing.
     *)
-
    let pp_print_dfa_set buf closure =
       fprintf buf "@[<b 3>(set";
       List.iter (fun i -> fprintf buf "@ %a" pp_print_nfa_id i) closure;
