@@ -44,6 +44,236 @@ let debug_lexgen =
       }
 
 (************************************************************************
+ * Utilities.
+ *
+ * A generic hash module to make comparisons faster.
+ *)
+
+(*
+ * The client needs to provide these functions.
+ *)
+module type HashArgSig =
+sig
+   type t
+
+   (* For debugging *)
+   val debug : string
+
+   (* The client needs to provide hash and comparison functions *)
+   val hash : t -> int
+   val compare : t -> t -> int
+end
+
+(*
+ * This is what we get.
+ *)
+module type HashSig =
+sig
+   type elt
+   type t
+
+   (* Creation *)
+   val create : elt -> t
+   val get : t -> elt
+
+   (* Hash code *)
+   val hash : t -> int
+
+   (* Comparison *)
+   val compare : t -> t -> int
+end
+
+(*
+ * Make a hash item.
+ *)
+module MakeHash (Arg : HashArgSig)
+: HashSig with type elt = Arg.t =
+struct
+   type elt = Arg.t
+
+   (* %%MAGICBEGIN %% *)
+   type t = int * elt
+   (* %%MAGICEND%% *)
+
+   let create x =
+      Arg.hash x, x
+
+   let get (_, x) =
+      x
+
+   let hash (i, _) =
+      i
+
+   let compare ((i1 : int), x1) ((i2 : int), x2) =
+      if i1 = i2 then
+         Arg.compare x1 x2
+      else if i1 < i2 then
+         -1
+      else
+         1
+end;;
+
+module type HashConsSig =
+sig
+   type hash
+   type state
+   type elt
+   type t
+
+   (* States *)
+   val create_state : unit -> state
+   val length : state -> int
+
+   (* Normal creation *)
+   val icreate : state -> hash -> t
+   val create : state -> elt -> t
+   val get : state -> t -> elt
+
+   (* Hash code *)
+   val hash : t -> int
+
+   (* Comparison *)
+   val compare : t -> t -> int
+
+   (* Map over an array of hash codes *)
+   val map_array : (t -> elt -> 'a) -> state -> 'a array
+
+   (* Fold over all of the items *)
+   val fold : ('a -> t -> 'a) -> 'a -> state -> 'a
+end
+
+(*
+ * This provides hash-consing.
+ *)
+module MakeHashCons (Arg : HashArgSig)
+: HashConsSig
+  with type elt = Arg.t
+  with type hash = MakeHash(Arg).t =
+struct
+   (* %%MAGICBEGIN%% *)
+   type elt = Arg.t
+   type t = int
+
+   module Key = MakeHash (Arg);;
+   module KeyTable = Lm_map.LmMake (Key);;
+   type hash = Key.t
+
+   (*
+    * We need both directions.
+    *)
+   type state =
+      { mutable key_table : int KeyTable.t;
+        mutable int_table : elt array
+      }
+   (* %%MAGICEND%% *)
+
+   let create_state () =
+      { key_table = KeyTable.empty;
+        int_table = [||]
+      }
+
+   let length state =
+      KeyTable.cardinal state.key_table
+
+   let set state i x =
+      let table = state.int_table in
+      let len = Array.length table in
+         if len = 0 then
+            let table = Array.create 32 x in
+               state.int_table <- table
+         else if i = len then
+            let table2 = Array.create (len * 2) x in
+               Array.blit table 0 table2 0 len;
+               state.int_table <- table2
+         else
+            table.(i) <- x
+
+   let icreate state item =
+      try KeyTable.find state.key_table item with
+         Not_found ->
+            let index = KeyTable.cardinal state.key_table in
+               state.key_table <- KeyTable.add state.key_table item index;
+               set state index (Key.get item);
+               index
+
+   let create state x =
+      icreate state (Key.create x)
+
+   let get state index =
+      state.int_table.(index)
+
+   let hash index =
+      index
+
+   let compare index1 index2 =
+      index1 - index2
+
+   let map_array f state =
+      Array.mapi f (Array.sub state.int_table 0 (KeyTable.cardinal state.key_table))
+
+   let fold f x state =
+      let len = KeyTable.cardinal state.key_table in
+      let rec fold i x =
+         if i = len then
+            x
+         else
+            fold (succ i) (f x i)
+      in
+         fold 0 x
+end;;
+
+(*
+ * The default function for combinding hash values.
+ * XXX: JYH: we should try using a smarter hash function.
+ *)
+let hash_combine i1 i2 =
+    (i1 lsl 2) lxor (i1 lsr 2) lxor i2
+
+let hash_int_list code l =
+   List.fold_left hash_combine code l
+
+let hash_list hash code l =
+   List.fold_left (fun code x ->
+         hash_combine code (hash x)) code l
+
+(*
+ * Comparison.
+ *)
+let rec compare_int_list (l1 : int list) (l2 : int list) =
+   match l1, l2 with
+      i1 :: l1, i2 :: l2 ->
+         if i1 < i2 then
+            -1
+         else if i1 > i2 then
+            1
+         else
+            compare_int_list l1 l2
+    | [], _ ::_ ->
+         -1
+    | _ :: _, [] ->
+         1
+    | [], [] ->
+         0
+
+let rec compare_list hash l1 l2 =
+   match l1, l2 with
+      i1 :: l1, i2 :: l2 ->
+         let i1 = hash i1 in
+         let i2 = hash i2 in
+            if i1 < i2 then
+               -1
+            else if i1 > i2 then
+               1
+            else
+               compare_list hash l1 l2
+    | [], _ ::_ ->
+         -1
+    | _ :: _, [] ->
+         1
+    | [], [] ->
+         0
+
+(************************************************************************
  * Modules.
  *)
 
@@ -56,7 +286,7 @@ let debug_lexgen =
  * So, we model a state of the NFA as a state and the list of
  * counters.  A state of the DFA is a sorted list of NFA states.
  *)
-module NfaState =
+module NfaStateCore =
 struct
    type t = int * int list
 
@@ -101,9 +331,35 @@ struct
             [final, counters; start, counters]
          else
             [final, counters'; start, counters']
-end
+end;;
 
-module DfaState =
+(*
+ * Hash them.
+ *)
+module NfaStateArg =
+struct
+   type t = NfaStateCore.t
+
+   let debug = "NfaState"
+
+   let hash (s, counters) =
+      hash_int_list (s lxor 0x2c18c4d5) counters
+
+   let compare ((s1, counters1) : t) ((s2, counters2) : t) =
+      if s1 < s2 then
+         -1
+      else if s1 > s2 then
+         1
+      else
+         compare_int_list counters1 counters2
+end;;
+
+module NfaState = MakeHashCons (NfaStateArg);;
+
+(*
+ * DFA states.
+ *)
+module DfaStateCore =
 struct
    type t = NfaState.t list           (* Sorted *)
 
@@ -149,15 +405,23 @@ struct
             s1
        | [], _ ->
             s2
-end
+end;;
 
-module DfaStateCompare =
+module DfaStateArg =
 struct
-   type t = DfaState.t
-   let compare = Pervasives.compare
-end
+   type t = DfaStateCore.t
 
-module DfaStateTable = Lm_map.LmMake (DfaStateCompare);;
+   let debug = "DfaState"
+
+   let hash state =
+      hash_list NfaState.hash 0x0affb3d4 state
+
+   let compare state1 state2 =
+      compare_list NfaState.hash state1 state2
+end;;
+
+module DfaState = MakeHashCons (DfaStateArg);;
+module DfaStateTable = Lm_map.LmMake (DfaState);;
 
 module IntCompare =
 struct
@@ -398,7 +662,7 @@ struct
     | NfaActionStop         of int                (* clause id, next state *)
     | NfaActionSymbol       of int list * int     (* symbols, next state *)
     | NfaActionAnySymbol    of int                (* next state *)
-    | NfaActionExceptSymbol of int list *int      (* symbols, next state *)
+    | NfaActionExceptSymbol of int list * int     (* symbols, next state *)
     | NfaActionLimitPrev    of int list * int     (* symbols, next state *)
     | NfaActionLimitNext    of int list * int     (* symbols, next state *)
     | NfaActionNone
@@ -449,7 +713,8 @@ struct
     * and an array of states.
     *)
    type nfa =
-      { nfa_actions     : action IntTable.t;
+      { nfa_hash        : NfaState.state;
+        nfa_actions     : action IntTable.t;
         nfa_start       : NfaState.t;
         nfa_table       : nfa_state array;
         nfa_args        : IntSet.t IntTable.t
@@ -494,7 +759,9 @@ struct
        mutable dfa_length : int;                  (* Index of the largest valid state *)
        mutable dfa_map    : int DfaStateTable.t;  (* Map from NFA state subsets to DFA states *)
        dfa_table          : nfa_state array;      (* The NFA *)
-       dfa_action_table   : action IntTable.t     (* The map from clause id to actions *)
+       dfa_action_table   : action IntTable.t;    (* The map from clause id to actions *)
+       dfa_nfa_hash       : NfaState.state;       (* HashCons table for NFA states *)
+       dfa_hash           : DfaState.state        (* HashCons table for DFA states *)
      }
 
    (*
@@ -1276,8 +1543,8 @@ struct
     * NFA.
     *)
 
-   let pp_print_nfa_id buf nid =
-      match nid with
+   let pp_print_nfa_id hash buf nid =
+      match NfaState.get hash nid with
          (nid, []) ->
             pp_print_int buf nid
        | (nid, counters) ->
@@ -1328,11 +1595,12 @@ struct
          fprintf buf "@[<hv 3>NFA state %d:@ action %a@]" index pp_print_nfa_action action
 
    let pp_print_nfa buf nfa =
-      let { nfa_start = start;
+      let { nfa_hash  = hash;
+            nfa_start = start;
             nfa_table = table
           } = nfa
       in
-         fprintf buf "@[<hv 3>NFA: start = %a" pp_print_nfa_id start;
+         fprintf buf "@[<hv 3>NFA: start = %a" (pp_print_nfa_id hash) start;
          Array.iter (fun state ->
                fprintf buf "@ %a" pp_print_nfa_state state) table;
          fprintf buf "@]"
@@ -1571,6 +1839,10 @@ struct
          in
             collect [] accum.nfa_counter
       in
+
+      (* Hash it *)
+      let hash = NfaState.create_state () in
+      let start = NfaState.create hash (start.nfa_state_index, counters) in
          (* Add all the states to the table *)
          List.iter (fun state ->
                table.(state.nfa_state_index) <- state) states;
@@ -1579,8 +1851,9 @@ struct
          Array.iteri (fun i state ->
                assert (state.nfa_state_index = i)) table;
 
-         { nfa_actions     = actions;
-           nfa_start       = start.nfa_state_index, counters;
+         { nfa_hash        = hash;
+           nfa_actions     = actions;
+           nfa_start       = start;
            nfa_table       = table;
            nfa_args        = depends
          }
@@ -1594,9 +1867,9 @@ struct
    (************************************************
     * Printing.
     *)
-   let pp_print_dfa_set buf closure =
+   let pp_print_dfa_set hash buf closure =
       fprintf buf "@[<b 3>(set";
-      List.iter (fun i -> fprintf buf "@ %a" pp_print_nfa_id i) closure;
+      List.iter (fun i -> fprintf buf "@ %a" (pp_print_nfa_id hash) i) closure;
       fprintf buf ")@]"
 
    let pp_print_dfa_actions buf action =
@@ -1775,25 +2048,25 @@ struct
     * and all the actions we should take.  We return only the
     * frontier (the nodes where we can't make progress) as the next state.
     *)
-   let rec close_prev table nid c closure frontier actions =
-      if DfaState.mem closure nid then
+   let rec close_prev nfa_hash table nid c closure frontier actions =
+      if DfaStateCore.mem closure nid then
          closure, frontier, actions
       else
-         let index, counters = nid in
-         let closure = DfaState.add closure nid in
+         let index, counters = NfaState.get nfa_hash nid in
+         let closure = DfaStateCore.add closure nid in
          let action = table.(index).nfa_state_action in
             if !debug_lexgen then
                eprintf "@[<v 3>close_prev:@ NFA state: %a@ Symbol: %a@ @[<hv 3>Closure:@ %a@]@ @[<hv 3>Frontier:@ %a@]@ @[<hv 3>NFA Action:@ %a@]@ @[<hv 3>Actions: %a@]@]@." (**)
-                  pp_print_nfa_id nid
+                  (pp_print_nfa_id nfa_hash) nid
                   pp_print_char c
-                  pp_print_dfa_set closure
-                  pp_print_dfa_set frontier
+                  (pp_print_dfa_set nfa_hash) closure
+                  (pp_print_dfa_set nfa_hash) frontier
                   pp_print_nfa_action action
                   pp_print_dfa_actions actions;
             match action with
                NfaActionEpsilon nids ->
-                  let nids = List.map (fun index -> index, counters) nids in
-                     close_prev_list table nids c closure frontier actions
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_prev_list nfa_hash table nids c closure frontier actions
 
                (* Reached a final state *)
              | NfaActionStop id ->
@@ -1802,25 +2075,28 @@ struct
 
                (* Counter operations *)
              | NfaActionResetCounter (i, nids) ->
-                  let counters = NfaState.reset_counter counters i in
-                  let nids = List.map (fun index -> index, counters) nids in
-                     close_prev_list table nids c closure frontier actions
+                  let counters = NfaStateCore.reset_counter counters i in
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_prev_list nfa_hash table nids c closure frontier actions
 
              | NfaActionIncrCounter (i, min, final, max, start) ->
-                  let nids = NfaState.incr_counter counters i min final max start in
-                     close_prev_list table nids c closure frontier actions
+                  let nids = NfaStateCore.incr_counter counters i min final max start in
+                  let nids = List.map (NfaState.create nfa_hash) nids in
+                     close_prev_list nfa_hash table nids c closure frontier actions
 
                (* Can only make progress if the current symbol is allowed *)
              | NfaActionLimitPrev (syms, nid) ->
-                  if List.mem c syms then
-                     close_prev table (nid, counters) c closure frontier actions
-                  else
-                     closure, frontier, actions
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     if List.mem c syms then
+                        close_prev nfa_hash table state c closure frontier actions
+                     else
+                        closure, frontier, actions
 
                (* Handle argument termination eagerly *)
              | NfaActionArgStop (id, nid) ->
                   let actions = dfa_action_add_arg_stop_cur actions id in
-                     close_prev table (nid, counters) c closure frontier actions
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_prev nfa_hash table state c closure frontier actions
 
               (* Reached the frontier *)
              | NfaActionArgStart _
@@ -1828,39 +2104,39 @@ struct
              | NfaActionAnySymbol _
              | NfaActionExceptSymbol _
              | NfaActionLimitNext _ ->
-                  closure, DfaState.add frontier nid, actions
+                  closure, DfaStateCore.add frontier nid, actions
 
                (* Minor optimization, because we know that we can't make progress *)
              | NfaActionNone ->
                   closure, frontier, actions
 
-   and close_prev_list table nids c closure frontier actions =
+   and close_prev_list nfa_hash table nids c closure frontier actions =
       List.fold_left (fun (closure, frontier, actions) nid ->
-            close_prev table nid c closure frontier actions) (closure, frontier, actions) nids
+            close_prev nfa_hash table nid c closure frontier actions) (closure, frontier, actions) nids
 
    (*
     * We are now processing symbol c in NFA state nid.
     * Process the symbol, then close_prev.
     *)
-   let rec close_next table nid c closure frontier pending committed =
-      if DfaState.mem closure nid then
+   let rec close_next nfa_hash table nid c closure frontier pending committed =
+      if DfaStateCore.mem closure nid then
          closure, frontier, committed
       else
-         let closure = DfaState.add closure nid in
-         let index, counters = nid in
+         let closure = DfaStateCore.add closure nid in
+         let index, counters = NfaState.get nfa_hash nid in
          let action = table.(index).nfa_state_action in
             if !debug_lexgen then
                eprintf "@[<v 3>close_next:@ NFA state: %a@ Symbol: %a@ @[<hv 3>Closure:@ %a@]@ @[<hv 3>Frontier:@ %a@]@ @[<hv 3>NFA Action:@ %a@]@ @[<hv 3>Committed:@ %a@]@]@." (**)
-                  pp_print_nfa_id nid
+                  (pp_print_nfa_id nfa_hash) nid
                   pp_print_char c
-                  pp_print_dfa_set closure
-                  pp_print_dfa_set frontier
+                  (pp_print_dfa_set nfa_hash) closure
+                  (pp_print_dfa_set nfa_hash) frontier
                   pp_print_nfa_action action
                   pp_print_dfa_actions committed;
             match action with
                NfaActionEpsilon nids ->
-                  let nids = List.map (fun index -> index, counters) nids in
-                     close_next_list table nids c closure frontier pending committed
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_next_list nfa_hash table nids c closure frontier pending committed
 
              | NfaActionStop id ->
                   let committed = dfa_action_add_stop committed id in
@@ -1868,42 +2144,49 @@ struct
 
              | NfaActionArgStart (id, nid) ->
                   let pending = dfa_action_add_arg_start_prev pending id in
-                     close_next table (nid, counters) c closure frontier pending committed
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier pending committed
 
              | NfaActionArgStop (id, nid) ->
                   let committed = dfa_action_add_arg_stop_prev pending committed id in
-                     close_next table (nid, counters) c closure frontier pending committed
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier pending committed
 
              | NfaActionSymbol (syms, nid) when List.mem c syms ->
+                  let state = NfaState.create nfa_hash (nid, counters) in
                   let _, frontier, committed =
-                     close_prev table (nid, counters) c DfaState.empty frontier (dfa_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier (dfa_action_union pending committed)
                   in
                      closure, frontier, committed
 
              | NfaActionExceptSymbol (syms, nid) when not (c = eof || List.mem c syms) ->
+                  let state = NfaState.create nfa_hash (nid, counters) in
                   let _, frontier, committed =
-                     close_prev table (nid, counters) c DfaState.empty frontier (dfa_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier (dfa_action_union pending committed)
                   in
                      closure, frontier, committed
 
              | NfaActionAnySymbol nid when c <> eof ->
+                  let state = NfaState.create nfa_hash (nid, counters) in
                   let _, frontier, committed =
-                     close_prev table (nid, counters) c DfaState.empty frontier (dfa_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier (dfa_action_union pending committed)
                   in
                      closure, frontier, committed
 
              | NfaActionLimitNext (syms, nid) when List.mem c syms ->
-                  close_next table (nid, counters) c closure frontier pending committed
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier pending committed
 
                (* Counter operations *)
              | NfaActionResetCounter (i, nids) ->
-                  let counters = NfaState.reset_counter counters i in
-                  let nids = List.map (fun index -> index, counters) nids in
-                     close_next_list table nids c closure frontier pending committed
+                  let counters = NfaStateCore.reset_counter counters i in
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_next_list nfa_hash table nids c closure frontier pending committed
 
              | NfaActionIncrCounter (i, min, final, max, start) ->
-                  let nids = NfaState.incr_counter counters i min final max start in
-                     close_next_list table nids c closure frontier pending committed
+                  let nids = NfaStateCore.incr_counter counters i min final max start in
+                  let nids = List.map (NfaState.create nfa_hash) nids in
+                     close_next_list nfa_hash table nids c closure frontier pending committed
 
                (* Anything else is a failure *)
              | NfaActionNone
@@ -1914,20 +2197,22 @@ struct
              | NfaActionLimitNext _ ->
                   closure, frontier, committed
 
-   and close_next_list table nids c closure frontier pending committed =
+   and close_next_list nfa_hash table nids c closure frontier pending committed =
       List.fold_left (fun (closure, frontier, committed) nid ->
-            close_next table nid c closure frontier pending committed) (closure, frontier, committed) nids
+            close_next nfa_hash table nid c closure frontier pending committed) (closure, frontier, committed) nids
 
    (*
     * The next state is the frontier.
     *)
-   let close_next_state table nids c =
-      let _, frontier, actions = close_next_list table nids c DfaState.empty DfaState.empty dfa_action_empty dfa_action_empty in
+   let close_next_state nfa_hash table nids c =
+      let _, frontier, actions =
+         close_next_list nfa_hash table nids c DfaStateCore.empty DfaStateCore.empty dfa_action_empty dfa_action_empty
+      in
          if !debug_lex then
             eprintf "@[<hv 3>NFA transition:@ @[<hv 3>current:@ %a@]@ symbol: %a@ @[<hv 3>next:@ %a@]@ @[<hv 3>actions:@ %a@]@." (**)
-               pp_print_dfa_set nids
+               (pp_print_dfa_set nfa_hash) nids
                pp_print_char c
-               pp_print_dfa_set frontier
+               (pp_print_dfa_set nfa_hash) frontier
                pp_print_dfa_actions actions;
          frontier, actions
 
@@ -1977,15 +2262,20 @@ struct
     * an entry in the transition table yet.
     *)
    let create_entry dfa dfa_state c =
-      let { dfa_table = table } = dfa in
+      let { dfa_nfa_hash = nfa_hash;
+            dfa_hash = dfa_hash;
+            dfa_table = table
+          } = dfa
+      in
       let { dfa_state_set = nids;
             dfa_state_delta = delta
           } = dfa_state
       in
-      let frontier, actions = close_next_state table nids c in
+      let frontier, actions = close_next_state nfa_hash table (DfaState.get dfa_hash nids) c in
          if frontier = [] && dfa_action_is_empty actions then
             dfa_state.dfa_state_delta <- TransTable.add delta c DfaNoTransition
          else
+            let frontier = DfaState.create dfa_hash frontier in
             let dfa_id = dfa_find_state dfa frontier in
             let entry = DfaTransition (dfa_id, actions) in
                dfa_state.dfa_state_delta <- TransTable.add delta c entry
@@ -2001,7 +2291,7 @@ struct
             if !debug_lex then
                eprintf "State %d %a: symbol %a, goto %d@." (**)
                   dfa_state.dfa_state_index
-                  pp_print_dfa_set dfa_state.dfa_state_set
+                  (pp_print_dfa_set dfa.dfa_nfa_hash) (DfaState.get dfa.dfa_hash dfa_state.dfa_state_set)
                   pp_print_char c dfa_id;
             dfa_eval_actions dfa_info actions;
             Some (dfa.dfa_states.(dfa_id))
@@ -2009,14 +2299,14 @@ struct
             if !debug_lex then
                eprintf "State %d %a: no transition for symbol %a@." (**)
                   dfa_state.dfa_state_index
-                  pp_print_dfa_set dfa_state.dfa_state_set
+                  (pp_print_dfa_set dfa.dfa_nfa_hash) (DfaState.get dfa.dfa_hash dfa_state.dfa_state_set)
                   pp_print_char c;
             None
        | DfaUnknownTransition ->
             if !debug_lex then
                eprintf "State %d %a: computing transition on symbol %a@." (**)
                   dfa_state.dfa_state_index
-                  pp_print_dfa_set dfa_state.dfa_state_set
+                  (pp_print_dfa_set dfa.dfa_nfa_hash) (DfaState.get dfa.dfa_hash dfa_state.dfa_state_set)
                   pp_print_char c;
             create_entry dfa dfa_state c;
             dfa_delta dfa dfa_info dfa_state c
@@ -2156,13 +2446,15 @@ struct
          if !debug_lexgen || !debug_lex then
             eprintf "%a@." pp_print_nfa nfa
       in
-      let { nfa_table    = nfa_table;
+      let { nfa_hash     = nfa_hash;
+            nfa_table    = nfa_table;
             nfa_start    = nfa_start;
             nfa_actions  = actions;
             nfa_args     = nfa_args
           } = nfa
       in
-      let nfa_start = [nfa_start] in
+      let dfa_hash = DfaState.create_state () in
+      let nfa_start = DfaState.create dfa_hash [nfa_start] in
       let start =
          { dfa_state_index  = 0;
            dfa_state_set    = nfa_start;
@@ -2173,7 +2465,9 @@ struct
            dfa_length       = 1;
            dfa_map          = DfaStateTable.add DfaStateTable.empty nfa_start 0;
            dfa_table        = nfa_table;
-           dfa_action_table = actions
+           dfa_action_table = actions;
+           dfa_nfa_hash     = nfa_hash;
+           dfa_hash         = dfa_hash
          }
 
    (*
