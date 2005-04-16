@@ -410,7 +410,6 @@ struct
     *)
    type arg =
       { arg_index     : int;
-        arg_depends   : IntSet.t;
         arg_clause    : int;
         arg_number    : int
       }
@@ -420,25 +419,21 @@ struct
     *    nfa_index       : the index of the next state to be allocated
     *    nfa_counter     : the total number of interval expression we have seen
     *    nfa_arg_index   : the identifier of the next argument
-    *    nfa_arg_depends : what other arguments this one depends on
     *)
    type nfa_accum =
       { nfa_index       : int;
         nfa_counter     : int;
-        nfa_arg_index   : int;
-        nfa_arg_table   : arg IntTable.t
+        nfa_arg_index   : int
       }
 
    (*
     * This is the info we pass left-to-right during compilation.
     *    nfa_clause       : the index of the current clause being compiled
     *    nfa_arg_number   : the index of the next argument
-    *    nfa_arg_depends  : what other arguments the next one depends on
     *)
    type nfa_info =
       { nfa_clause        : int;
-        nfa_arg_number    : int;
-        nfa_arg_depends   : IntSet.t;
+        nfa_arg_number    : int
       }
 
    (*
@@ -457,8 +452,7 @@ struct
       { nfa_actions     : action IntTable.t;
         nfa_start       : NfaState.t;
         nfa_table       : nfa_state array;
-        nfa_args        : IntSet.t IntTable.t;
-        nfa_arg_info    : arg IntTable.t
+        nfa_args        : IntSet.t IntTable.t
       }
 
    (*
@@ -500,8 +494,6 @@ struct
        mutable dfa_length : int;                  (* Index of the largest valid state *)
        mutable dfa_map    : int DfaStateTable.t;  (* Map from NFA state subsets to DFA states *)
        dfa_table          : nfa_state array;      (* The NFA *)
-       dfa_arg_depends    : IntSet.t IntTable.t;  (* The map from clause id to valid arguments *)
-       dfa_arg_table      : arg IntTable.t;       (* The info about each arg *)
        dfa_action_table   : action IntTable.t     (* The map from clause id to actions *)
      }
 
@@ -1454,35 +1446,22 @@ struct
 
          (* Arguments *)
        | RegexArg regex ->
-            let { nfa_arg_index = argindex;
-                  nfa_arg_table = argtable
-                } = accum
-            in
+            let { nfa_arg_index = argindex } = accum in
             let accum, final1 = nfa_state accum (NfaActionArgStop (argindex, final.nfa_state_index)) in
             let accum, start1 = nfa_state accum NfaActionNone in
             let start = set_action start (NfaActionArgStart (argindex, start1.nfa_state_index)) in
             let { nfa_clause = clause;
-                  nfa_arg_number = argnumber;
-                  nfa_arg_depends = depends
+                  nfa_arg_number = argnumber
                 } = info
             in
             let arg =
                { arg_index   = argindex;
-                 arg_depends = depends;
                  arg_clause  = clause;
                  arg_number  = argnumber
                }
             in
-            let accum =
-               { accum with nfa_arg_index = succ argindex;
-                            nfa_arg_table = IntTable.add argtable argindex arg
-               }
-            in
-            let info =
-               { info with nfa_arg_number  = succ argnumber;
-                           nfa_arg_depends = IntSet.singleton argindex
-               }
-            in
+            let accum = { accum with nfa_arg_index = succ argindex } in
+            let info = { info with nfa_arg_number  = succ argnumber } in
             let accum, info, start1, states =
                compile accum info start1 final1 states regex
             in
@@ -1505,12 +1484,11 @@ struct
                let accum, info2, start, states =
                   compile accum info_orig start final states regex
                in
-               let info =
+               let () =
                   if info1.nfa_arg_number <> info2.nfa_arg_number then
-                     raise (Failure "Lm_lexer: Regular expression has mismatched argument counts");
-                  { info1 with nfa_arg_depends = IntSet.union info1.nfa_arg_depends info2.nfa_arg_depends }
+                     raise (Failure "Lm_lexer: Regular expression has mismatched argument counts")
                in
-                  accum, info, start :: starts, final :: finals, states) (**)
+                  accum, info1, start :: starts, final :: finals, states) (**)
             (accum, info1, [start], [final], states) regexl
       in
          accum, info, starts, finals, states
@@ -1558,8 +1536,7 @@ struct
       let accum =
          { nfa_index     = 0;
            nfa_counter   = 0;
-           nfa_arg_index = 0;
-           nfa_arg_table = IntTable.empty
+           nfa_arg_index = 0
          }
       in
 
@@ -1568,15 +1545,13 @@ struct
          List.fold_left (fun (accum, depends, actions, starts, states) (action, id, regex) ->
                let info =
                   { nfa_clause      = id;
-                    nfa_arg_number  = 0;
-                    nfa_arg_depends = IntSet.empty
+                    nfa_arg_number  = 0
                   }
                in
                let accum, info, start, states = compile_clause accum info states regex in
                let actions = IntTable.add actions id action in
                let starts = start.nfa_state_index :: starts in
                let states = start :: states in
-               let depends = IntTable.add depends id info.nfa_arg_depends in
                   accum, depends, actions, starts, states) (**)
             (accum, IntTable.empty, IntTable.empty, [], []) exp.exp_clauses
       in
@@ -1607,8 +1582,7 @@ struct
          { nfa_actions     = actions;
            nfa_start       = start.nfa_state_index, counters;
            nfa_table       = table;
-           nfa_args        = depends;
-           nfa_arg_info    = accum.nfa_arg_table
+           nfa_args        = depends
          }
 
    (************************************************************************
@@ -1958,6 +1932,12 @@ struct
          frontier, actions
 
    (*
+    * Get the argument values.
+    *)
+   let dfa_args dfa dfa_info lexeme clause =
+      []
+
+   (*
     * Add a state to the DFA.  It is initially empty.
     *)
    let dfa_find_state dfa nids =
@@ -2040,66 +2020,6 @@ struct
                   pp_print_char c;
             create_entry dfa dfa_state c;
             dfa_delta dfa dfa_info dfa_state c
-
-   (*
-    * Collect the arguments, given that all smaller arguments
-    * have already been collected.
-    *)
-   let rec dfa_arg_search table arg depends =
-      match depends with
-         id :: depends ->
-            (match table.(id) with
-                Some args ->
-                   Some (arg :: args)
-              | None ->
-                   dfa_arg_search table arg depends)
-       | [] ->
-            None
-
-   let dfa_arg info line table arg =
-      let { arg_index = index; arg_depends = depends } = arg in
-      let args =
-         try
-            match IntTable.find info.dfa_args index with
-               ArgStarted _ ->
-                  None
-             | ArgComplete (start, stop)
-             | ArgFinished (start, stop) ->
-                  let arg = String.sub line start (stop - start) in
-                     match IntSet.to_list depends with
-                        [] ->
-                           Some [arg]
-                      | depends ->
-                           dfa_arg_search table arg depends
-
-         with
-            Not_found ->
-               None
-      in
-         table.(index) <- args
-
-   let dfa_args dfa info line id =
-      (* First, define a table of possible arguments *)
-      let table =
-         let len = IntTable.cardinal dfa.dfa_arg_table in
-         let table = Array.create len None in
-            IntTable.iter (fun _ arg -> dfa_arg info line table arg) dfa.dfa_arg_table;
-            table
-      in
-
-      (* Now choose the first one where the args are valid *)
-      let rec search idl =
-         match idl with
-            [] ->
-               []
-          | id :: idl ->
-               match table.(id) with
-                  Some args ->
-                     List.rev args
-                | None ->
-                     search idl
-      in
-         search (IntSet.to_list (IntTable.find dfa.dfa_arg_depends id))
 
    (*
     * Now the complete lexer.
@@ -2239,8 +2159,7 @@ struct
       let { nfa_table    = nfa_table;
             nfa_start    = nfa_start;
             nfa_actions  = actions;
-            nfa_args     = nfa_args;
-            nfa_arg_info = nfa_arg_table
+            nfa_args     = nfa_args
           } = nfa
       in
       let nfa_start = [nfa_start] in
@@ -2254,9 +2173,7 @@ struct
            dfa_length       = 1;
            dfa_map          = DfaStateTable.add DfaStateTable.empty nfa_start 0;
            dfa_table        = nfa_table;
-           dfa_action_table = actions;
-           dfa_arg_depends  = nfa_args;
-           dfa_arg_table    = nfa_arg_table
+           dfa_action_table = actions
          }
 
    (*
