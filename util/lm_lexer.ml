@@ -2374,7 +2374,7 @@ struct
       let args, _ =
          IntTable.fold (fun (args, len) arg s ->
                let args = s :: extend_args args len arg in
-                  args, arg) ([], 0) args
+                  args, succ arg) ([], 0) args
       in
          List.rev args
 
