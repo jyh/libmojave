@@ -773,8 +773,8 @@ struct
       }
 
    type dfa_actions =
-      { dfa_action_final      : int option;                 (* clause id *)
-        dfa_action_actions    : dfa_action NfaStateTable.t  (* Actions for each of the target NFA components *)
+      { dfa_action_final      : (int * NfaState.t) option;      (* clause id, NFA state *)
+        dfa_action_actions    : dfa_action NfaStateTable.t      (* Actions for each of the target NFA components *)
       }
 
    (*
@@ -835,6 +835,7 @@ struct
    type dfa_info =
      { mutable dfa_stop_clause    : int;                  (* Clause id of the last match, or 0 if none *)
        mutable dfa_stop_pos       : int;                  (* Position of the last match *)
+       mutable dfa_stop_args      : int ArgTable.t;       (* Arguments in the final state *)
        mutable dfa_start_pos      : int;                  (* Starting position *)
 
        (* The current argument state *)
@@ -1935,8 +1936,8 @@ struct
       in
       let () =
          match final with
-            Some stop ->
-               fprintf buf "@ final [%d]" stop
+            Some (clause_id, nfa_id) ->
+               fprintf buf "@ final [clause=%d]" clause_id
           | None ->
                ()
       in
@@ -2096,7 +2097,16 @@ struct
                let args = NfaStateTable.find args_table src in
                   List.fold_left (dfa_apply_action pos) args actions) actions
       in
-         info.dfa_args <- args_table
+         info.dfa_args <- args_table;
+
+         (* Get final state *)
+         match final with
+            Some (clause_id, nid) ->
+               info.dfa_stop_clause <- clause_id;
+               info.dfa_stop_pos    <- pos;
+               info.dfa_stop_args   <- NfaStateTable.find args_table nid
+          | None ->
+               ()
 
    (*
     * We just scanned a symbol c in NFA state nid.
@@ -2259,22 +2269,27 @@ struct
                in
                   NfaStateTable.fold (fun (final, actions) id action ->
                         let { pre_action_final = final';
-                              pre_action_args = args
+                              pre_action_args = args'
                             } = action
                         in
                         let final =
                            match final, final' with
-                              Some id, Some id' ->
-                                 Some (Action.choose id id')
-                            | Some id, None
-                            | None, Some id ->
-                                 Some id
+                              Some (clause_id, nid), Some clause_id' ->
+                                 let clause_id'' = Action.choose clause_id clause_id' in
+                                    if clause_id'' = clause_id then
+                                       final
+                                    else
+                                       Some (clause_id, id)
+                            | Some _, None ->
+                                 final
+                            | None, Some clause_id' ->
+                                 Some (clause_id', id)
                             | None, None ->
                                  None
                         in
                         let action =
                            { dfa_action_src = nid;
-                             dfa_action_args = args
+                             dfa_action_args = args'
                            }
                         in
                         let actions = NfaStateTable.add actions id action in
@@ -2405,6 +2420,7 @@ struct
       let dfa_info =
          { dfa_stop_clause = -1;
            dfa_stop_pos    = 0;
+           dfa_stop_args   = ArgTable.empty;
            dfa_start_pos   = 0;
            dfa_args        = NfaStateTable.empty;
            dfa_channel     = channel
@@ -2457,6 +2473,7 @@ struct
       let dfa_info =
          { dfa_stop_clause = -1;
            dfa_stop_pos    = 0;
+           dfa_stop_args   = ArgTable.empty;
            dfa_start_pos   = 0;
            dfa_args        = NfaStateTable.empty;
            dfa_channel     = channel
