@@ -2094,7 +2094,11 @@ struct
                      dfa_action_args = actions
                    } = action
                in
-               let args = NfaStateTable.find args_table src in
+               let args =
+                  try NfaStateTable.find args_table src with
+                     Not_found ->
+                        ArgTable.empty
+               in
                   List.fold_left (dfa_apply_action pos) args actions) actions
       in
          info.dfa_args <- args_table;
@@ -2319,8 +2323,60 @@ struct
    (*
     * Get the argument values.
     *)
-   let dfa_args dfa dfa_info lexeme clause =
-      []
+   type arg_info =
+      ArgStart of int
+    | ArgStop of int
+    | ArgComplete of int * int
+
+   let rec extend_args args len1 len2 =
+      if len1 = len2 then
+         args
+      else
+         extend_args ("" :: args) (succ len1) len2
+
+   let dfa_args dfa_info lexeme =
+      let { dfa_start_pos = start;
+            dfa_stop_pos = stop;
+            dfa_stop_args = args
+          } = dfa_info
+      in
+
+      (* Get the pairs of argument info *)
+      let info =
+         ArgTable.fold (fun info (arg, kind) pos ->
+               IntTable.filter_add info arg (fun entry ->
+                     match entry, kind with
+                        None, ArgLeft ->
+                           ArgStart pos
+                      | None, ArgRight ->
+                           ArgStop pos
+                      | Some (ArgStart left), ArgRight ->
+                           ArgComplete (left, pos)
+                      | Some (ArgStop right), ArgLeft ->
+                           ArgComplete (pos, right)
+                      | _ ->
+                           raise (Invalid_argument "dfa_args"))) IntTable.empty args
+      in
+
+      (* Get the argument text *)
+      let args =
+         IntTable.map (fun entry ->
+               match entry with
+                  ArgComplete (left, right) ->
+                     String.sub lexeme left (right - left)
+                | ArgStart left ->
+                     String.sub lexeme left (stop - left)
+                | ArgStop right ->
+                     String.sub lexeme start (right - start)) info
+      in
+
+      (* Flatten the arguments *)
+      let args, _ =
+         IntTable.fold (fun (args, len) arg s ->
+               let args = s :: extend_args args len arg in
+                  args, arg) ([], 0) args
+      in
+         List.rev args
 
    (*
     * Add a state to the DFA.  It is initially empty.
@@ -2440,7 +2496,6 @@ struct
       (* Now figure out what happened *)
       let { dfa_stop_clause = clause;
             dfa_stop_pos    = stop;
-            dfa_args        = args
           } = dfa_info
       in
          (*
@@ -2461,7 +2516,7 @@ struct
           *)
          let loc = Input.lex_loc channel stop in
          let lexeme = Input.lex_string channel stop in
-         let args = dfa_args dfa dfa_info lexeme clause in
+         let args = dfa_args dfa_info lexeme in
             Input.lex_stop channel stop;
             IntTable.find dfa.dfa_action_table clause, loc, lexeme, args
 
@@ -2523,7 +2578,7 @@ struct
             None
          else
             let lexeme = Input.lex_string channel stop in
-            let args = dfa_args dfa dfa_info lexeme clause in
+            let args = dfa_args dfa_info lexeme in
                Some (IntTable.find dfa.dfa_action_table clause, String.sub lexeme start (stop - start), args)
       in
          Input.lex_stop channel (max start stop);
