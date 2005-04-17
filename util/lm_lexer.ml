@@ -1657,10 +1657,11 @@ struct
    let pp_print_nfa buf nfa =
       let { nfa_hash  = hash;
             nfa_start = start;
+            nfa_search_start = search;
             nfa_table = table
           } = nfa
       in
-         fprintf buf "@[<hv 3>NFA: start = %a" (pp_print_nfa_id hash) start;
+         fprintf buf "@[<hv 3>NFA:@ start = %a@ search = %a" (pp_print_nfa_id hash) start (pp_print_nfa_id hash) search;
          Array.iter (fun state ->
                fprintf buf "@ %a" pp_print_nfa_state state) table;
          fprintf buf "@]"
@@ -1893,7 +1894,7 @@ struct
       let accum, search_final = nfa_state accum (NfaActionArgSearch choice.nfa_state_index) in
       let accum, search_loop2 = nfa_state accum NfaActionNone in
       let accum, search_loop1 = nfa_state accum (NfaActionEpsilon [search_loop2.nfa_state_index; search_final.nfa_state_index]) in
-      let search_loop1 = set_action search_loop1 (NfaActionAnySymbol search_loop1.nfa_state_index) in
+      let search_loop2 = set_action search_loop2 (NfaActionAnySymbol search_loop1.nfa_state_index) in
       let accum, search_start = nfa_state accum (NfaActionAnySymbol search_loop1.nfa_state_index) in
       let states = search_start :: search_loop1 :: search_loop2 :: search_final :: states in
       let search_states = [search_start; search_loop1; search_loop2; search_final] in
@@ -2619,7 +2620,7 @@ struct
           | None ->
                ()
       in
-      let dfa_state = dfa.dfa_states.(0) in
+      let dfa_state = dfa.dfa_states.(1) in
       let c = Input.lex_start channel in
       let () = loop dfa_state c in
 
@@ -2702,7 +2703,10 @@ struct
       let map = DfaStateTable.empty in
       let map = DfaStateTable.add map nfa_start 0 in
       let map = DfaStateTable.add map nfa_search_start 1 in
-         { dfa_states        = Array.create 64 start;
+      let states = Array.create 64 start in
+         states.(1) <- search_start;
+
+         { dfa_states        = states;
            dfa_length        = 2;
            dfa_map           = map;
            dfa_table         = nfa_table;
