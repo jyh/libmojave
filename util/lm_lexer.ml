@@ -2347,7 +2347,27 @@ struct
                              dfa_action_args = args'
                            }
                         in
-                        let actions = NfaStateTable.add actions id action in
+                        let actions =
+                           (*
+                            * NOTE: currently we prefer states with smaller numbers,
+                            * which favors state that are defined earlier.  In particular,
+                            * it will result in a shortest match in the search prefix.
+                            *
+                            * In general, we may wish to put some smart precedence
+                            * selection here.
+                            *)
+                           NfaStateTable.filter_add actions id (fun action1 ->
+                                 match action1 with
+                                    Some action1 ->
+                                       let id1, _ = NfaState.get nfa_hash action1.dfa_action_src in
+                                       let id2, _ = NfaState.get nfa_hash nid in
+                                          if id1 < id2 then
+                                             action1
+                                          else
+                                             action
+                                  | None ->
+                                       action)
+                        in
                            final, actions) final_actions frontier) (None, NfaStateTable.empty) nids
       in
 
