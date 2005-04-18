@@ -1956,11 +1956,11 @@ struct
          DfaActionArgStartPrev i ->
             fprintf buf "start-prev %d" i
        | DfaActionArgStopPrev i ->
-            fprintf buf "stop-prec %d" i
+            fprintf buf "stop-prev %d" i
        | DfaActionArgStopCur i ->
             fprintf buf "stop-cur %d" i
        | DfaActionArgSearch ->
-            fprintf buf "search"
+            fprintf buf "stop-search"
 
    let pp_print_dfa_actions nfa_hash buf action =
       let { dfa_action_final = final;
@@ -1973,7 +1973,7 @@ struct
       let () =
          match final with
             Some (clause_id, nfa_id) ->
-               fprintf buf "@ final [clause=%d]" clause_id
+               fprintf buf "@ final [clause=%d, nfa-state=%a]" clause_id (pp_print_nfa_id nfa_hash) nfa_id
           | None ->
                ()
       in
@@ -1982,9 +1982,9 @@ struct
                      dfa_action_args = args
                    } = action
                in
-                  fprintf buf "@ @[<hv 3>trans %a -> %a" (pp_print_nfa_id nfa_hash) src (pp_print_nfa_id nfa_hash) dst;
+                  fprintf buf "@ @[<hv 3>(%a -> %a" (pp_print_nfa_id nfa_hash) src (pp_print_nfa_id nfa_hash) dst;
                   List.iter (fun action -> fprintf buf "@ %a" pp_print_dfa_arg_action action) args;
-                  fprintf buf "@]") actions;
+                  fprintf buf ")@]") actions;
          fprintf buf ")@]"
 
    let pp_print_pre_actions buf action =
@@ -2020,6 +2020,18 @@ struct
       Array.iter (fun (key, trans) ->
             fprintf buf "@ %d -> %a" key pp_print_dfa_transition trans) table;
       fprintf buf ")@]"
+
+   (*
+    * Print an argument.
+    *)
+   let pp_print_arg buf arg =
+      match arg with
+         ArgLeft i ->
+            fprintf buf "left[%d]" i
+       | ArgRight i ->
+            fprintf buf "right[%d]" i
+       | ArgSearch ->
+            fprintf buf "searchreg"
 
    (*
     * Print the frontier.
@@ -2111,15 +2123,15 @@ struct
    let dfa_apply_action pos args action =
       match action with
          DfaActionArgStartPrev i ->
-            ArgTable.add args (ArgLeft i) (pos - 1)
+            ArgTable.add args (ArgLeft i) pos
        | DfaActionArgStopPrev i ->
             ArgTable.add args (ArgRight i) (pos - 1)
        | DfaActionArgStopCur i ->
             ArgTable.add args (ArgRight i) pos
        | DfaActionArgSearch ->
-            ArgTable.add args ArgSearch (pos - 1)
+            ArgTable.add args ArgSearch pos
 
-   let dfa_eval_action info action =
+   let dfa_eval_action dfa info action =
       let { dfa_channel = channel;
             dfa_args = args_table
           } = info
@@ -2142,6 +2154,17 @@ struct
                in
                   List.fold_left (dfa_apply_action pos) args actions) actions
       in
+         if !debug_lex then begin
+            let pp_print_nfa_id = pp_print_nfa_id dfa.dfa_nfa_hash in
+               eprintf "@[<v 3>Args:";
+               NfaStateTable.iter (fun id args ->
+                     eprintf "@ @[<hv 3>state: %a" pp_print_nfa_id id;
+                     ArgTable.iter (fun arg i ->
+                           eprintf "@ %a = %d" pp_print_arg arg i) args;
+                     eprintf "@]") args_table;
+               eprintf "@]@."
+         end;
+
          info.dfa_args <- args_table;
 
          (* Get final state *)
@@ -2178,6 +2201,27 @@ struct
                   let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
                      close_prev_list nfa_hash table nids c closure frontier actions
 
+               (* Can only make progress if the current symbol is allowed *)
+             | NfaActionLimitPrev (syms, nid) when List.mem c syms ->
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_prev nfa_hash table state c closure frontier actions
+
+               (* Arguments *)
+             | NfaActionArgStart (id, nid) ->
+                  let actions = pre_action_add_arg_start_prev actions id in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_prev nfa_hash table state c closure frontier actions
+
+             | NfaActionArgStop (id, nid) ->
+                  let actions = pre_action_add_arg_stop_cur actions id in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_prev nfa_hash table state c closure frontier actions
+
+             | NfaActionArgSearch nid ->
+                  let actions = pre_action_add_arg_search actions in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_prev nfa_hash table state c closure frontier actions
+
                (* Counter operations *)
              | NfaActionResetCounter (i, nids) ->
                   let counters = NfaStateCore.reset_counter counters i in
@@ -2189,25 +2233,12 @@ struct
                   let nids = List.map (NfaState.create nfa_hash) nids in
                      close_prev_list nfa_hash table nids c closure frontier actions
 
-               (* Can only make progress if the current symbol is allowed *)
-             | NfaActionLimitPrev (syms, nid) when List.mem c syms ->
-                  let state = NfaState.create nfa_hash (nid, counters) in
-                     close_prev nfa_hash table state c closure frontier actions
-
-               (* Handle argument termination eagerly *)
-             | NfaActionArgStop (id, nid) ->
-                  let actions = pre_action_add_arg_stop_cur actions id in
-                  let state = NfaState.create nfa_hash (nid, counters) in
-                     close_prev nfa_hash table state c closure frontier actions
-
                (* Reached a final state *)
              | NfaActionStop id ->
                   let actions = pre_action_add_stop actions id in
                      NfaStateTable.add frontier nid actions
 
                (* Reached the frontier, we can't make any more progress *)
-             | NfaActionArgStart _
-             | NfaActionArgSearch _
              | NfaActionSymbol _
              | NfaActionAnySymbol _
              | NfaActionExceptSymbol _
@@ -2548,7 +2579,7 @@ struct
                   dfa_state.dfa_state_index
                   (pp_print_dfa_set dfa.dfa_nfa_hash) (DfaState.get dfa.dfa_dfa_hash dfa_state.dfa_state_set)
                   pp_print_char c dfa_id;
-            dfa_eval_action dfa_info actions;
+            dfa_eval_action dfa dfa_info actions;
             Some (dfa.dfa_states.(dfa_id))
        | DfaNoTransition ->
             if !debug_lex then
@@ -2670,6 +2701,7 @@ struct
             let skipped, lexeme =
                match start with
                   Some pos ->
+                     (* eprintf "start: %d, stop: %d, length: %d@." pos stop (String.length lexeme); *)
                      String.sub lexeme 0 pos, String.sub lexeme pos (stop - pos)
                 | None ->
                      "", lexeme
