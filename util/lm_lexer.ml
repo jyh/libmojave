@@ -774,9 +774,8 @@ struct
     * NFA component of the state that is the target of the transition.
     *)
    type dfa_action_arg =
-      DfaActionArgStartPrev of int
-    | DfaActionArgStopPrev  of int
-    | DfaActionArgStopCur   of int
+      DfaActionArgStart of int
+    | DfaActionArgStop  of int
     | DfaActionArgSearch
 
    type dfa_action =
@@ -1953,14 +1952,12 @@ struct
 
    let pp_print_dfa_arg_action buf action =
       match action with
-         DfaActionArgStartPrev i ->
-            fprintf buf "start-prev %d" i
-       | DfaActionArgStopPrev i ->
-            fprintf buf "stop-prev %d" i
-       | DfaActionArgStopCur i ->
-            fprintf buf "stop-cur %d" i
+         DfaActionArgStart i ->
+            fprintf buf "arg-start %d" i
+       | DfaActionArgStop i ->
+            fprintf buf "arg-stop %d" i
        | DfaActionArgSearch ->
-            fprintf buf "stop-search"
+            fprintf buf "search-stop"
 
    let pp_print_dfa_actions nfa_hash buf action =
       let { dfa_action_final = final;
@@ -2064,46 +2061,14 @@ struct
    let pre_action_add_arg actions arg =
       { actions with pre_action_args = arg :: actions.pre_action_args }
 
-   let pre_action_add_arg_start_prev actions id =
-      pre_action_add_arg actions (DfaActionArgStartPrev id)
+   let pre_action_add_arg_start actions id =
+      pre_action_add_arg actions (DfaActionArgStart id)
+
+   let pre_action_add_arg_stop actions id =
+      pre_action_add_arg actions (DfaActionArgStop id)
 
    let pre_action_add_arg_search actions =
       pre_action_add_arg actions DfaActionArgSearch
-
-   let pre_action_add_arg_stop_prev pending actions id =
-      let actions =
-         let action = DfaActionArgStartPrev id in
-            if List.mem action pending.pre_action_args then
-               pre_action_add_arg actions action
-            else
-               actions
-      in
-         pre_action_add_arg actions (DfaActionArgStopPrev id)
-
-   let pre_action_add_arg_stop_cur actions id =
-      pre_action_add_arg actions (DfaActionArgStopCur id)
-
-   let pre_action_union action1 action2 =
-      let { pre_action_final = final1;
-            pre_action_args = args1
-          } = action1
-      in
-      let { pre_action_final = final2;
-            pre_action_args = args2
-          } = action2
-      in
-      let final =
-         match final1, final2 with
-            Some final1, Some final2 ->
-               Some (Action.choose final1 final2)
-          | None, _ ->
-               final2
-          | _, None ->
-               final1
-      in
-         { pre_action_final = final;
-           pre_action_args  = args1 @ args2
-         }
 
    (*
     * DFA actions.
@@ -2122,11 +2087,9 @@ struct
     *)
    let dfa_apply_action pos args action =
       match action with
-         DfaActionArgStartPrev i ->
+         DfaActionArgStart i ->
             ArgTable.add args (ArgLeft i) pos
-       | DfaActionArgStopPrev i ->
-            ArgTable.add args (ArgRight i) (pos - 1)
-       | DfaActionArgStopCur i ->
+       | DfaActionArgStop i ->
             ArgTable.add args (ArgRight i) pos
        | DfaActionArgSearch ->
             ArgTable.add args ArgSearch pos
@@ -2197,6 +2160,7 @@ struct
                   pp_print_nfa_action action
                   pp_print_pre_actions actions;
             match action with
+               (* Standard epsilon transitions *)
                NfaActionEpsilon nids ->
                   let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
                      close_prev_list nfa_hash table nids c closure frontier actions
@@ -2208,12 +2172,12 @@ struct
 
                (* Arguments *)
              | NfaActionArgStart (id, nid) ->
-                  let actions = pre_action_add_arg_start_prev actions id in
+                  let actions = pre_action_add_arg_start actions id in
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
              | NfaActionArgStop (id, nid) ->
-                  let actions = pre_action_add_arg_stop_cur actions id in
+                  let actions = pre_action_add_arg_stop actions id in
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
@@ -2263,7 +2227,7 @@ struct
     *    find a transition on character c.
     * committed: the actions that we will take no matter what.
     *)
-   let rec close_next nfa_hash table nid c closure frontier pending committed =
+   let rec close_next nfa_hash table nid c closure frontier actions =
       if DfaStateCore.mem closure nid then
          frontier
       else
@@ -2277,67 +2241,48 @@ struct
                   (pp_print_dfa_set nfa_hash) closure
                   (pp_print_frontier nfa_hash) frontier
                   pp_print_nfa_action action
-                  pp_print_pre_actions committed;
+                  pp_print_pre_actions actions;
             match action with
-               NfaActionEpsilon nids ->
-                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
-                     close_next_list nfa_hash table nids c closure frontier pending committed
-
-             | NfaActionArgStart (id, nid) ->
-                  let pending = pre_action_add_arg_start_prev pending id in
+               (* These are the cases where we can make progress *)
+               NfaActionSymbol (syms, nid) when List.mem c syms ->
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier pending committed
-
-             | NfaActionArgStop (id, nid) ->
-                  let committed = pre_action_add_arg_stop_prev pending committed id in
-                  let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier pending committed
-
-             | NfaActionArgSearch nid ->
-                  let pending = pre_action_add_arg_search pending in
-                  let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier pending committed
-
-             | NfaActionSymbol (syms, nid) when List.mem c syms ->
-                  let state = NfaState.create nfa_hash (nid, counters) in
-                     close_prev nfa_hash table state c DfaStateCore.empty frontier (pre_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
              | NfaActionExceptSymbol (syms, nid) when not (c = eof || List.mem c syms) ->
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_prev nfa_hash table state c DfaStateCore.empty frontier (pre_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
              | NfaActionAnySymbol nid when c <> eof ->
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_prev nfa_hash table state c DfaStateCore.empty frontier (pre_action_union pending committed)
+                     close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
              | NfaActionLimitNext (syms, nid) when List.mem c syms ->
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier pending committed
-
-               (* Counter operations *)
-             | NfaActionResetCounter (i, nids) ->
-                  let counters = NfaStateCore.reset_counter counters i in
-                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
-                     close_next_list nfa_hash table nids c closure frontier pending committed
-
-             | NfaActionIncrCounter (i, min, final, max, start) ->
-                  let nids = NfaStateCore.incr_counter counters i min final max start in
-                  let nids = List.map (NfaState.create nfa_hash) nids in
-                     close_next_list nfa_hash table nids c closure frontier pending committed
+                     close_next nfa_hash table state c closure frontier actions
 
                (* Dead-ends *)
              | NfaActionNone
              | NfaActionSymbol _
              | NfaActionAnySymbol _
              | NfaActionExceptSymbol _
-             | NfaActionLimitPrev _
              | NfaActionLimitNext _
              | NfaActionStop _ ->
                   frontier
 
-   and close_next_list nfa_hash table nids c closure frontier pending committed =
+               (* These cases should never arise *)
+             | NfaActionEpsilon _
+             | NfaActionLimitPrev _
+             | NfaActionArgStart _
+             | NfaActionArgStop _
+             | NfaActionArgSearch _
+             | NfaActionIncrCounter _
+             | NfaActionResetCounter _ ->
+                  eprintf "Illegal action: %a@." pp_print_nfa_action action;
+                  raise (Invalid_argument "close_next")
+
+   and close_next_list nfa_hash table nids c closure frontier actions =
       List.fold_left (fun frontier nid ->
-            close_next nfa_hash table nid c closure frontier pending committed) frontier nids
+            close_next nfa_hash table nid c closure frontier actions) frontier nids
 
    (*
     * Compute the action table for each of the components of
@@ -2351,7 +2296,7 @@ struct
       let final, actions =
          List.fold_left (fun final_actions nid ->
                let frontier =
-                  close_next nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty pre_action_empty
+                  close_next nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty
                in
                   NfaStateTable.fold (fun (final, actions) id action ->
                         let { pre_action_final = final';
