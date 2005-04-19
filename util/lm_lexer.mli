@@ -135,6 +135,12 @@ sig
 
    type t
 
+   (* Return values from the searchto function *)
+   type searchto_info =
+      LexEOF
+    | LexSkipped of loc * string
+    | LexMatched of action * loc * string * string * string list
+
    (* The empty lexer accepts the empty language *)
    val empty : t
 
@@ -185,7 +191,13 @@ sig
     *    (action, skipped, matched, args)
     * This will not read past EOF.
     *)
-   val search : t -> Input.t -> string * (action * string * string list) option
+   val search : t -> Input.t -> (action * loc * string * string * string list) option
+
+   (*
+    * The searchto function is similar, but if it doesn't detect a match,
+    * it returns the text to the end of the channel.
+    *)
+   val searchto : t -> Input.t -> searchto_info
 
    (*
     * Just check if a string matches.
