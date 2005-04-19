@@ -2304,29 +2304,29 @@ struct
                let frontier =
                   close_next nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty
                in
-                  NfaStateTable.fold (fun (final, actions) id action ->
-                        let { pre_action_final = final';
-                              pre_action_args = args'
+                  NfaStateTable.fold (fun (final', actions) id action ->
+                        let { pre_action_final = final;
+                              pre_action_args = args
                             } = action
                         in
                         let final =
-                           match final, final' with
-                              Some (clause_id, nid), Some clause_id' ->
-                                 let clause_id'' = Action.choose clause_id clause_id' in
-                                    if clause_id'' = clause_id then
-                                       final
+                           match final', final with
+                              Some (clause_id', nid'), Some clause_id ->
+                                 let clause_id'' = Action.choose clause_id' clause_id in
+                                    if clause_id'' = clause_id' then
+                                       final'
                                     else
                                        Some (clause_id, id)
                             | Some _, None ->
-                                 final
-                            | None, Some clause_id' ->
-                                 Some (clause_id', id)
+                                 final'
+                            | None, Some clause_id ->
+                                 Some (clause_id, id)
                             | None, None ->
                                  None
                         in
                         let action =
                            { dfa_action_src = nid;
-                             dfa_action_args = args'
+                             dfa_action_args = args
                            }
                         in
                         let actions =
