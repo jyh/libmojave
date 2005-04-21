@@ -2332,11 +2332,7 @@ struct
                         let actions =
                            (*
                             * NOTE: currently we prefer states with smaller numbers,
-                            * which favors state that are defined earlier.  In particular,
-                            * it will result in a shortest match in the search prefix.
-                            *
-                            * In general, we may wish to put some smart precedence
-                            * selection here.
+                            * which will result in a shortest match in the search prefix.
                             *)
                            NfaStateTable.filter_add actions id (fun action1 ->
                                  match action1 with
@@ -2354,13 +2350,22 @@ struct
       in
 
       (*
-       * If the state is final, prune all search states (so that the search
-       * will be shortest match).
+       * If the state is final,
+       *    1. prune all states that correspond to the search
+       *    2. prune all states that _came_ from the search, unless they
+       *       are the final state we care about.
        *)
       let actions =
          match final with
-            Some _ ->
-               NfaStateSet.fold NfaStateTable.remove actions search_states
+            Some (_, id) ->
+               (* Remove target states in the search *)
+               let actions = NfaStateSet.fold NfaStateTable.remove actions search_states in
+                  (* Remove target states that came from the search *)
+                  NfaStateTable.fold (fun actions id' action ->
+                        if NfaStateSet.mem search_states action.dfa_action_src && id' <> id then
+                           NfaStateTable.remove actions id'
+                        else
+                           actions) actions actions
           | None ->
                actions
       in

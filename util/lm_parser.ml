@@ -593,6 +593,7 @@ struct
         prod_action : action;
         prod_prec   : precedence
       }
+
    (*
     * A grammar has a set of symbols, productions,
     * and precedences.
