@@ -134,15 +134,20 @@ let rec zeros s i =
     | '0' -> zeros s (pred i)
     | _ -> true
 
-let rec pad_with_underscore s i =
+let rec all_digits s i =
+   (i<0) || match s.[i] with
+      '0' .. '9' -> all_digits s (pred i)
+    | _ -> false
+
+let rec pad_with_underscore n s i =
    if i <= 0 then
-      true
+      n > 0
    else
       let i = pred i in
          match s.[i] with
-            '_' -> pad_with_underscore s i
-          | '0' -> not (zeros s (pred i))
-          | '1' .. '9' -> true
+            '_' -> pad_with_underscore n s i
+          | '0' -> not (zeros s (pred i)) && ((n>0) || not (all_digits s (pred i)))
+          | '1' .. '9' -> (n>0) || not (all_digits s (pred i))
           | _ -> false
 
 let add =
@@ -152,7 +157,7 @@ let add =
       else
          match s.[i] with
             '_' ->
-               make (String.sub s 0 (if pad_with_underscore s i then i else i + 1)) n
+               make (String.sub s 0 (if pad_with_underscore n s i then i else i + 1)) n
           | '0' when zeros s (i - 1) ->
                make (String.sub s 0 (succ i)) n
           | '0'..'9' as c ->
@@ -228,7 +233,7 @@ let is_interned (i, _) =
  *)
 let string_of_symbol (i, s) =
    let len = String.length s in
-   let s = if pad_with_underscore s len then s ^ "_" else s in
+   let s = if pad_with_underscore i s len then s ^ "_" else s in
       if i = 0 then
          s
       else
