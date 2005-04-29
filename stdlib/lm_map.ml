@@ -42,19 +42,19 @@
 open Lm_map_sig
 
 (*
+ * Table is a binary tree.
+ * Color is kept in the label to save space.
+ *)
+type ('elt, 'data) tree =
+   Leaf
+ | Red of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
+ | Black of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
+
+(*
  * Make the set.
  *)
 module LmMake (Base : OrderedType) =
 struct
-   (*
-    * Table is a binary tree.
-    * Color is kept in the label to save space.
-    *)
-   type ('elt, 'data) tree =
-      Leaf
-    | Red of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
-    | Black of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
-
    (*
     * Path into the tree.
     *)
@@ -1375,6 +1375,11 @@ struct
 end
 
 (*
+ * Recursive version.
+ *)
+module LmMakeRec = LmMake
+
+(*
  * List version.
  *)
 module LmMakeList (Ord : OrderedType) =
@@ -1532,7 +1537,7 @@ end
 (*
  * Backwards-compatible version.
  *)
-module Make (Ord : OrderedType) : S with type key = Ord.t =
+module Make (Ord : OrderedType) =
 struct
    module XMap = LmMake (Ord)
 

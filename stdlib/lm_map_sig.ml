@@ -119,30 +119,30 @@ end
  * The record of methods.
  *)
 type ('elt, 'data, 'table) table_methods =
-   { empty : 'table;
-     make : 'elt -> 'data list -> 'table;
-     is_empty : 'table -> bool;
-     mem : 'table -> 'elt -> bool;
-     add : 'table -> 'elt -> 'data -> 'table;
-     replace : 'table -> 'elt -> 'data list -> 'table;
-     find : 'table -> 'elt -> 'data;
-     find_all : 'table -> 'elt -> 'data list;
-     remove : 'table -> 'elt -> 'table;
-     union : 'table -> 'table -> 'table;
-     elements : 'table -> ('elt * 'data list) list;
-     iter : ('elt -> 'data -> unit) -> 'table -> unit;
-     fold_map : ('elt -> 'data -> 'table -> 'table) -> 'table -> 'table -> 'table;
-     map : ('elt -> 'data -> 'data) -> 'table -> 'table;
-     cardinal : 'table -> int;
-     mem_filt : 'table -> 'elt list -> 'elt list;
+   { empty        : 'table;
+     make         : 'elt -> 'data list -> 'table;
+     is_empty     : 'table -> bool;
+     mem          : 'table -> 'elt -> bool;
+     add          : 'table -> 'elt -> 'data -> 'table;
+     replace      : 'table -> 'elt -> 'data list -> 'table;
+     find         : 'table -> 'elt -> 'data;
+     find_all     : 'table -> 'elt -> 'data list;
+     remove       : 'table -> 'elt -> 'table;
+     union        : 'table -> 'table -> 'table;
+     elements     : 'table -> ('elt * 'data list) list;
+     iter         : ('elt -> 'data -> unit) -> 'table -> unit;
+     fold_map     : ('elt -> 'data -> 'table -> 'table) -> 'table -> 'table -> 'table;
+     map          : ('elt -> 'data -> 'data) -> 'table -> 'table;
+     cardinal     : 'table -> int;
+     mem_filt     : 'table -> 'elt list -> 'elt list;
      not_mem_filt : 'table -> 'elt list -> 'elt list;
-     intersectp : 'table -> 'table -> bool;
-     of_list : ('elt * 'data list) list -> 'table;
-     list_of : 'table -> ('elt * 'data list) list;
-     deletemax : 'table -> ('elt * 'data list * 'table);
+     intersectp   : 'table -> 'table -> bool;
+     of_list      : ('elt * 'data list) list -> 'table;
+     list_of      : 'table -> ('elt * 'data list) list;
+     deletemax    : 'table -> ('elt * 'data list * 'table);
 
      (* Debugging *)
-     print : out_channel -> 'table -> unit
+     print        : out_channel -> 'table -> unit
    }
 
 (*
@@ -188,7 +188,7 @@ sig
 
    val empty :  t
    val is_empty : t -> bool
-	val length : t -> int
+   val length : t -> int
    val add : t -> elt -> data -> t
    val replace : t -> elt -> data list -> t
    val union : t -> t -> t
@@ -197,7 +197,7 @@ sig
    val find_all : t -> elt -> data list (* last added first *)
    val remove : t -> elt -> t
    val iter : (elt -> data -> unit) -> t -> unit
-	val fold_map : (elt -> data -> t -> t) -> t -> t -> t
+   val fold_map : (elt -> data -> t -> t) -> t -> t -> t
    val map : (elt -> data -> data) -> t -> t
    val list_of : t -> (elt * data list) list
    val deletemax : t -> (elt * data list * t)
