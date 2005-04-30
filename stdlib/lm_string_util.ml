@@ -380,29 +380,33 @@ let tokens_std s =
  *)
 type 'a tokens_prefix =
    NoPrefix
- | WordPrefix of string
- | QuotePrefix of char * string
- | PendingPrefix of 'a
+ | WordPrefix of 'a list
+ | QuotePrefix of char * 'a list
 
 type 'a tokens =
    { tokens_wrap   : (string -> 'a);
-     tokens_unwrap : ('a -> string);
+     tokens_group  : ('a list -> 'a);
      tokens_list   : 'a list;
      tokens_prefix : 'a tokens_prefix
    }
 
-let tokens_create wrap unwrap =
-   { tokens_wrap   = wrap;
-     tokens_unwrap = unwrap;
-     tokens_list   = [];
-     tokens_prefix = NoPrefix
-   }
+let tokens_create wrap group =
+   let group = function
+      [] -> wrap ""
+    | [tok] -> tok
+    | toks -> group (List.rev toks)
+   in
+      { tokens_wrap   = wrap;
+        tokens_group  = group;
+        tokens_list   = [];
+        tokens_prefix = NoPrefix
+      }
 
 (*
  * Get the tokens list.
  *)
 let tokens_flush info =
-   let { tokens_wrap = wrap;
+   let { tokens_group = group;
          tokens_list = tokens;
          tokens_prefix = prefix
        } = info
@@ -413,9 +417,7 @@ let tokens_flush info =
             tokens
        | WordPrefix prefix
        | QuotePrefix (_, prefix) ->
-            wrap prefix :: tokens
-       | PendingPrefix prefix ->
-            prefix :: tokens
+            group prefix :: tokens
    in
       List.rev tokens
 
@@ -423,7 +425,7 @@ let tokens_flush info =
  * End the current word.
  *)
 let tokens_break info =
-   let { tokens_wrap = wrap;
+   let { tokens_group = group;
          tokens_list = tokens;
          tokens_prefix = prefix
        } = info
@@ -433,11 +435,7 @@ let tokens_break info =
             info
        | WordPrefix prefix
        | QuotePrefix (_, prefix) ->
-            { info with tokens_list = wrap prefix :: tokens;
-                        tokens_prefix = NoPrefix
-            }
-       | PendingPrefix prefix ->
-            { info with tokens_list = prefix :: tokens;
+            { info with tokens_list = group prefix :: tokens;
                         tokens_prefix = NoPrefix
             }
 
@@ -446,7 +444,7 @@ let tokens_break info =
  * This also performs a break.
  *)
 let tokens_atomic info x =
-   let { tokens_wrap = wrap;
+   let { tokens_group = group;
          tokens_list = tokens;
          tokens_prefix = prefix
        } = info
@@ -458,11 +456,7 @@ let tokens_atomic info x =
             }
        | WordPrefix prefix
        | QuotePrefix (_, prefix) ->
-            { info with tokens_list = x :: wrap prefix :: tokens;
-                        tokens_prefix = NoPrefix
-            }
-       | PendingPrefix prefix ->
-            { info with tokens_list = prefix :: tokens;
+            { info with tokens_list = x :: (group prefix) :: tokens;
                         tokens_prefix = NoPrefix
             }
 
@@ -471,44 +465,34 @@ let tokens_atomic info x =
  * The value is unwrapped only if it is not surrounded by whitespace.
  *)
 let tokens_add info x =
-   let { tokens_unwrap = unwrap;
-         tokens_prefix = prefix
-       } = info
-   in
-      match prefix with
-         NoPrefix ->
-            { info with tokens_prefix = PendingPrefix x }
-       | WordPrefix prefix ->
-            { info with tokens_prefix = WordPrefix (prefix ^ unwrap x) }
-       | QuotePrefix (c, prefix) ->
-            { info with tokens_prefix = QuotePrefix (c, prefix ^ unwrap x) }
-       | PendingPrefix prefix ->
-            { info with tokens_prefix = WordPrefix (unwrap prefix ^ unwrap x) }
+   match info.tokens_prefix with
+      NoPrefix ->
+         { info with tokens_prefix = WordPrefix [x] }
+    | WordPrefix prefix ->
+         { info with tokens_prefix = WordPrefix (x :: prefix) }
+    | QuotePrefix (c, prefix) ->
+         { info with tokens_prefix = QuotePrefix (c, x :: prefix) }
 
 (*
  * Insert literal data.
  * The data is not scanned for whitespace.
  *)
 let tokens_data info s =
-   match info.tokens_prefix with
-      NoPrefix ->
-         { info with tokens_prefix = WordPrefix s }
-    | WordPrefix word ->
-         { info with tokens_prefix = WordPrefix (word ^ s) }
-    | QuotePrefix (c, word) ->
-         { info with tokens_prefix = QuotePrefix (c, word ^ s) }
-    | PendingPrefix word ->
-         { info with tokens_prefix = WordPrefix (info.tokens_unwrap word ^ s) }
+   let s = info.tokens_wrap s in
+      match info.tokens_prefix with
+         NoPrefix ->
+            { info with tokens_prefix = WordPrefix [s] }
+       | WordPrefix word ->
+            { info with tokens_prefix = WordPrefix (s :: word) }
+       | QuotePrefix (c, word) ->
+            { info with tokens_prefix = QuotePrefix (c, s :: word) }
 
 (*
  * Scan the string for whitespace.
  *)
 let tokens_string info s =
    let len = String.length s in
-   let { tokens_wrap = wrap;
-         tokens_unwrap = unwrap
-       } = info
-   in
+   let wrap = info.tokens_wrap in
 
    (* Scanning whitespace *)
    let rec scan_white tokens i =
@@ -521,87 +505,48 @@ let tokens_string info s =
             ' ' | '\t' | '\n' | '\r' | '\012' ->
                scan_white tokens (succ i)
           | '"' | '\'' as c ->
-               scan_quote tokens c i (succ i)
+               scan_quote tokens [] c i (succ i)
           | '\\' ->
-               scan_word tokens i (i + 2)
+               scan_word tokens [] i (i + 2)
           | _ ->
-               scan_word tokens i (succ i)
+               scan_word tokens [] i (succ i)
 
     (* Scanning a quoted word *)
-   and scan_quote tokens delim start i =
+   and scan_quote tokens prefix delim start i =
       if i >= len then
-         { info with tokens_list = tokens;
-                     tokens_prefix =  QuotePrefix (delim, String.sub s start (len - start))
-         }
+         let head = wrap (String.sub s start (len - start)) in
+            { info with tokens_list = tokens;
+                        tokens_prefix =  QuotePrefix (delim, (head :: prefix))
+            }
       else
          let c = String.unsafe_get s i in
             match c with
                '"' | '\'' when c = delim ->
-                  scan_word tokens start (succ i)
+                  scan_word tokens prefix start (succ i)
              | '\\' ->
-                  scan_quote tokens delim start (i + 2)
+                  scan_quote tokens prefix delim start (i + 2)
              | _ ->
-                  scan_quote tokens delim start (succ i)
+                  scan_quote tokens prefix delim start (succ i)
 
     (* Scanning a word *)
-   and scan_word tokens start i =
+   and scan_word tokens prefix start i =
       if i >= len then
          { info with tokens_list = tokens;
-                     tokens_prefix = WordPrefix (String.sub s start (len - start))
+                     tokens_prefix = WordPrefix ((wrap (String.sub s start (len - start))) :: prefix)
          }
       else
          match String.unsafe_get s i with
             ' ' | '\t' | '\n' | '\r' | '\012' ->
-               scan_white (wrap (String.sub s start (i - start)) :: tokens) (succ i)
+               let head = wrap (String.sub s start (i - start)) in
+               let head_tok = info.tokens_group (head :: prefix) in
+                  scan_white (head_tok :: tokens) (succ i)
           | '"' | '\'' as c ->
-               scan_quote tokens c start (succ i)
+               scan_quote tokens prefix c start (succ i)
           | '\\' ->
-               scan_word tokens start (i + 2)
+               scan_word tokens prefix start (i + 2)
           | _ ->
-               scan_word tokens start (succ i)
+               scan_word tokens prefix start (succ i)
 
-    (* Prefix forms *)
-   and scan_quote_prefix tokens prefix delim i =
-      if i >= len then
-         { info with tokens_list = tokens;
-                     tokens_prefix = QuotePrefix (delim, prefix ^ s)
-         }
-      else
-         let c = String.unsafe_get s i in
-            match c with
-               '"' | '\'' when c = delim ->
-                  scan_word_prefix tokens prefix (succ i)
-             | '\\' ->
-                  scan_quote_prefix tokens prefix delim (i + 2)
-             | _ ->
-                  scan_quote_prefix tokens prefix delim (succ i)
-
-   and scan_word_prefix tokens prefix i =
-      if i >= len then
-         { info with tokens_list = tokens;
-                     tokens_prefix = WordPrefix (prefix ^ s)
-         }
-      else
-         match String.unsafe_get s i with
-            ' ' | '\t' | '\n' | '\r' | '\012' ->
-               scan_white (wrap (prefix ^ String.sub s 0 i) :: tokens) (succ i)
-          | '"' | '\'' as c ->
-               scan_quote_prefix tokens prefix c (succ i)
-          | '\\' ->
-               scan_word_prefix tokens prefix (i + 2)
-          | _ ->
-               scan_word_prefix tokens prefix (succ i)
-
-   and scan_pending_prefix tokens prefix =
-      match String.unsafe_get s 0 with
-         ' ' | '\t' | '\n' | '\r' | '\012' ->
-            scan_white (prefix :: tokens) 1
-       | '"' | '\'' as c ->
-            scan_quote_prefix tokens (unwrap prefix) c 1
-       | '\\' ->
-            scan_word_prefix tokens (unwrap prefix) 2
-       | _ ->
-            scan_word_prefix tokens (unwrap prefix) 1
    in
       if len = 0 then
          info
@@ -614,11 +559,9 @@ let tokens_string info s =
                NoPrefix ->
                   scan_white tokens 0
              | WordPrefix prefix ->
-                  scan_word_prefix tokens prefix 0
+                  scan_word tokens prefix 0 0
              | QuotePrefix (c, prefix) ->
-                  scan_quote_prefix tokens prefix c 0
-             | PendingPrefix prefix ->
-                  scan_pending_prefix tokens prefix
+                  scan_quote tokens prefix c 0 0
 
 (*
  * Split a string based on a boundary.

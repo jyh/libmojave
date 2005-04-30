@@ -146,13 +146,13 @@ val tokens_std : string -> string list
  *)
 type 'a tokens
 
-val tokens_create : (string -> 'a) -> ('a -> string) -> 'a tokens
-val tokens_flush  : 'a tokens -> 'a list
+val tokens_create : (string -> 'a) -> ('a list -> 'a) -> 'a tokens
 val tokens_string : 'a tokens -> string -> 'a tokens
 val tokens_data   : 'a tokens -> string -> 'a tokens
 val tokens_break  : 'a tokens -> 'a tokens
 val tokens_add    : 'a tokens -> 'a -> 'a tokens
 val tokens_atomic : 'a tokens -> 'a -> 'a tokens
+val tokens_flush  : 'a tokens -> 'a list
 
 (*
  * A third way to split into substrings.
