@@ -182,6 +182,7 @@ val string_argv : string list -> string
  * Same as string_argv, but always quote the result.
  *)
 val quote_argv : string list -> string
+val quote_string : string -> string
 
 (*
  * Add a prefix to every string, and concatenate.

@@ -1115,7 +1115,6 @@ let concat_argv argv =
       concat_argv buf argv;
       Buffer.contents buf
 
-
 (*
  * For string quoting.
  *)
@@ -1156,8 +1155,7 @@ let string_argv argv =
 (*
  * This function always adds quotes.
  *)
-let quote_argv argv =
-   let s = concat_string argv in
+let quote_string s =
    let len = String.length s in
       if needs_quotes s || (not (s.[0] = '"' && s.[len - 1] = '"' || s.[0] = '\'' && s.[len - 1] = '\'')) then
          let buf = Buffer.create 32 in
@@ -1165,6 +1163,9 @@ let quote_argv argv =
             Buffer.contents buf
       else
          s
+
+let quote_argv argv =
+   quote_string (concat_string argv)
 
 (*
  * -*-
