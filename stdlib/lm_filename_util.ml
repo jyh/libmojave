@@ -422,6 +422,22 @@ let which_dir dir name =
             raise Not_found
 
 (*
+ * Figure out where in the path the commands comes from.
+ * Return all matches in order.
+ *)
+let where name =
+   if Lm_string_util.contains_any name separators then
+      raise (Invalid_argument "Lm_filename_util.where");
+   let path =
+      try Sys.getenv "PATH" with
+         Not_found ->
+            "."
+   in
+   let path = Lm_string_util.split search_separator_string path in
+   let find dir = is_executable (Filename.concat dir name) in
+      Lm_list_util.some_map find path
+
+(*
  * Make a directory hierarchy.
  *)
 let mkdirhier dir mode =
