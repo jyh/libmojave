@@ -59,12 +59,7 @@ if $(not $(defined THREADS_ENABLED))
     THREADS_ENABLED = false
     export
 
-if $(not $(defined CamlSubDirs))
-    CamlSubDirs(dirs) =
-        .SUBDIRS: $(dirs)
-    export
-
 #
 # Subdirectories of this project
 #
-CamlSubDirs(cutil stdlib unix system util)
+.SUBDIRS: cutil stdlib unix system util
