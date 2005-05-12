@@ -21,11 +21,11 @@ SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
 UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
 UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
 
-FILES =\
-	$(STDLIB_FILES)\
-	$(UNIX_FILES)\
-	$(SYSTEM_FILES)\
-	$(UTIL_FILES)
+FILES[] =
+    $(STDLIB_FILES)
+    $(UNIX_FILES)
+    $(SYSTEM_FILES)
+    $(UTIL_FILES)
 
 USE_OCAMLFIND = false
 

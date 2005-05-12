@@ -1,8 +1,8 @@
-UNIX_FILES =\
-	lm_unix_util\
-	lm_mmap\
-	lm_mmap_pipe\
-	lm_rusage\
-	lm_id\
-	lm_inet\
-	lm_uname
+UNIX_FILES[] =
+    lm_unix_util
+    lm_mmap
+    lm_mmap_pipe
+    lm_rusage
+    lm_id
+    lm_inet
+    lm_uname
