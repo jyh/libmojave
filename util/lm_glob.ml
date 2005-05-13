@@ -767,6 +767,37 @@ let glob options dir names =
                dirs, names) ([], []) names
 
 (*
+ * Don't glob-expand unless it is a glob pattern.
+ * For argv expansion, we don't care about what is a directory
+ * and what is not.
+ *)
+let glob_argv_name options root dir name =
+   if is_glob_name options name then
+      let dirs, names = glob_match options root dir name in
+         if dirs = [] then
+            if names = [] then
+               match options.glob_check with
+                  NoMatchError ->
+                     raise (Failure (name ^ ": bad match"))
+                | NoMatchPreserve ->
+                     [name]
+                | NoMatchIgnore ->
+                     []
+            else
+               names
+         else if names = [] then
+            dirs
+         else
+            let names = List.append dirs names in
+               List.sort Pervasives.compare names
+   else
+      let name      = unescape options name in
+      let root_dir  = filename_concat root dir in
+      let root_name = filename_concat root_dir name in
+      let file_name = filename_concat dir name in
+         [file_name]
+
+(*
  * Glob an argv list.
  * We have to be a little more careful to preserve the order.
  *)
@@ -775,9 +806,7 @@ let glob_argv options dir names =
    let names = glob_braces options names in
    let names =
       List.fold_left (fun names name ->
-            let dirs', names' = glob_name options dir "" name in
-            let names' = List.append dirs' names' in
-            let names' = List.sort Pervasives.compare names' in
+            let names' = glob_argv_name options dir "" name in
                List.rev_append names' names) [] names
    in
       List.rev names
