@@ -55,6 +55,7 @@ let open_out_bin name =
  * Output.
  *)
 let output_char       = pp_print_char
+let output_int        = pp_print_int
 let output_string     = pp_print_string
 let output_rbuffer    = pp_print_rbuffer
 

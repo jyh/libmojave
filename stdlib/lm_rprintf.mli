@@ -50,6 +50,7 @@ val open_out_bin : string -> out_channel
  * Simple printing.
  *)
 val output_char    : out_channel -> char -> unit
+val output_int     : out_channel -> int -> unit
 val output_string  : out_channel -> string -> unit
 val output_rbuffer : out_channel -> Lm_rformat.buffer -> unit
 
