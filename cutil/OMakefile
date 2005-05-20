@@ -17,6 +17,7 @@ CFILES[] =
     lm_uname_ext
     lm_channel
     lm_ctype
+    lm_nocompare
 
 #
 # Libraries
