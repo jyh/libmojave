@@ -333,8 +333,8 @@ let string_of_ext_symbol (i, s) =
 (*
  * Compare for equality.
  *)
-let eq (s1 : symbol) (s2 : symbol) =
-   s1 = s2
+let eq ((i1 : int), (s1 : string)) (i2, s2) =
+   i1 = i2 && s1 = s2
 
 let compare ((i1:int), (s1:string)) (i2, s2) =
    if i1 = i2 then
