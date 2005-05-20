@@ -46,7 +46,7 @@ static unsigned long lm_nocompare_deserialize (void * dst) {
 
 static int lm_nocompare_compare(value v1, value v2)
 {
-	caml_invalid_argument("Lm_nocompare: attempted to use a Pervasives comparison operation on a data structure that specifically prohibits this");
+	caml_invalid_argument("Lm_nocompare: some code attempted to use a Pervasives comparison operation\n   on a data structure that specifically prohibits this");
 }
 
 struct custom_operations lm_nocompare_ops = {
