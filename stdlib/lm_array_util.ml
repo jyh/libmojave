@@ -60,6 +60,14 @@ let for_all f v =
    in
       search f 0 (Array.length v) v
 
+let for_all2 f a1 a2 =
+   let len = Array.length a1 in
+      Array.length a1 = Array.length a2 &&
+      (let rec apply i =
+         (i = len) || (f a1.(i) a2.(i) && apply (i + 1))
+      in
+         apply 0)
+
 let exists f v =
    let rec search f i len v =
       i <> len && (f v.(i) || search f (succ i) len v)

@@ -40,6 +40,9 @@ val exists_true : bool array -> bool
 val for_all : ('a -> bool) -> 'a array -> bool
 val exists : ('a -> bool) -> 'a array -> bool
 
+(* Returns false if lengths mismatch *)
+val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+
 (*
  * replace A i j B creates a copy of array A
  * where j elements with indices from i to i + j - 1 are
