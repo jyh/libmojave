@@ -178,11 +178,15 @@ val compare_cmp : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
  * but they raise Failure, not Invalid_argument.
  *)
 val nth : 'a list -> int -> 'a
-val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
 val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
+
+(* Returns false if the list lengths mismatch *)
+val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+
+(* Ignores the tail of the longer list *)
+val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 
 (*
  * Association lists.
