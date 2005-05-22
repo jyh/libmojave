@@ -61,32 +61,25 @@ let tex_escape_string linebreaks s =
                collect_escape i j "\\ "
           | '_' ->
                collect_escape i j "\\_"
-          | '^' ->
-               collect_escape i j "{\\makehat}"
-          | '&' ->
-               collect_escape i j "\\&"
-          | '#' ->
-               collect_escape i j "\\#"
-          | '[' ->
-               collect_escape i j "{[}"
-          | ']' ->
-               collect_escape i j "{]}"
           | '{' ->
                collect_escape i j "\\{"
           | '}' ->
                collect_escape i j "\\}"
-          | '\\' ->
-               collect_escape_space i j "{\\backslash}"
-          | '$' ->
-               collect_escape i j "\\$"
-          | '%' ->
-               collect_escape i j "\\%"
           | '|' ->
                collect_escape i j "\\|"
           | '<' ->
-               collect_escape_space i j "{\\lt}"
+               collect_escape_space i j "\\lt"
           | '>' ->
-               collect_escape_space i j "{\\gt}"
+               collect_escape_space i j "\\gt"
+          | '^'
+          | '&'
+          | '#'
+          | '['
+          | ']'
+          | '\\'
+          | '$'
+          | '%' as c->
+               collect_escape_space i j (Printf.sprintf "\\char%i" (Char.code c))
           | _ ->
                collect i (succ j)
    and collect_esc i j s' =
@@ -99,7 +92,9 @@ let tex_escape_string linebreaks s =
    and collect_escape_space i j s =
       let s' = collect (succ j) (succ j) in
       let s'' =
-         if s' = "" then " " ^ s' else
+         if s' = "" then
+            " "
+         else
             match s'.[0] with
                ' ' | '\\' | '$' | '_' | '^' | '&' | '}' | '{' -> s'
           | _ ->
