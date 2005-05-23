@@ -63,8 +63,3 @@ if $(not $(defined THREADS_ENABLED))
 # Subdirectories of this project
 #
 .SUBDIRS: cutil stdlib unix system util
-
-#
-# Do not return the current environment!
-#
-return 0
