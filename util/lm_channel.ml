@@ -170,10 +170,16 @@ let default_reader fd buf off len =
     | None ->
          raise (Unix.Unix_error (Unix.EINVAL, "default_reader", ""))
 
+(*
+ * Convert a fd to an integer (for debugging).
+ *)
+external int_of_fd : Unix.file_descr -> int = "int_of_fd"
+
 let default_writer fd buf off len =
    match fd with
       Some fd ->
-         blocking_section (fun () -> Unix.write fd buf off len) ()
+         blocking_section (fun () ->
+               Unix.write fd buf off len) ()
     | None ->
          raise (Unix.Unix_error (Unix.EINVAL, "default_writer", ""))
 
