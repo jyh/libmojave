@@ -227,10 +227,10 @@ let print_tex_raw rmargin buf raw =
    let print_string s =
       raw.raw_print_string s 0 (String.length s)
    in
-      print_string "\\iftex\\begin{tabbing}\n";
+      print_string "\\texfalse\\iftex%\n";
       print_to_printer buf rmargin info;
       tex_flush tbuf;
-      print_string "\\end{tabbing}\\fi\n";
+      print_string "\\fi\\enmptab%\n";
       raw.raw_print_flush ()
 
 (*
