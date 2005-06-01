@@ -41,6 +41,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
+
 type t = Unix.file_descr
 
 type tag = int
@@ -59,7 +61,6 @@ type host =
  *)
 type 'a unmarshal =
    UnmarshalValue of 'a
- | UnmarshalRemove of int
  | UnmarshalNext
 
 (*
@@ -68,7 +69,12 @@ type 'a unmarshal =
 type remove =
    RemoveEntry of int
  | RemoveNext
- | RemoveAll
+ | RemoveRest
+
+(*
+ * Version number.
+ *)
+let magic = 0x56e50f8b
 
 (*
  * Marshaling.
@@ -121,6 +127,11 @@ let remove_entry fd pos off =
 (*
  * Unmarshaling.
  *)
+let unmarshal_magic inx =
+   try input_binary_int inx = magic with
+      End_of_file ->
+         false
+
 let unmarshal_tag inx =
    input_binary_int inx
 
@@ -141,7 +152,7 @@ let unmarshal_string inx =
 (*
  * Search for the appropriate entry.
  *)
-let find fd tag host_mode magic digest =
+let find fd (tag, host_mode) magic digest =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -161,12 +172,8 @@ let find fd tag host_mode magic digest =
             let () = really_input inx head 0 Marshal.header_size in
             let size = Marshal.data_size head 0 in
             let pos = pos_in inx + size in
-               if host' = hostname then
-                  UnmarshalRemove pos
-               else begin
-                  seek_in inx pos;
-                  UnmarshalNext
-               end
+               seek_in inx pos;
+               UnmarshalNext
    in
 
    (*
@@ -187,18 +194,27 @@ let find fd tag host_mode magic digest =
          match code with
             UnmarshalValue x ->
                x
-          | UnmarshalRemove size ->
-               remove_entry fd start size;
-               raise Not_found
           | UnmarshalNext ->
                search ()
    in
-      search ()
+      if unmarshal_magic inx then
+         search ()
+      else
+         raise Not_found
 
 (*
- * Remove an entry.  Search through the existing entries.
+ * Remove an entry.  Search through the existing entries
+ * to find one with the same tag.  If the host is significant,
+ * remove only the entry with the same hostname.  Otherwise,
+ * remove the entry with the same magic number.
  *)
-let remove fd tag magic =
+let marshal_magic fd =
+   seek_and_truncate fd 0;
+   let outx = Unix.out_channel_of_descr fd in
+      output_binary_int outx magic;
+      Pervasives.flush outx
+
+let remove fd (tag, host_mode) magic =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -213,7 +229,7 @@ let remove fd tag magic =
       let () = really_input inx head 0 Marshal.header_size in
       let size = Marshal.data_size head 0 in
       let pos = pos_in inx + size in
-         if tag' = tag && magic' = magic || host' = hostname then
+         if tag' = tag && (host' = hostname || host_mode = HostIndependent && magic' = magic) then
             RemoveEntry pos
          else begin
             seek_in inx pos;
@@ -233,17 +249,20 @@ let remove fd tag magic =
           | Failure _
           | Sys_error _
           | Invalid_argument _ ->
-               RemoveAll
+               RemoveRest
       in
          match code with
             RemoveEntry pos ->
                remove_entry fd start pos
           | RemoveNext ->
                search ()
-          | RemoveAll ->
+          | RemoveRest ->
                seek_and_truncate fd start
    in
-      search ()
+      if unmarshal_magic inx then
+         search ()
+      else
+         marshal_magic fd
 
 (*
  * Add an entry.
@@ -262,7 +281,7 @@ let marshal_string outx s =
       output_binary_int outx len;
       Pervasives.output_string outx s
 
-let marshal_entry fd tag magic_number digest x =
+let marshal_entry fd (tag, _) magic_number digest x =
    let outx = Unix.out_channel_of_descr fd in
       marshal_tag outx tag;
       marshal_string outx hostname;
