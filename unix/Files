@@ -1,5 +1,4 @@
 UNIX_FILES[] =
-    lm_unix_util
     lm_mmap
     lm_mmap_pipe
     lm_rusage
