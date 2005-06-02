@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_printf
 
 (*
  * Copy a file.
@@ -94,6 +95,37 @@ let mkdirhier name =
    let path = Lm_filename_util.simplify_path path in
       mkdir head path
 
+(*
+ * Convert a fd to an integer (for debugging).
+ *)
+external int_of_fd : Unix.file_descr -> int = "int_of_fd"
+
+(*
+ * Win32 functions.
+ *)
+external home_win32 : unit -> string = "home_win32"
+external lockf_win32 : Unix.file_descr -> Unix.lock_command -> int -> unit = "lockf_win32"
+external ftruncate_win32 : Unix.file_descr -> unit = "ftruncate_win32"
+
+let home_dir =
+   if Sys.os_type = "Win32" then
+      try home_win32 () with
+         Failure _ ->
+            Lm_glob.home_dir
+   else
+      Lm_glob.home_dir
+
+let lockf =
+   if Sys.os_type = "Win32" then
+      lockf_win32
+   else
+      Unix.lockf
+
+let ftruncate =
+   if Sys.os_type = "Win32" then
+      ftruncate_win32
+   else
+      (fun fd -> Unix.ftruncate fd (Unix.lseek fd 0 Unix.SEEK_CUR))
 (*
  * -*-
  * Local Variables:
