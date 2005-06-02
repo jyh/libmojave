@@ -41,6 +41,26 @@ val copy_file : string -> string -> unit
 val mkdirhier : string -> unit
 
 (*
+ * Home directory of the current user.
+ *)
+val home_dir : string
+
+(*
+ * C interface.
+ *)
+val int_of_fd : Unix.file_descr -> int
+
+(*
+ * Lock utilities.
+ *)
+val lockf : Unix.file_descr -> Unix.lock_command -> int -> unit
+
+(*
+ * File truncation.
+ *)
+val ftruncate : Unix.file_descr -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"
