@@ -41,6 +41,7 @@ type 'a path =
  *)
 val separator_char   : char
 val separator_string : string
+val separators       : string
 
 (*
  * Remove quotations from a string that represents a filename.
