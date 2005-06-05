@@ -140,27 +140,9 @@ let getpwnam user =
  * Try to figure out the home directory as best as possible.
  *)
 let home_dir =
-   try
-      let home = Sys.getenv "HOME" in
-         tilde_insert home "";
-         home
-   with
-      Not_found ->
-         let home =
-            try getpwnam (Unix.getlogin ()) with
-               Not_found
-             | Unix.Unix_error _ ->
-                  let home =
-                     if Sys.os_type = "Win32" then
-                        "c:\\"
-                     else
-                        "/tmp"
-                  in
-                     eprintf "No home directory, using %s@." home;
-                     home
-         in
-            Unix.putenv "HOME" home;
-            home
+   let home = Lm_unix_util.home_dir in
+      tilde_insert home "";
+      home
 
 (************************************************************************
  * Glob expansion.

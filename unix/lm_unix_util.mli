@@ -31,6 +31,11 @@
  *)
 
 (*
+ * Location of the home directory.
+ *)
+val home_dir : string
+
+(*
  * Copy an entire file.
  *)
 val copy_file : string -> string -> int -> unit

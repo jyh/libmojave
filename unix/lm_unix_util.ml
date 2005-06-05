@@ -108,13 +108,39 @@ external home_win32 : unit -> string = "home_win32"
 external lockf_win32 : Unix.file_descr -> Unix.lock_command -> int -> unit = "lockf_win32"
 external ftruncate_win32 : Unix.file_descr -> unit = "ftruncate_win32"
 
+(*
+ * Try to figure out the home directory as best as possible.
+ *)
+let find_home_dir () =
+   try Sys.getenv "HOME" with
+      Not_found ->
+         let home =
+            try (Unix.getpwnam (Unix.getlogin ())).Unix.pw_dir with
+               Not_found
+             | Unix.Unix_error _ ->
+                  let home =
+                     if Sys.os_type = "Win32" then
+                        "c:\\"
+                     else
+                        "/tmp"
+                  in
+                     eprintf "No home directory, using %s@." home;
+                     home
+         in
+            Unix.putenv "HOME" home;
+            home
+
 let home_dir =
-   if Sys.os_type = "Win32" then
-      try home_win32 () with
-         Failure _ ->
-            Lm_glob.home_dir
-   else
-      Lm_glob.home_dir
+   let home =
+      if Sys.os_type = "Win32" then
+         try home_win32 () with
+            Failure _ ->
+               find_home_dir ()
+      else
+         find_home_dir ()
+   in
+      Unix.putenv "HOME" home;
+      home
 
 let lockf =
    if Sys.os_type = "Win32" then
