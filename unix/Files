@@ -5,3 +5,4 @@ UNIX_FILES[] =
     lm_id
     lm_inet
     lm_uname
+    lm_unix_util

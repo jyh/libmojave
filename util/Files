@@ -35,4 +35,3 @@ UTIL_FILES[] =
     lm_lexer
     lm_parser
     lm_glob
-    lm_unix_util

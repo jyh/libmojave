@@ -3,7 +3,7 @@
 #
 include Files
 
-OCAMLINCLUDES += ../stdlib
+OCAMLINCLUDES += ../stdlib ../unix
 
 OCamlLibrary(lmutil, $(UTIL_FILES))
 
