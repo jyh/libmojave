@@ -127,6 +127,7 @@ let ftruncate =
       ftruncate_win32
    else
       (fun fd -> Unix.ftruncate fd (Unix.lseek fd 0 Unix.SEEK_CUR))
+
 (*
  * -*-
  * Local Variables:
