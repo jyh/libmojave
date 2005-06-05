@@ -33,7 +33,7 @@
 (*
  * Copy an entire file.
  *)
-val copy_file : string -> string -> unit
+val copy_file : string -> string -> int -> unit
 
 (*
  * Make all the directories in a path.

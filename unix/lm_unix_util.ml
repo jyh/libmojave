@@ -47,14 +47,15 @@ let rec copy_file_fd buffer from_fd to_fd =
             copy_file_fd buffer from_fd to_fd
          end
 
-let copy_file from_name to_name =
-   let from_fd = Unix.openfile from_name [Unix.O_RDONLY] 438 in
+let copy_file from_name to_name mode =
+   let from_fd = Unix.openfile from_name [Unix.O_RDONLY] 0o666 in
       try
-         let to_fd = Unix.openfile to_name [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 438 in
+         let to_fd = Unix.openfile to_name [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
             try
                copy_file_fd (String.create 8192) from_fd to_fd;
                Unix.close from_fd;
-               Unix.close to_fd
+               Unix.close to_fd;
+               Unix.chmod to_name mode
             with
                x ->
                   Unix.close to_fd;
