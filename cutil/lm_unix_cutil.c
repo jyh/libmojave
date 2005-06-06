@@ -112,9 +112,13 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
         overlapped.Offset = pos;
 
         /* Perform the lock */
+        fprintf(stderr, "Locking file\n");
+        fflush(stderr);
         enter_blocking_section();
         code = LockFileEx(fd, flags, 0, len, 0, &overlapped);
         leave_blocking_section();
+        fprintf(stderr, "Locked file\n");
+        fflush(stderr);
 
         /* Fail if the lock was not successful */
         if(code == 0)

@@ -36,7 +36,7 @@
 #include <tlhelp32.h>
 #include <shlobj.h>
 
-#include "compat_win32.h"
+#include "lm_compat_win32.h"
 
 /*
  * Pointers to the functions.
@@ -88,16 +88,21 @@ BOOL CompatThread32Next(HANDLE arg1, LPTHREADENTRY32 arg2)
 
 HRESULT CompatSHGetFolderPath(HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, LPTSTR pszPath)
 {
-    if(SHGetFolderPathF)
+    if(SHGetFolderPathF) {
+        fprintf(stderr, "Getting path from SHGetFolderPath\n");
+        fflush(stderr);
         return SHGetFolderPathF(hwndOwner, nFolder, hToken, dwFlags, pszPath);
+    }
     else if(SHGetSpecialFolderPathF) {
         BOOL fCreate = nFolder & CSIDL_FLAG_CREATE ? TRUE : FALSE;
         nFolder &= ~CSIDL_FLAG_CREATE;
         fCreate = SHGetSpecialFolderPathF(hwndOwner, pszPath, nFolder, fCreate);
-        return fCreate ? S_OK : S_FALSE;
+        fprintf(stderr, "Getting path from SHGetSpecialFolderPath\n");
+        fflush(stderr);
+        return fCreate ? S_OK : E_FAIL;
     }
     else
-        return S_FALSE;
+        return E_NOTIMPL;
 }
 
 /*
@@ -109,21 +114,25 @@ static void init(void)
     FARPROC fp;
 
     hinst = GetModuleHandle(TEXT("KERNEL32"));
-    *(FARPROC *)&OpenThreadF = GetProcAddress(hinst, "OpenThread");
+    if(hinst != NULL) {
+        *(FARPROC *)&OpenThreadF = GetProcAddress(hinst, "OpenThread");
 #ifdef UNICODE
-    *(FARPROC *)&GetLongPathNameF = GetProcAddress(hinst, "GetLongPathNameW");
+        *(FARPROC *)&GetLongPathNameF = GetProcAddress(hinst, "GetLongPathNameW");
 #else
-    *(FARPROC *)&GetLongPathNameF = GetProcAddress(hinst, "GetLongPathNameA");
+        *(FARPROC *)&GetLongPathNameF = GetProcAddress(hinst, "GetLongPathNameA");
 #endif
-    *(FARPROC *)&CreateToolhelp32SnapshotF = GetProcAddress(hinst, "CreateToolHelp32Snapshot");
-    *(FARPROC *)&Thread32FirstF = GetProcAddress(hinst, "Thread32First");
-    *(FARPROC *)&Thread32NextF = GetProcAddress(hinst, "Thread32Next");
+        *(FARPROC *)&CreateToolhelp32SnapshotF = GetProcAddress(hinst, "CreateToolHelp32Snapshot");
+        *(FARPROC *)&Thread32FirstF = GetProcAddress(hinst, "Thread32First");
+        *(FARPROC *)&Thread32NextF = GetProcAddress(hinst, "Thread32Next");
+    }
 
     hinst = GetModuleHandle(TEXT("SHFOLDER"));
-    *(FARPROC *)&SHGetFolderPathF = GetProcAddress(hinst, "SHGetFolderPath");
+    if(hinst != NULL)
+        *(FARPROC *)&SHGetFolderPathF = GetProcAddress(hinst, "SHGetFolderPath");
 
     hinst = GetModuleHandle(TEXT("SHELL32"));
-    *(FARPROC *)&SHGetSpecialFolderPathF = GetProcAddress(hinst, "SHGetSpecialFolderPath");
+    if(hinst != NULL)
+        *(FARPROC *)&SHGetSpecialFolderPathF = GetProcAddress(hinst, "SHGetSpecialFolderPath");
 }
 
 /*

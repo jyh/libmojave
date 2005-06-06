@@ -97,6 +97,13 @@ let mkdirhier name =
       mkdir head path
 
 (*
+ * Compatibility initializer.
+ *)
+external init : unit -> unit = "lm_compat_init"
+
+let () = init ()
+
+(*
  * Convert a fd to an integer (for debugging).
  *)
 external int_of_fd : Unix.file_descr -> int = "int_of_fd"
@@ -118,14 +125,10 @@ let find_home_dir () =
             try (Unix.getpwnam (Unix.getlogin ())).Unix.pw_dir with
                Not_found
              | Unix.Unix_error _ ->
-                  let home =
-                     if Sys.os_type = "Win32" then
-                        "c:\\"
-                     else
-                        "/tmp"
-                  in
-                     eprintf "No home directory, using %s@." home;
-                     home
+                 eprintf "!!! Lm_unix_util.find_home_dir:@.";
+                 eprintf "!!! You have no home directory.@.";
+                 eprintf "!!! Please set the HOME environment variable to a suitable directory.@.";
+                 raise (Invalid_argument "Lm_unix_util.find_home_dir")
          in
             Unix.putenv "HOME" home;
             home
