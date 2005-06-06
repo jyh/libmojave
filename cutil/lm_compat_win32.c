@@ -24,7 +24,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  */
-#ifdef WIN32
 #include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -32,6 +31,7 @@
 #include <caml/fail.h>
 #include <caml/custom.h>
 
+#ifdef WIN32
 #include <windows.h>
 #include <tlhelp32.h>
 #include <shlobj.h>
@@ -144,4 +144,12 @@ value lm_compat_init(value v_unit)
     return Val_unit;
 }
 
-#endif /* WIN32 */
+#else /* !WIN32 */
+
+value lm_compat_init(value v_unit)
+{
+    return Val_unit;
+}
+
+#endif /* !WIN32 */
+
