@@ -18,6 +18,8 @@ CFILES[] =
     lm_channel
     lm_ctype
     lm_nocompare
+    lm_compat_win32
+    lm_unix_cutil
 
 #
 # Libraries
