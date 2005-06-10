@@ -24,6 +24,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
+ * Author: Justin David Smith
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
@@ -47,8 +48,21 @@ type 'a poly_spec =
  | FloatFold  of ('a -> float -> 'a)
  | RestFold   of ('a -> string -> 'a)
 
+   (* Usage message *)
+ | Usage
+
+(* spec_mode
+
+   StrictOptions: options are processed literally, and may not be collapsed
+      into multi-letter options.
+   MultiLetterMode: single-letter options of the form -x may be collapsed
+      into multi-letter options. *)
+type spec_mode =
+   StrictOptions
+ | MultiLetterOptions
+
 type 'a poly_section = (string * 'a poly_spec * string) list
-type 'a poly_sections = (string * 'a poly_section) list
+type 'a poly_sections = spec_mode * (string * 'a poly_section) list
 
 type spec = unit poly_spec
 type section = unit poly_section

@@ -73,12 +73,36 @@ type 'a poly_spec =
  | FloatFold  of ('a -> float -> 'a)
  | RestFold   of ('a -> string -> 'a)
 
+   (* Usage message *)
+ | Usage
+
+(* spec_mode
+
+   StrictOptions: options are processed literally, and may not be collapsed
+      into multi-letter options.
+   MultiLetterMode: single-letter options of the form -x may be collapsed
+      into multi-letter options. *)
+type spec_mode =
+   StrictOptions
+ | MultiLetterOptions
+
 type 'a poly_section = (string * 'a poly_spec * string) list
-type 'a poly_sections = (string * 'a poly_section) list
+type 'a poly_sections = spec_mode * (string * 'a poly_section) list
 
 type spec = unit poly_spec
 type section = unit poly_section
 type sections = unit poly_sections
+
+(* parsing mode
+
+   StrictMode: options are processed literally, and may not be collapsed
+      into multi-letter options.
+   MultiLetterMode: single-letter options may be collapsed.
+   MultiLetterPending: processing a multi-letter option *)
+type mode =
+   StrictMode
+ | MultiLetterMode
+ | MultiLetterPending of string * int
 
 (* BogusArg
    Thrown by option processing when something goes wrong...  *)
@@ -96,10 +120,16 @@ exception UsageError
    Defines a table indexed by individual characters.  *)
 module CharCompare = struct
    type t = char
-   let compare = Pervasives.compare
+   let compare (c1 : char) (c2 : char) =
+      if c1 < c2 then
+         -1
+      else if c1 > c2 then
+         1
+      else
+         0
 end (* CharCompare *)
 
-module CharTable = Lm_map.LmMake (CharCompare)
+module CharTable = Lm_map.LmMake (CharCompare);;
 
 
 (* options
@@ -128,6 +158,17 @@ type 'a option_node =
  | SpecOrName of 'a poly_spec * 'a option_node CharTable.t
 
 type 'a options = 'a option_node CharTable.t
+
+(* is_alnum
+
+   test if a letter is a letter or number *)
+let is_alnum = function
+   'a'..'z'
+ | 'A'..'Z'
+ | '0'..'9' ->
+      true
+ | _ ->
+      false
 
 
 (* char_table_lookup
@@ -208,7 +249,7 @@ let add_option options name spec =
    split the ``name'' we were given into a name/value pair at that point,
    and return the excess characters as the option's value.  This is how we
    determine when the value associated with an option is not delimited by a
-   space.  Note that any option which is a prefix of another option cannot
+   space.  Note that any option that is a prefix of another option cannot
    take a value in this way.
  *)
 let lookup_option options name =
@@ -306,7 +347,8 @@ let usage spec =
              | Clear _
              | UnitFold _
              | SetFold _
-             | ClearFold _ ->
+             | ClearFold _
+             | Usage ->
                   ""
              | String _
              | StringFold _ ->
@@ -344,6 +386,20 @@ let usage spec usage_msg =
 
 (***  Option Processing  ***)
 
+(* pending_arguments
+   Query for pending arguments or options.  Advances the parser for
+   the current mode, and returns a pair (mode, found), where found
+   is true iff there are options or arguments left to process.  *)
+let advance_options mode argv argv_length current =
+   match mode with
+      StrictMode
+    | MultiLetterMode ->
+         mode, current < argv_length
+    | MultiLetterPending (opt, i) when i = String.length opt ->
+         MultiLetterMode, current < argv_length
+    | MultiLetterPending _ ->
+         mode, true
+
 
 (* get_next_arg
    Get the next argument in the argument stream.  Returns
@@ -354,143 +410,181 @@ let get_next_arg argv argv_length current =
    else
       raise (BogusArg "Missing argument")
 
+(* get_next_option
+   In StrictMode, this is the same as get_next_arg.
+   In MultiLetterMode, this walks letter-by-letter through
+   simple options. *)
+let rec get_next_option mode argv argv_length current =
+   match mode with
+      StrictMode ->
+         let opt, current = get_next_arg argv argv_length current in
+            opt, current, mode
+    | MultiLetterMode ->
+         (* See if the next argument is an option *)
+         let opt, current = get_next_arg argv argv_length current in
+            if String.length opt >= 2 && opt.[0] = '-' && is_alnum opt.[1] then
+               get_next_option (MultiLetterPending (opt, 1)) argv argv_length current
+            else
+               opt, current, mode
+    | MultiLetterPending (opt, i) ->
+         let s = String.make 2 opt.[i] in
+         let mode = MultiLetterPending (opt, succ i) in
+            s.[0] <- '-';
+            s, current, mode
+
 
 (* parse
    Parses the program arguments, using a sections specification.  Any
    non-option argument is passed to the default function, in order; if
    -help or --help is intercepted on the argument stream, then the
    usage message is displayed.  *)
-let fold_argv argv spec arg default usage_msg =
+let fold_argv argv (mode, spec) arg default usage_msg =
+   (* Always add the --help flag *)
+   let spec_info = ("Help flags", ["--help", Usage, "Display a help message"]) :: spec in
+
+   (* Set the current mode *)
+   let mode =
+      match mode with
+         StrictOptions ->
+            StrictMode
+       | MultiLetterOptions ->
+            MultiLetterMode
+   in
+
+
    (* Convert spec into an options tree, for easier parsing *)
-   let options = compute_option_tree spec in
+   let options = compute_option_tree spec_info in
    let argv_length = Array.length argv in
 
-   (* Parse a single option *)
-   let rec parse_option arg current =
-      if current < argv_length then
-         (* Get the name of the option *)
-         let opt, current = get_next_arg argv argv_length current in
-         let current, arg =
-            if opt = "-help" || opt = "--help" then
-            begin
-               usage spec usage_msg;
-               raise UsageError
-            end
-            else if String.length opt > 0 && opt.[0] = '-' then
-               (* Get information on the option *)
-               let spec, s = lookup_option options opt in
+   (*
+    * Parse a single option.
+    *    arg: the fold value being computed
+    *    current: the current index into argv
+    *)
+   let rec parse_option mode arg current =
+      let mode, pending = advance_options mode argv argv_length current in
+         if pending then
+            (* Get the name of the option *)
+            let opt, current, mode = get_next_option mode argv argv_length current in
+            let current, arg =
+               if String.length opt > 0 && opt.[0] = '-' then
+                  (* Get information on the option *)
+                  let spec, s = lookup_option options opt in
 
-               (* If no value was embedded in the option, but the option
-                  requires a value, then grab the next argument for its
-                  value.  *)
-               let s, current, arg =
-                  match spec, s with
-                     String _,     ""
-                   | Int _,        ""
-                   | Float _,      ""
-                   | StringFold _, ""
-                   | IntFold _,    ""
-                   | FloatFold _,  "" ->
-                        let s, current = get_next_arg argv argv_length current in
+                  (* If no value was embedded in the option, but the option
+                     requires a value, then grab the next argument for its
+                     value.  *)
+                  let s, current, arg =
+                     match spec, s with
+                        String _,     ""
+                      | Int _,        ""
+                      | Float _,      ""
+                      | StringFold _, ""
+                      | IntFold _,    ""
+                      | FloatFold _,  "" ->
+                           let s, current = get_next_arg argv argv_length current in
+                              s, current, arg
+
+                      | Unit _,       ""
+                      | Set _,        ""
+                      | Clear _,      ""
+                      | Usage,        ""
+                      | UnitFold _,   ""
+                      | SetFold _,    ""
+                      | ClearFold _,  ""
+
+                      | String _,     _
+                      | Int _,        _
+                      | Float _,      _
+                      | StringFold _, _
+                      | IntFold _,    _
+                      | FloatFold _,  _ ->
                            s, current, arg
 
-                   | Unit _,      ""
-                   | Set _,       ""
-                   | Clear _,     ""
-                   | String _,    _
-                   | Int _,       _
-                   | Float _,     _
+                      | Rest f,     "" ->
+                           let rec rest_function current =
+                              if current < argv_length then begin
+                                 f argv.(current);
+                                 rest_function (current + 1)
+                              end
+                              else
+                                 "", current, arg
+                           in
+                              rest_function current
+                      | RestFold f,     "" ->
+                           let rec rest_function arg current =
+                              if current < argv_length then
+                                 rest_function (f arg argv.(current)) (current + 1)
+                              else
+                                 "", current, arg
+                           in
+                              rest_function arg current
+                      | _ ->
+                           raise (BogusArg "Option cannot accept an argument")
+                  in
 
-                   | UnitFold _,  ""
-                   | SetFold _,   ""
-                   | ClearFold _, ""
-                   | StringFold _, _
-                   | IntFold _, _
-                   | FloatFold _, _ ->
-                        s, current, arg
-
-                   | Rest f,     "" ->
-                        let rec rest_function current =
-                           if current < argv_length then
-                           begin
-                              f argv.(current);
-                              rest_function (current + 1)
-                           end
-                           else
-                              "", current, arg
-                        in
-                           rest_function current
-                   | RestFold f,     "" ->
+                  (* Actually process the option. *)
+                  let arg =
+                     match spec with
+                        Unit f ->
+                           f ();
+                           arg
+                      | UnitFold f ->
+                           f arg
+                      | Set x ->
+                           x := true;
+                           arg
+                      | SetFold f ->
+                           f arg true
+                      | Clear x ->
+                           x := false;
+                           arg
+                      | ClearFold f ->
+                           f arg false
+                      | String f ->
+                           f s;
+                           arg
+                      | StringFold f ->
+                           f arg s
+                      | Int f ->
+                           f (int_of_string s);
+                           arg
+                      | IntFold f ->
+                           f arg (int_of_string s)
+                      | Float f ->
+                           f (float_of_string s);
+                           arg
+                      | FloatFold f ->
+                           f arg (float_of_string s)
+                      | Rest _
+                      | RestFold _ ->
+                           arg
+                      | Usage ->
+                           usage spec_info usage_msg;
+                           raise UsageError
+                  in
+                     current, arg
+               else
+                  (* Not an option; pass to the default function *)
+                  let arg, rest = default arg opt in
+                     if rest then
                         let rec rest_function arg current =
                            if current < argv_length then
-                              rest_function (f arg argv.(current)) (current + 1)
+                              let arg, _ = default arg argv.(current) in
+                                 rest_function arg (current + 1)
                            else
-                              "", current, arg
+                              current, arg
                         in
                            rest_function arg current
-                   | _ ->
-                        raise (BogusArg "Option cannot accept an argument")
-               in
-
-               (* Actually process the option. *)
-               let arg =
-                  match spec with
-                     Unit f ->
-                        f ();
-                        arg
-                   | UnitFold f ->
-                        f arg
-                   | Set x ->
-                        x := true;
-                        arg
-                   | SetFold f ->
-                        f arg true
-                   | Clear x ->
-                        x := false;
-                        arg
-                   | ClearFold f ->
-                        f arg false
-                   | String f ->
-                        f s;
-                        arg
-                   | StringFold f ->
-                        f arg s
-                   | Int f ->
-                        f (int_of_string s);
-                        arg
-                   | IntFold f ->
-                        f arg (int_of_string s)
-                   | Float f ->
-                        f (float_of_string s);
-                        arg
-                   | FloatFold f ->
-                        f arg (float_of_string s)
-                   | Rest _
-                   | RestFold _ ->
-                        arg
-               in
-                  current, arg
-            else
-               (* Not an option; pass to the default function *)
-               let arg, rest = default arg opt in
-                  if rest then
-                     let rec rest_function arg current =
-                        if current < argv_length then
-                           let arg, _ = default arg argv.(current) in
-                              rest_function arg (current + 1)
-                        else
-                           current, arg
-                     in
-                        rest_function arg current
-                  else
-                     current, arg
-         in
-            (* We're done with this option, advance to next *)
-            parse_option arg current
-      else
-         current, arg
+                     else
+                        current, arg
+            in
+               (* We're done with this option, advance to next *)
+               parse_option mode arg current
+         else
+            current, arg
    in
-   let _, arg = parse_option arg 1 in
+   let _, arg = parse_option mode arg 1 in
       arg
 
 let fold spec arg default usage_msg =
@@ -502,3 +596,5 @@ let parse_argv argv spec default usage_msg =
 let parse spec default usage_msg =
    fold spec () (fun () opt -> default opt, false) usage_msg
 
+let usage (_, spec) =
+   usage spec
