@@ -374,9 +374,14 @@ let usage spec =
             printf ":  ";
             print_string doc) spec
 
-let usage spec usage_msg =
+let usage (mode, spec) usage_msg =
    (* Display help for all sections. *)
-   printf "@[<v 0>%s" usage_msg;
+   printf "@[<v 0>%s." usage_msg;
+   (match mode with
+       StrictOptions ->
+          ()
+     | MultiLetterOptions ->
+          printf "@ Single-letter options may be concatenated as part of a single option.");
    List.iter (fun (section, spec) ->
       printf "@ @ @[<v 3>%s:" section;
       usage spec;
@@ -438,13 +443,13 @@ let rec get_next_option mode argv argv_length current =
    non-option argument is passed to the default function, in order; if
    -help or --help is intercepted on the argument stream, then the
    usage message is displayed.  *)
-let fold_argv argv (mode, spec) arg default usage_msg =
+let fold_argv argv (mode_info, spec_info) arg default usage_msg =
    (* Always add the --help flag *)
-   let spec_info = ("Help flags", ["--help", Usage, "Display a help message"]) :: spec in
+   let spec_info = ("Help flags", ["--help", Usage, "Display a help message"]) :: spec_info in
 
    (* Set the current mode *)
    let mode =
-      match mode with
+      match mode_info with
          StrictOptions ->
             StrictMode
        | MultiLetterOptions ->
@@ -560,7 +565,7 @@ let fold_argv argv (mode, spec) arg default usage_msg =
                       | RestFold _ ->
                            arg
                       | Usage ->
-                           usage spec_info usage_msg;
+                           usage (mode_info, spec_info) usage_msg;
                            raise UsageError
                   in
                      current, arg
@@ -595,6 +600,3 @@ let parse_argv argv spec default usage_msg =
 
 let parse spec default usage_msg =
    fold spec () (fun () opt -> default opt, false) usage_msg
-
-let usage (_, spec) =
-   usage spec
