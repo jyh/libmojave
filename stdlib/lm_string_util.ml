@@ -751,9 +751,10 @@ let parse_args_list line =
           | '"' ->
                string 0 (succ i)
           | '\\' ->
-               if len >= i+2 && line.[i+1]='\\'
-               then [] :: skip (i+2)
-               else raise(Invalid_argument ("Lm_string_util.parse_args: " ^ line))
+               if len >= i + 2 && line.[i + 1] = '\\' then
+                  [] :: skip (i + 2)
+               else
+                  raise (Invalid_argument ("Lm_string_util.parse_args: " ^ line))
           | _ ->
                collect i (succ i)
    and collect i j =
@@ -763,34 +764,30 @@ let parse_args_list line =
          match line.[j] with
             ' ' | '\t' | '\n' | '\r' | '\\' ->
                let s = String.sub line i (j - i) in
-                  begin match skip j with
-                           [] -> [[s]]
-                         | h::tl -> (s::h) :: tl
-                  end
+                  (match skip j with
+                        [] -> [[s]]
+                      | h :: tl -> (s :: h) :: tl)
           | _ ->
                collect i (succ j)
    and string j k =
       if k = len then
          raise (Invalid_argument ("Lm_string_util.parse_args: " ^ line))
-         (* [String.sub buf 0 j] *)
       else
          let c = line.[k] in
             if c = '"' then
                let s = String.sub buf 0 j in
-               match skip (succ k) with
-                  [] -> raise (Invalid_argument "Lm_string_util.parse_args - internal error")
-                | h::tl -> (s::h)::tl
+                  match skip (succ k) with
+                     [] -> raise (Invalid_argument "Lm_string_util.parse_args - internal error")
+                   | h::tl -> (s::h)::tl
             else if c = '\\' then
                escape j (succ k)
-            else
-               begin
-                  buf.[j] <- c;
-                  string (succ j) (succ k)
-               end
+            else begin
+               buf.[j] <- c;
+               string (succ j) (succ k)
+            end
    and escape j k =
       if k = len then
          raise (Invalid_argument ("Lm_string_util.parse_args: " ^ line))
-         (* [String.sub buf 0 j] *)
       else
          let c,k =
             match line.[k] with

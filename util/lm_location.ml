@@ -36,6 +36,30 @@ open Lm_printf
 type loc = symbol * int * int * int * int
 
 (*
+ * Comparison.
+ *)
+let compare (**)
+       (v1, start_line1, start_char1, end_line1, end_char1)
+       (v2, start_line2, start_char2, end_line2, end_char2) =
+   let cmp = Lm_symbol.compare v1 v2 in
+      if cmp = 0 then
+         let cmp = start_line1 - start_line2 in
+            if cmp = 0 then
+               let cmp = start_char1 - start_char2 in
+                  if cmp = 0 then
+                     let cmp = end_line1 - end_line2 in
+                        if cmp = 0 then
+                           end_char1 - end_char2
+                        else
+                           cmp
+                  else
+                     cmp
+            else
+               cmp
+      else
+         cmp
+
+(*
  * Source location if all else fails.
  *)
 let bogus_loc name =

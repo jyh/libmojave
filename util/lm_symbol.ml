@@ -173,6 +173,10 @@ let add_mangle s =
 let reintern (_, s) =
    add s
 
+let is_numeric_symbol = function
+   (0, s) -> all_digits s (String.length s - 1)
+ | _ -> false
+
 (*
  * Create a new symbol.
  * Don't add it to the table.

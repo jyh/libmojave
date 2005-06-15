@@ -30,6 +30,11 @@ open Lm_symbol
 type loc
 
 (*
+ * Comparison.
+ *)
+val compare : loc -> loc -> int
+
+(*
  * Don't use this if you can avoid it.
  *)
 val bogus_loc : string -> loc
