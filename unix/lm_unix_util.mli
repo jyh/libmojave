@@ -36,6 +36,12 @@
 val home_dir : string
 
 (*
+ * Location of application data (this is the same as home_dir
+ * except on Win32).
+ *)
+val application_dir : string
+
+(*
  * Copy an entire file.
  *)
 val copy_file : string -> string -> int -> unit

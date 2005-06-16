@@ -133,17 +133,23 @@ let find_home_dir () =
             Unix.putenv "HOME" home;
             home
 
+let application_dir =
+   if Sys.os_type = "Win32" then
+      try home_win32 () with
+         Failure _ ->
+            find_home_dir ()
+   else
+      find_home_dir ()
+
 let home_dir =
-   let home =
-      if Sys.os_type = "Win32" then
-         try home_win32 () with
-            Failure _ ->
-               find_home_dir ()
-      else
-         find_home_dir ()
-   in
-      Unix.putenv "HOME" home;
-      home
+   if Sys.os_type = "Win32" then
+      try Sys.getenv "HOME" with
+         Not_found ->
+            let home = application_dir in
+               Unix.putenv "HOME" home;
+               home
+   else
+      application_dir
 
 let lockf =
    if Sys.os_type = "Win32" then
