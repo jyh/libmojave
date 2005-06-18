@@ -13,8 +13,11 @@
 
 /* Headers which are readline-specific must be included here. */
 #include <ncurses.h>
-#include <term.h>
-
+#ifdef __CYGWIN32__
+   #include <ncurses/term.h>
+#else
+   #include <term.h>
+#endif
 
 static int loaded_terminfo = 0;
 
@@ -24,14 +27,14 @@ static int load_terminfo() {
 
    /* Check to see if we already loaded the terminal data */
    if(loaded_terminfo) return(0);
-   
+
    /* We haven't loaded anything yet (or we had an error). */
    if(setupterm(NULL, 1, NULL) == OK) {
       /* We were successful! */
       loaded_terminfo = 1;
       return(0);
    }
-   
+
    /* Failure. */
    return(-1);
 
