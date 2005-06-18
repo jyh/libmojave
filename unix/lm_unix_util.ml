@@ -32,6 +32,20 @@
 open Lm_printf
 
 (*
+ * Read the exact amount.
+ *)
+let rec really_read fd buf off len =
+   if len <> 0 then
+      let amount = Unix.read fd buf off len in
+      let () =
+         if amount = 0 then
+            raise (Failure "really_read")
+      in
+      let off = off + amount in
+      let len = len - amount in
+         really_read fd buf off len
+
+(*
  * Copy a file.
  *)
 let rec complete_write fd buf off len =

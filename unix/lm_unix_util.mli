@@ -42,6 +42,11 @@ val home_dir : string
 val application_dir : string
 
 (*
+ * Really read some number of bytes.
+ *)
+val really_read : Unix.file_descr -> string -> int -> int -> unit
+
+(*
  * Copy an entire file.
  *)
 val copy_file : string -> string -> int -> unit
