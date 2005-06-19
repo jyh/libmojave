@@ -75,10 +75,14 @@ val glob_argv : glob_options list -> string -> string list -> string list
 
 (*
  * Get the entries in a directory.
+ *
+ *    list_dirs root dirs
+ *       root: the directory prefix, not appended to the output strings
+ *       dirs: the directories to list
  *)
-val list_dirs : glob_options list -> string list -> string list * string list
-val list_dirs_rec : glob_options list -> string list -> string list * string list
-val subdirs_of_dirs : glob_options list -> string list -> string list
+val list_dirs : glob_options list -> string -> string list -> string list * string list
+val list_dirs_rec : glob_options list -> string -> string list -> string list * string list
+val subdirs_of_dirs : glob_options list -> string -> string list -> string list
 
 (*
  * Utilities.

@@ -800,8 +800,8 @@ let glob_argv options dir names =
 (*
  * Get all the names in the directory.
  *)
-let list_dir_exn options hidden_dirs dirs names dirname =
-   let inx = Unix.opendir dirname in
+let list_dir_exn options root hidden_dirs dirs names dirname =
+   let inx = Unix.opendir (filename_concat root dirname) in
    let rec read hidden_dirs dirs names =
       let name =
          try Some (Unix.readdir inx) with
@@ -841,14 +841,14 @@ let list_dir_exn options hidden_dirs dirs names dirname =
       Unix.closedir inx;
       hidden_dirs_names
 
-let list_dir_aux options hidden_dirs dirs names dirname =
+let list_dir_aux options root hidden_dirs dirs names dirname =
    let options =
       if options.glob_cvs then
-         { options with glob_cvsignore = load_cvsignore dirname }
+         { options with glob_cvsignore = load_cvsignore (filename_concat root dirname) }
       else
          options
    in
-      try list_dir_exn options hidden_dirs dirs names dirname with
+      try list_dir_exn options root hidden_dirs dirs names dirname with
          Unix.Unix_error _
        | Sys_error _
        | Failure _ ->
@@ -857,12 +857,12 @@ let list_dir_aux options hidden_dirs dirs names dirname =
 (*
  * Perform a directory listing.
  *)
-let list_dirs options dirs =
+let list_dirs options root dirs =
    let options = glob_options_of_list options in
    let rec collect dirs names l =
       match l with
          dir :: l ->
-            let _, dirs, names = list_dir_aux options [] dirs names dir in
+            let _, dirs, names = list_dir_aux options root [] dirs names dir in
                collect dirs names l
        | [] ->
             dirs, names
@@ -872,19 +872,19 @@ let list_dirs options dirs =
 (*
  * Recursive directory listing.
  *)
-let list_dirs_rec options dirs =
+let list_dirs_rec options root dirs =
    let options = glob_options_of_list options in
    let rec collect examined_dirs hidden_dirs unexamined_dirs names =
       match hidden_dirs, unexamined_dirs with
          dir :: hidden_dirs, _ ->
             let hidden_dirs, unexamined_dirs, names =
-               list_dir_aux options hidden_dirs unexamined_dirs names dir
+               list_dir_aux options root hidden_dirs unexamined_dirs names dir
             in
                collect examined_dirs hidden_dirs unexamined_dirs names
        | [], dir :: unexamined_dirs ->
             let examined_dirs = dir :: examined_dirs in
             let hidden_dirs, unexamined_dirs, names =
-               list_dir_aux options hidden_dirs unexamined_dirs names dir
+               list_dir_aux options root hidden_dirs unexamined_dirs names dir
             in
                collect examined_dirs hidden_dirs unexamined_dirs names
        | [], [] ->
@@ -902,17 +902,17 @@ let list_dirs_rec options dirs =
 (*
  * Recursively expand all subdirectories.
  *)
-let subdirs_of_dirs options dirs =
+let subdirs_of_dirs options root dirs =
    let options = glob_options_of_list options in
    let options = { options with glob_dirs = true } in
    let rec collect listing hidden_dirs dirs =
       match hidden_dirs, dirs with
          dir :: hidden_dirs, _ ->
-            let hidden_dirs, dirs, _ = list_dir_aux options hidden_dirs dirs [] dir in
+            let hidden_dirs, dirs, _ = list_dir_aux options root hidden_dirs dirs [] dir in
                collect listing hidden_dirs dirs
        | [], dir :: dirs ->
             let listing = dir :: listing in
-            let hidden_dirs, dirs, _ = list_dir_aux options hidden_dirs dirs [] dir in
+            let hidden_dirs, dirs, _ = list_dir_aux options root hidden_dirs dirs [] dir in
                collect listing hidden_dirs dirs
        | [], [] ->
             listing
