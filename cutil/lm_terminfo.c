@@ -11,12 +11,12 @@
 #if NCURSES
 
 
-/* Headers which are readline-specific must be included here. */
+/* Headers that are readline-specific must be included here. */
 #include <ncurses.h>
 #ifdef __CYGWIN32__
-   #include <ncurses/term.h>
+#  include <ncurses/term.h>
 #else
-   #include <term.h>
+#  include <term.h>
 #endif
 
 static int loaded_terminfo = 0;
