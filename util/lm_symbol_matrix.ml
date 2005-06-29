@@ -177,7 +177,7 @@ struct
     *)
    let add tbl v1 v2 =
       let v1, v2 =
-         if v1 < v2 then
+         if Lm_symbol.compare v1 v2 < 0 then
             v1, v2
          else
             v2, v1
