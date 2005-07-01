@@ -1372,6 +1372,10 @@ struct
        | Leaf -> acc
 
    let data t = data_acc t []
+
+   let rec add_list map = function
+      [] -> map
+    | (key,data)::tl -> add_list (add map key data) tl
 end
 
 (*
@@ -1455,6 +1459,10 @@ struct
    let mapi_all = MMap.mapi
    let fold_all = MMap.fold
    let data_all = MMap.data
+
+   let rec add_list map = function
+      [] -> map
+    | (key,data)::tl -> add_list (add map key data) tl
 
    let choose t =
       let key, data = MMap.choose t in
