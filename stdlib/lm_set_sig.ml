@@ -84,6 +84,7 @@ sig
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
    val not_mem_filt : t -> elt list -> elt list
 
+   val of_sorted_list : elt list -> t
    val of_list : elt list -> t
    val to_list : t -> elt list
    val elements : t -> elt list
@@ -191,6 +192,7 @@ sig
    val make : int -> elt -> t
    val create : int -> elt -> t
    val to_list : t -> elt list
+   val of_sorted_list : elt list -> t
    val of_list : elt list -> t
    val iter : (elt -> unit) -> t -> unit
    val split : t -> index -> t * elt * t

@@ -1033,7 +1033,7 @@ struct
                    of_sorted_array (succ depth) max_depth elements (off + len2 + 1) (len - len2 - 1),
                    len)
 
-   let of_list = function
+   let of_sorted_list = function
       [] ->
          Leaf
     | [key] ->
@@ -1130,6 +1130,9 @@ struct
 
    let singleton key =
       Black (key, Leaf, Leaf, 1)
+
+   let of_list l =
+      List.fold_left (fun set item -> add set item) empty l
 
    (*
     * Iterate a function over the hashtable.

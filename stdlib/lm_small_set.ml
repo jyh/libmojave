@@ -149,11 +149,17 @@ struct
 
    let to_list = elements
 
+   let of_sorted_list l =
+      if List.length l <= max_size then
+         List l
+      else
+         Set (BigSet.of_sorted_list l)
+
    let of_list l =
       if List.length l <= max_size then
          List l
       else
-         Set (BigSet.of_list l)
+         Set (List.fold_left (fun set item -> BigSet.add set item) BigSet.empty l)
 
    let iter f = function
       List l ->

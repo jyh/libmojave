@@ -121,7 +121,7 @@ struct
    (*
     * Create the set from a list.
     *)
-   let of_list elements =
+   let of_sorted_list elements =
       let table = Hashtbl.create 19 in
          List.iter (fun x -> Hashtbl.add table x x) elements;
          { table = Hash (table, List.length elements) }
@@ -180,6 +180,9 @@ struct
 
    let cardinal s1 =
       snd (flush s1)
+
+   let of_list l =
+      List.fold_left (fun set item -> add set item) empty l
 
    (*
     * Intersection.

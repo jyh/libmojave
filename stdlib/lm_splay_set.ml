@@ -400,13 +400,16 @@ struct
    (*
     * Create the set from a list.
     *)
-   let rec of_list_aux set = function
+   let rec of_sorted_list_aux set = function
       s :: t ->
-         of_list_aux (add set s) t
+         of_sorted_list_aux (add set s) t
     | [] ->
          set
 
-   let of_list = of_list_aux empty
+   let of_sorted_list = of_sorted_list_aux empty
+
+   let of_list l =
+      List.fold_left (fun set item -> add set item) empty l
 
    (*
     * Intersection.
