@@ -110,6 +110,7 @@ sig
    val is_subset : t -> t -> bool
 
    val fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
+   val range_fold : (elt -> int) -> ('a -> elt -> 'a) -> 'a -> t -> 'a
 
    val for_all : (elt -> bool) -> t -> bool
    val exists : (elt -> bool) -> t -> bool

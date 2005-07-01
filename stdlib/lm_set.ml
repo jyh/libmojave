@@ -1147,6 +1147,24 @@ struct
          ()
 
    (*
+    * Fold a function over the subrange of the set
+   *)
+   let rec range_fold range f arg = function
+      Black (key, left, right, _)
+    | Red (key, left, right, _) ->
+         let c = range key in
+         if c > 0 then
+            range_fold range f arg right
+         else if c < 0 then
+            range_fold range f arg left
+         else
+            let arg = range_fold range f arg left in
+            let arg = f arg key in
+               range_fold range f arg right
+    | Leaf ->
+         arg
+
+   (*
     * Fold a function over the set.
     *)
    let rec fold f arg = function
