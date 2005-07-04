@@ -315,6 +315,17 @@ let split_path = Lm_string_util.split separators
 let concat_path = String.concat separator_string
 
 (*
+ * Basic file operations.
+ *)
+let basename s =
+   try
+      let i = Lm_string_util.rindex_set s separators + 1 in
+         String.sub s i (String.length s - i)
+   with
+      Not_found ->
+         s
+
+(*
  * Simplify, remove leading directory.
  *)
 let simplify_path path =
