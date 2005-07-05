@@ -35,9 +35,6 @@ let debug_string =
         debug_value = false
       }
 
-(*
- * A scratch buffer used by several functions in this module.
- *)
 let code0 = Char.code '0'
 let codea = Char.code 'a'
 let codeA = Char.code 'A'
