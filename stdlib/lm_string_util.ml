@@ -25,6 +25,8 @@
 open Lm_debug
 open Lm_printf
 
+external string_compare : string -> string -> int = "string_compare"
+
 (*
  * Show the file loading.
  *)

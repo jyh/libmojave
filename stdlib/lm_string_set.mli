@@ -34,6 +34,13 @@ module StringSet : LmSet with type elt = string
 module StringTable : LmMap with type key = string
 module StringMTable : LmMapList with type key = string
 
+(*
+ * String environments with lexicographical ordering.
+ *)
+module LexStringSet : LmSet with type elt = string
+module LexStringTable : LmMap with type key = string
+module LexStringMTable : LmMapList with type key = string
+
 (*!
  * @docoff
  *

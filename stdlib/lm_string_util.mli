@@ -24,6 +24,11 @@
  *)
 
 (*
+ * Faster comparison function for strings
+ *)
+val string_compare : string -> string -> int
+
+(*
  * Hex representation of a string.
  *)
 val unhex : char -> int

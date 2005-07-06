@@ -342,7 +342,7 @@ let eq ((i1 : int), (s1 : string)) (i2, s2) =
 
 let compare ((i1:int), (s1:string)) (i2, s2) =
    if i1 = i2 then
-      Pervasives.compare s1 s2
+      Lm_string_util.string_compare s1 s2
    else
       if i1 < i2 then -1 else 1
 
