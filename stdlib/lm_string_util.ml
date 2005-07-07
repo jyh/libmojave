@@ -25,8 +25,6 @@
 open Lm_debug
 open Lm_printf
 
-external string_compare : string -> string -> int = "string_compare"
-
 (*
  * Show the file loading.
  *)
@@ -40,6 +38,26 @@ let debug_string =
 let code0 = Char.code '0'
 let codea = Char.code 'a'
 let codeA = Char.code 'A'
+
+(*
+ * Efficient string ordering (_not_ lexicographic)
+ *)
+let rec string_compare_aux s1 s2 len i =
+   if len = i then
+      0
+   else
+      let c1 = String.unsafe_get s1 i in
+      let c2 = String.unsafe_get s2 i in
+         if c1 = c2 then
+            string_compare_aux s1 s2 len (i+1)
+         else
+            Pervasives.compare c1 c2
+
+let string_compare s1 s2 =
+   let len1 = String.length s1 in
+      match Pervasives.compare len1 (String.length s2) with
+         0 -> string_compare_aux s1 s2 len1 0
+       | i -> i
 
 (*
  * Check all chars in the string.

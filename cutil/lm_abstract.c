@@ -45,20 +45,3 @@ value new_abstract()
 {
     return (value) alloc(1, Abstract_tag);
 }
-
-value string_compare (value v1, value v2) {
-   mlsize_t len1, len2, len;
-   unsigned char * p1, * p2;
-   len1 = string_length(v1);
-   len2 = string_length(v2);
-	int i = len1 - len2;
-   if (i) return Val_int(i);
-   for (len = len1,
-          p1 = (unsigned char *) String_val(v1),
-          p2 = (unsigned char *) String_val(v2);
-        len > 0;
-        len--, p1++, p2++)
-     if (*p1 != *p2) return Val_int((int)*p1 - (int)*p2);
-	return Val_int(0);
-}
-
