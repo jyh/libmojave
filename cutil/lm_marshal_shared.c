@@ -7,8 +7,8 @@
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
+ * See the file doc/htmlman/default.html or visit http://metaprl.org/
+ * for more information.
  *
  * Copyright (C) 1999 Jason Hickey, Cornell University
  *
@@ -81,6 +81,9 @@ value ml_pointer_hash_lookup(value table, value weak_array, value obj)
  *
  *
  * $Log$
+ * Revision 1.2  2005/07/07 02:34:06  nogin
+ * More preamble changes
+ *
  * Revision 1.1  2003/07/12 21:59:10  jyh
  * Migrated more code into libmojave.
  *
