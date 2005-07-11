@@ -367,6 +367,24 @@ let compare_triple (s1, s2, s3) (s1', s2', s3') =
       res
 
 (*
+ * Compare lists of symbols for equality.
+ *)
+let rec compare_lists sl1 sl2 =
+   match sl1, sl2 with
+      s1 :: sl1, s2 :: sl2 ->
+         let cmp = compare s1 s2 in
+            if cmp = 0 then
+               compare_lists sl1 sl2
+            else
+               cmp
+    | [], [] ->
+         0
+    | [], _ :: _ ->
+         -1
+    | _ :: _, [] ->
+         1
+
+(*
  * Build sets, tables, indices where the keys are symbols,
  * ordered symbol pairs, or orderd symbol triples.
  *)
