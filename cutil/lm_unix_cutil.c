@@ -28,6 +28,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+#include <caml/custom.h>
 #include <caml/fail.h>
 
 #ifdef WIN32
@@ -133,6 +134,71 @@ value ftruncate_win32(value v_fd)
     return Val_unit;
 }
 
+/************************************************************************
+ * Registry.
+ */
+
+/*
+ * Get the value of a registry key.
+ */
+value caml_registry_find(value v_hkey, value v_subkey, value v_field)
+{
+    char buffer[8192];
+    const char *subkey, *field;
+    DWORD len;
+    LONG code;
+    HKEY hkey;
+
+    /* Get the arguments */
+    switch(Int_val(v_hkey)) {
+    case 0:
+        hkey = HKEY_CLASSES_ROOT;
+        break;
+    case 1:
+        hkey = HKEY_CURRENT_CONFIG;
+        break;
+    case 2:
+        hkey = HKEY_CURRENT_USER;
+        break;
+    case 3:
+        hkey = HKEY_LOCAL_MACHINE;
+        break;
+    case 4:
+        hkey = HKEY_USERS;
+        break;
+    default:
+        caml_failwith("get_registry: unknown handle");
+        break;
+    }
+
+    /* Ask Windows */
+    subkey = String_val(v_subkey);
+    field = String_val(v_field);
+    len = sizeof(buffer);
+
+#if 0
+    code = RegGetValue(hkey, subkey, field, RRF_RT_REG_SZ, NULL, (LPVOID) buffer, &len);
+    if(code != ERROR_SUCCESS)
+        caml_raise_not_found();
+#else
+    {
+        HKEY hand;
+
+        code = RegOpenKeyEx(hkey, subkey, 0, KEY_QUERY_VALUE, &hand);
+        if(code != ERROR_SUCCESS)
+            caml_raise_not_found();
+
+        code = RegQueryValueEx(hand, field, NULL, NULL, (LPBYTE) buffer, &len);
+        RegCloseKey(hand);
+        if(code != ERROR_SUCCESS)
+            caml_raise_not_found();
+    }
+#endif
+
+    /* Got the value */
+    return copy_string(buffer);
+}
+
 #else /* WIN32 */
 
 value int_of_fd(value fd)
@@ -142,19 +208,36 @@ value int_of_fd(value fd)
 
 value home_win32(value v_unit)
 {
-    failwith("home_win32: not to be used except on Win32");
+    caml_failwith("home_win32: not to be used except on Win32");
     return Val_unit;
 }
 
 value lockf_win32(value v_fd, value v_kind, value v_len)
 {
-    failwith("lockf_win32: not to be used except on Win32");
+    caml_failwith("lockf_win32: not to be used except on Win32");
     return Val_unit;
 }
 
 value ftruncate_win32(value v_fd)
 {
-    failwith("ftruncate_current_win32: not to be used except on Win32");
+    caml_failwith("ftruncate_current_win32: not to be used except on Win32");
+    return Val_unit;
+}
+
+value caml_registry_open(value v_hand, value v_subkey)
+{
+    caml_raise_not_found();
+    return Val_unit;
+}
+
+value caml_registry_find(value v_key, value v_field)
+{
+    caml_raise_not_found();
+    return Val_unit;
+}
+
+value caml_registry_close(value v_key)
+{
     return Val_unit;
 }
 

@@ -77,6 +77,19 @@ val lockf : Unix.file_descr -> Unix.lock_command -> int -> unit
 val ftruncate : Unix.file_descr -> unit
 
 (*
+ * Get a value from the registry.
+ * raises Not_found if the entry is not found or you are not using Win32.
+ *)
+type registry_hkey =
+    HKEY_CLASSES_ROOT
+  | HKEY_CURRENT_CONFIG
+  | HKEY_CURRENT_USER
+  | HKEY_LOCAL_MACHINE
+  | HKEY_USERS
+
+val registry_find  : registry_hkey -> string -> string -> string
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

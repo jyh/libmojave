@@ -32,6 +32,18 @@
 open Lm_printf
 
 (*
+ * Registry handles.
+ *)
+type registry_hkey =
+    HKEY_CLASSES_ROOT
+  | HKEY_CURRENT_CONFIG
+  | HKEY_CURRENT_USER
+  | HKEY_LOCAL_MACHINE
+  | HKEY_USERS
+
+external registry_find   : registry_hkey -> string -> string -> string = "caml_registry_find"
+
+(*
  * Read the exact amount.
  *)
 let rec really_read fd buf off len =
@@ -125,9 +137,9 @@ external int_of_fd : Unix.file_descr -> int = "int_of_fd"
 (*
  * Win32 functions.
  *)
-external home_win32 : unit -> string = "home_win32"
-external lockf_win32 : Unix.file_descr -> Unix.lock_command -> int -> unit = "lockf_win32"
-external ftruncate_win32 : Unix.file_descr -> unit = "ftruncate_win32"
+external home_win32       : unit -> string = "home_win32"
+external lockf_win32      : Unix.file_descr -> Unix.lock_command -> int -> unit = "lockf_win32"
+external ftruncate_win32  : Unix.file_descr -> unit = "ftruncate_win32"
 
 (*
  * Try to figure out the home directory as best as possible.
