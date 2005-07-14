@@ -26,9 +26,8 @@
  *)
 
 (************************************************************************
- * Utilities.
- *
  * A generic hash module to make comparisons faster.
+ * This version uses a state for hash-consing.
  *)
 
 (*
@@ -203,6 +202,10 @@ struct
       in
          fold 0 x
 end;;
+
+(************************************************************************
+ * Utilities.
+ *)
 
 (*
  * The default function for combinding hash values.
