@@ -323,6 +323,89 @@ let set_debug_flags flags =
             debug_usage ();
             exit 1
 
+(*************************************************************************
+ * AD-HOC PROFILING
+ *)
+
+open Unix
+
+type times = {
+   mutable calls : int;
+   mutable wtime : float;
+   mutable utime : float;
+   mutable stime : float
+}
+
+type profile = {
+   ok : times;
+   exn : times
+}
+
+type 'a res =
+   Ok of 'a
+ | Exn of exn
+
+let tbl = Hashtbl.create 19
+
+let compare (_,t1) (_,t2) =
+   (t1.ok.wtime +. t1.exn.wtime) <= (t2.ok.wtime +. t2.exn.wtime)
+
+let report1 s t =
+   let calls_f = float_of_int t.calls in
+      eprintf "\t%s:\n\t\tCalls: %i;\n\t\tTime elapsed: %0.3fs (%0.6fs/call);\n\t\tSystem time: %0.2fs (%0.6fs/call);\n\t\tUser time: %0.2fs (%0.6fs/call).\n" (**)
+         s t.calls t.wtime (t.wtime /. calls_f) t.stime (t.stime /. calls_f) t.utime (t.utime /. calls_f)
+
+let report (s, t) =
+   eprintf "Timing information for %s:\n" s;
+   report1 "Successful calls" t.ok;
+   report1 "Failed calls" t.exn;
+   report1 "Total calls" {
+      calls = t.ok.calls + t.exn.calls;
+      wtime = t.ok.wtime +. t.exn.wtime;
+      utime = t.ok.utime +.  t.exn.utime;
+      stime = t.ok.stime +.  t.exn.stime
+   }
+
+let add s t l = (s,t) :: l
+
+let report_timing () =
+   if Hashtbl.length tbl > 0 then
+      List.iter report (Sort.list compare (Hashtbl.fold add tbl []))
+
+let () = at_exit report_timing
+
+let timing_wrap s f arg =
+   let start_f = gettimeofday () in
+   let start_p = times () in
+   let res =
+      try Ok (f arg)
+      with exn -> Exn exn
+   in
+   let end_f = gettimeofday () in
+   let end_p = times () in
+   let times =
+      try Hashtbl.find tbl s
+      with Not_found ->
+         let times = {
+            ok = {calls = 0; wtime = 0.0; utime = 0.0; stime = 0.0};
+            exn = {calls = 0; wtime = 0.0; utime = 0.0; stime = 0.0}}
+         in
+            Hashtbl.add tbl s times;
+            times
+   in
+   let times =
+      match res with
+         Ok _ -> times.ok
+       | Exn _ -> times.exn
+   in
+      times.calls <- times.calls + 1;
+      times.wtime <- times.wtime +. end_f -. start_f;
+      times.utime <- times.utime +. end_p.tms_utime -. start_p.tms_utime;
+      times.stime <- times.stime +. end_p.tms_stime -. start_p.tms_stime;
+      match res with
+         Ok res -> res
+       | Exn exn -> raise exn
+
 (*
  * -*-
  * Local Variables:

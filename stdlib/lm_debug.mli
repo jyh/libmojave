@@ -79,6 +79,18 @@ val check_debug : unit -> unit
 val set_debug_flags : string -> unit
 
 (*
+ * Helper function for ad-hoc profiling. (timing_wrap s f x) computes (f x)
+ * keeping track of the time it took to do it and collects the statistics
+ * indexed by s.
+ * report_timing prints out the statistics collected so far. This function
+ * will be called automatically at function exit.
+ *
+ * Warning: timing_wrap is currently not threads-safe.
+ *)
+val timing_wrap : string -> ('a -> 'b) -> 'a -> 'b
+val report_timing : unit -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner.run"
