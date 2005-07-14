@@ -224,20 +224,9 @@ value ftruncate_win32(value v_fd)
     return Val_unit;
 }
 
-value caml_registry_open(value v_hand, value v_subkey)
+value caml_registry_find(value v_key, value v_subkey, value v_field)
 {
     caml_raise_not_found();
-    return Val_unit;
-}
-
-value caml_registry_find(value v_key, value v_field)
-{
-    caml_raise_not_found();
-    return Val_unit;
-}
-
-value caml_registry_close(value v_key)
-{
     return Val_unit;
 }
 
