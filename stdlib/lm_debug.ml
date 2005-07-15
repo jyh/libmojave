@@ -143,12 +143,11 @@ let create_debug
                   None ->
                      info.info_info <- Some desc;
                      flag'
-                | Some _ ->
-                     (*
-                      * Allow multiple creations.
-                      raise (Failure (sprintf "Lm_debug.create_debug: variable '%s' is already created" name))
-                      *)
-                     flag'
+                | Some desc' ->
+                     if desc <> desc' then
+                        raise (Failure (sprintf "Lm_debug.create_debug: variable '%s' is already created with a different description" name))
+                     else
+                        flag'
             else
                search t
     | [] ->
