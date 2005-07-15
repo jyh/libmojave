@@ -355,10 +355,10 @@ let report1 s t =
          s t.calls t.wtime (t.wtime /. calls_f) t.stime (t.stime /. calls_f) t.utime (t.utime /. calls_f)
 
 let report (s, t) =
-   eprintf "Timing information for %s:\n" s;
-   report1 "Successful calls" t.ok;
-   report1 "Failed calls" t.exn;
-   report1 "Total calls" {
+   eprintf "Timing information for %s (%0.3fs total):\n" s (t.ok.wtime +. t.exn.wtime);
+   if t.ok.calls <> 0 then report1 (if t.exn.calls <> 0 then "Successful calls" else "All calls succeeded") t.ok;
+   if t.exn.calls <> 0 then report1 (if t.ok.calls <> 0 then "Failed calls" else "All calls failed") t.exn;
+   if t.ok.calls <> 0 && t.exn.calls <> 0 then report1 "Total calls" {
       calls = t.ok.calls + t.exn.calls;
       wtime = t.ok.wtime +. t.exn.wtime;
       utime = t.ok.utime +.  t.exn.utime;
