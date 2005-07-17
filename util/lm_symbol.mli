@@ -98,6 +98,11 @@ val compare_pair : symbol * symbol -> symbol * symbol -> int
 val compare_triple : symbol * symbol * symbol -> symbol * symbol * symbol -> int
 
 (*
+ * Ordered comparison of symbol lists.
+ *)
+val compare_lists : symbol list -> symbol list -> int
+
+(*
  * We also provide a function to produce a unique integer.
  *)
 val new_number : unit -> int

@@ -130,23 +130,23 @@ val length_eq : 'a list -> 'b list -> bool
 (*
  * Functional replacement.
  *)
-val replacef_nth : int -> ('a -> 'a) -> 'a list -> 'a list
+val replacef_nth     : int -> ('a -> 'a) -> 'a list -> 'a list
 val replacef_arg_nth : int -> ('a -> 'a * 'b) -> 'a list -> 'a list * 'b
-val replace_nth : int -> 'a -> 'a list -> 'a list
-val replaceq : 'a -> 'a -> 'a list -> 'a list
-val replace_first : ('a -> bool) -> 'a -> 'a list -> 'a list
-val replace_all : ('a -> bool) -> 'a -> 'a list -> 'a list
+val replace_nth      : int -> 'a -> 'a list -> 'a list
+val replaceq         : 'a -> 'a -> 'a list -> 'a list
+val replace_first    : ('a -> bool) -> 'a -> 'a list -> 'a list
+val replace_all      : ('a -> bool) -> 'a -> 'a list -> 'a list
 
 (*
  * Removing elements.
  *)
-val remove : 'a -> 'a list -> 'a list
-(* tryremove does not raise any exception when element is not in the list *)
-val tryremove : 'a -> 'a list -> 'a list
-val removeq : 'a -> 'a list -> 'a list
+val remove          : 'a -> 'a list -> 'a list
+(* tryremove does not raise any exception when the element is not in the list *)
+val tryremove       : 'a -> 'a list -> 'a list
+val removeq         : 'a -> 'a list -> 'a list
 val remove_elements : bool list -> 'a list -> 'a list
-val remove_suffix : 'a list -> 'a list -> 'a list
-val insert_nth : int -> 'a -> 'a list -> 'a list
+val remove_suffix   : 'a list -> 'a list -> 'a list
+val insert_nth      : int -> 'a -> 'a list -> 'a list
 
 (* Filter items out of a list *)
 val filter : ('a -> bool) -> 'a list -> 'a list
@@ -154,15 +154,16 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 (*
  * Set operations.
  *)
-val intersect : 'a list -> 'a list -> 'a list
+val addq       : 'a -> 'a list -> 'a list
+val intersect  : 'a list -> 'a list -> 'a list
 val intersectq : 'a list -> 'a list -> 'a list
 val intersects : 'a list -> 'a list -> bool
-val subtract : 'a list -> 'a list -> 'a list
-val subtractq : 'a list -> 'a list -> 'a list
+val subtract   : 'a list -> 'a list -> 'a list
+val subtractq  : 'a list -> 'a list -> 'a list
 val subtract_multiset : 'a list -> 'a list -> 'a list
-val union : 'a list -> 'a list -> 'a list
-val unionq : 'a list -> 'a list -> 'a list
-val subset : 'a list -> 'a list -> bool
+val union      : 'a list -> 'a list -> 'a list
+val unionq     : 'a list -> 'a list -> 'a list
+val subset     : 'a list -> 'a list -> bool
 
 (* Lexicographic comparison of two lists *)
 val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
