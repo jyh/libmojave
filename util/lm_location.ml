@@ -33,7 +33,9 @@ open Lm_printf
  * A location is a character range
  *    filename, start_line, start_char, end_line, end_char
  *)
+(* %%MAGICBEGIN%% *)
 type loc = symbol * int * int * int * int
+(* %%MAGICEND%% *)
 
 (*
  * Comparison.

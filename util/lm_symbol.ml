@@ -36,14 +36,42 @@ open Lm_thread
 let debug_symbol = ref false
 
 (*
+ * Hash-cons the symbols.
+ *)
+(* %%MAGICBEGIN%% *)
+module SymbolHashArg =
+struct
+   type t = int * string
+
+   let debug = "Symbol"
+
+   let hash = Hashtbl.hash
+
+   let compare (i1, s1) (i2, s2) =
+      if i1 < i2 then
+         -1
+      else if i1 > i2 then
+         1
+      else
+         Lm_string_util.string_compare s1 s2
+
+   let reintern s =
+      s
+end;;
+
+module SymbolHash = Lm_hash.MakeHashMarshal (SymbolHashArg);;
+
+type symbol = SymbolHash.t
+(* %%MAGICEND%% *)
+
+(*
  * We no longer use a hashtable.
  * Symbols with a 0 index are interned.
  *)
-type symbol = int * string
 type var = symbol
 
 (* An "empty" variable name *)
-let empty_var = (0,"")
+let empty_var = SymbolHash.create (0, "")
 
 let new_number, make =
    let count = ref 100 in
@@ -60,19 +88,19 @@ let new_number, make =
             count := max (!count) (succ i);
             Mutex.unlock lock
          end;
-         (i, s))
+         SymbolHash.create (i, s))
 
 (*
  * Get the integer prefix.
  *)
-let to_int (i, _) =
-   i
+let to_int v =
+   fst (SymbolHash.get v)
 
 (*
  * Get the string suffix.
  *)
-let to_string (_, s) =
-   s
+let to_string v =
+   snd (SymbolHash.get v)
 
 (*
  * Mangle a string so it uses printable characters.
@@ -153,7 +181,7 @@ let rec pad_with_underscore n s i =
 let add =
    let rec loop s fact n i =
       if i < 0 then
-         0, s
+         SymbolHash.create (0, s)
       else
          match s.[i] with
             '_' ->
@@ -165,29 +193,30 @@ let add =
           | _ ->
                make (String.sub s 0 (succ i)) n
    in
-      fun s -> loop s 1 0 (String.length s - 1)
+      (fun s -> loop s 1 0 (String.length s - 1))
 
 let add_mangle s =
    add (mangle s)
 
-let reintern (_, s) =
-   add s
+let reintern = SymbolHash.reintern
 
-let is_numeric_symbol = function
-   (0, s) -> all_digits s (String.length s - 1)
- | _ -> false
+let is_numeric_symbol v =
+   match SymbolHash.get v with
+      (0, s) -> all_digits s (String.length s - 1)
+    | _ -> false
 
 (*
  * Create a new symbol.
  * Don't add it to the table.
  *)
 let new_symbol_string s =
-   new_number (), s
+   SymbolHash.create (new_number (), s)
 
-let new_symbol (_, v) =
-   new_symbol_string v
+let new_symbol v =
+   new_symbol_string (to_string v)
 
-let new_symbol_pre pre (_, v) =
+let new_symbol_pre pre v =
+   let v = to_string v in
    let s =
       if debug debug_symbol then
          v ^ "/" ^ pre
@@ -199,7 +228,8 @@ let new_symbol_pre pre (_, v) =
 (*
  * Create a new symbol, avoiding the ones defined by the predicate.
  *)
-let new_name (_, v) pred =
+let new_name v pred =
+   let v = to_string v in
    let rec search i =
       let nv = make v i in
          if pred nv then
@@ -213,7 +243,8 @@ let new_name (_, v) pred =
  * Create a new symbol, calling the function f until it
  * returns non-nil.
  *)
-let new_name_gen (_, v) f =
+let new_name_gen v f =
+   let v = to_string v in
    let rec search i =
       let nv = make v i in
          match f nv with
@@ -227,15 +258,16 @@ let new_name_gen (_, v) f =
 (*
  * Check if the symbol is in the table.
  *)
-let is_interned (i, _) =
-   i = 0
+let is_interned v =
+   to_int v = 0
 
 (*
  * Printer.
  * If the symbol is not a defined symbol,
  * print the index.
  *)
-let string_of_symbol (i, s) =
+let string_of_symbol v =
+   let i, s = SymbolHash.get v in
    let len = String.length s in
    let s = if pad_with_underscore i s len then s ^ "_" else s in
       if i = 0 then
@@ -258,9 +290,15 @@ let rec output_symbol_list out vl =
 (*
  * Print extended symbols. Used in FIR printing.
  *)
+exception Has;;
+
+(*
+ * Print extended symbols. Used in FIR printing.
+ *)
 exception Has
 
-let string_of_ext_symbol (i, s) =
+let string_of_ext_symbol v =
+   let i, s = SymbolHash.get v in
    let has_special_char s =
       try
          for i = 0 to String.length s - 1 do
@@ -303,86 +341,36 @@ let rec pp_print_symbol_list buf vl =
          ()
 
 (*
- * Print extended symbols. Used in FIR printing.
- *)
-exception Has
-
-let string_of_ext_symbol (i, s) =
-   let has_special_char s =
-      try
-         for i = 0 to String.length s - 1 do
-            let c = Char.lowercase (String.get s i) in
-               if not ((Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z')
-                       || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
-                       || c = '_')
-               then
-                  raise Has
-         done;
-         false
-      with
-         Has ->
-            true
-   in
-   let s =
-      if i = 0 then
-         s
-      else
-         sprintf "%s%d" s i
-   in
-      if has_special_char s then
-         sprintf "`\"%s\"" s
-      else
-         s
-
-(*
  * Compare for equality.
  *)
-let eq ((i1 : int), (s1 : string)) (i2, s2) =
-   i1 = i2 && s1 = s2
+let eq v1 v2 =
+   SymbolHash.compare v1 v2 = 0
 
-let compare ((i1:int), (s1:string)) (i2, s2) =
-   if i1 = i2 then
-      Lm_string_util.string_compare s1 s2
-   else
-      if i1 < i2 then -1 else 1
+let compare = SymbolHash.compare
 
 (*
  * Compare pair of symbols for equality.
  *)
 let compare_pair (s1, s2) (s1', s2') =
-   let res = compare s1 s1' in
-   if res = 0 then
-      compare s2 s2'
-   else
-      res
+   let cmp = compare s1 s1' in
+      if cmp = 0 then
+         compare s2 s2'
+      else
+         cmp
 
 (*
  * Compare triple of symbols for equality.
  *)
 let compare_triple (s1, s2, s3) (s1', s2', s3') =
-   let res = compare_pair (s1, s2) (s1', s2') in
-   if res = 0 then
-      compare s3 s3'
-   else
-      res
-
-(*
- * Compare lists of symbols for equality.
- *)
-let rec compare_lists sl1 sl2 =
-   match sl1, sl2 with
-      s1 :: sl1, s2 :: sl2 ->
-         let cmp = compare s1 s2 in
+   let cmp = compare s1 s1' in
+      if cmp = 0 then
+         let cmp = compare s2 s2' in
             if cmp = 0 then
-               compare_lists sl1 sl2
+               compare s3 s3'
             else
                cmp
-    | [], [] ->
-         0
-    | [], _ :: _ ->
-         -1
-    | _ :: _, [] ->
-         1
+      else
+         cmp
 
 (*
  * Build sets, tables, indices where the keys are symbols,
