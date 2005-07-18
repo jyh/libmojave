@@ -251,9 +251,12 @@ sig
 
    (* Creation *)
    val create   : elt -> t
-   val get      : t -> elt
 
-   (* Hash code *)
+   (* The intern function fails with Not_found if the node does not already exist *)
+   val intern   : elt -> t
+
+   (* Destructors *)
+   val get      : t -> elt
    val hash     : t -> int
 
    (* Comparison *)
@@ -366,6 +369,15 @@ struct
 
    let create elt =
       synchronize create_core elt
+
+   let intern elt =
+      let item =
+         { item_ref  = current_ref;
+           item_val  = elt;
+           item_hash = Arg.hash elt
+         }
+      in
+         Table.find !table item
 
    (*
     * Reintern.  This will take an item that may-or-may-not be hashed
