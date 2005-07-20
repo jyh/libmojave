@@ -1298,7 +1298,7 @@ struct
             hash_code   = code
           } = buf
       in
-      let code = ((code + i) land 0x3fffffff) mod hash_length in
+      let code = ((code + i + 1) land 0x3fffffff) mod hash_length in
          buf.hash_digest <- (digest lsl 3) lxor (digest lsr 1) lxor (hash_get code);
          buf.hash_code <- code
 
@@ -1341,6 +1341,8 @@ sig
    type t
 
    val create     : unit -> t
+   val add_bits   : t -> int -> unit
+   val add_bool   : t -> bool -> unit
    val add_int    : t -> int -> unit
    val add_float  : t -> float -> unit
    val add_string : t -> string -> unit
@@ -1393,6 +1395,9 @@ struct
    (*
     * Numbers.
     *)
+   let add_bool buf b =
+      add_bits buf (if b then 1 else 0)
+
    let add_int buf i =
       add_bits buf (i land 0xff);
       add_bits buf ((i lsr 8) land 0xff);
