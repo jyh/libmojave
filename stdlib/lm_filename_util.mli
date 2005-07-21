@@ -108,9 +108,9 @@ val concat_path : pathname -> string
  * Path searching.
  *)
 val is_executable : string -> string option
-val which : string -> string
-val which_dir : string -> string -> string
-val where : string -> string list
+val which         : string -> string
+val which_dir     : string -> string -> string
+val where         : string -> string list
 
 (*
  * Make an entire hierarchy.
