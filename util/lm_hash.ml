@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
 open Lm_thread_core
 
 (************************************************************************
@@ -271,6 +272,31 @@ end;;
 let current_ref = ref ()
 
 (*
+ * Statistics.
+ *)
+type hash_stat =
+   { hash_debug              : string;
+     mutable hash_reintern   : int;
+     mutable hash_compare    : int;
+     mutable hash_collisions : int
+   }
+
+let hash_stats = ref []
+
+let pp_print_stat buf stat =
+   let { hash_debug      = debug;
+         hash_reintern   = reintern;
+         hash_compare    = compare;
+         hash_collisions = collisions
+       } = stat
+   in
+      fprintf buf "@ @[<hv 3>%s: reintern = %d, compare = %d, collisions = %d@]" (**)
+         debug reintern compare collisions
+
+let pp_print_hash_stats buf =
+   List.iter (pp_print_stat buf) !hash_stats
+
+(*
  * Make a hash item.
  *)
 module MakeHashMarshal (Arg : HashMarshalArgSig)
@@ -302,7 +328,15 @@ struct
    (*
     * Keep track of collisions for debugging.
     *)
-   let collisions = ref 0
+   let stats =
+      { hash_debug       = Arg.debug;
+        hash_reintern    = 0;
+        hash_compare     = 0;
+        hash_collisions  = 0
+      }
+
+   let () =
+      hash_stats := stats :: !hash_stats
 
    (*
     * We need to work nicely with threads.
@@ -382,29 +416,21 @@ struct
     * Reintern.  This will take an item that may-or-may-not be hashed
     * and produce a new one that is hashed.
     *)
-   let reintern_force item =
-      let elt1 = item.item_val in
-      let elt2 = Arg.reintern elt1 in
-         if elt1 == elt2 then
-            try Table.find !table item with
-               Not_found ->
-                  item.item_ref <- current_ref;
-                  table := Table.add !table item item;
-                  item
-         else begin
-            item.item_ref <- current_ref;
-            item.item_val <- elt2;
-            table := Table.add !table item item;
-            item
-         end
-
-   let reintern_core item =
-      if item.item_ref == current_ref then
-         try Table.find !table item with
-            Not_found ->
-               reintern_force item
-      else
-         reintern_force item
+   let reintern_core item1 =
+      stats.hash_reintern <- succ stats.hash_reintern;
+      try
+         let item2 = Table.find !table item1 in
+            if item2 != item1 then begin
+               item1.item_val <- item2.item_val;
+               item1.item_ref <- current_ref
+            end;
+            item2
+      with
+         Not_found ->
+            item1.item_val <- Arg.reintern item1.item_val;
+            item1.item_ref <- current_ref;
+            table := Table.add !table item1 item1;
+            item1
 
    let reintern item =
       synchronize reintern_core item
@@ -413,7 +439,10 @@ struct
     * Access to the element.
     *)
    let get item =
-      item.item_val
+      if item.item_ref == current_ref then
+         item.item_val
+      else
+         (reintern item).item_val
 
    let hash item =
       item.item_hash
@@ -422,6 +451,7 @@ struct
     * String pointer-based comparison.
     *)
    let compare item1 item2 =
+      stats.hash_compare <- succ stats.hash_compare;
       let hash1 = item1.item_hash in
       let hash2 = item2.item_hash in
          if hash1 < hash2 then
@@ -431,31 +461,16 @@ struct
          else if item1.item_val == item2.item_val then
             0
          else
-            let elt1 =
-               if item1.item_ref == current_ref then
-                  item1.item_val
-               else
-                  synchronize (fun () ->
-                        let elt1 = Arg.reintern item1.item_val in
-                           item1.item_ref <- current_ref;
-                           item1.item_val <- elt1;
-                           elt1) ()
-            in
-            let elt2 =
-               if item2.item_ref == current_ref then
-                  item2.item_val
-               else
-                  synchronize (fun () ->
-                        let elt2 = Arg.reintern item2.item_val in
-                           item2.item_ref <- current_ref;
-                           item2.item_val <- elt2;
-                           elt2) ()
-            in
+            let elt1 = get item1 in
+            let elt2 = get item2 in
                if elt1 == elt2 then
                   0
                else begin
-                  incr collisions;
-                  Arg.compare elt1 elt2
+                  stats.hash_collisions <- succ stats.hash_collisions;
+                  let cmp = Arg.compare elt1 elt2 in
+                     if cmp = 0 then
+                        eprintf "Hash is broken@.";
+                     cmp
                end
 end;;
 
@@ -1257,9 +1272,6 @@ let hash_data =
      0x27f6f470|]
 (* %%MAGICEND%% *)
 
-let hash_get i =
-   Array.unsafe_get hash_data i
-
 (************************************************
  * Integer hashes.
  *)
@@ -1299,7 +1311,7 @@ struct
           } = buf
       in
       let code = ((code + i + 1) land 0x3fffffff) mod hash_length in
-         buf.hash_digest <- (digest lsl 3) lxor (digest lsr 1) lxor (hash_get code);
+         buf.hash_digest <- (digest lsl 3) lxor (digest lsr 1) lxor (Array.unsafe_get hash_data code);
          buf.hash_code <- code
 
    (*
@@ -1379,7 +1391,7 @@ struct
       let code = ((code + digest_length + i) land 0x3fffffff) mod hash_length in
          for i = 0 to digest_length - 1 do
             let v = digest.(i) in
-               digest.(i) <- (v lsl 3) lxor (v lsr 1) lxor (hash_get (code + i))
+               digest.(i) <- (v lsl 3) lxor (v lsr 1) lxor (Array.unsafe_get hash_data (code + i))
          done;
          buf.hash_code <- code;
          buf.hash_length <- succ length

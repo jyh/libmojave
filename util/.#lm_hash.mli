@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
 
 (************************************************************************
  * A basic table for adding a hash code to every element.
@@ -169,6 +170,8 @@ end;;
  *)
 module MakeHashMarshal (Arg : HashMarshalArgSig)
 : HashMarshalSig with type elt = Arg.t;;
+
+val pp_print_hash_stats : formatter -> unit
 
 (************************************************************************
  * Better-than-usual hashes.
