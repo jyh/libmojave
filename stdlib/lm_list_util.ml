@@ -470,7 +470,16 @@ let rec length_eq l1 l2 =
     | _ -> false
 
 (*
- * Set operations.
+ * Add an element based on physical equality.
+ *)
+let addq x l =
+   if List.memq x l then
+      l
+   else
+      x :: l
+
+(*
+ * Union of two lists using equality.
  *)
 let rec union l1 l2 =
    match l1 with

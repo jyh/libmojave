@@ -29,6 +29,16 @@
 val string_compare : string -> string -> int
 
 (*
+ * Check whether the string has a substring.
+ *
+ *   equal_substring s1 off s2
+ *
+ * Check whether s2 is a substring of s1 at offset off.
+ * No exceptions raised.
+ *)
+val equal_substring : string -> int -> string -> bool
+
+(*
  * Hex representation of a string.
  *)
 val unhex : char -> int
