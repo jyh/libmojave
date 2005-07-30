@@ -64,10 +64,12 @@ struct
     * Table is a binary tree.
     * Color is kept in the label to save space.
     *)
+   (* %%MAGICBEGIN%% *)
    type tree =
       Leaf
     | Red of elt * tree * tree * int
     | Black of elt * tree * tree * int
+   (* %%MAGICEND%% *)
 
    (*
     * The tree is always balanced, so we don't need
