@@ -423,10 +423,10 @@ struct
    (* %%MAGICBEGIN%% *)
    type regex =
       RegexAnySymbol
-    | RegexSymbol       of int list
-    | RegexExceptSymbol of int list
-    | RegexLimitPrev    of int list
-    | RegexLimitNext    of int list
+    | RegexSymbol       of IntSet.t
+    | RegexExceptSymbol of IntSet.t
+    | RegexLimitPrev    of IntSet.t
+    | RegexLimitNext    of IntSet.t
     | RegexChoice       of regex list
     | RegexSequence     of regex list
     | RegexStar         of regex
@@ -470,11 +470,11 @@ struct
     | NfaActionArgStop      of int * int          (* arg id, next state *)
     | NfaActionArgSearch    of int                (* next state *)
     | NfaActionStop         of int                (* clause id, next state *)
-    | NfaActionSymbol       of int list * int     (* symbols, next state *)
+    | NfaActionSymbol       of IntSet.t * int     (* symbols, next state *)
     | NfaActionAnySymbol    of int                (* next state *)
-    | NfaActionExceptSymbol of int list * int     (* symbols, next state *)
-    | NfaActionLimitPrev    of int list * int     (* symbols, next state *)
-    | NfaActionLimitNext    of int list * int     (* symbols, next state *)
+    | NfaActionExceptSymbol of IntSet.t * int     (* symbols, next state *)
+    | NfaActionLimitPrev    of IntSet.t * int     (* symbols, next state *)
+    | NfaActionLimitNext    of IntSet.t * int     (* symbols, next state *)
     | NfaActionNone
     | NfaActionResetCounter of int * int list              (* counter, next state list *)
     | NfaActionIncrCounter  of int * int * int * int * int (* counter, min, final, max, restart *)
@@ -544,10 +544,15 @@ struct
     * Invariant: there is an entry in the dfa_action_parts for each
     * NFA component of the state that is the target of the transition.
     *)
-   type dfa_action_arg =
+   type dfa_action_inst =
       DfaActionArgStart of int
     | DfaActionArgStop  of int
     | DfaActionArgSearch
+
+   type dfa_action_arg =
+      { dfa_action_off  : int;
+        dfa_action_inst : dfa_action_inst
+      }
 
    type dfa_action =
       { dfa_action_src        : NfaState.t;
@@ -655,6 +660,14 @@ struct
    let hex_a_char        = Char.code 'a' - 10
    let hex_A_char        = Char.code 'A' - 10
 
+   let alert_chars       = IntSet.singleton alert_char
+   let backspace_chars   = IntSet.singleton backspace_char
+   let formfeed_chars    = IntSet.singleton formfeed_char
+   let newline_chars     = IntSet.singleton newline_char
+   let cr_chars          = IntSet.singleton cr_char
+   let tab_chars         = IntSet.singleton tab_char
+   let vertical_tab_chars = IntSet.singleton vertical_tab_char
+
    (*
     * Character sets.
     *)
@@ -666,15 +679,30 @@ struct
    external omake_punct : unit -> string = "omake_punct"
    external omake_space : unit -> string = "omake_space"
 
-   let explode_chars s =
+   let singleton_char c =
+      IntSet.singleton (Char.code c)
+
+   let explode_chars_add chars s =
       let len = String.length s in
       let rec collect chars i =
          if i = len then
             chars
          else
-            collect (Char.code s.[i] :: chars) (succ i)
+            collect (IntSet.add chars (Char.code s.[i])) (succ i)
       in
-         collect [] 0
+         collect chars 0
+
+   let explode_chars s =
+      explode_chars_add IntSet.empty s
+
+   let bof_char = IntSet.singleton bof
+   let eof_char = IntSet.singleton eof
+
+   let bof_chars s =
+      explode_chars_add bof_char s
+
+   let eof_chars s =
+      explode_chars_add eof_char s
 
    let alnum_chars = explode_chars (omake_alnum ())
    let alpha_chars = explode_chars (omake_alpha ())
@@ -684,36 +712,43 @@ struct
    let punct_chars = explode_chars (omake_punct ())
    let space_chars = explode_chars (omake_space ())
 
-   let ascii_chars =
-      let rec collect chars i =
-         if i != 128 then
-            collect (i :: chars) (succ i)
-         else
-            chars
-      in
-         collect [] 0
-
-   let blank_chars = [Char.code ' '; Char.code '\t']
+   let blank_chars = explode_chars " \t"
 
    let cntrl_chars =
       let rec collect chars i =
          if i != 32 then
-            collect (i :: chars) (succ i)
+            collect (IntSet.add chars i) (succ i)
          else
             chars
       in
-         collect [] 0
+         collect IntSet.empty 0
 
-   let digit_chars = List.map Char.code ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
+   let digit_chars  = explode_chars "01234565789"
 
-   let print_chars = Char.code ' ' :: graph_chars
+   let print_chars  = IntSet.add graph_chars (Char.code ' ')
 
-   let xdigit_chars = ['a'; 'b'; 'c'; 'd'; 'e'; 'f'; 'A'; 'B'; 'C'; 'D'; 'E'; 'F']
-   let xdigit_chars = digit_chars @ List.map Char.code xdigit_chars
+   let xdigit_chars = explode_chars_add digit_chars "abcdefABCDEF"
 
-   let white_or_bof_chars = bof :: space_chars
-   let white_or_eof_chars = eof :: space_chars
-   let word_chars = Char.code '_' :: alnum_chars
+   let white_or_bof_chars = IntSet.add space_chars bof
+   let white_or_eof_chars = IntSet.add space_chars eof
+   let word_chars = IntSet.add alnum_chars (Char.code '_')
+
+   let all_chars =
+      let rec collect chars i =
+         if i != 256 then
+            collect (IntSet.add chars i) (succ i)
+         else
+            chars
+      in
+         collect IntSet.empty 0
+
+   let invert_chars chars =
+      IntSet.diff all_chars chars
+
+   let nonword_chars = invert_chars word_chars
+
+   let bof_or_nonword_chars = IntSet.add nonword_chars bof
+   let eof_or_nonword_chars = IntSet.add nonword_chars eof
 
    (************************************************************************
     * Regular expressions.
@@ -733,35 +768,27 @@ struct
          pp_print_char buf (Char.chr c)
 
    let pp_print_chars buf cl =
-      List.iter (pp_print_char buf) cl
+      IntSet.iter (pp_print_char buf) cl
 
    let rec pp_print_regex buf regex =
       match regex with
          RegexAnySymbol ->
             pp_print_string buf "."
-       | RegexSymbol [] ->
-            fprintf buf "(symbol)"
-       | RegexExceptSymbol [] ->
-            fprintf buf "(^symbol)"
        | RegexSymbol cl ->
             fprintf buf "(symbol ";
-            List.iter (fun c -> pp_print_char buf c) cl;
+            IntSet.iter (fun c -> pp_print_char buf c) cl;
             fprintf buf ")"
        | RegexExceptSymbol cl ->
             fprintf buf "(^symbol ";
-            List.iter (fun c -> pp_print_char buf c) cl;
+            IntSet.iter (fun c -> pp_print_char buf c) cl;
             fprintf buf ")"
-       | RegexLimitPrev [] ->
-            fprintf buf "(prev-symbol)"
-       | RegexLimitNext [] ->
-            fprintf buf "(next-symbol)"
        | RegexLimitPrev cl ->
             fprintf buf "(prev-symbol ";
-            List.iter (fun c -> pp_print_char buf c) cl;
+            IntSet.iter (fun c -> pp_print_char buf c) cl;
             fprintf buf ")"
        | RegexLimitNext cl ->
             fprintf buf "(next-symbol ";
-            List.iter (fun c -> pp_print_char buf c) cl;
+            IntSet.iter (fun c -> pp_print_char buf c) cl;
             fprintf buf ")"
        | RegexChoice el ->
             fprintf buf "@[<hv 3>(choice";
@@ -783,17 +810,17 @@ struct
    (*
     * Standard regular expressions.
     *)
-   let left_word_delimiter   = RegexSequence  [RegexLimitPrev white_or_bof_chars; RegexLimitNext word_chars]
-   let right_word_delimiter  = RegexSequence  [RegexLimitPrev word_chars; RegexLimitNext white_or_eof_chars]
+   let left_word_delimiter   = RegexSequence  [RegexLimitPrev bof_or_nonword_chars; RegexLimitNext word_chars]
+   let right_word_delimiter  = RegexSequence  [RegexLimitPrev word_chars; RegexLimitNext eof_or_nonword_chars]
    let word_delimiter        = RegexChoice    [left_word_delimiter; right_word_delimiter]
    let inside_word_delimiter = RegexSequence  [RegexLimitPrev word_chars; RegexLimitNext word_chars]
 
-   let left_line_delimiter   = RegexLimitPrev [bof; Char.code '\r'; Char.code '\n']
-   let right_line_delimiter  = RegexChoice    [RegexSymbol [Char.code '\r'; Char.code '\n'; eof];
-                                               RegexSequence [RegexSymbol [Char.code '\r'];
-                                                              RegexSymbol [Char.code '\n']]]
-   let bof_delimiter         = RegexLimitPrev [bof]
-   let eof_delimiter         = RegexSymbol [eof]
+   let left_line_delimiter   = RegexLimitPrev (bof_chars "\r\n")
+   let right_line_delimiter  = RegexChoice    [RegexSymbol (eof_chars "\r\n");
+                                               RegexSequence [RegexSymbol (singleton_char '\r');
+                                                              RegexSymbol (singleton_char '\n')]]
+   let bof_delimiter         = RegexLimitPrev bof_char
+   let eof_delimiter         = RegexSymbol    eof_char
 
    (*
     * Reduce a choice list.
@@ -824,21 +851,21 @@ struct
          elem :: stack ->
             RegexPlus elem :: stack
        | [] ->
-            [RegexSymbol [Char.code '+']]
+            [RegexSymbol (singleton_char '+')]
 
    let regex_reduce_star stack =
       match stack with
          elem :: stack ->
             RegexStar elem :: stack
        | [] ->
-            [RegexSymbol [Char.code '*']]
+            [RegexSymbol (singleton_char '*')]
 
    let regex_reduce_opt stack =
       match stack with
          elem :: stack ->
             RegexChoice [elem; RegexSequence []] :: stack
        | [] ->
-            [RegexSymbol [Char.code '?']]
+            [RegexSymbol (singleton_char '?')]
 
    let regex_reduce_interval stack n m =
       match stack with
@@ -931,9 +958,9 @@ struct
          raise (Failure "Lm_lexer: regex: character sequence is not terminated");
       match s.[i] with
          ']' ->
-            regex_chars_rest [Char.code ']'] s (succ i) len
+            regex_chars_rest (singleton_char ']') s (succ i) len
        | _ ->
-            regex_chars_rest [] s i len
+            regex_chars_rest IntSet.empty s i len
 
    (*
     * Normal scanning.
@@ -983,7 +1010,7 @@ struct
           | c ->
                Char.code c, j
       in
-         regex_chars_rest (c :: chars) s j len
+         regex_chars_rest (IntSet.add chars c) s j len
 
    (*
     * Just seen a character, look for a character range c-c
@@ -996,13 +1023,13 @@ struct
             '-' ->
                regex_chars_range chars c1 s j len
           | '[' ->
-               regex_chars_possible_class (c1 :: chars) s j len
+               regex_chars_possible_class (IntSet.add chars c1) s j len
           | ']' ->
-               c1 :: chars, j
+               IntSet.add chars c1, j
           | '\\' ->
-               regex_chars_escape (c1 :: chars) s j len
+               regex_chars_escape (IntSet.add chars c1) s j len
           | c ->
-               regex_chars_possible_range (c1 :: chars) (Char.code c) s j len
+               regex_chars_possible_range (IntSet.add chars c1) (Char.code c) s j len
 
    (*
     * Just seen a c-, get the remain char.
@@ -1016,7 +1043,7 @@ struct
          if i > c2 then
             chars
          else
-            collect (i :: chars) (succ i)
+            collect (IntSet.add chars i) (succ i)
       in
       let chars = collect chars c1 in
          regex_chars_rest chars s j len
@@ -1032,11 +1059,11 @@ struct
             ':' ->
                regex_chars_class chars s j len
           | '[' ->
-               regex_chars_possible_class (Char.code '[' :: chars) s j len
+               regex_chars_possible_class (IntSet.add chars (Char.code '[')) s j len
           | '\\' ->
-               regex_chars_escape (Char.code '[' :: chars) s j len
+               regex_chars_escape (IntSet.add chars (Char.code '[')) s j len
           | c ->
-               regex_chars_rest (Char.code c :: Char.code '[' :: chars) s j len
+               regex_chars_rest (IntSet.add (IntSet.add chars (Char.code c)) (Char.code '[')) s j len
 
    (*
     * Get the character class specified by a sequence [:name:]
@@ -1095,7 +1122,7 @@ struct
           | name ->
                raise (Failure ("Lm_lexer: regex: unknown character class: " ^ name))
       in
-         regex_chars_rest (charclass @ chars) s i len
+         regex_chars_rest (IntSet.union charclass chars) s i len
 
    (*
     * Parse an expression block.
@@ -1179,7 +1206,7 @@ struct
                   let stack = regex_reduce_interval stack min max in
                      regex_of_string stack s j len
              | c ->
-                  let stack = RegexSymbol [Char.code c] :: stack in
+                  let stack = RegexSymbol (singleton_char c) :: stack in
                      regex_of_string stack s j len
 
    (*
@@ -1222,36 +1249,36 @@ struct
                let stack = eof_delimiter :: stack in
                   regex_of_string stack s j len
           | 'a' ->
-               let stack = RegexSymbol [alert_char] :: stack in
+               let stack = RegexSymbol alert_chars :: stack in
                   regex_of_string stack s j len
           | 'b' ->
-               let stack = RegexSymbol [backspace_char] :: stack in
+               let stack = RegexSymbol backspace_chars :: stack in
                   regex_of_string stack s j len
           | 'f' ->
-               let stack = RegexSymbol [formfeed_char] :: stack in
+               let stack = RegexSymbol formfeed_chars :: stack in
                   regex_of_string stack s j len
           | 'n' ->
-               let stack = RegexSymbol [newline_char] :: stack in
+               let stack = RegexSymbol newline_chars :: stack in
                   regex_of_string stack s j len
           | 'r' ->
-               let stack = RegexSymbol [cr_char] :: stack in
+               let stack = RegexSymbol cr_chars :: stack in
                   regex_of_string stack s j len
           | 't' ->
-               let stack = RegexSymbol [tab_char] :: stack in
+               let stack = RegexSymbol tab_chars :: stack in
                   regex_of_string stack s j len
           | 'v' ->
-               let stack = RegexSymbol [vertical_tab_char] :: stack in
+               let stack = RegexSymbol vertical_tab_chars :: stack in
                   regex_of_string stack s j len
           | 'x' ->
                let c, j = regex_hex_const 0 s j len in
-               let stack = RegexSymbol [c] :: stack in
+               let stack = RegexSymbol (IntSet.singleton c) :: stack in
                   regex_of_string stack s j len
           | '0'..'9' ->
                let c, j = regex_octal_const 0 s i (min (i + 3) len) in
-               let stack = RegexSymbol [c] :: stack in
+               let stack = RegexSymbol (IntSet.singleton c) :: stack in
                   regex_of_string stack s j len
           | c ->
-               let stack = RegexSymbol [Char.code c] :: stack in
+               let stack = RegexSymbol (IntSet.singleton (Char.code c)) :: stack in
                   regex_of_string stack s j len
 
    (*
@@ -1728,13 +1755,14 @@ struct
       fprintf buf ")@]"
 
    let pp_print_dfa_arg_action buf action =
-      match action with
-         DfaActionArgStart i ->
-            fprintf buf "arg-start %d" i
-       | DfaActionArgStop i ->
-            fprintf buf "arg-stop %d" i
-       | DfaActionArgSearch ->
-            fprintf buf "search-stop"
+      let { dfa_action_off = off; dfa_action_inst = inst } = action in
+         match inst with
+            DfaActionArgStart i ->
+               fprintf buf "arg-start %d at %d" i off
+          | DfaActionArgStop i ->
+               fprintf buf "arg-stop %d at %d" i off
+          | DfaActionArgSearch ->
+               fprintf buf "search-stop at %d" off
 
    let pp_print_dfa_actions nfa_hash buf action =
       let { dfa_action_final = final;
@@ -1838,14 +1866,14 @@ struct
    let pre_action_add_arg actions arg =
       { actions with pre_action_args = arg :: actions.pre_action_args }
 
-   let pre_action_add_arg_start actions id =
-      pre_action_add_arg actions (DfaActionArgStart id)
+   let pre_action_add_arg_start actions off id =
+      pre_action_add_arg actions { dfa_action_off = off; dfa_action_inst = DfaActionArgStart id }
 
-   let pre_action_add_arg_stop actions id =
-      pre_action_add_arg actions (DfaActionArgStop id)
+   let pre_action_add_arg_stop actions off id =
+      pre_action_add_arg actions { dfa_action_off = off; dfa_action_inst = DfaActionArgStop id }
 
-   let pre_action_add_arg_search actions =
-      pre_action_add_arg actions DfaActionArgSearch
+   let pre_action_add_arg_search actions off =
+      pre_action_add_arg actions { dfa_action_off = off; dfa_action_inst = DfaActionArgSearch }
 
    (*
     * DFA actions.
@@ -1863,13 +1891,15 @@ struct
     * and we need to compute the argument info for each of the dst states.
     *)
    let dfa_apply_action pos args action =
-      match action with
-         DfaActionArgStart i ->
-            ArgTable.add args (ArgLeft i) pos
-       | DfaActionArgStop i ->
-            ArgTable.add args (ArgRight i) pos
-       | DfaActionArgSearch ->
-            ArgTable.add args ArgSearch pos
+      let { dfa_action_off = off; dfa_action_inst = inst } = action in
+      let pos = pos + off in
+         match inst with
+            DfaActionArgStart i ->
+               ArgTable.add args (ArgLeft i) pos
+          | DfaActionArgStop i ->
+               ArgTable.add args (ArgRight i) pos
+          | DfaActionArgSearch ->
+               ArgTable.add args ArgSearch pos
 
    let dfa_eval_action dfa info action =
       let { dfa_channel = channel;
@@ -1943,23 +1973,23 @@ struct
                      close_prev_list nfa_hash table nids c closure frontier actions
 
                (* Can only make progress if the current symbol is allowed *)
-             | NfaActionLimitPrev (syms, nid) when List.mem c syms ->
+             | NfaActionLimitPrev (syms, nid) when IntSet.mem syms c ->
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
                (* Arguments *)
              | NfaActionArgStart (id, nid) ->
-                  let actions = pre_action_add_arg_start actions id in
+                  let actions = pre_action_add_arg_start actions 0 id in
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
              | NfaActionArgStop (id, nid) ->
-                  let actions = pre_action_add_arg_stop actions id in
+                  let actions = pre_action_add_arg_stop actions 0 id in
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
              | NfaActionArgSearch nid ->
-                  let actions = pre_action_add_arg_search actions in
+                  let actions = pre_action_add_arg_search actions 0 in
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c closure frontier actions
 
@@ -2021,11 +2051,11 @@ struct
                   pp_print_pre_actions actions;
             match action with
                (* These are the cases where we can make progress *)
-               NfaActionSymbol (syms, nid) when List.mem c syms ->
+               NfaActionSymbol (syms, nid) when IntSet.mem syms c ->
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
-             | NfaActionExceptSymbol (syms, nid) when not (c = eof || List.mem c syms) ->
+             | NfaActionExceptSymbol (syms, nid) when not (c = eof || IntSet.mem syms c) ->
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
@@ -2033,9 +2063,41 @@ struct
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_prev nfa_hash table state c DfaStateCore.empty frontier actions
 
-             | NfaActionLimitNext (syms, nid) when List.mem c syms ->
+             | NfaActionLimitNext (syms, nid) when IntSet.mem syms c ->
                   let state = NfaState.create nfa_hash (nid, counters) in
                      close_next nfa_hash table state c closure frontier actions
+
+               (* Standard epsilon transitions *)
+             | NfaActionEpsilon nids ->
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_next_list nfa_hash table nids c closure frontier actions
+
+               (* Arguments *)
+             | NfaActionArgStart (id, nid) ->
+                  let actions = pre_action_add_arg_start actions (-1) id in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier actions
+
+             | NfaActionArgStop (id, nid) ->
+                  let actions = pre_action_add_arg_stop actions (-1) id in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier actions
+
+             | NfaActionArgSearch nid ->
+                  let actions = pre_action_add_arg_search actions (-1) in
+                  let state = NfaState.create nfa_hash (nid, counters) in
+                     close_next nfa_hash table state c closure frontier actions
+
+               (* Counter operations *)
+             | NfaActionResetCounter (i, nids) ->
+                  let counters = NfaStateCore.reset_counter counters i in
+                  let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
+                     close_next_list nfa_hash table nids c closure frontier actions
+
+             | NfaActionIncrCounter (i, min, final, max, start) ->
+                  let nids = NfaStateCore.incr_counter counters i min final max start in
+                  let nids = List.map (NfaState.create nfa_hash) nids in
+                     close_next_list nfa_hash table nids c closure frontier actions
 
                (* Dead-ends *)
              | NfaActionNone
@@ -2047,13 +2109,7 @@ struct
                   frontier
 
                (* These cases should never arise *)
-             | NfaActionEpsilon _
-             | NfaActionLimitPrev _
-             | NfaActionArgStart _
-             | NfaActionArgStop _
-             | NfaActionArgSearch _
-             | NfaActionIncrCounter _
-             | NfaActionResetCounter _ ->
+             | NfaActionLimitPrev _ ->
                   eprintf "Illegal action: %a@." pp_print_nfa_action action;
                   raise (Invalid_argument "close_next")
 
