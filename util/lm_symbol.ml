@@ -292,11 +292,6 @@ let rec output_symbol_list out vl =
  *)
 exception Has;;
 
-(*
- * Print extended symbols. Used in FIR printing.
- *)
-exception Has
-
 let string_of_ext_symbol v =
    let i, s = SymbolHash.get v in
    let has_special_char s =
