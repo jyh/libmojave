@@ -60,6 +60,22 @@ let string_compare s1 s2 =
        | i -> i
 
 (*
+ * Compare a substring.
+ *)
+let rec equal_substring_aux s1 s2 len2 i1 i2 =
+   if i2 = len2 then
+      true
+   else
+      let c1 = String.unsafe_get s1 i1 in
+      let c2 = String.unsafe_get s2 i2 in
+         c1 = c2 && equal_substring_aux s1 s2 len2 (succ i1) (succ i2)
+
+let equal_substring s1 off s2 =
+   let len1 = String.length s1 in
+   let len2 = String.length s2 in
+      len1 - off >= len2 && equal_substring_aux s1 s2 len2 off 0
+
+(*
  * Check all chars in the string.
  *)
 let for_all f s =
