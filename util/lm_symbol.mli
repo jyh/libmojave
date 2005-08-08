@@ -78,6 +78,11 @@ val string_of_symbol : symbol -> string
 val string_of_ext_symbol : symbol -> string
 
 (*
+ * Hash a symbol.
+ *)
+val hash : symbol -> int
+
+(*
  * Compare two symbols for equality.
  *)
 val eq : symbol -> symbol -> bool
@@ -96,6 +101,11 @@ val compare_pair : symbol * symbol -> symbol * symbol -> int
  * Ordered comparisons of symbol triples.
  *)
 val compare_triple : symbol * symbol * symbol -> symbol * symbol * symbol -> int
+
+(*
+ * Ordered comparison of symbol lists.
+ *)
+val compare_lists : symbol list -> symbol list -> int
 
 (*
  * We also provide a function to produce a unique integer.
