@@ -104,7 +104,6 @@ module MakeHashCons (Arg : HashArgSig)
 
 (*
  * The default function for combinding hash values.
- * XXX: JYH: we should try using a smarter hash function.
  *)
 val hash_combine : int -> int -> int
 val hash_int_list : int -> int list -> int
