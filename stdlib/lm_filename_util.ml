@@ -88,8 +88,8 @@ let cygwin_is_executable =
       suffix :: suffixes ->
          let name' = name ^ suffix in
             begin match unix_is_executable name' with
-               Some _ as res -> res
-             | None -> search_cygwin name suffixes
+               Some name'' as res when Sys.file_exists name'' -> res
+             | _ -> search_cygwin name suffixes
             end
     | [] ->
          None
