@@ -67,7 +67,7 @@ let unix_is_executable s =
  * it just has to exist.
  *)
 let win32_suffixes =
-   [""; ".exe"; ".com"; ".bat"]
+   [""; ".exe"; ".com"; ".bat"; ".pif"]
 
 let win32_is_executable =
    let rec search_win32 suffixes name =
@@ -83,6 +83,19 @@ let win32_is_executable =
    in
       search_win32 win32_suffixes
 
+let cygwin_is_executable =
+   let rec search_cygwin name = function
+      suffix :: suffixes ->
+         let name' = name ^ suffix in
+            begin match unix_is_executable name' with
+               Some _ as res -> res
+             | None -> search_cygwin name suffixes
+            end
+    | [] ->
+         None
+   in
+      fun name -> search_cygwin name win32_suffixes
+
 (*
  * System-dependent config.
  * On win32, use lowercase names, and watch for drive letters.
@@ -97,7 +110,7 @@ let has_drive_letters,
       "Win32" ->
          true, String.lowercase, List.map String.lowercase, '\\', ';', win32_is_executable
     | "Cygwin" ->
-         false, String.lowercase, List.map String.lowercase, '/', ':', unix_is_executable
+         false, String.lowercase, List.map String.lowercase, '/', ':', cygwin_is_executable
     | "Unix" ->
          false, (fun s -> s), (fun s -> s), '/', ':', unix_is_executable
     | s ->
