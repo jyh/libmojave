@@ -88,13 +88,13 @@ let win32_is_executable =
  * and http://cvs.cs.cornell.edu:12000/bugzilla/show_bug.cgi?id=496#c11
  *)
 let cygwin_is_executable name =
-   match unix_is_executable name with
-      Some _ as res ->
-         begin match unix_is_executable (name ^ ".exe") with
+   match unix_is_executable (name ^ ".exe") with
+      Some _ as res -> res
+    | None ->
+         begin match unix_is_executable name with
             Some _ as res' -> res'
-          | None -> res
+          | None -> None
          end
-    | None -> None
 
 (*
  * System-dependent config.
