@@ -31,6 +31,17 @@
 #include <caml/custom.h>
 #include <caml/fail.h>
 
+/*
+ * Print the stack pointer for debugging.
+ */
+value lm_print_stack_pointer(value v_arg)
+{
+    int sp;
+
+    fprintf(stderr, "Stack pointer: 0x%08lx\n", (unsigned long) &sp);
+    return Val_unit;
+}
+
 #ifdef WIN32
 #include <windows.h>
 #include <shlobj.h>
