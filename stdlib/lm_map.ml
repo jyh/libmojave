@@ -479,6 +479,17 @@ struct
          (tree : ('elt, 'data) tree)
 
    (*
+    * Like filter-add, but the value must already exist.
+    *)
+   let replace tree key dataf =
+      filter_add tree key (fun x ->
+            match x with
+               Some x ->
+                  dataf x
+             | None ->
+                  raise Not_found)
+
+   (*
     * Add an element to the set.
     *)
    let add (tree : ('elt, 'data) tree) (key : 'elt) (data : 'data) =
@@ -1422,6 +1433,11 @@ struct
                None -> None
              | Some h -> Some (h :: t))
        | [] -> None)
+
+   let replace t key f =
+      MMap.filter_add t key (function
+         Some (h :: t) -> f h :: t
+       | Some [] | None -> raise Not_found)
 
    let add t key x =
       MMap.filter_add t key (function
