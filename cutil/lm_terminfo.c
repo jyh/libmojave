@@ -12,7 +12,10 @@
 
 
 /* Headers that are readline-specific must be included here. */
+
 #include <ncurses.h>
+
+/* XXX: TODO (nogin 2005/08/29): this ifdef should be configure-based */
 #ifdef __CYGWIN32__
 #  include <ncurses/term.h>
 #else
