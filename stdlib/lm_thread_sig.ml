@@ -28,10 +28,10 @@ module type MutexSig =
 sig
    type t
 
-   val create : unit -> t
-   val lock : t -> unit
-   val try_lock : t -> bool
-   val unlock : t -> unit
+   val create      : unit -> t
+   val lock        : t -> unit
+   val try_lock    : t -> bool
+   val unlock      : t -> unit
 end
 
 module type ConditionSig =
@@ -39,9 +39,9 @@ sig
    type t
    type mutex
 
-   val create : unit -> t
-   val wait : t -> mutex -> unit
-   val signal : t -> unit
+   val create    : unit -> t
+   val wait      : t -> mutex -> unit
+   val signal    : t -> unit
    val broadcast : t -> unit
 end
 
