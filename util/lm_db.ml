@@ -42,6 +42,14 @@
  * @end[license]
  *)
 open Lm_printf
+open Lm_debug
+
+let debug_db =
+   create_debug (**)
+      { debug_name = "db";
+        debug_description = "Display debugging information for marshaling operations";
+        debug_value = false
+      }
 
 type t = Unix.file_descr
 
@@ -152,7 +160,7 @@ let unmarshal_string inx =
 (*
  * Search for the appropriate entry.
  *)
-let find fd (tag, host_mode) magic digest =
+let find fd filename (tag, host_mode) magic digest =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -164,9 +172,18 @@ let find fd (tag, host_mode) magic digest =
       let host' = unmarshal_string inx in
       let magic' = unmarshal_string inx in
       let digest' = unmarshal_digest inx in
-         if tag' = tag && magic' = magic && digest' = digest && (host_mode = HostIndependent || host' = hostname) then
+         if tag' = tag && magic' = magic && digest' = digest && (host_mode = HostIndependent || host' = hostname) then begin
             (* Found a matching entry *)
-            UnmarshalValue (Marshal.from_channel inx)
+            if !debug_db then
+               eprintf "@[<v 3>Marshal.from_channel: %s@ save tag/digest: %d/%s@ wanted tag/digest: %d/%s@." (**)
+                  filename
+                  tag' (Lm_string_util.hexify digest')
+                  tag (Lm_string_util.hexify digest);
+            let x = UnmarshalValue (Marshal.from_channel inx) in
+               if !debug_db then
+                  eprintf "Marshal.from-channel: done@.";
+               x
+         end
          else
             (* Skip over this entry *)
             let () = really_input inx head 0 Marshal.header_size in
@@ -188,6 +205,8 @@ let find fd (tag, host_mode) magic digest =
           | Failure _
           | Sys_error _
           | Invalid_argument _ ->
+               if !debug_db then
+                  eprintf "Lm_db.find: %s: failed %d/%s@." filename tag (Lm_string_util.hexify digest);
                seek_and_truncate fd start;
                raise Not_found
       in
@@ -214,7 +233,7 @@ let marshal_magic fd =
       output_binary_int outx magic;
       Pervasives.flush outx
 
-let remove fd (tag, host_mode) magic =
+let remove fd filename (tag, host_mode) magic =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -281,18 +300,24 @@ let marshal_string outx s =
       output_binary_int outx len;
       Pervasives.output_string outx s
 
-let marshal_entry fd (tag, _) magic_number digest x =
+let marshal_entry fd filename (tag, _) magic_number digest x =
    let outx = Unix.out_channel_of_descr fd in
       marshal_tag outx tag;
       marshal_string outx hostname;
       marshal_string outx magic_number;
       marshal_digest outx digest;
+      if !debug_db then
+         eprintf "@[<v 3>Marshal.to_channel: %s@ tag/digest: %d/%s@]@." (**)
+            filename
+            tag (Lm_string_util.hexify digest);
       Marshal.to_channel outx x [];
+      if !debug_db then
+         eprintf "Marshal.to_channel: %s: done@." filename;
       Pervasives.flush outx
 
-let add fd tag magic digest x =
-   remove fd tag magic;
-   marshal_entry fd tag magic digest x
+let add fd filename tag magic digest x =
+   remove fd filename tag magic;
+   marshal_entry fd filename tag magic digest x
 
 (*!
  * @docoff
