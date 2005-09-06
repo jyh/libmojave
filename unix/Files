@@ -1,4 +1,4 @@
-UNIX_FILES[] =
+public.UNIX_FILES[] =
     lm_mmap
     lm_mmap_pipe
     lm_rusage

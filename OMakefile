@@ -16,12 +16,13 @@ include system/Files
 include util/Files
 include unix/Files
 
-STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
-SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
-UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
-UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
+private.const. =
+    STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
+    SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
+    UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
+    UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
 
-FILES[] =
+private.FILES[] =
     $(STDLIB_FILES)
     $(UNIX_FILES)
     $(SYSTEM_FILES)
@@ -40,6 +41,8 @@ clean:
 #
 # Configuration
 #
+declare public.LM_STANDALONE
+
 if $(not $(defined LM_STANDALONE))
     LM_STANDALONE = false
     export

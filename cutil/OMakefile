@@ -1,7 +1,7 @@
 #
 # LibMojave C files
 #
-CFILES[] =
+private.CFILES[] =
     lm_abstract
     lm_float
     lm_ncurses

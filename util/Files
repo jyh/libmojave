@@ -1,4 +1,4 @@
-UTIL_FILES[] =
+public.UTIL_FILES[] =
     lm_ctype
     lm_symbol
     lm_flags
