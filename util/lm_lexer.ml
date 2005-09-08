@@ -2158,8 +2158,12 @@ struct
                         in
                         let actions =
                            (*
-                            * NOTE: currently we prefer states with smaller numbers,
+                            * WARNING: NOTE: currently we prefer states with smaller numbers,
                             * which will result in a shortest match in the search prefix.
+                            *
+                            * This works in many cases, but it is most likely wrong.  For example
+                            * see http://cvs.cs.cornell.edu:12000/bugzilla/show_bug.cgi?id=511,
+                            * where we see that the regex .* results in a *shortest* match.
                             *)
                            NfaStateTable.filter_add actions id (fun action1 ->
                                  match action1 with
