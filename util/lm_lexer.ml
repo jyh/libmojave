@@ -1403,7 +1403,6 @@ struct
    (************************************************************************
     * NFA.
     *)
-
    let pp_print_nfa_id hash buf nid =
       match NfaState.get hash nid with
          (nid, []) ->
@@ -1412,6 +1411,10 @@ struct
             fprintf buf "<%d" nid;
             List.iter (fun counter -> fprintf buf " %d" counter) counters;
             fprintf buf ">"
+
+   let pp_print_nfa_id_set hash buf states =
+      NfaStateSet.iter (fun s ->
+            fprintf buf "@ %a" (pp_print_nfa_id hash) s) states
 
    let pp_print_choices buf choices =
       IntSet.iter (fun i -> fprintf buf " %d" i) choices
@@ -1461,10 +1464,14 @@ struct
       let { nfa_hash  = hash;
             nfa_start = start;
             nfa_search_start = search;
+            nfa_search_states = search_states;
             nfa_table = table
           } = nfa
       in
-         fprintf buf "@[<hv 3>NFA:@ start = %a@ search = %a" (pp_print_nfa_id hash) start (pp_print_nfa_id hash) search;
+         fprintf buf "@[<hv 3>NFA:@ start = %a@ search = %a@ @[<b 3>search-states =%a@]" (**)
+            (pp_print_nfa_id hash) start
+            (pp_print_nfa_id hash) search
+            (pp_print_nfa_id_set hash) search_states;
          Array.iter (fun state ->
                fprintf buf "@ %a" pp_print_nfa_state state) table;
          fprintf buf "@]"
@@ -1795,12 +1802,12 @@ struct
           } = action
       in
       let () =
-         fprintf buf "@[<hv 3>(pre-action"
+         fprintf buf "@[<hv 3>(pre-action@ "
       in
       let () =
          match final with
             Some stop ->
-               fprintf buf "@ final [%d]" stop
+               fprintf buf "final [%d]@ " stop
           | None ->
                ()
       in
@@ -2131,6 +2138,8 @@ struct
                let frontier =
                   close_next nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty
                in
+                  if !debug_lexgen then
+                     eprintf "@[<v 3>Frontier:@ %a@]@." (pp_print_frontier nfa_hash) frontier;
                   NfaStateTable.fold (fun (final', actions) id action ->
                         let { pre_action_final = final;
                               pre_action_args = args
@@ -2158,12 +2167,9 @@ struct
                         in
                         let actions =
                            (*
-                            * WARNING: NOTE: currently we prefer states with smaller numbers,
+                            * NOTE: currently we prefer states with smaller numbers,
                             * which will result in a shortest match in the search prefix.
-                            *
-                            * This works in many cases, but it is most likely wrong.  For example
-                            * see http://cvs.cs.cornell.edu:12000/bugzilla/show_bug.cgi?id=511,
-                            * where we see that the regex .* results in a *shortest* match.
+                            * This works in many cases, but it may be wrong in general.
                             *)
                            NfaStateTable.filter_add actions id (fun action1 ->
                                  match action1 with
@@ -2179,16 +2185,26 @@ struct
                         in
                            final, actions) final_actions frontier) (None, NfaStateTable.empty) nids
       in
+      let () =
+         if !debug_lexgen then
+            let actions =
+               { dfa_action_final = final;
+                 dfa_action_actions = actions
+               }
+            in
+               eprintf "@[<v 3>Computed actions:%a@]@." (pp_print_dfa_actions nfa_hash) actions
+      in
 
       (*
-       * If the state is final,
+       * If the state is final, and we have already scanned some text (not
+       * including the initial bof),
        *    1. prune all states that correspond to the search
        *    2. prune all states that _came_ from the search, unless they
        *       are the final state we care about.
        *)
       let actions =
          match final with
-            Some (_, id) ->
+            Some (_, id) when c <> bof ->
                (* Remove target states in the search *)
                let actions = NfaStateSet.fold NfaStateTable.remove actions search_states in
                   (* Remove target states that came from the search *)
@@ -2197,7 +2213,7 @@ struct
                            NfaStateTable.remove actions id'
                         else
                            actions) actions actions
-          | None ->
+          | _ ->
                actions
       in
          { dfa_action_final = final;
