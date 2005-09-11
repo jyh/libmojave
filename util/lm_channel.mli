@@ -52,6 +52,9 @@ val of_string     : string -> t
 val of_substring  : string -> int -> int -> t
 val of_loc_string : string -> int -> int -> string -> t
 
+(* Set the file and line number *)
+val set_line      : t -> string -> int -> unit
+
 (*
  * Set text vs binary mode.
  * No effect unless on Win32.

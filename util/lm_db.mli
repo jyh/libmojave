@@ -50,9 +50,9 @@ type host =
  *    find: find an existing entry, or raise Not_found if it doesn't exist
  *    remove: remove an old entry, does not fail.
  *)
-val add    : t -> tag * host -> magic -> digest -> 'a -> unit
-val find   : t -> tag * host -> magic -> digest -> 'a
-val remove : t -> tag * host -> magic -> unit
+val add    : t -> string -> tag * host -> magic -> digest -> 'a -> unit
+val find   : t -> string -> tag * host -> magic -> digest -> 'a
+val remove : t -> string -> tag * host -> magic -> unit
 
 (*!
  * @docoff

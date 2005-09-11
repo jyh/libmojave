@@ -30,6 +30,7 @@ open Lm_location
 val debug_parse       : bool ref
 val debug_parsegen    : bool ref
 val debug_parsetiming : bool ref
+val debug_parse_conflict_is_warning : bool ref
 
 (*
  * Associativity and precedence.

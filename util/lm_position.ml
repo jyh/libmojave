@@ -52,6 +52,7 @@ let trace_pos =
  * the position is created.  The value is a location,
  * a raw value, or a value with another position.
  *)
+(* %%MAGICBEGIN%% *)
 type 'a pos = string * 'a exn_loc
 
 and 'a exn_loc =
@@ -65,6 +66,7 @@ and 'a exn_loc =
  | DebugSymbol  of symbol * 'a pos
  | DebugDel     of (out_channel -> unit) * loc
  | DebugDelExp  of (out_channel -> unit) * 'a pos
+(* %%MAGICEND%% *)
 
 (*
  * Module for creating positions.

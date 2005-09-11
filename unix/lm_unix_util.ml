@@ -41,6 +41,7 @@ type registry_hkey =
   | HKEY_LOCAL_MACHINE
   | HKEY_USERS
 
+external print_stack_pointer : unit -> unit = "lm_print_stack_pointer"
 external registry_find   : registry_hkey -> string -> string -> string = "caml_registry_find"
 
 (*
