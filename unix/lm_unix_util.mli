@@ -90,6 +90,12 @@ type registry_hkey =
 val registry_find  : registry_hkey -> string -> string -> string
 
 (*
+ * Open a file.
+ * This is mainly for debugging.
+ *)
+val openfile : string -> Unix.open_flag list -> Unix.file_perm -> Unix.file_descr
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

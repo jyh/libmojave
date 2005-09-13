@@ -190,6 +190,13 @@ let ftruncate =
       (fun fd -> Unix.ftruncate fd (Unix.lseek fd 0 Unix.SEEK_CUR))
 
 (*
+ * Open a file descriptor.
+ * This hook is here so you can add print statements to
+ * help find file descriptor leaks.
+ *)
+let openfile = Unix.openfile
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"
