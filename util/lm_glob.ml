@@ -240,7 +240,7 @@ let unescape options s =
                if c = '\\' && i < len - 1 then
                   let c = s.[i + 1] in
                      match c with
-                        '*' | '?' | '[' | ']' ->
+                        '*' | '?' | '[' | ']' | '~' ->
                            Buffer.add_char buf c;
                            collect (i + 2)
                       | _ ->
@@ -293,7 +293,7 @@ let filename_split options s =
                   if options.glob_escape && i < len - 1 then
                      let c = s.[i + 1] in
                         match c with
-                           '*' | '?' | '[' | ']' ->
+                           '*' | '?' | '[' | ']' | '~' ->
                               collect names start (i + 2)
                          | _ ->
                               collect (add_name names start i) (succ i) (succ i)
@@ -349,7 +349,7 @@ let add_shell_pattern options buf s =
                   if options.glob_escape && i < len - 1 then
                      let c = s.[i + 1] in
                         match c with
-                           '*' | '?' | '[' | ']' ->
+                           '*' | '?' | '[' | ']' | '~' ->
                               Buffer.add_char buf '\\';
                               Buffer.add_char buf c;
                               collect (i + 2)
