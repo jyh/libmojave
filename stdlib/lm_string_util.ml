@@ -264,6 +264,8 @@ let html_escaped s =
                   Buffer.add_string buf "&gt;"
              | '&' ->
                   Buffer.add_string buf "&amp;"
+             | '"' ->
+                  Buffer.add_string buf "&quot;"
              | ' ' ->
                   Buffer.add_string buf "&nbsp;"
              | '\r' ->
@@ -273,7 +275,53 @@ let html_escaped s =
              | '\t' ->
                   Buffer.add_string buf "&nbsp;&nbsp;&nbsp;&nbsp;"
              | _ ->
+                  if c < ' ' || c >= '\127' then begin
+                      Buffer.add_string buf "&#";
+                      Buffer.add_string buf (string_of_int (Char.code c));
+                      Buffer.add_char buf ';'
+                  end
+                  else
+                      Buffer.add_char buf c
+         in
+            loop (succ i)
+   in
+      loop 0
+
+(*
+ * Escape a string using the HTML conventions.
+ *)
+let html_escaped_nonwhite s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let _ =
+            match c with
+               '<' ->
+                  Buffer.add_string buf "&lt;"
+             | '>' ->
+                  Buffer.add_string buf "&gt;"
+             | '&' ->
+                  Buffer.add_string buf "&amp;"
+             | '"' ->
+                  Buffer.add_string buf "&quot;"
+             | ' '
+             | '\t' ->
                   Buffer.add_char buf c
+             | '\n'
+             | '\r' ->
+                  Buffer.add_string buf "<br>\n"
+             | _ ->
+                  if c < ' ' || c >= '\127' then begin
+                      Buffer.add_string buf "&#";
+                      Buffer.add_string buf (string_of_int (Char.code c));
+                      Buffer.add_char buf ';'
+                  end
+                  else
+                      Buffer.add_char buf c
          in
             loop (succ i)
    in

@@ -119,6 +119,7 @@ val c_escaped : string -> string
  *)
 val js_escaped : string -> string
 val html_escaped : string -> string
+val html_escaped_nonwhite : string -> string
 
 (*
  * Unescape a string.  Convert all escape sequences,
