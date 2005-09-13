@@ -212,7 +212,9 @@ let is_glob_name options name =
          false
       else
          match name.[i] with
-            '*' | '?' | '~' ->
+            '*' | '?' ->
+               true
+          | '~' when i = 0 ->
                true
           | '[' ->
                search true (succ i)
