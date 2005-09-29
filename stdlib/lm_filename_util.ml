@@ -85,7 +85,7 @@ let win32_is_executable =
 
 (*
  * Cygwin is weird. See http://cygwin.com/cygwin-ug-net/using-specialnames.html#id4745135
- * and http://cvs.cs.cornell.edu:12000/bugzilla/show_bug.cgi?id=496#c11
+ * and http://bugzilla.metaprl.org/show_bug.cgi?id=496#c11
  *)
 let cygwin_is_executable name =
    match unix_is_executable (name ^ ".exe") with
