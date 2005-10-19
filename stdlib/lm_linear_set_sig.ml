@@ -57,6 +57,9 @@ sig
    val mapi : (index -> elt -> elt) -> t -> t
    val init : int -> (index -> elt) -> t
    val collect : (elt, t) Lm_array_util.array_part list -> t
+
+   val for_all : (elt -> bool) -> t -> bool
+   val exists : (elt -> bool) -> t -> bool
 end
 
 module type TypeSig =

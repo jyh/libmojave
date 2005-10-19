@@ -441,4 +441,25 @@ sition *)
          t,_,[] -> t
        | _ -> raise (Invalid_argument "Linear_set.collect")
 
+   let rec for_all (f : elt -> bool) = function
+      { tree = Leaf } ->
+         true
+    | { tree = Node (ind, e, t1, t2, i) } ->
+         f e && for_all f t1 && for_all f t2
+    | { tree = Lazy (f', tree) } as t ->
+         t.tree <- go_down f' tree;
+         for_all f t
+    | { tree = Offset (i, t) } ->
+         for_all f t
+
+   let rec exists (f : elt -> bool) = function
+      { tree = Leaf } ->
+         false
+    | { tree = Node (ind, e, t1, t2, i) } ->
+         f e || exists f t1 || exists f t2
+    | { tree = Lazy (f', tree) } as t ->
+         t.tree <- go_down f' tree;
+         exists f t
+    | { tree = Offset (i, t) } ->
+         exists f t
 end
