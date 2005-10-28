@@ -2108,10 +2108,6 @@ struct
             info_hash = hash
           } = info
       in
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
       let { hash_prod_item_state = hash_prod_item } = hash in
       let pp_print_ivar = pp_print_ivar hash in
       let pp_print_iaction = pp_print_iaction hash in
@@ -2308,7 +2304,7 @@ struct
                   }) info.info_hash.hash_state_state
       in
       let start_table = IVarTable.map State.hash start_table in
-      let now = time_print "PDA construction" start now in
+      let _now = time_print "PDA construction" start now in
          { pda_start_states    = start_table;
            pda_states          = table;
            pda_hash            = info.info_hash
