@@ -777,8 +777,6 @@ let glob_argv_name options root dir name =
                List.sort Pervasives.compare names
    else
       let name      = unescape options name in
-      let root_dir  = filename_concat root dir in
-      let root_name = filename_concat root_dir name in
       let file_name = filename_concat dir name in
          [file_name]
 
