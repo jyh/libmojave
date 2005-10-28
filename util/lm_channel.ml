@@ -914,7 +914,7 @@ let select_aux rfd_sockets wfd_sockets efd_sockets timeout =
             else
                wfd_sockets, wrote) ([], false) wfd_sockets
    in
-   let efd_sockets = List.filter (fun fd -> List.mem (descr fd) wfd) efd_sockets in
+   let efd_sockets = List.filter (fun fd -> List.mem (descr fd) efd) efd_sockets in
       rfd_sockets, wfd_sockets, efd_sockets, wrote
 
 (*

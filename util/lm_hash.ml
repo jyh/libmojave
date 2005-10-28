@@ -1426,10 +1426,7 @@ struct
     * Extract the digest.
     *)
    let digest buf =
-      let { hash_digest = digest;
-            hash_length = length
-          } = buf
-      in
+      let digest = buf.hash_digest in
       let s = String.create digest_length in
          for i = 0 to pred digest_length do
             s.[i] <- Char.chr (digest.(i) land 0xff)

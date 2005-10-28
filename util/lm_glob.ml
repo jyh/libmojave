@@ -387,7 +387,7 @@ let make_filter options sl default =
             let pattern = LmStr.regexp (Buffer.contents buf) in
                (fun name -> LmStr.string_match pattern name 0)
        | [] ->
-            (fun name -> default)
+            (fun _ -> default)
 
 (*
  * These are the files that CVS ignores by default.

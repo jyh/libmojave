@@ -356,7 +356,7 @@ let create
          SplayFound tree ->
             begin
                match tree with
-                  Node (key, old_data', left, right, size) ->
+                  Node (key, _, left, right, size) ->
                      ref (Node (key, data, left, right, size))
                 | Leaf ->
                      raise (Invalid_argument "Splay_table.replace: Leaf reached")
