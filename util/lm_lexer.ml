@@ -1608,12 +1608,6 @@ struct
                   nfa_arg_number = argnumber
                 } = info
             in
-            let arg =
-               { arg_index   = argindex;
-                 arg_clause  = clause;
-                 arg_number  = argnumber
-               }
-            in
             let accum = { accum with nfa_arg_index = succ argindex } in
             let info = { info with nfa_arg_number  = succ argnumber } in
             let accum, info, start1, states =

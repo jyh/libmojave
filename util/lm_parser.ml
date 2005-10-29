@@ -1528,8 +1528,6 @@ struct
     * Compute the transition table, only for shift operations.
     *)
    let build_delta info unexamined =
-      let prods = info.info_grammar.gram_prod in
-
       (* Perform the closure *)
       let rec build shift_table examined unexamined =
          if StateSet.is_empty unexamined then
@@ -1654,7 +1652,6 @@ struct
       let delta_table = info.info_head_delta in
       let look_table = IVarTable.find info.info_head_lookahead v1 in
       let look1 = lookahead info right1 in
-      let hash = info.info_hash.hash_prod_item_state in
       let hash_state_item = info.info_hash_state_item in
          IVarTable.fold (fun prop_items v2 look2 ->
                let look = lookahead_concat look2 look1 in
@@ -1859,7 +1856,6 @@ struct
                let item1 = prop_table.(StateItem.hash src) in
                   if item1.prop_changed then
                      let _ = item1.prop_changed <- false in
-                     let vars = item1.prop_vars in
                         StateItemSet.fold (fun changed dst ->
                               let item2 = prop_table.(StateItem.hash dst) in
                               let vars2 = item2.prop_vars in
@@ -2284,17 +2280,6 @@ struct
       let now = time_print "Shift/reduce table" start now in
 
       (* Build the PDA states *)
-      let null_info =
-         { pda_items     = [];
-           pda_next      = IVarSet.empty
-         }
-      in
-      let null_state =
-         { pda_delta  = IVarTable.empty;
-           pda_reduce = ReduceNone;
-           pda_info   = null_info
-         }
-      in
       let table =
          State.map_array (fun state core ->
                let { info_state_items = items } = core in
