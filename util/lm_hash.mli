@@ -1,5 +1,5 @@
-(*
- * A "hash-cons" utility.
+(*x
+ * Various hash functions and hash-cons tables.
  *
  * ----------------------------------------------------------------
  *
@@ -24,9 +24,12 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
 
-(*
- * The client needs to provide these functions.
+(************************************************************************
+ * A basic table for adding a hash code to every element.
+ * Nothing else is done, so comparisons are still slow.
+ * This table is safe to marshal.
  *)
 module type HashArgSig =
 sig
@@ -38,10 +41,10 @@ sig
    (* The client needs to provide hash and comparison functions *)
    val hash : t -> int
    val compare : t -> t -> int
-end
+end;;
 
 (*
- * This is what we get.
+ * A basic hashtbale.
  *)
 module type HashSig =
 sig
@@ -57,14 +60,21 @@ sig
 
    (* Comparison *)
    val compare : t -> t -> int
-end
+end;;
 
-(*
- * Make a hash item.
- *)
 module MakeHash (Arg : HashArgSig)
 : HashSig with type elt = Arg.t;;
 
+(************************************************************************
+ * Table-based hash-consing.
+ * Items are represented by their indexes into a table.
+ *
+ * This is the fastest implementation, but it is not safe to marshal
+ * unless you also marshal the table.
+ *
+ * If you need a version that is safe to marshal, consider using the
+ * HashMarshal below.  It is only slightly slower.
+ *)
 module type HashConsSig =
 sig
    type hash
@@ -94,26 +104,110 @@ sig
    val fold : ('a -> t -> 'a) -> 'a -> state -> 'a
 end
 
-(*
- * This provides hash-consing.
- *)
 module MakeHashCons (Arg : HashArgSig)
 : HashConsSig
   with type elt = Arg.t
   with type hash = MakeHash(Arg).t;;
 
-(*
- * The default function for combinding hash values.
+(************************************************************************
+ * Marshalable version.
+ *
+ * This takes a slightly different approach, wrapping the value in
+ * a triple of a hash code and a dummy ref cell.  During marshaling,
+ * the cell will point somewhere else, so we know that the value
+ * must be reinterned.  The hash codes are preseved across
+ * marshaling.
  *)
-val hash_combine : int -> int -> int
-val hash_int_list : int -> int list -> int
-val hash_list : ('a -> int) -> int -> 'a list -> int
 
 (*
- * Comparison utilities.
+ * The client needs to provide these functions.
  *)
+module type HashMarshalArgSig =
+sig
+   type t
+
+   (* For debugging *)
+   val debug : string
+
+   (* The client needs to provide hash and comparison functions *)
+   val hash : t -> int
+   val compare : t -> t -> int
+   val reintern : t -> t
+end;;
+
+(*
+ * This is what we get.
+ *
+ * BUG: we break abstraction here a little because
+ * it is hard to define the type recursively otherwise.
+ *)
+type 'a hash_marshal_item
+
+module type HashMarshalSig =
+sig
+   type elt
+   type t = elt hash_marshal_item
+
+   (* Creation *)
+   val create   : elt -> t
+
+   (* The intern function fails with Not_found if the node does not already exist *)
+   val intern   : elt -> t
+
+   (* Destructors *)
+   val get      : t -> elt
+   val hash     : t -> int
+
+   (* Comparison *)
+   val compare  : t -> t -> int
+
+   (* Rehash the value *)
+   val reintern : t -> t
+end;;
+
+(*
+ * Make a hash item.
+ *)
+module MakeHashMarshal (Arg : HashMarshalArgSig)
+: HashMarshalSig with type elt = Arg.t;;
+
+val pp_print_hash_stats : formatter -> unit
+
+(************************************************************************
+ * Better-than-usual hashes.
+ *)
+module type HashCodeSig =
+sig
+   type t
+
+   val create     : unit -> t
+   val add_int    : t -> int -> unit
+   val add_float  : t -> float -> unit
+   val add_string : t -> string -> unit
+   val code       : t -> int
+end;;
+
+module type HashDigestSig =
+sig
+   type t
+
+   val create     : unit -> t
+   val add_bits   : t -> int -> unit
+   val add_bool   : t -> bool -> unit
+   val add_int    : t -> int -> unit
+   val add_float  : t -> float -> unit
+   val add_string : t -> string -> unit
+   val digest     : t -> string
+end;;
+
+module HashCode : HashCodeSig;;
+module HashDigest : HashDigestSig;;
+
+(************************************************************************
+ * Helper functions.
+ *)
+val hash_int_list : int -> int list -> int
 val compare_int_list : int list -> int list -> int
-val compare_list : ('a -> int) -> 'a list -> 'a list -> int
 
 (*!
  * @docoff

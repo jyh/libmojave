@@ -45,10 +45,12 @@ open Lm_map_sig
  * Table is a binary tree.
  * Color is kept in the label to save space.
  *)
+(* %%MAGICBEGIN%% *)
 type ('elt, 'data) tree =
    Leaf
  | Red of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
  | Black of 'elt * 'data * ('elt, 'data) tree * ('elt, 'data) tree * int
+(* %%MAGICEND%% *)
 
 (*
  * Make the set.
@@ -65,6 +67,8 @@ struct
 
    type key = Base.t
    type 'a t = (key, 'a) tree
+
+   exception Unchanged
 
    (*
     * Size of a table.
@@ -228,7 +232,10 @@ struct
          begin
             let comp = Base.compare key key0 in
                if comp = 0 then
-                  Black (key0, dataf (Some data0), left0, right0, size0)
+                  let data = dataf (Some data0) in
+                     if data == data0 then
+                        raise Unchanged;
+                     Black (key0, data, left0, right0, size0)
 
                else if comp < 0 then
                   match left0 with
@@ -459,13 +466,28 @@ struct
             Leaf ->
                Black (key, dataf None, Leaf, Leaf, 1)
           | node ->
-               match insert key dataf node with
-                  Red (key, data, left, right, size) ->
-                     Black (key, data, left, right, size)
-                | tree ->
+               try
+                  match insert key dataf node with
+                     Red (key, data, left, right, size) ->
+                        Black (key, data, left, right, size)
+                   | tree ->
+                        tree
+               with
+                  Unchanged ->
                      tree
       in
          (tree : ('elt, 'data) tree)
+
+   (*
+    * Like filter-add, but the value must already exist.
+    *)
+   let replace tree key dataf =
+      filter_add tree key (fun x ->
+            match x with
+               Some x ->
+                  dataf x
+             | None ->
+                  raise Not_found)
 
    (*
     * Add an element to the set.
@@ -1411,6 +1433,11 @@ struct
                None -> None
              | Some h -> Some (h :: t))
        | [] -> None)
+
+   let replace t key f =
+      MMap.filter_add t key (function
+         Some (h :: t) -> f h :: t
+       | Some [] | None -> raise Not_found)
 
    let add t key x =
       MMap.filter_add t key (function

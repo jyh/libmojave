@@ -85,7 +85,7 @@ let win32_is_executable =
 
 (*
  * Cygwin is weird. See http://cygwin.com/cygwin-ug-net/using-specialnames.html#id4745135
- * and http://cvs.cs.cornell.edu:12000/bugzilla/show_bug.cgi?id=496#c11
+ * and http://bugzilla.metaprl.org/show_bug.cgi?id=496#c11
  *)
 let cygwin_is_executable name =
    match unix_is_executable (name ^ ".exe") with
@@ -122,6 +122,7 @@ let search_separator_string = String.make 1 search_separator_char
 (*
  * Utilities for splitting paths.
  *)
+(* %%MAGICBEGIN%% *)
 type root =
    NullRoot
  | DriveRoot of char
@@ -129,6 +130,7 @@ type root =
 type 'a path =
    RelativePath of 'a
  | AbsolutePath of root * 'a
+(* %%MAGICEND%% *)
 
 let null_root = NullRoot
 
@@ -326,6 +328,17 @@ let split_path = Lm_string_util.split separators
  * Put it back together.
  *)
 let concat_path = String.concat separator_string
+
+(*
+ * Basic file operations.
+ *)
+let basename s =
+   try
+      let i = Lm_string_util.rindex_set s separators + 1 in
+         String.sub s i (String.length s - i)
+   with
+      Not_found ->
+         s
 
 (*
  * Simplify, remove leading directory.

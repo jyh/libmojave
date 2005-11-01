@@ -351,8 +351,7 @@ struct
    and really_input_end inx s off len =
       let { rindex = rindex;
             length = length;
-            buffer = buf;
-            ssl = ssl
+            buffer = buf
           } = inx
       in
          if length - rindex < len then

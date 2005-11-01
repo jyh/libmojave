@@ -257,7 +257,7 @@ struct
       let index = (hash v1 v2) mod length in
       let rec search l =
          match l with
-            (v1', v2', depth') as h :: l ->
+            (v1', v2', depth') :: l ->
                if Lm_symbol.eq v1' v1 && Lm_symbol.eq v2' v2 then
                   depth'
                else

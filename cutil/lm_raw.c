@@ -75,7 +75,7 @@ value load_int16(value v_string, value v_off)
         failwith("load_int16");
 
     /* Get the number */
-    CAMLreturn(Val_int(*(int16 *)(str + off)));
+    CAMLreturn(Val_int(*(int16_t *)(str + off)));
 }
 
 value load_int32(value v_string, value v_off)
@@ -188,7 +188,7 @@ value store_int16(value v_string, value v_off, value v_val)
         failwith("store_int16");
 
     /* Get the number */
-    *(int16 *)(str + off) = i;
+    *(int16_t *)(str + off) = i;
     CAMLreturn(Val_unit);
 }
 

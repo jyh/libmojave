@@ -338,9 +338,11 @@ let quotes = "\"'"
  *)
 let is_white =
    let rec test s i len =
-      i < len && (match String.unsafe_get s i with
-                     ' ' | '\t' | '\r' | '\n' | '\012' -> test s (succ i) len
-                   | _ -> false)
+      i = len || (match String.unsafe_get s i with
+                     ' ' | '\t' | '\r' | '\n' | '\012' ->
+                        test s (succ i) len
+                   | _ ->
+                        false)
    in
       (fun s -> test s 0 (String.length s))
 

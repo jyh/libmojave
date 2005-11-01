@@ -31,4 +31,6 @@
 type t
 
 val it : t
+val nocompare : t
+val nomarshal : t
 

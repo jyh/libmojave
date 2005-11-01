@@ -27,10 +27,13 @@
  * Author: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
-
 type t
 
-external create : unit -> t = "lm_nocompare_create"
+external lm_nocompare_init  : unit -> unit = "lm_nocompare_init"
+external lm_nocompare_create : unit -> t = "lm_nocompare_create"
+external lm_nomarshal_create : unit -> t = "lm_nomarshal_create"
 
-let it = create ()
+let nocompare = lm_nocompare_create ()
+let nomarshal = lm_nomarshal_create ()
+let it = nocompare
 

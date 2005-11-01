@@ -77,7 +77,7 @@ type channel =
      channel_fd           : Unix.file_descr option;
      channel_kind         : kind;
      channel_mode         : mode;
-     channel_file         : symbol;
+     mutable channel_file : symbol;
 
      (* If not channel_binary, then perform win32 line-ending transformation *)
      mutable channel_binary : bool;
@@ -435,6 +435,14 @@ let shift_input_buffer info =
       info.in_index     <- 0;
       info.in_max       <- in_max - in_index;
       info.lex_index    <- lex_index - in_index
+
+let set_line info name line =
+   shift_input_buffer info;
+   info.start_line   <- line;
+   info.start_char   <- 0;
+   info.middle_line  <- line;
+   info.middle_char  <- 0;
+   info.channel_file <- Lm_symbol.add name
 
 (*
  * Reset the output buffer.
@@ -906,7 +914,7 @@ let select_aux rfd_sockets wfd_sockets efd_sockets timeout =
             else
                wfd_sockets, wrote) ([], false) wfd_sockets
    in
-   let efd_sockets = List.filter (fun fd -> List.mem (descr fd) wfd) efd_sockets in
+   let efd_sockets = List.filter (fun fd -> List.mem (descr fd) efd) efd_sockets in
       rfd_sockets, wfd_sockets, efd_sockets, wrote
 
 (*

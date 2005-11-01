@@ -31,6 +31,11 @@
  *)
 
 (*
+ * Print the location of the stack pointer for debugging.
+ *)
+val print_stack_pointer : unit -> unit
+
+(*
  * Location of the home directory.
  *)
 val home_dir : string

@@ -1528,8 +1528,6 @@ struct
     * Compute the transition table, only for shift operations.
     *)
    let build_delta info unexamined =
-      let prods = info.info_grammar.gram_prod in
-
       (* Perform the closure *)
       let rec build shift_table examined unexamined =
          if StateSet.is_empty unexamined then
@@ -1654,7 +1652,6 @@ struct
       let delta_table = info.info_head_delta in
       let look_table = IVarTable.find info.info_head_lookahead v1 in
       let look1 = lookahead info right1 in
-      let hash = info.info_hash.hash_prod_item_state in
       let hash_state_item = info.info_hash_state_item in
          IVarTable.fold (fun prop_items v2 look2 ->
                let look = lookahead_concat look2 look1 in
@@ -1859,7 +1856,6 @@ struct
                let item1 = prop_table.(StateItem.hash src) in
                   if item1.prop_changed then
                      let _ = item1.prop_changed <- false in
-                     let vars = item1.prop_vars in
                         StateItemSet.fold (fun changed dst ->
                               let item2 = prop_table.(StateItem.hash dst) in
                               let vars2 = item2.prop_vars in
@@ -2098,16 +2094,12 @@ struct
             pp_print_ivar v
             (State.hash shift_state)
             pp_print_iaction reduce_core.prod_item_action;
-         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+         if not !debug_parsegen then
             eprintf "%a@." (pp_print_state info) state;
          if not !debug_parse_conflict_is_warning then
             raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
    let reduce_reduce_conflict info state v reduce_item action =
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
       let { info_grammar = gram;
             info_hash = hash
           } = info
@@ -2120,7 +2112,7 @@ struct
             pp_print_ivar v
             pp_print_iaction reduce_core.prod_item_action
             pp_print_iaction action;
-         if not !debug_parse_conflict_is_warning && not !debug_parsegen then
+         if not !debug_parsegen then
             eprintf "%a@." (pp_print_state info) state;
          if not !debug_parse_conflict_is_warning then
             raise (Invalid_argument "Lm_parser.reduce_reduce_conflict:\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
@@ -2288,17 +2280,6 @@ struct
       let now = time_print "Shift/reduce table" start now in
 
       (* Build the PDA states *)
-      let null_info =
-         { pda_items     = [];
-           pda_next      = IVarSet.empty
-         }
-      in
-      let null_state =
-         { pda_delta  = IVarTable.empty;
-           pda_reduce = ReduceNone;
-           pda_info   = null_info
-         }
-      in
       let table =
          State.map_array (fun state core ->
                let { info_state_items = items } = core in
@@ -2308,7 +2289,7 @@ struct
                   }) info.info_hash.hash_state_state
       in
       let start_table = IVarTable.map State.hash start_table in
-      let now = time_print "PDA construction" start now in
+      let _now = time_print "PDA construction" start now in
          { pda_start_states    = start_table;
            pda_states          = table;
            pda_hash            = info.info_hash
@@ -2388,97 +2369,106 @@ struct
     * The stack contains (state * value) pairs, where the
     * state is the state of the machine when that token was pushed.
     *
+    * !!!CAUTION!!!  Keep the number of arguments 6 or less so
+    * that these functions can be tail recursive.
     *)
    let fst3 (v, _, _) = v
 
-   let rec pda_lookahead hash run arg stack state tok =
-      let { pda_delta = delta } = run.run_states.(state) in
-      let v, loc, x = tok in
-         match
-            (try IVarTable.find delta v with
-                Not_found ->
-                   parse_error loc hash run stack state v)
-         with
-            GotoAction new_state ->
+   let pda_loop hash run arg start =
+      let rec pda_lookahead arg stack state tok =
+         let { pda_delta = delta } = run.run_states.(state) in
+         let v, loc, x = tok in
+            match
+               (try IVarTable.find delta v with
+                   Not_found ->
+                      parse_error loc hash run stack state v)
+            with
+               GotoAction new_state ->
+                  if !debug_parse then
+                     eprintf "State %d: token %a: shift %d@." state (pp_print_ivar hash) v new_state;
+                  pda_no_lookahead arg ((state, loc, x) :: stack) new_state
+             | ReduceAction (action, name, tokens) ->
+                  if !debug_parse then
+                     eprintf "State %d: reduce %a@." state (pp_print_iaction hash) action;
+                  let state, arg, loc, x, stack = semantic_action hash run.run_eval arg action stack state tokens in
+                     pda_goto_lookahead arg stack (state, loc, x) name tok
+             | ErrorAction ->
+                  parse_error loc hash run stack state v
+             | AcceptAction ->
+                  match stack with
+                     [_, _, x] ->
+                        arg, x
+                   | _ ->
+                        raise (Invalid_argument "pda_lookahead")
+
+      and pda_goto_lookahead arg stack state_loc_x name tok =
+         let state, loc, x = state_loc_x in
+         let () =
+            if !debug_parse then
+               eprintf "State %d: Goto lookahead: production %a@." (**)
+                  state (pp_print_ivar hash) name
+         in
+         let action =
+            try IVarTable.find run.run_states.(state).pda_delta name with
+               Not_found ->
+                  parse_error loc hash run stack state name
+         in
+            match action with
+               GotoAction new_state ->
+                  if !debug_parse then
+                     eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
+                        state (pp_print_ivar hash) name
+                        new_state (pp_print_ivar hash) (fst3 tok);
+                  let stack = state_loc_x :: stack in
+                     pda_lookahead arg stack new_state tok
+             | ErrorAction
+             | ReduceAction _
+             | AcceptAction ->
+                  eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
+                  raise (Invalid_argument "pda_goto_lookahead: illegal action")
+
+      and pda_no_lookahead arg stack state =
+         match run.run_states.(state).pda_reduce with
+            ReduceNow (action, name, tokens) ->
                if !debug_parse then
-                  eprintf "State %d: token %a: shift %d@." state (pp_print_ivar hash) v new_state;
-               pda_no_lookahead hash run arg ((state, loc, x) :: stack) new_state
-          | ReduceAction (action, name, tokens) ->
-               if !debug_parse then
-                  eprintf "State %d: reduce %a@." state (pp_print_iaction hash) action;
+                  eprintf "State %d: ReduceNow: %a@." state (pp_print_iaction hash) action;
                let state, arg, loc, x, stack = semantic_action hash run.run_eval arg action stack state tokens in
-                  pda_goto_lookahead hash run arg loc stack state name x tok
-          | ErrorAction ->
-               parse_error loc hash run stack state v
-          | AcceptAction ->
-               match stack with
-                  [_, _, x] ->
-                     arg, x
-                | _ ->
-                     raise (Invalid_argument "pda_lookahead")
+                  pda_goto_no_lookahead arg stack (state, loc, x) name
+          | ReduceAccept (action, _, tokens) ->
+               if !debug_parse then
+                  eprintf "State %d: ReduceAccept: %a@." state (pp_print_iaction hash) action;
+               let _, arg, _, x, _ = semantic_action hash run.run_eval arg action stack state tokens in
+                  arg, x
+          | ReduceNone ->
+               let v, loc, arg, x = run.run_lexer arg in
+               let v = IVar.create hash.hash_ivar_state v in
+               let () =
+                  if !debug_parse then
+                     eprintf "State %d: Read token: %a@." state (pp_print_ivar hash) v
+               in
+                  pda_lookahead arg stack state (v, loc, x)
 
-   and pda_goto_lookahead hash run arg loc stack state name x tok =
-      if !debug_parse then
-         eprintf "State %d: Goto lookahead: production %a@." (**)
-            state (pp_print_ivar hash) name;
-      let action =
-         try IVarTable.find run.run_states.(state).pda_delta name with
-            Not_found ->
-               parse_error loc hash run stack state name
+      and pda_goto_no_lookahead arg stack state_loc_x name =
+         let state, loc, x = state_loc_x in
+         let action =
+            try IVarTable.find run.run_states.(state).pda_delta name with
+               Not_found ->
+                  parse_error loc hash run stack state name
+         in
+            match action with
+               GotoAction new_state ->
+                  if !debug_parse then
+                     eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
+                        state (pp_print_ivar hash) name new_state;
+                  let stack = (state, loc, x) :: stack in
+                     pda_no_lookahead arg stack new_state
+             | ErrorAction
+             | ReduceAction _
+             | AcceptAction ->
+                  eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
+                  raise (Invalid_argument "pda_goto_no_lookahead")
       in
-         match action with
-            GotoAction new_state ->
-               if !debug_parse then
-                  eprintf "State %d: production %a: goto %d (lookahead %a)@." (**)
-                     state (pp_print_ivar hash) name
-                     new_state (pp_print_ivar hash) (fst3 tok);
-               let stack = (state, loc, x) :: stack in
-                  pda_lookahead hash run arg stack new_state tok
-          | ErrorAction
-          | ReduceAction _
-          | AcceptAction ->
-               eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
-               raise (Invalid_argument "pda_goto_lookahead: illegal action")
-
-   and pda_no_lookahead hash run arg stack state =
-      match run.run_states.(state).pda_reduce with
-         ReduceNow (action, name, tokens) ->
-            if !debug_parse then
-               eprintf "State %d: ReduceNow: %a@." state (pp_print_iaction hash) action;
-            let state, arg, loc, x, stack = semantic_action hash run.run_eval arg action stack state tokens in
-               pda_goto_no_lookahead hash run arg loc stack state name x
-       | ReduceAccept (action, _, tokens) ->
-            if !debug_parse then
-               eprintf "State %d: ReduceAccept: %a@." state (pp_print_iaction hash) action;
-            let _, arg, _, x, _ = semantic_action hash run.run_eval arg action stack state tokens in
-               arg, x
-       | ReduceNone ->
-            let v, loc, arg, x = run.run_lexer arg in
-            let v = IVar.create hash.hash_ivar_state v in
-            let () =
-               if !debug_parse then
-                  eprintf "State %d: Read token: %a@." state (pp_print_ivar hash) v
-            in
-               pda_lookahead hash run arg stack state (v, loc, x)
-
-   and pda_goto_no_lookahead hash run arg loc stack state name x =
-      let action =
-         try IVarTable.find run.run_states.(state).pda_delta name with
-            Not_found ->
-               parse_error loc hash run stack state name
-      in
-         match action with
-            GotoAction new_state ->
-               if !debug_parse then
-                  eprintf "State %d: production %a: goto %d (no lookahead)@." (**)
-                     state (pp_print_ivar hash) name new_state;
-               let stack = (state, loc, x) :: stack in
-                  pda_no_lookahead hash run arg stack new_state
-          | ErrorAction
-          | ReduceAction _
-          | AcceptAction ->
-               eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
-               raise (Invalid_argument "pda_goto_no_lookahead")
+         pda_no_lookahead arg [] start
 
    let parse pda start lexer eval arg =
       let { pda_states        = states;
@@ -2497,7 +2487,7 @@ struct
             Not_found ->
                raise (Failure ("not a start symbol: " ^ string_of_ivar hash start))
       in
-         try pda_no_lookahead hash run arg [] start with
+         try pda_loop hash run arg start with
             Not_found ->
                raise (Failure "syntax error")
 

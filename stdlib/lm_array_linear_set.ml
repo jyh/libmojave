@@ -76,4 +76,18 @@ struct
    let mapi = Array.mapi
    let init = Array.init
    let collect = Lm_array_util.collect
+
+   let for_all f a =
+      let len = Array.length a in
+      let rec search i =
+         i = len || (f (Array.unsafe_get a i) && search (succ i))
+      in
+         search 0
+
+   let exists f a =
+      let len = Array.length a in
+      let rec search i =
+         i < len && (f (Array.unsafe_get a i) || search (succ i))
+      in
+         search 0
 end

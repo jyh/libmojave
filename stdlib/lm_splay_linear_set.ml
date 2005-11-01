@@ -136,12 +136,12 @@ struct
    let rec fold (f : 'a -> index -> elt -> 'a) x = function
       { tree = Leaf } ->
          x
-    | { tree = Node (ind, e, t1, t2, i) } ->
+    | { tree = Node (ind, e, t1, t2, _) } ->
         fold f (f (fold f x t1) ind e) t2
     | { tree = Lazy (f', tree) } as t ->
          t.tree <- go_down f' tree;
          fold f x t
-    | { tree = Offset (i, t) } ->
+    | { tree = Offset (_, t) } ->
          fold f x t
 
    let rec of_list_aux max start lst =
@@ -199,7 +199,7 @@ struct
       { tree = Node(i,e,l,r,succ (length l) + (length r)) }
 
    let rec rotate_left = function
-      { tree = Node (i,e,{tree=Node(il,el,left_left,left_right,lsize)},right,size) } as t ->
+      { tree = Node (i,e,{tree=Node(il,el,left_left,left_right,_)},right,size) } as t ->
          t.tree <- Node(il,el,left_left,new_node i e left_right right,size)
     | _ -> raise (Invalid_argument "Linear_set.rotate_left")
 
@@ -213,7 +213,7 @@ struct
    *)
 
    let rec rotate_right = function
-      { tree = Node (i,e,left,{tree=Node(ir,er,right_left,right_right,rsize)},size) } as t ->
+      { tree = Node (i,e,left,{tree=Node(ir,er,right_left,right_right,_)},size) } as t ->
          t.tree <- Node(ir,er,new_node i e left right_left,right_right,size)
     | _ -> raise (Invalid_argument "Linear_set.rotate_right")
 
@@ -441,4 +441,25 @@ sition *)
          t,_,[] -> t
        | _ -> raise (Invalid_argument "Linear_set.collect")
 
+   let rec for_all (f : elt -> bool) = function
+      { tree = Leaf } ->
+         true
+    | { tree = Node (ind, e, t1, t2, i) } ->
+         f e && for_all f t1 && for_all f t2
+    | { tree = Lazy (f', tree) } as t ->
+         t.tree <- go_down f' tree;
+         for_all f t
+    | { tree = Offset (i, t) } ->
+         for_all f t
+
+   let rec exists (f : elt -> bool) = function
+      { tree = Leaf } ->
+         false
+    | { tree = Node (ind, e, t1, t2, i) } ->
+         f e || exists f t1 || exists f t2
+    | { tree = Lazy (f', tree) } as t ->
+         t.tree <- go_down f' tree;
+         exists f t
+    | { tree = Offset (i, t) } ->
+         exists f t
 end

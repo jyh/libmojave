@@ -187,10 +187,25 @@ struct
    let debug = "DfaState"
 
    let hash state =
-      hash_list NfaState.hash 0x0affb3d4 state
+      let buf = HashCode.create () in
+         HashCode.add_int buf 0x0affb3d4;
+         List.iter (fun state -> HashCode.add_int buf (NfaState.hash state)) state;
+         HashCode.code buf
 
-   let compare state1 state2 =
-      compare_list NfaState.hash state1 state2
+   let rec compare l1 l2 =
+      match l1, l2 with
+         state1 :: l1, state2 :: l2 ->
+            let cmp = NfaState.compare state1 state2 in
+               if cmp = 0 then
+                  compare l1 l2
+               else
+                  cmp
+       | [], _ :: _ ->
+            -1
+       | _ :: _, [] ->
+            1
+       | [], [] ->
+            0
 end;;
 
 module DfaState = MakeHashCons (DfaStateArg);;
@@ -1592,12 +1607,6 @@ struct
             let { nfa_clause = clause;
                   nfa_arg_number = argnumber
                 } = info
-            in
-            let arg =
-               { arg_index   = argindex;
-                 arg_clause  = clause;
-                 arg_number  = argnumber
-               }
             in
             let accum = { accum with nfa_arg_index = succ argindex } in
             let info = { info with nfa_arg_number  = succ argnumber } in
