@@ -206,6 +206,7 @@ module HashDigest : HashDigestSig;;
 (************************************************************************
  * Helper functions.
  *)
+val hash_combine : int -> int -> int
 val hash_int_list : int -> int list -> int
 val compare_int_list : int list -> int list -> int
 

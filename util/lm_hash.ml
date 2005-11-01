@@ -1440,6 +1440,13 @@ end;;
  *)
 
 (*
+ * The default function for combinding hash values.
+ *  * XXX: JYH: we should try using a smarter hash function.
+ *   *)
+let hash_combine i1 i2 =
+   (i1 lsl 2) lxor (i1 lsr 2) lxor i2
+
+(*
  * Hash a list of integers.
  *)
 let hash_int_list code l =
