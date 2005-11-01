@@ -1,0 +1,11 @@
+*~
+.#*
+*.o
+*.a
+*-byte.*
+*-native.*
+*.lib
+*.omc
+*.omo
+*.obj
+CVS

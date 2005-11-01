@@ -1,0 +1,10 @@
+*.lnk
+*.o
+*.a
+*~
+.#*
+*.cm*
+*.omc
+*.omo
+*.obj
+CVS

@@ -1,0 +1,71 @@
+#
+# Allow libmojave to be compiled in native code.
+# This is set because some applications (proxyedit)
+# want to be compiled in native code.  Note that the
+# native code is compiled only if it is needed.
+#
+# HACK: probably want some better way to specify this.
+#
+NATIVE_ENABLED = true
+
+#
+# Include files from subdirectories
+#
+include stdlib/Files
+include system/Files
+include util/Files
+include unix/Files
+
+STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
+SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
+UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
+UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
+
+FILES =\
+	$(STDLIB_FILES)\
+	$(UNIX_FILES)\
+	$(SYSTEM_FILES)\
+	$(UTIL_FILES)
+
+USE_OCAMLFIND = false
+
+OCamlLibrary(lm, $(FILES))
+
+if $(defined LMINSTALL)
+    OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
+
+clean:
+    $(CLEAN)
+
+#
+# Configuration
+#
+if $(not $(defined LM_STANDALONE))
+    LM_STANDALONE = false
+    export
+
+if $(not $(defined CAMLLIB))
+    CAMLLIB = $(dir $(getenv CAMLLIB, $(getenv OCAMLLIB, $(shell $(OCAMLC) -where))))
+    export
+
+if $(LM_STANDALONE)
+   if $(NATIVE_ENABLED)
+      .DEFAULT: lm.cmxa lm$(EXT_LIB)
+   if $(BYTE_ENABLED)
+      .DEFAULT: lm.cmx
+
+if $(not $(defined THREADS_ENABLED))
+    THREADS_ENABLED = false
+    export
+
+if $(not $(defined CamlSubDirs))
+    CamlSubDirs(dirs) =
+        .SUBDIRS: $(dirs)
+    export
+
+INCLUDES = $(CAMLLIB)
+
+#
+# Subdirectories of this project
+#
+CamlSubDirs(cutil stdlib unix system util)

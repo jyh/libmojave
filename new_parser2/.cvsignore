@@ -1,0 +1,8 @@
+*.cmxa
+*.cma
+*.a
+*.lib
+*.omc
+*.omo
+*.obj
+CVS

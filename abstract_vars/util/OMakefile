@@ -1,0 +1,11 @@
+#
+# Generic utilities
+#
+include Files
+
+OCAMLINCLUDES = $(OCAMLINCLUDES) -I ../stdlib
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), lmutil, $(UTIL_FILES))
+
+clean:
+    $(CLEAN)

@@ -1,0 +1,15 @@
+#
+# Library
+#
+include Files
+
+OCAMLINCLUDES += ../stdlib ../unix
+
+OCamlLibraryInstall($(LMINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
+
+MLZFILES = lm_marshal_sig
+
+clean:
+    $(CLEAN)
+
+all: lmstdlib$(LIB_SUFFIX)

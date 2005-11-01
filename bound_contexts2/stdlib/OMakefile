@@ -1,0 +1,11 @@
+#
+# Library
+#
+include Files
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), lmstdlib, $(STDLIB_FILES))
+
+clean:
+    $(CLEAN)
+
+all: lmstdlib$(LIB_SUFFIX)

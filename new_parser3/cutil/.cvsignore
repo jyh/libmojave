@@ -1,0 +1,12 @@
+*~
+.#*
+*.o
+*.a
+*-byte.*
+*-native.*
+*.lib
+Makefile.dep
+*.omc
+*.omo
+*.obj
+CVS

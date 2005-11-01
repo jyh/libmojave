@@ -1,0 +1,14 @@
+#
+# LibMojave C files
+#
+include Files
+
+CFILES = $(FILES)
+
+#
+# Libraries
+#
+StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
+
+clean:
+    $(CLEAN)

@@ -1,0 +1,29 @@
+#
+# Include files from subdirectories
+#
+include stdlib/Files
+include system/Files
+include util/Files
+include unix/Files
+
+STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
+SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
+UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
+UNIX_FILES    = $(file $(addprefix unix/,    $(UNIX_FILES)))
+
+FILES =\
+	$(STDLIB_FILES)\
+	$(UNIX_FILES)\
+	$(SYSTEM_FILES)\
+	$(UTIL_FILES)
+
+OCamlLibrary(lm, $(FILES))
+OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
+
+clean:
+    $(CLEAN)
+
+#
+# Subdirectories of this project
+#
+.SUBDIRS: cutil stdlib unix system util

@@ -1,0 +1,13 @@
+#
+# Library
+#
+include Files
+
+OCAMLINCLUDES = $(OCAMLINCLUDES) -I ../stdlib -I ../unix
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), lmsystem, $(SYSTEM_FILES))
+
+clean:
+    $(CLEAN)
+
+all: lmstdlib$(LIB_SUFFIX)

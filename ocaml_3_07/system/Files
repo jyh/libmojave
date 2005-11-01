@@ -1,0 +1,7 @@
+SYSTEM_MLZFILES =\
+	lm_marshal_sig
+
+SYSTEM_FILES =\
+	$(SYSTEM_MLZFILES)\
+	lm_marshal_buf\
+	lm_marshal_shared

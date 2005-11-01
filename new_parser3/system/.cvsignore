@@ -1,0 +1,12 @@
+*.o
+*.a
+*~
+.#*
+*.cm*
+Makefile.dep
+lm_marshal_sig.ml
+lm_marshal_sig.mli
+*.omc
+*.omo
+*.obj
+CVS
