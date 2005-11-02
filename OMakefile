@@ -1,15 +1,4 @@
 #
-# Allow libmojave to be compiled in native code.
-# This is set because some applications (proxyedit)
-# want to be compiled in native code.  Note that the
-# native code is compiled only if it is needed.
-#
-# HACK: probably want some better way to specify this.
-#
-NATIVE_ENABLED = true
-BYTE_ENABLED = true
-
-#
 # Include files from subdirectories
 #
 include stdlib/Files
