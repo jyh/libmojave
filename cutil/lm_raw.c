@@ -37,6 +37,10 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 
+#ifdef WIN32
+	typedef short int16_t;
+#endif
+
 /*
  * Load numbers from a string.
  */
