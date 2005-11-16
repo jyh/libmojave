@@ -11,7 +11,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2005 MetaPRL Group, Cornell University,
+ * California Institute of Technology, and City University of New York
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,6 +29,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Yegor Bryukhov <ybryukhov@gc.cuny.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_big_int
 
@@ -199,6 +202,12 @@ let abs_num = function
       Int (abs i)
  | Big_int i ->
       Big_int (abs_big_int i)
+
+let neg_num = function
+   Int i ->
+      Int (-i)
+ | Big_int i ->
+      Big_int (neg_big_int i)
 
 (*
  * Equality.

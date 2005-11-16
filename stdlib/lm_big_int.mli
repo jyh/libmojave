@@ -44,6 +44,7 @@ val quo_big_int : big_int -> big_int -> big_int
 val mod_big_int : big_int -> big_int -> big_int
 val rem_big_int : big_int -> big_int -> big_int
 
+val neg_big_int : big_int -> big_int
 val abs_big_int : big_int -> big_int
 
 (*

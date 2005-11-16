@@ -28,6 +28,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 type num
@@ -42,6 +43,7 @@ val div_num : num -> num -> num
 val mod_num : num -> num -> num
 val quo_num : num -> num -> num
 val rem_num : num -> num -> num
+val neg_num : num -> num
 val abs_num : num -> num
 val power_num : num -> num -> num
 

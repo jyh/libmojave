@@ -339,10 +339,19 @@ let quo_big_int = div_big_int
 let rem_big_int = mod_big_int
 
 (*
+ * Test for zero.
+ *)
+let is_zero_big_int (_, mag) =
+   zeros mag
+
+(*
  * Absolute value.
  *)
 let abs_big_int (_, mag) =
    (true, mag)
+
+let neg_big_int (sign, mag) =
+   (not sign || zeros mag, mag)
 
 (************************************************************************
  * STRING CONVERSION                                                    *
@@ -526,12 +535,6 @@ let of_int32 i =
          false, make_mag (Int32.neg i)
       else
          true, make_mag i
-
-(*
- * Test for zero.
- *)
-let is_zero_big_int (_, mag) =
-   zeros mag
 
 (*
  * -*-
