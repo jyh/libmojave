@@ -142,6 +142,7 @@ val removeq         : 'a -> 'a list -> 'a list
 val remove_elements : bool list -> 'a list -> 'a list
 val remove_suffix   : 'a list -> 'a list -> 'a list
 val insert_nth      : int -> 'a -> 'a list -> 'a list
+val remove_nth      : int -> 'a list -> 'a list
 
 (* Filter items out of a list *)
 val filter : ('a -> bool) -> 'a list -> 'a list

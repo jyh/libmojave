@@ -79,6 +79,19 @@ let rec insert_nth i x l =
             raise (Failure "Lm_list_util.insert_nth")
 
 (*
+ * Remove an element from a position.
+ *)
+let rec remove_nth i l =
+   match l with
+      x :: l ->
+         if i = 0 then
+            l
+         else
+            x :: remove_nth (pred i) l
+    | [] ->
+         raise (Failure "Lm_list_util.remove_nth")
+
+(*
  * Work left-to-right, but reverse the result.
  *)
 let rec rev_map' f l = function
@@ -750,7 +763,7 @@ let rec rev_iter2 f a b =
  *)
 let rec for_all2 f l1 l2 =
    match (l1,l2) with
-      h1::t1, h2::t2 -> for_all2 f t1 t2 & f h1 h2
+      h1::t1, h2::t2 -> f h1 h2 & for_all2 f t1 t2
     | [], [] -> true
     | _ -> false
 
