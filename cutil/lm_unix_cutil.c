@@ -157,11 +157,9 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
                     (LPTSTR) &lpMsgBuf,
                     0, NULL);
 
-                sprintf(szBuf, 
-                    "lockf_win32 failed with error %d: %s", 
-                    lpszFunction, dw, lpMsgBuf); 
-
+                sprintf(szBuf, "lockf_win32 failed with error %d: %s", error, lpMsgBuf); 
                 LocalFree(lpMsgBuf);
+
                 failwith(szBuf);
                 break;
             }
