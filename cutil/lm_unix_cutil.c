@@ -44,6 +44,7 @@ value lm_print_stack_pointer(value v_arg)
 
 #ifdef WIN32
 #include <windows.h>
+#include <winerror.h>
 #include <shlobj.h>
 #include "lm_compat_win32.h"
 
@@ -73,12 +74,12 @@ value home_win32(value v_unit)
 /*
  * File locking.
  */
-#define F_ULOCK		0
-#define F_LOCK		1
-#define F_TLOCK		2
-#define F_TEST		3
-#define F_RLOCK		4
-#define F_TRLOCK	5
+#define F_ULOCK        0
+#define F_LOCK        1
+#define F_TLOCK        2
+#define F_TEST        3
+#define F_RLOCK        4
+#define F_TRLOCK    5
 
 value lockf_win32(value v_fd, value v_kind, value v_len)
 {
@@ -92,7 +93,7 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
     /* Get the current position in the file */
     pos = SetFilePointer(fd, 0, 0, FILE_CURRENT);
 
-    /* HACK: we should probably compute this correctly */
+    /* XXX: HACK: we should probably compute this correctly */
     if(len == 0)
         len = 1;
 
@@ -129,8 +130,42 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
         leave_blocking_section();
 
         /* Fail if the lock was not successful */
-        if(code == 0)
-            failwith("lockf");
+        if(code == 0) {
+            char szBuf[180];
+            LPVOID lpMsgBuf;
+            DWORD error = GetLastError(); 
+
+            switch(error) {
+            case ERROR_LOCK_FAILED:
+            case ERROR_LOCK_VIOLATION:
+                /* XXX: HACK: this exception is being caugh
+                 *            Do not change the string w/o changing the wrapper code*/
+                failwith("lockf_win32: already locked");
+                break;
+            case ERROR_POSSIBLE_DEADLOCK:
+                /* XXX: HACK: this exception is being caugh
+                 *            Do not change the string w/o changing the wrapper code*/
+                failwith("lockf_win32: possible deadlock");
+                break;
+            default:
+                FormatMessage(
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+                    FORMAT_MESSAGE_FROM_SYSTEM,
+                    NULL,
+                    error,
+                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                    (LPTSTR) &lpMsgBuf,
+                    0, NULL);
+
+                sprintf(szBuf, 
+                    "lockf_win32 failed with error %d: %s", 
+                    lpszFunction, dw, lpMsgBuf); 
+
+                LocalFree(lpMsgBuf);
+                failwith(szBuf);
+                break;
+            }
+        }
     }
     return Val_unit;
 }

@@ -180,7 +180,12 @@ let home_dir =
 
 let lockf =
    if Sys.os_type = "Win32" then
-      lockf_win32
+      (fun fd cmd off ->
+         try lockf_win32 fd cmd off with
+            Failure "lockf_win32: already locked" ->
+               raise (Unix.Unix_error(Unix.EAGAIN, "lockf", ""))
+          | Failure "lockf_win32: possible deadlock" ->
+               raise (Unix.Unix_error(Unix.EDEADLK, "lockf", "")))
    else
       Unix.lockf
 
