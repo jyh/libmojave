@@ -88,7 +88,7 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
     int len = Int_val(v_len);
     OVERLAPPED overlapped;
     int code, flags;
-    DWORD pos;
+    DWORD pos, error;
 
     /* Get the current position in the file */
     pos = SetFilePointer(fd, 0, 0, FILE_CURRENT);
@@ -127,13 +127,14 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
         /* Perform the lock */
         enter_blocking_section();
         code = LockFileEx(fd, flags, 0, len, 0, &overlapped);
+		  if (code==0)
+		      error = GetLastError();
         leave_blocking_section();
 
         /* Fail if the lock was not successful */
         if(code == 0) {
             char szBuf[180];
             LPVOID lpMsgBuf;
-            DWORD error = GetLastError(); 
 
             switch(error) {
             case ERROR_LOCK_FAILED:
