@@ -50,6 +50,8 @@ struct
    let to_list = Array.to_list
    let lazy_apply = Array.map
 
+   let concat = Array.append
+
    let append a1 e a2 =
       let l1 = length a1 and l2 = length a2 in
       if l1 = 0 && l2 = 0 then [|e|] else begin

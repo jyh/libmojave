@@ -169,6 +169,10 @@ struct
       let ss1 = succ s1 in
       { tree = Node (s1,e,t1,{ tree = Offset (ss1,t2) }, ss1+(length t2)) }
 
+   (* XXX: this is very slow of course *)
+   let concat t1 t2 =
+      of_list (to_list t1 @ to_list t2)
+
    let compose g f x = g(f(x))
 
    let rec offset_down off = function

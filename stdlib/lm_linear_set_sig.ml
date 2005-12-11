@@ -51,6 +51,7 @@ sig
    val split : t -> index -> t * elt * t
    val append : t -> elt -> t -> t
    val append_list : t -> elt list -> t -> t
+   val concat : t -> t -> t
    val lazy_apply : (elt -> elt) -> t -> t
    val lazy_sub_map : (elt -> elt) -> t -> index -> index -> t
 
