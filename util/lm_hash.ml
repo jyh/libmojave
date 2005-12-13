@@ -74,7 +74,7 @@ module MakeHash (Arg : HashArgSig)
 struct
    type elt = Arg.t
 
-   (* %%MAGICBEGIN %% *)
+   (* %%MAGICBEGIN%% *)
    type t = int * elt
    (* %%MAGICEND%% *)
 
@@ -233,7 +233,7 @@ sig
    val reintern : t -> t
 end
 
-(* %%MAGICBEGIN %% *)
+(* %%MAGICBEGIN%% *)
 type 'a hash_marshal_item =
    { mutable item_ref : unit ref;
      mutable item_val : 'a;
