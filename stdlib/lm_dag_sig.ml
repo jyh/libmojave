@@ -55,11 +55,19 @@ sig
    val add_edge : 'a t -> 'a node -> 'a node -> unit
    val equate : 'a t -> 'a node -> 'a node -> unit
 
+   (* Raw equality *)
+   val eq : 'a node -> 'a node -> bool
+
    (* Graph operations *)
    val roots : 'a t -> 'a node list
    val node_value : 'a t -> 'a node -> 'a
    val node_out_edges : 'a t -> 'a node -> 'a node list
    val node_in_edges : 'a t -> 'a node -> 'a node list
+
+   (*
+    * Topological sort, from the leaves to the root.
+    *)
+   val sort : 'a t -> 'a node list
 
    (*
     * Compute relation between two nodes.

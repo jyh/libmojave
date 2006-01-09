@@ -89,7 +89,13 @@ struct
     ************************************************************************)
 
    (*
-    * Inset a value into a sorted list.
+    * Raw equality.
+    *)
+   let eq (node1 : 'a node) (node2 : 'a node) =
+      node1 == node2
+
+   (*
+    * Insert a value into a sorted list.
     *)
    let rec list_insert i l =
       match l with
@@ -259,6 +265,25 @@ struct
                   collect (i + 1)
       in
          collect 0
+
+   (*
+    * Sort the list from the roots.
+    *)
+   let sort info =
+      let entries = info.entries in
+      let length = Array.length entries in
+      let found = Array.create length false in
+      let roots = roots info in
+      let rec collect l i =
+         if found.(i) then
+            l
+         else
+            let entry = entries.(i) in
+            let next = entry.entry_out_edges in
+               found.(i) <- true;
+               List.fold_left collect (i :: l) next
+      in
+         List.fold_left collect [] roots
 
    (*
     * Expand to all the reachable nodes.
