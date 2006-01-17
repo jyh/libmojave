@@ -70,6 +70,8 @@ sig
    val keys : 'a t -> key list
    val data : 'a t -> 'a list
    val add_list : 'a t -> (key * 'a) list -> 'a t
+
+   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
 
 module type LmMap =

@@ -1210,6 +1210,17 @@ struct
    let intersectp s1 s2 =
       intersect_aux (keys s1) (keys s2)
 
+   (*
+    * Equality of sets.
+    *)
+   let equal eq set1 set2 =
+      if cardinality set1 = cardinality set2 then
+         let list1 = to_list set1 in
+         let list2 = to_list set2 in
+            List.for_all2 (fun (x1, x2) (y1, y2) -> Base.compare x1 y1 = 0 && eq x2 y2) list1 list2
+      else
+         false
+
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
@@ -1567,6 +1578,15 @@ struct
    let data t = List.concat (MMap.data t)
 
    let union = MMap.union
+
+   let equal eq set1 set2 =
+      if MMap.cardinality set1 = MMap.cardinality set2 then
+         let list1 = MMap.to_list set1 in
+         let list2 = MMap.to_list set2 in
+            List.for_all2 (fun (x1, x2) (y1, y2) ->
+                  List.length x2 = List.length y2 && List.for_all2 eq x2 y2) list1 list2
+      else
+         false
 end
 
 (*
