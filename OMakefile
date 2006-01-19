@@ -39,15 +39,24 @@ if $(not $(defined CAMLLIB))
     INCLUDES += $(CAMLLIB)
     export
 
+LIBFILES =
+if $(NATIVE_ENABLED)
+    LIBFILES += lm.cmxa lm$(EXT_LIB)
+    export
+if $(BYTE_ENABLED)
+    LIBFILES += lm.cma
+    export
+
 if $(LM_STANDALONE)
-   if $(NATIVE_ENABLED)
-      .DEFAULT: lm.cmxa lm$(EXT_LIB)
-   if $(BYTE_ENABLED)
-      .DEFAULT: lm.cma
+   .DEFAULT: $(LIBFILES)
 
 if $(not $(defined THREADS_ENABLED))
     THREADS_ENABLED = false
     export
+
+if $(and $(defined InstallMliFiles), $(defined InstallLibFiles))
+    InstallMliFiles($(FILES))
+    InstallLibFiles(lm)
 
 #
 # Subdirectories of this project
