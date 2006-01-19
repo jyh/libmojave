@@ -24,10 +24,7 @@ CFILES[] =
 #
 # Libraries
 #
-if $(defined LMINSTALL)
-    StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
-else
-    StaticCLibrary(liblmcutil, $(CFILES))
+StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
 
 if $(LM_STANDALONE)
     .DEFAULT: liblmcutil$(EXT_LIB)

@@ -19,10 +19,10 @@ FILES[] =
 
 USE_OCAMLFIND = false
 
-OCamlLibrary(lm, $(FILES))
-
 if $(defined LMINSTALL)
-    OCamlLibraryCopy($(LMINSTALL), $(LIB), lm, $(EMPTY))
+    OCamlLibraryInstall($(LMINSTALL), $(LIB), lm, $(FILES))
+else
+    OCamlLibrary(lm, $(FILES))
 
 clean:
     $(CLEAN)
@@ -53,10 +53,6 @@ if $(LM_STANDALONE)
 if $(not $(defined THREADS_ENABLED))
     THREADS_ENABLED = false
     export
-
-if $(and $(defined InstallMliFiles), $(defined InstallLibFiles))
-    InstallMliFiles($(FILES))
-    InstallLibFiles(lm)
 
 #
 # Subdirectories of this project
