@@ -52,6 +52,12 @@ typedef int SOCKET;
 #define closesocket close
 #endif /* !WIN32 */
 
+#define Nothing ((value) 0)
+
+extern void uerror (char * cmdname, value arg) Noreturn;
+
+#define uerr(cmd) uerror(cmd, Nothing)
+
 void enter_blocking_section(void);
 void leave_blocking_section(void);
 
@@ -330,8 +336,7 @@ value lm_ssl_bind(value v_info, value v_addr, value v_port)
     /* Perform the bind */
     info = SslInfo_val(v_info);
     if(bind(info->fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-        perror("bind");
-        failwith("lm_ssl_bind: bind failed");
+		  uerr("lm_ssl_bind");
     }
 
     return Val_unit;
@@ -351,8 +356,7 @@ value lm_ssl_get_addr(value v_info)
     info = SslInfo_val(v_info);
     size = sizeof(sin);
     if(getsockname(info->fd, (struct sockaddr *) &sin, &size) < 0 || sin.sin_family != AF_INET) {
-        perror("getsockname");
-        failwith("lm_ssl_get_addr: getsockname failed");
+        uerr("lm_ssl_get_addr: getsockname");
     }
 
     /* Allocate the address */
@@ -393,8 +397,7 @@ value lm_ssl_accept(value v_info)
     fd = accept(info->fd, (struct sockaddr *) 0, 0);
     leave_blocking_section();
     if(fd < 0) {
-        perror("accept");
-        failwith("lm_ssl_accept");
+        uerr("lm_ssl_accept");
     }
 
 #ifndef WIN32
@@ -457,8 +460,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
     leave_blocking_section();
     if(code < 0) {
-        perror("connect");
-        failwith("lm_ssl_connect");
+        uerr("lm_ssl_connect");
     }
 
     /* Start SSL operations */
@@ -701,8 +703,7 @@ value lm_ssl_bind(value v_info, value v_addr, value v_port)
     /* Perform the bind */
     info = SslInfo_val(v_info);
     if(bind(info->fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-        perror("bind");
-        failwith("lm_ssl_bind: bind failed");
+        uerr("lm_ssl_bind");
     }
 
     return Val_unit;
@@ -722,8 +723,7 @@ value lm_ssl_get_addr(value v_info)
     info = SslInfo_val(v_info);
     size = sizeof(sin);
     if(getsockname(info->fd, (struct sockaddr *) &sin, &size) < 0) {
-        perror("getsockname");
-        failwith("lm_ssl_get_addr: getsockname failed");
+        uerr("lm_ssl_get_addr: getsockname");
     }
 
     /* Allocate the address */
@@ -764,8 +764,7 @@ value lm_ssl_accept(value v_info)
     fflush(stderr);
     leave_blocking_section();
     if(fd < 0) {
-        perror("accept");
-        failwith("lm_ssl_accept");
+        uerr("lm_ssl_accept");
     }
 
     /* Allocate a new struct */
@@ -793,8 +792,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
     leave_blocking_section();
     if(code < 0) {
-        perror("connect");
-        failwith("lm_ssl_connect");
+        uerr("lm_ssl_connect");
     }
 
     return Val_unit;
