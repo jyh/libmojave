@@ -103,7 +103,7 @@ let mkdirhier name =
 
             (* If it is already a directory, keep it *)
             let is_dir =
-               try (Unix.stat filename).Unix.st_kind = Unix.S_DIR with
+               try (Unix.LargeFile.stat filename).Unix.LargeFile.st_kind = Unix.S_DIR with
                   Unix.Unix_error _ ->
                      false
             in

@@ -43,11 +43,11 @@ let groups =
 let unix_is_executable s =
    let flag =
       try
-         let { Unix.st_kind = kind;
-               Unix.st_perm = perm;
-               Unix.st_uid = uid;
-               Unix.st_gid = gid
-             } = Unix.stat s
+         let { Unix.LargeFile.st_kind = kind;
+               Unix.LargeFile.st_perm = perm;
+               Unix.LargeFile.st_uid = uid;
+               Unix.LargeFile.st_gid = gid
+             } = Unix.LargeFile.stat s
          in
             (kind = Unix.S_REG)
             && ((perm land 0o001) <> 0

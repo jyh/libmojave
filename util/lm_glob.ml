@@ -644,8 +644,8 @@ let glob_dirs_name options root dirs name =
                let root_name = filename_concat root_dir name in
                let file_name = filename_concat dir name in
                   try
-                     let stat = Unix.stat root_name in
-                        if stat.Unix.st_kind = Unix.S_DIR then
+                     let stat = Unix.LargeFile.stat root_name in
+                        if stat.Unix.LargeFile.st_kind = Unix.S_DIR then
                            file_name :: dirs, names
                         else
                            dirs, file_name :: names

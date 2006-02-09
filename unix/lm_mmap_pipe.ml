@@ -150,7 +150,7 @@ let search_server dir =
       let filename = sprintf "%s/%d" dir i in
       let sockname = filename ^ sock_suffix in
          try
-            let _ = Unix.stat sockname in
+            let _ = Unix.LargeFile.stat sockname in
 
             (* File exists, so try connecting *)
             let sock = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
