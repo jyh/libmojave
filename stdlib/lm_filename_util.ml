@@ -340,6 +340,14 @@ let basename s =
       Not_found ->
          s
 
+let replace_basename s1 s2 =
+   try
+      let i = Lm_string_util.rindex_set s1 separators in
+         Filename.concat (String.sub s1 0 i) s2
+   with
+      Not_found ->
+         s2
+
 (*
  * Simplify, remove leading directory.
  *)

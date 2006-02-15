@@ -93,6 +93,7 @@ val strip_suffixes : string -> string
  * Replace Filename. operations.
  *)
 val basename : string -> string
+val replace_basename : string -> string -> string
 
 (*
  * Path simplification.
