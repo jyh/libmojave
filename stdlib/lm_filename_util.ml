@@ -153,6 +153,18 @@ let drive_skip name =
       else
          0
 
+let is_slash c =
+   match c with
+      '/'
+    | '\\' ->
+         true
+    | _ ->
+         false
+
+let is_absolute name =
+   let len = String.length name in
+      (len >= 3 && is_drive_letter name.[0] && name.[1] = ':' && is_slash name.[2]) || (len >= 1 && is_slash name.[0])
+
 (*
  * Print the drive letter.
  *)

@@ -72,6 +72,11 @@ val string_of_root  : root -> string
 val drive_skip      : string -> int
 
 (*
+ * Is this an absolute filename?
+ *)
+val is_absolute     : string -> bool
+
+(*
  * Parse filenames.
  *)
 val filename_string : string -> string path
