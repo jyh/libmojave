@@ -26,7 +26,7 @@
  *)
 open Lm_lexer
 
-type glob_options =
+type glob_option =
    GlobNoBraces         (* Do not perform csh-style brace expansion *)
  | GlobNoTilde          (* Do not perform tilde-expansion *)
  | GlobNoEscape         (* The \ character does not escape special characters *)
@@ -42,6 +42,10 @@ type glob_options =
  | GlobHomeDir of string              (* Home directory for ~ expansion *)
  | GlobProperSubdirs                  (* Include only proper subdirs in listing *)
 
+type glob_options
+
+val create_options : glob_option list -> glob_options
+
 (*
  * The initial home directory for tilde expansion.
  * The globber does its best to figure this out.
@@ -55,6 +59,12 @@ val home_dir : string
 val tilde_collapse : string -> string
 
 (*
+ * Glob detection and escaping.
+ *)
+val is_glob_string : glob_options -> string -> bool
+val glob_add_escaped : glob_options -> Buffer.t -> string -> unit
+
+(*
  * The glob function returns two lists:
  *    1. a list of directories
  *    2. a list of files of other types
@@ -65,13 +75,13 @@ val tilde_collapse : string -> string
  *
  * Raises Failure if the syntax is ill-formed.
  *)
-val glob : glob_options list -> string -> string list -> string list * string list
+val glob : glob_options -> string -> string list -> string list * string list
 
 (*
  * Glob a command line.
  * Preserves the argument ordering.
  *)
-val glob_argv : glob_options list -> string -> string list -> string list
+val glob_argv : glob_options -> string -> string list -> string list
 
 (*
  * Get the entries in a directory.
@@ -80,14 +90,14 @@ val glob_argv : glob_options list -> string -> string list -> string list
  *       root: the directory prefix, not appended to the output strings
  *       dirs: the directories to list
  *)
-val list_dirs : glob_options list -> string -> string list -> string list * string list
-val list_dirs_rec : glob_options list -> string -> string list -> string list * string list
-val subdirs_of_dirs : glob_options list -> string -> string list -> string list
+val list_dirs : glob_options -> string -> string list -> string list * string list
+val list_dirs_rec : glob_options -> string -> string list -> string list * string list
+val subdirs_of_dirs : glob_options -> string -> string list -> string list
 
 (*
  * Utilities.
  *)
-val regex_of_shell_pattern : glob_options list -> string -> LmStr.t
+val regex_of_shell_pattern : glob_options -> string -> LmStr.t
 
 (*!
  * @docoff

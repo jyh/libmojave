@@ -147,7 +147,7 @@ let home_dir =
 (************************************************************************
  * Glob expansion.
  *)
-type glob_options =
+type glob_option =
    GlobNoBraces                       (* Do not perform csh-style brace expansion *)
  | GlobNoTilde                        (* Do not perform tilde-expansion *)
  | GlobNoEscape                       (* The \ character does not escape special characters *)
@@ -168,7 +168,7 @@ type glob_check =
  | NoMatchPreserve
  | NoMatchIgnore
 
-type glob_option_bits =
+type glob_options =
    { glob_braces    : bool;
      glob_tilde     : bool;
      glob_escape    : bool;
@@ -205,7 +205,7 @@ let default_glob_options =
 (*
  * Determine if a string contains glob characters.
  *)
-let is_glob_name options name =
+let is_glob_string options name =
    let len = String.length name in
    let rec search lbrack i =
       if i >= len then
@@ -226,6 +226,35 @@ let is_glob_name options name =
                search lbrack (succ i)
    in
       search false 0
+
+let glob_add_escaped options buf s =
+   let len = String.length s in
+   let rec collect i =
+      if i < len then
+         let c = String.unsafe_get s i in
+            match c with
+               '*' | '?' | '[' | ']' ->
+                  Buffer.add_char buf '\\';
+                  Buffer.add_char buf c;
+                  collect (succ i)
+             | '~' when i = 0 ->
+                  Buffer.add_char buf '\\';
+                  Buffer.add_char buf c;
+                  collect (succ i)
+             | '{' | '}' when options.glob_braces ->
+                  Buffer.add_char buf '\\';
+                  Buffer.add_char buf c;
+                  collect (succ i)
+             | '\\' when options.glob_escape ->
+                  Buffer.add_char buf '\\';
+                  if i < len - 1 then begin
+                     Buffer.add_char buf s.[i + 1];
+                     collect (i + 2)
+                  end
+             | c ->
+                  Buffer.add_char buf c
+   in
+      collect 0
 
 (*
  * Unescape a name.
@@ -480,7 +509,7 @@ let is_dir filename =
 (*
  * Collect glob options.
  *)
-let glob_options_of_list l =
+let create_options l =
    let rec collect options l =
       match l with
          option :: l ->
@@ -628,7 +657,7 @@ let glob_dirs_pattern options root dirs pattern =
       collect [] [] dirs
 
 let glob_dirs_name options root dirs name =
-   if is_glob_name options name then
+   if is_glob_string options name then
       let options =
          if name <> "" && name.[0] = '.' then
             { options with glob_dot = true }
@@ -717,7 +746,7 @@ let glob_match options root dir name =
  * Don't glob-expand unless it is a glob pattern.
  *)
 let glob_name options root dir name =
-   if is_glob_name options name then
+   if is_glob_string options name then
       let dirs, names = glob_match options root dir name in
          if dirs = [] && names = [] then
             match options.glob_check with
@@ -743,7 +772,6 @@ let glob_name options root dir name =
  * Perform the actual glob.
  *)
 let glob options dir names =
-   let options = glob_options_of_list options in
    let names = glob_braces options names in
       List.fold_left (fun (dirs, names) name ->
             let dirs', names' = glob_name options dir "" name in
@@ -757,7 +785,7 @@ let glob options dir names =
  * and what is not.
  *)
 let glob_argv_name options root dir name =
-   if is_glob_name options name then
+   if is_glob_string options name then
       let dirs, names = glob_match options root dir name in
          if dirs = [] then
             if names = [] then
@@ -785,7 +813,6 @@ let glob_argv_name options root dir name =
  * We have to be a little more careful to preserve the order.
  *)
 let glob_argv options dir names =
-   let options = glob_options_of_list options in
    let names = glob_braces options names in
    let names =
       List.fold_left (fun names name ->
@@ -859,7 +886,6 @@ let list_dir_aux options root hidden_dirs dirs names dirname =
  * Perform a directory listing.
  *)
 let list_dirs options root dirs =
-   let options = glob_options_of_list options in
    let rec collect dirs names l =
       match l with
          dir :: l ->
@@ -874,7 +900,6 @@ let list_dirs options root dirs =
  * Recursive directory listing.
  *)
 let list_dirs_rec options root dirs =
-   let options = glob_options_of_list options in
    let rec collect examined_dirs hidden_dirs unexamined_dirs names =
       match hidden_dirs, unexamined_dirs with
          dir :: hidden_dirs, _ ->
@@ -904,7 +929,6 @@ let list_dirs_rec options root dirs =
  * Recursively expand all subdirectories.
  *)
 let subdirs_of_dirs options root dirs =
-   let options = glob_options_of_list options in
    let options = { options with glob_dirs = true } in
    let rec collect listing hidden_dirs dirs =
       match hidden_dirs, dirs with
@@ -929,8 +953,7 @@ let subdirs_of_dirs options root dirs =
 (*
  * Regular expression export.
  *)
-let regex_of_shell_pattern options s =
-   regexp_of_shell_pattern (glob_options_of_list options) s
+let regex_of_shell_pattern = regexp_of_shell_pattern
 
 (*!
  * @docoff

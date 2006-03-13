@@ -162,6 +162,13 @@ val tokens_std : string -> string list
  *)
 type 'a tokens
 
+val tokens_create_lexer :
+   lexer       : (string -> int -> int -> int option) ->
+   wrap_string : (string -> 'a) ->
+   wrap_data   : (string -> 'a) ->
+   wrap_token  : (string -> 'a) ->
+   group       : ('a list -> 'a) ->
+   'a tokens
 val tokens_create : (string -> 'a) -> ('a list -> 'a) -> 'a tokens
 val tokens_string : 'a tokens -> string -> 'a tokens
 val tokens_data   : 'a tokens -> string -> 'a tokens
