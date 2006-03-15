@@ -171,6 +171,7 @@ val tokens_create_lexer :
    'a tokens
 val tokens_create : (string -> 'a) -> ('a list -> 'a) -> 'a tokens
 val tokens_string : 'a tokens -> string -> 'a tokens
+val tokens_lex    : 'a tokens -> string -> 'a tokens
 val tokens_data   : 'a tokens -> string -> 'a tokens
 val tokens_break  : 'a tokens -> 'a tokens
 val tokens_add    : 'a tokens -> 'a -> 'a tokens

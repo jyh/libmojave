@@ -690,7 +690,7 @@ let buffer_get_token lexer s i len =
           | None ->
                BufChar
 
-let tokens_lex info lexer s =
+let tokens_lex info s =
    let { tokens_lexer       = lexer;
          tokens_wrap_string = wrap_string;
          tokens_wrap_data   = wrap_data;
