@@ -252,7 +252,8 @@ let glob_add_escaped options buf s =
                      collect (i + 2)
                   end
              | c ->
-                  Buffer.add_char buf c
+                  Buffer.add_char buf c;
+                  collect (succ i)
    in
       collect 0
 
@@ -271,7 +272,7 @@ let unescape options s =
                if c = '\\' && i < len - 1 then
                   let c = s.[i + 1] in
                      match c with
-                        '*' | '?' | '[' | ']' | '~' ->
+                        '*' | '?' | '[' | ']' | '~' | '{' | '}' ->
                            Buffer.add_char buf c;
                            collect (i + 2)
                       | _ ->

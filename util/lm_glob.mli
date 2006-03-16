@@ -45,6 +45,7 @@ type glob_option =
 type glob_options
 
 val create_options : glob_option list -> glob_options
+val default_glob_options : glob_options
 
 (*
  * The initial home directory for tilde expansion.

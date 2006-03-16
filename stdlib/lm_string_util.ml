@@ -711,7 +711,7 @@ let tokens_lex info s =
             BufWhite ->
                scan_white tokens (succ i)
           | BufQuote c ->
-               scan_quote tokens [] c i (succ i)
+               scan_quote tokens [] c (succ i) (succ i)
           | BufBackslash ->
                scan_word tokens [] i (i + 2)
           | BufChar ->
@@ -730,9 +730,9 @@ let tokens_lex info s =
       else
          match buffer_get_quoted s i with
             BufQuote c when c = delim ->
+               eprintf "Got '%s'@." (String.sub s start (i - start));
                let prefix = wrap_data (String.sub s start (i - start)) :: prefix in
-               let i = succ i in
-                  scan_word tokens prefix i i
+                  scan_word tokens prefix (succ i) (succ i)
           | BufBackslash ->
                scan_quote tokens prefix delim start (i + 2)
           | BufQuote _
@@ -762,8 +762,7 @@ let tokens_lex info s =
                   scan_white (head2 :: head1 :: tokens) (i + len)
           | BufQuote c ->
                let prefix = wrap_string (String.sub s start (i - start)) :: prefix in
-               let i = succ i in
-                  scan_quote tokens prefix c i i
+                  scan_quote tokens prefix c (succ i) (succ i)
           | BufBackslash ->
                scan_word tokens prefix start (i + 2)
           | BufChar ->
