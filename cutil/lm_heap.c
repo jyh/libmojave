@@ -1,10 +1,12 @@
 /*
  * Some debugging code for the heap.
+ * WARNING: if you want to use this, you _must_ link against a DEBUG
+ * version of OCaml!
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave group, Caltech
+ * Copyright (C) 2006 Mojave group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
