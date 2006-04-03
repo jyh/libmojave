@@ -74,12 +74,12 @@ value home_win32(value v_unit)
 /*
  * File locking.
  */
-#define F_ULOCK        0
-#define F_LOCK        1
-#define F_TLOCK        2
-#define F_TEST        3
-#define F_RLOCK        4
-#define F_TRLOCK    5
+#define F_ULOCK         0
+#define F_LOCK          1
+#define F_TLOCK         2
+#define F_TEST          3
+#define F_RLOCK         4
+#define F_TRLOCK        5
 
 value lockf_win32(value v_fd, value v_kind, value v_len)
 {
@@ -127,25 +127,29 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
         /* Perform the lock */
         enter_blocking_section();
         code = LockFileEx(fd, flags, 0, len, 0, &overlapped);
-		  if (code==0)
-		      error = GetLastError();
+        if(code == 0)
+            error = GetLastError();
         leave_blocking_section();
 
         /* Fail if the lock was not successful */
         if(code == 0) {
-            char szBuf[180];
+            char szBuf[1024];
             LPVOID lpMsgBuf;
 
             switch(error) {
             case ERROR_LOCK_FAILED:
             case ERROR_LOCK_VIOLATION:
-                /* XXX: HACK: this exception is being caugh
-                 *            Do not change the string w/o changing the wrapper code*/
+                /*
+                 * XXX: HACK: this exception is being caught
+                 *            Do not change the string w/o changing the wrapper code.
+                 */
                 failwith("lockf_win32: already locked");
                 break;
             case ERROR_POSSIBLE_DEADLOCK:
-                /* XXX: HACK: this exception is being caugh
-                 *            Do not change the string w/o changing the wrapper code*/
+                /*
+                 * XXX: HACK: this exception is being caught
+                 *            Do not change the string w/o changing the wrapper code.
+                 */
                 failwith("lockf_win32: possible deadlock");
                 break;
             default:

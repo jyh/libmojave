@@ -38,6 +38,7 @@
 static value get_chars(int (*f)(int))
 {
     char buf[256];
+    value s;
     char *p;
     int i;
 
@@ -46,8 +47,9 @@ static value get_chars(int (*f)(int))
         if(f(i))
             *p++ = i;
     }
-    *p = 0;
-    return copy_string(buf);
+    s = alloc_string(p - buf);
+    memcpy(String_val(s), buf, p - buf);
+    return s;
 }
 
 value omake_alnum(value v_unit)

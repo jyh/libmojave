@@ -2,6 +2,7 @@
 # LibMojave C files
 #
 CFILES[] =
+    lm_heap
     lm_abstract
     lm_float
     lm_ncurses

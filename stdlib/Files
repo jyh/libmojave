@@ -13,6 +13,7 @@ STDLIB_FILES[] =
     lm_rprintf
     lm_printf
     lm_printf_rbuffer
+    lm_heap
     lm_array_util
     lm_string_util
     lm_list_util
