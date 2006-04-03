@@ -35,14 +35,12 @@
 
 extern char *caml_young_start, *caml_young_ptr, *caml_young_limit, *caml_young_end;
 
-static char *pointers[1 << 16];
-
 static char *null = 0;
 
 #undef abort
 #define abort()    (*null = 0)
 
-static void search_pointer(char *name, unsigned bound, char *p, char *v, unsigned index)
+static void search_pointer(char **pointers, char *name, unsigned bound, char *p, char *v, unsigned index)
 {
     unsigned i, j, k;
     char *p2;
@@ -59,13 +57,13 @@ static void search_pointer(char *name, unsigned bound, char *p, char *v, unsigne
     }
     p2 = pointers[i];
     if(p2 != p && Tag_val(p) != Infix_tag) {
-        fprintf(stderr, "%s: illegal pointer: 0x%08lx < 0x%08lx < 0x%08lx, size = %d, tag = %d\n", 
+        fprintf(stderr, "%s: illegal pointer: 0x%08lx < 0x%08lx < 0x%08lx, size = %lud, tag = %d\n", 
                 name,
                 (unsigned long) p2, (unsigned long) p, (unsigned long) pointers[i + 1],
                 Wosize_val(p), Tag_val(p));
-        fprintf(stderr, "points into: 0x%08lx: index = %d, size = %d, tag = %d\n",
+        fprintf(stderr, "points into: 0x%08lx: index = %d, size = %lud, tag = %d\n",
                 (unsigned long) p2, i, Wosize_val(p2), Tag_val(p2));
-        fprintf(stderr, "from block: 0x%08lx: size = %d, tag = %d, field = %d\n",
+        fprintf(stderr, "from block: 0x%08lx: size = %lud, tag = %d, field = %d\n",
                 (unsigned long) v, Wosize_val(v), Tag_val(v), index);
         fflush(stderr);
         abort();
@@ -79,6 +77,7 @@ static void lm_heap_check_aux1(char *name)
     value p, *next;
     mlsize_t size;
     unsigned i, index, found;
+	 char *pointers[1 << 16];
 
     start = caml_young_start;
     ptr = caml_young_ptr;
@@ -103,7 +102,7 @@ static void lm_heap_check_aux1(char *name)
     while(v < caml_young_end) {
         pointers[index++] = (char *) v;
         size = Wosize_val(v);
-        fprintf(stderr, "%s: 0x%08lx: size %d, tag = %d\n",
+        fprintf(stderr, "%s: 0x%08lx: size %lud, tag = %d\n",
                 name, (unsigned long) v, size, Tag_val(v));
         found = 0;
         for(i = 0; i != 10; i++) {
@@ -116,7 +115,7 @@ static void lm_heap_check_aux1(char *name)
                     found = 1;
                 }
                 else if(found)
-                    fprintf(stderr, "\tnext[%d]:0x%08lx = 0x%08lx, size = %d, tag = %d\n",
+                    fprintf(stderr, "\tnext[%d]:0x%08lx = 0x%08lx, size = %lud, tag = %d\n",
                             i, (unsigned long) next, (unsigned long) p, Wosize_hd(p), Tag_hd(p));
             }
         }
@@ -137,7 +136,7 @@ static void lm_heap_check_aux1(char *name)
     while(v < caml_young_end) {
         size = Wosize_val(v);
         if(Tag_val(v) < No_scan_tag) {
-            fprintf(stderr, "%s: scanning 0x%08lx: size %d, tag = %d\n", name, (unsigned long) v, size, Tag_val(v));
+            fprintf(stderr, "%s: scanning 0x%08lx: size %lud, tag = %d\n", name, (unsigned long) v, size, Tag_val(v));
             fflush(stderr);
             for(i = 0; i != size; i++) {
                 char *p = (char *) Field(v, i);
@@ -148,7 +147,7 @@ static void lm_heap_check_aux1(char *name)
                         return;
                     }
                     if(p >= caml_young_ptr && p < caml_young_end)
-                        search_pointer(name, index, p, v, i);
+                        search_pointer(pointers, name, index, p, v, i);
                 }
             }
         }
@@ -208,6 +207,7 @@ static void lm_heap_check_aux2(char *name)
 
 value lm_heap_check(value v_name)
 {
+    lm_heap_check_aux1(String_val(v_name));
     lm_heap_check_aux2(String_val(v_name));
     return Val_unit;
 }
