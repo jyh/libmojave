@@ -254,6 +254,12 @@ val set : string -> string -> int -> char -> unit
 val get : string -> string -> int -> char
 
 (*
+ * Converting to-from the hex representation used in URI.
+ *)
+val decode_hex_name : string -> string
+val encode_hex_name : string -> string
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

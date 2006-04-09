@@ -1385,6 +1385,77 @@ let quote_string s =
 let quote_argv argv =
    quote_string (concat_string argv)
 
+(************************************************************************
+ * Translate between URI enconding.
+ *)
+
+(*
+ * Convert two hex chars into a new 8-bit char.
+ *)
+let unhex_char c1 c2 =
+   let i1 = unhex c1 in
+   let i2 = unhex c2 in
+      Char.chr (i1 * 16 + i2)
+
+(*
+ * Decode hex characters in the URI.
+ *)
+let decode_hex_name uri =
+   let len = String.length uri in
+   let buf = String.create len in
+   let rec convert i j =
+      if j = len then
+         if i = len then
+            buf
+         else
+            String.sub buf 0 i
+      else if uri.[j] = '+' then
+         begin
+            buf.[i] <- ' ';
+            convert (i + 1) (j + 1)
+         end
+      else if uri.[j] = '%' & j < len - 2 then
+         begin
+            buf.[i] <- unhex_char uri.[j + 1] uri.[j + 2];
+            convert (i + 1) (j + 3)
+         end
+      else
+         begin
+            buf.[i] <- uri.[j];
+            convert (i + 1) (j + 1)
+         end
+   in
+      convert 0 0
+
+(*
+ * Encode a string into hex.
+ *)
+let hex_char code =
+   if code < 10 then
+      Char.chr (code + Char.code '0')
+   else
+      Char.chr (code - 10 + Char.code 'a')
+
+let encode_hex_name uri =
+   let len = String.length uri in
+   let buf = String.create (3 * len) in
+   let rec convert i j =
+      if i = len then
+         String.sub buf 0 j
+      else
+         match uri.[i] with
+            ('0'..'9' | 'A'..'Z' | 'a'..'z') as c ->
+               buf.[j] <- c;
+               convert (succ i) (succ j)
+          | c ->
+               let code = Char.code c in
+                  buf.[j] <- '%';
+                  buf.[j + 1] <- hex_char ((code lsr 4) land 15);
+                  buf.[j + 2] <- hex_char (code land 15);
+                  convert (succ i) (j + 3)
+   in
+      convert 0 0
+
 (*
  * -*-
  * Local Variables:
