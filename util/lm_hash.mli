@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
 open Lm_printf
@@ -196,6 +195,7 @@ sig
    val add_bool   : t -> bool -> unit
    val add_int    : t -> int -> unit
    val add_float  : t -> float -> unit
+   val add_char   : t -> char -> unit
    val add_string : t -> string -> unit
    val digest     : t -> string
 end;;
@@ -210,12 +210,9 @@ val hash_combine : int -> int -> int
 val hash_int_list : int -> int list -> int
 val compare_int_list : int list -> int list -> int
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

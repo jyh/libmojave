@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2005-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1357,6 +1357,7 @@ sig
    val add_bool   : t -> bool -> unit
    val add_int    : t -> int -> unit
    val add_float  : t -> float -> unit
+   val add_char   : t -> char -> unit
    val add_string : t -> string -> unit
    val digest     : t -> string
 end;;
@@ -1399,6 +1400,9 @@ struct
    (*
     * Add the characters in a string.
     *)
+   let add_char buf c =
+      add_bits buf (Char.code c)
+   
    let add_string buf s =
       for i = 0 to pred (String.length s) do
          add_bits buf (Char.code (String.unsafe_get s i))
@@ -1474,12 +1478,9 @@ let rec compare_int_list (l1 : int list) (l2 : int list) =
     | [], [] ->
          0
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
