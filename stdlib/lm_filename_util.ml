@@ -261,12 +261,53 @@ let filename_string name =
          let root = DriveRoot (Char.lowercase name.[0]) in
          let path = String.sub name 3 (len - 3) in
             AbsolutePath (root, path)
-      else if len >= 1 && (name.[0] = '/' || name.[0] = '\\') then
+      else if len >= 1 && name.[0] = '/' then
          let root = NullRoot in
          let path = String.sub name 1 (len - 1) in
             AbsolutePath (root, path)
       else
          RelativePath name
+
+(*
+ * Be careful not to split on glob characters.
+ *)
+let is_glob_char s i =
+   match String.unsafe_get s i with
+      '{' | '}' | '*' | '?' | '[' | ']' ->
+         true
+    | _ ->
+         false
+
+let filename_split name =
+   let len = String.length name in
+   let rec collect path off i =
+      if i = len then
+         let path =
+            if i <= succ off then
+               path
+            else
+               String.sub name off (i - off) :: path
+         in
+            List.rev path
+      else
+         let c = String.unsafe_get name i in
+            match c with
+               '/' ->
+                  if i <= succ off then
+                     collect path i (succ i)
+                  else
+                     collect (String.sub name off (i - off) :: path) i (succ i)
+             | '\\' ->
+                  if i < len - 1 && is_glob_char name (succ i) then
+                     collect path off (i + 2)
+                  else if i <= succ off then
+                     collect path i (succ i)
+                  else
+                     collect (String.sub name off (i - off) :: path) i (succ i)
+             | _ ->
+                  collect path off (succ i)
+   in
+      collect [] 0 0
 
 (*
  * Split the rest into parts.

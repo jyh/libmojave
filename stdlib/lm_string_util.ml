@@ -730,7 +730,6 @@ let tokens_lex info s =
       else
          match buffer_get_quoted s i with
             BufQuote c when c = delim ->
-               eprintf "Got '%s'@." (String.sub s start (i - start));
                let prefix = wrap_data (String.sub s start (i - start)) :: prefix in
                   scan_word tokens prefix (succ i) (succ i)
           | BufBackslash ->
