@@ -37,7 +37,79 @@
 
 #ifdef WIN32
 
+/*
+ * Open a dynamic link library.
+ */
+value lm_dlopen(value v_filename, value v_flags)
+{
+    CAMLparam2(v_filename, v_flags);
+
+    failwith("lm_dlopen");
+
+    /* Return it */
+    CAMLreturn(Val_unit);
+}
+
+/*
+ * Open static info.
+ */
+value lm_dlopen_static(DllExport *values)
+{
+    CAMLparam0();
+
+    failwith("lm_dlopen_static");
+
+    CAMLreturn(Val_unit);
+}
+
+/*
+ * Set the callback handler.
+ */
+typedef void (*SetHandler)(value);
+typedef value (*FunPointer)(value);
+
+value lm_set_callback_handler(value v_set, value v_handler)
+{
+    SetHandler set = (SetHandler) v_set;
+    set(v_handler);
+    return Val_unit;
+}
+
+/*
+ * Apply the function.
+ */
+value lm_dlapply(value v_sym, value v_args)
+{
+    CAMLparam2(v_sym, v_args);
+    failwith("lm_dlapply");
+    CAMLreturn(Val_unit);
+}
+
+/*
+ * NULL pointers.
+ */
+value lm_dlnull(value v_arg)
+{
+    CAMLparam1(v_arg);
+    CAMLreturn(Val_unit);
+}
+
+value lm_dlpointer_of_int(value v_arg)
+{
+    CAMLparam1(v_arg);
+    failwith("lm_dlpointer_of_int");
+    CAMLreturn(Val_unit);
+}
+
+value lm_dlint_of_pointer(value v_arg)
+{
+    CAMLparam1(v_arg);
+    failwith("lm_dlint_of_pointer");
+    CAMLreturn(Val_unit);
+}
+
 #else /* !WIN32 */
+
 #include <dlfcn.h>
 
 #define CAML_RTLD_LAZY          0
