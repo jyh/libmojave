@@ -1352,14 +1352,15 @@ module type HashDigestSig =
 sig
    type t
 
-   val create     : unit -> t
-   val add_bits   : t -> int -> unit
-   val add_bool   : t -> bool -> unit
-   val add_int    : t -> int -> unit
-   val add_float  : t -> float -> unit
-   val add_char   : t -> char -> unit
-   val add_string : t -> string -> unit
-   val digest     : t -> string
+   val create        : unit -> t
+   val add_bits      : t -> int -> unit
+   val add_bool      : t -> bool -> unit
+   val add_int       : t -> int -> unit
+   val add_float     : t -> float -> unit
+   val add_char      : t -> char -> unit
+   val add_string    : t -> string -> unit
+   val add_substring : t -> string -> int -> int -> unit
+   val digest        : t -> string
 end;;
 
 (* %%MAGICBEGIN%% *)
@@ -1402,9 +1403,16 @@ struct
     *)
    let add_char buf c =
       add_bits buf (Char.code c)
-   
+
    let add_string buf s =
       for i = 0 to pred (String.length s) do
+         add_bits buf (Char.code (String.unsafe_get s i))
+      done
+
+   let add_substring buf s off len =
+      if off < 0 || len < 0 || off + len > String.length s then
+         raise (Invalid_argument "Lm_hash.add_substring");
+      for i = off to pred (off + len) do
          add_bits buf (Char.code (String.unsafe_get s i))
       done
 
