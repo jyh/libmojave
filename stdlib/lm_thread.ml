@@ -65,7 +65,7 @@ type thread_request =
 
 (*
  * A handle is a particular copy of a value.
- *    handle_value: the actula data value
+ *    handle_value: the actual data value
  *    handle_queue: the queue of waiting threads
  *    handle_state: the current active state
  *    handle_active: a table of the currently active threads

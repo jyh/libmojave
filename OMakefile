@@ -19,7 +19,11 @@ FILES[] =
 
 USE_OCAMLFIND = false
 
-if $(defined LMINSTALL)
+if $(not $(defined LMINSTALL))
+    LMINSTALL = false
+    export
+
+if $(LMINSTALL)
     OCamlLibraryInstall($(LMINSTALL), $(LIB), lm, $(FILES))
 else
     OCamlLibrary(lm, $(FILES))
