@@ -83,6 +83,11 @@ val last : 'a list -> 'a
 val split : int -> 'a list -> 'a list * 'a list
 
 (*
+ * Split up into smaller lists of size no more than n.
+ *)
+val splitup : int -> 'a list -> 'a list list
+
+(*
  * Return the first n elements of the list.
  *)
 val firstn : int -> 'a list -> 'a list

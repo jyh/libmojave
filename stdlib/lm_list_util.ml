@@ -312,6 +312,26 @@ let rec split i l =
             raise (Invalid_argument "split")
 
 (*
+ * Split into fragments.
+ *)
+let splitup n l =
+   let rec split i vll vl1 vl2 =
+      match vl2 with
+         v :: vl2 ->
+            if i = 0 then
+               split n (List.rev vl1 :: vll) [v] vl2
+            else
+               split (pred i) vll (v :: vl1) vl2
+       | [] ->
+            List.rev vl1 :: vll
+   in
+      match l with
+         [] ->
+            []
+       | h :: t ->
+            split n [] [h] t
+
+(*
  * Get the last element.
  *)
 let rec last = function
