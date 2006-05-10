@@ -83,15 +83,15 @@ static void lm_heap_check_aux1(char *name)
     ptr = caml_young_ptr;
     end = caml_young_end;
 
-    fprintf(stderr, "AAA: %s: [0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx] (%d/%d/%d bytes)\n",
+    fprintf(stderr, "AAA: %s: [0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx] (%ld/%ld/%ld bytes)\n",
             name,
             (unsigned long) caml_young_start,
             (unsigned long) caml_young_ptr,
             (unsigned long) caml_young_limit,
             (unsigned long) caml_young_end, 
-            caml_young_end - caml_young_ptr,
-            caml_young_end - caml_young_limit,
-            caml_young_end - caml_young_start);
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_ptr,
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_limit,
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_start);
     fflush(stderr);
 
     /*
@@ -167,15 +167,16 @@ static void lm_heap_check_aux2(char *name)
     ptr = caml_young_ptr;
     end = caml_young_end;
 
-    fprintf(stderr, "AAA: %s: [0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx] (%d/%d/%d bytes)\n",
+    fprintf(stderr, "AAA: %s: [0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx] (%ld/%ld/%ld bytes)\n",
             name,
             (unsigned long) caml_young_start,
             (unsigned long) caml_young_ptr,
             (unsigned long) caml_young_limit,
             (unsigned long) caml_young_end, 
-            caml_young_end - caml_young_ptr,
-            caml_young_end - caml_young_limit,
-            caml_young_end - caml_young_start);
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_ptr,
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_limit,
+            ((unsigned long) caml_young_end) - (unsigned long) caml_young_start);
+
     fflush(stderr);
 
     /*
