@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003-2005 Jason Hickey, Caltech
+ * Copyright (C) 2003-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
 
@@ -533,9 +533,16 @@ let mkdirhier dir mode =
          head :: path ->
             let dir = Filename.concat dir head in
             let () =
-               try Unix.mkdir dir mode with
-                   Unix.Unix_error (Unix.EEXIST, _, _) ->
-                     ()
+               try 
+                  let s = Unix.LargeFile.stat dir in
+                     if s.Unix.LargeFile.st_kind <> Unix.S_DIR then
+                        raise (Unix.Unix_error (Unix.ENOTDIR, "Lm_filename_util.mkdirhier", dir))
+               with Unix.Unix_error (Unix.ENOENT, _, _) ->
+               begin
+                  try Unix.mkdir dir mode with
+                     Unix.Unix_error (Unix.EEXIST, _, _) ->
+                        ()
+               end
             in
                mkdir dir path
        | [] ->
