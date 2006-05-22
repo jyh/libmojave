@@ -47,6 +47,7 @@ val create : bool -> (unit -> unit) -> int
  * unlock the main lock.
  *)
 val blocking_section : ('a -> 'b) -> 'a -> 'b
+val resume_inner_section   : ('a -> 'b) -> 'a -> 'b
 
 (*
  * Wait for any of the jobs to complete.

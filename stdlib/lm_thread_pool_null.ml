@@ -52,6 +52,9 @@ let enabled = false
 let blocking_section f x =
    f x
 
+let resume_inner_section f x =
+   f x
+
 (*
  * Start a thread doing something.
  *)

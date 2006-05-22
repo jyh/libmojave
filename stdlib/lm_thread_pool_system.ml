@@ -121,6 +121,17 @@ let blocking_section f x =
          Mutex.lock pool.pool_lock;
          raise exn
 
+let resume_inner_section f x =
+   Mutex.lock pool.pool_lock;
+   try
+      let y = f x in
+         Mutex.unlock pool.pool_lock;
+         y
+   with
+      exn ->
+         Mutex.unlock pool.pool_lock;
+         raise exn
+
 (*
  * Thread main loop.
  *)
