@@ -1,9 +1,10 @@
 /*
+ * Hacking into OCaml.
  *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005 Mojave Group, Caltech
+ * Copyright (C) 2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,6 +27,8 @@
 #ifndef _UNIXSUPPORT_H
 #define _UNIXSUPPORT_H
 
+#ifdef WIN32
+
 /*
  * HACK: this gets the handle from a file_descr.
  * This depends on the OCaml implementation, but
@@ -43,5 +46,11 @@ struct filedescr {
 #define Handle_val(v)           (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #define Socket_val(v)           (((struct filedescr *) Data_custom_val(v))->fd.socket)
 #define Descr_kind_val(v)       (((struct filedescr *) Data_custom_val(v))->kind)
+
+#else /* !WIN32 */
+
+#define Socket_val(v)           (Int_val(v))
+
+#endif /* !WIN32 */
 
 #endif /* _UNIX_SUPPORT_H */
