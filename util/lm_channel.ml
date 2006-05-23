@@ -66,6 +66,7 @@ type mode =
  * Canonical names.
  *)
 let string_sym = Lm_symbol.add ".string"
+let fun_sym    = Lm_symbol.add ".fun"
 
 (*
  * The channel has an input and output buffer.
@@ -275,6 +276,37 @@ let of_string file line char s =
         read_fun     = null_reader;
         write_fun    = null_writer
       }
+
+let of_fun read write =
+   { channel_id     = 0;
+     channel_fd     = None;
+     channel_kind   = FileChannel;
+     channel_mode   = InOutChannel;
+     channel_file   = fun_sym;
+     channel_binary = true;
+
+     start_line     = 1;
+     start_char     = 0;
+     middle_index   = 0;
+     middle_line    = 1;
+     middle_char    = 0;
+
+     in_index     = 0;
+     in_max       = 0;
+     in_buffer    = String.create buf_size;
+     lex_index    = 0;
+
+     out_max      = 0;
+     out_buffer   = String.create buf_size;
+
+     write_pid    = 0;
+     write_index  = 0;
+     write_max    = 0;
+     write_buffer = String.create buf_size;
+
+     read_fun     = read;
+     write_fun    = write
+   }
 
 let of_loc_string file line char s =
    of_string (Lm_symbol.add file) line char s

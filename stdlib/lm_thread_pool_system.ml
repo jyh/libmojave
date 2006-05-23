@@ -137,6 +137,7 @@ let resume_inner_section f x =
  *)
 let thread_main_loop () =
    let id = Thread.id (Thread.self ()) in
+   let _ = Thread.sigmask Unix.SIG_SETMASK [Sys.sigint; Sys.sigquit] in
       Mutex.lock pool.pool_lock;
       if !debug_thread then
          eprintf "Thread %d: entered main loop@." id;
