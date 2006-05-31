@@ -6,3 +6,4 @@ UNIX_FILES[] =
     lm_inet
     lm_uname
     lm_unix_util
+    lm_notify

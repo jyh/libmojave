@@ -106,9 +106,9 @@ val replace_basename : string -> string -> string
  *)
 type pathname = string list
 
-val split_path : string -> pathname
+val split_path    : string -> pathname
 val simplify_path : pathname -> pathname
-val concat_path : pathname -> string
+val concat_path   : pathname -> string
 
 (*
  * Path searching.

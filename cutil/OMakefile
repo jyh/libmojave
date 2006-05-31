@@ -21,6 +21,10 @@ CFILES[] =
     lm_nocompare
     lm_compat_win32
     lm_unix_cutil
+    fam_win32
+    fam_kqueue
+    fam_inotify
+    lm_notify
 
 #
 # Libraries

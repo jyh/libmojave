@@ -1,0 +1,36 @@
+#
+# Testing for inotifyx
+#
+open configure/Configure
+open configure/fam
+open build/C
+
+static. =
+        print(--- Testing for inotify... )
+        cd libmojave/cutil
+
+        # Check inotify
+        INOTIFY_AVAILABLE = $(CheckLib $(EMPTY), inotify_init inotify_add_watch inotify_rm_watch)
+        INOTIFY_HEADERS = $(CheckHeader $"<sys/inotify.h>")
+        if $(not $(INOTIFY_AVAILABLE))
+            # The command line
+            private.tmp = $(tmpfile omake)
+            private.command = $(CC) -o $(tmp) inotify-test.c
+            if $(shell-success-null $(command))
+                INOTIFY_AVAILABLE = $(shell-success-null $(tmp))
+                export INOTIFY_AVAILABLE
+            rm $(tmp)
+            export INOTIFY_AVAILABLE
+
+        if $(INOTIFY_AVAILABLE)
+            println($'(available)')
+            export
+        else
+            println($'(disabled)')
+
+if $(INOTIFY_AVAILABLE)
+        FAM_AVAILABLE = true
+        FAM_CFLAGS = -DFAM_ENABLED -DFAM_PSEUDO -DFAM_INOTIFY
+        FAM_CLIBS =
+        export
+
