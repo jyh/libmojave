@@ -7,8 +7,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2002, Justin David Smith, Caltech
- * Based on original code, Copyright (C) 2000-2005 Jason Hickey, Caltech
+ * Copyright (C) 2000-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,8 +23,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Authors: Jason Hickey <jyh@cs.caltech.edu>
+ *          Justin David Smith
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_printf
 
@@ -334,6 +334,27 @@ let compute_option_tree spec =
 
 (***  Help System  ***)
 
+(* Wraps at terminal width *)
+let rec print_doc_string s =
+   (*
+    * XXX: TODO: Use MetaPRL's termsize.c/mp_term.ml to get the actual terminal width instead of
+    * using the default 80.
+    *) 
+   let width = 80 - 27 in
+   let len = String.length s in
+      if len <= width then
+         print_string s
+      else
+         if String.rcontains_from s width ' ' then begin
+            let i = String.rindex_from s width ' ' in
+               print_string (String.sub s 0 i);
+               print_string "\n                          ";
+               print_doc_string (String.sub s (i+1) (len - i - 1))
+         end else begin
+            print_string (String.sub s 0 width);
+            print_string "\n                          ";
+            print_doc_string (String.sub s width (len - width))
+         end
 
 (* usage
    Display the usage message and help text for the options.  *)
@@ -372,7 +393,7 @@ let usage spec =
             else
                printf "@ %-20s" opt;
             printf ":  ";
-            print_string doc) spec
+            print_doc_string doc) spec
 
 let usage (mode, spec) usage_msg =
    (* Display help for all sections. *)
