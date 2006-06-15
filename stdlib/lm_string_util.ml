@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000-2005 Jason Hickey, Caltech
+ * Copyright (C) 2000-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1245,39 +1245,24 @@ let rec needs_quotes mode s i len =
    if i >= len then
       mode <> ModeNormal
    else
-      match mode with
-         ModeNormal ->
-            (match s.[i] with
-               ' '
-             | '\t'
-             | '\012'
-             | '\n'
-             | '\r' ->
-                  true
-             | '"' ->
-                  needs_quotes ModeDouble s (succ i) len
-             | '\'' ->
-                  needs_quotes ModeSingle s (succ i) len
-             | '\\' ->
-                  needs_quotes ModeNormal s (i + 2) len
-             | _ ->
-                  needs_quotes ModeNormal s (succ i) len)
-       | ModeSingle ->
-            (match s.[i] with
-                '\'' ->
+      match mode, s.[i] with
+         _, '\\' ->
+            needs_quotes mode s (i + 2) len
+       | ModeNormal, ' '
+       | ModeNormal, '\t'
+       | ModeNormal, '\012'
+       | ModeNormal, '\n'
+       | ModeNormal, '\r' ->
+            true
+       | ModeNormal, '"' ->
+            needs_quotes ModeDouble s (succ i) len
+       | ModeNormal, '\'' ->
+            needs_quotes ModeSingle s (succ i) len
+       | ModeSingle, '\''
+       | ModeDouble, '"' ->
                   needs_quotes ModeNormal s (succ i) len
-              | '\\' ->
-                  needs_quotes ModeSingle s (i + 2) len
-              | _ ->
-                  needs_quotes ModeSingle s (succ i) len)
-       | ModeDouble ->
-           (match s.[i] with
-               '"' ->
-                  needs_quotes ModeNormal s (succ i) len
-             | '\\' ->
-                  needs_quotes ModeDouble s (i + 2) len
-             | _ ->
-                  needs_quotes ModeDouble s (succ i) len)
+       | _ ->
+            needs_quotes mode s (succ i) len
 
 let needs_quotes s =
    let len = String.length s in
@@ -1458,7 +1443,6 @@ let encode_hex_name uri =
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
