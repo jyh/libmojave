@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000-2005 Jason Hickey, Caltech
+ * Copyright (C) 2000-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 (*
@@ -188,6 +188,9 @@ val tokens_flush  : 'a tokens -> 'a list
 val parse_args_list : string -> string list list
 val parse_args : string -> string list
 
+(* Add outer quotes to a string, and escape all the inner quotes. *)
+val shell_quotes : string -> string
+
 (*
  * Reconstruct an argv string from a list of strings.
  * The strings are concatenated with intervening whitespace.
@@ -262,7 +265,6 @@ val encode_hex_name : string -> string
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

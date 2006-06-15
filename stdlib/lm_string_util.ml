@@ -1295,6 +1295,11 @@ let quotify buf s =
       copy 0;
       Buffer.add_char buf dquote
 
+let shell_quotes s =
+   let buf = Buffer.create 32 in
+      quotify buf s;
+      Buffer.contents buf
+
 let quote buf s =
    if needs_quotes s then
       quotify buf s
