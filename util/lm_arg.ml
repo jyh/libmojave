@@ -238,7 +238,7 @@ let add_option options name spec =
       deconstruct_name options 0
 
 
-(* lookup_option
+(* lookup_option_core
    Lookup the option with the indicated name in the options tree.  If there
    is an exact option match in the tree, we return the option spec and an
    empty string.  If we hit end up at a node without a spec, but we are an
@@ -252,7 +252,7 @@ let add_option options name spec =
    space.  Note that any option that is a prefix of another option cannot
    take a value in this way.
  *)
-let lookup_option options name =
+let lookup_option_core options name =
    let length = String.length name in
 
    (* find_branch
@@ -320,6 +320,45 @@ let lookup_option options name =
       lookup_name options 0
 
 
+(* lookup_option
+   We also allow --no-* prefixes on Boolean options.
+
+   JYH: this is perhaps not the simplest way to deal
+   with inversion, but the implementation is simple.  *)
+let is_invert_prefix name =
+   String.length name > 5
+   && String.unsafe_get name 0 = '-'
+   && String.unsafe_get name 1 = '-'
+   && String.unsafe_get name 2 = 'n'
+   && String.unsafe_get name 3 = 'o'
+   && String.unsafe_get name 4 = '-'
+
+let strip_invert_prefix name =
+   String.sub name 4 (String.length name - 4)
+
+let lookup_option options name =
+   if is_invert_prefix name then
+      let orig_name = strip_invert_prefix name in
+         try
+            match lookup_option_core options orig_name with
+               Set f, "" ->
+                  Clear f, ""
+             | SetFold f, "" ->
+                  ClearFold f, ""
+             | Clear f, "" ->
+                  Set f, ""
+             | ClearFold f, "" ->
+                  SetFold f, ""
+             | _ ->
+                  raise (BogusArg "not an invertible option")
+         with
+            BogusArg _
+          | Not_found ->
+               lookup_option_core options name
+   else
+      lookup_option_core options name
+
+
 (* compute_option_tree
    Convert a sections spec into an option tree.  Can raise an exception
    if the sections spec contains duplicate options.  *)
@@ -339,7 +378,7 @@ let rec print_doc_string s =
    (*
     * XXX: TODO: Use MetaPRL's termsize.c/mp_term.ml to get the actual terminal width instead of
     * using the default 80.
-    *) 
+    *)
    let width = 80 - 27 in
    let len = String.length s in
       if len <= width then
@@ -561,7 +600,7 @@ let fold_argv argv (mode_info, spec_info) arg default usage_msg =
                            x := true;
                            arg
                       | SetFold f ->
-                           f arg true
+                           f arg true;
                       | Clear x ->
                            x := false;
                            arg
