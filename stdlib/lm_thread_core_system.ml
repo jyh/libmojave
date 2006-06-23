@@ -58,6 +58,11 @@ struct
    let create = Thread.create
    let self = Thread.self
    let id = Thread.id
+   let sigmask =
+      if Sys.os_type = "Win32" then
+         (fun _ mask -> mask)
+      else
+         Thread.sigmask
 end
 
 (*!

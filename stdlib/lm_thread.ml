@@ -624,6 +624,7 @@ struct
    let create = create_thread
    let self = ThreadCore.self
    let id = ThreadCore.id
+   let sigmask = ThreadCore.sigmask
 end
 
 (*

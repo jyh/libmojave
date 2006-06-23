@@ -85,6 +85,9 @@ struct
 
    let id () =
       0
+
+   let sigmask _ mask =
+      mask
 end
 
 (*!

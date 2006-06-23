@@ -30,6 +30,7 @@
  *)
 open Lm_printf
 open Lm_debug
+open Lm_thread
 
 (*
  * Build debugging.

@@ -87,6 +87,7 @@ sig
    val create : ('a -> 'b) -> 'a -> t
    val self : unit -> t
    val id : t -> int
+   val sigmask : Unix.sigprocmask_command -> int list -> int list
 end
 
 (*!
