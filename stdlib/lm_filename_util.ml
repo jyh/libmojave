@@ -533,16 +533,15 @@ let mkdirhier dir mode =
          head :: path ->
             let dir = Filename.concat dir head in
             let () =
-               try 
+               try
                   let s = Unix.LargeFile.stat dir in
                      if s.Unix.LargeFile.st_kind <> Unix.S_DIR then
                         raise (Unix.Unix_error (Unix.ENOTDIR, "Lm_filename_util.mkdirhier", dir))
-               with Unix.Unix_error (Unix.ENOENT, _, _) ->
-               begin
-                  try Unix.mkdir dir mode with
-                     Unix.Unix_error (Unix.EEXIST, _, _) ->
-                        ()
-               end
+               with
+                  Unix.Unix_error (Unix.ENOENT, _, _) ->
+                     try Unix.mkdir dir mode with
+                        Unix.Unix_error (Unix.EEXIST, _, _) ->
+                           ()
             in
                mkdir dir path
        | [] ->
