@@ -361,7 +361,7 @@ let strip_suffixes name =
                   0
    in
       try
-         let index = String.rindex_from name start '.' in
+         let index = String.index_from name start '.' in
             String.sub name 0 index
       with
          Not_found ->
