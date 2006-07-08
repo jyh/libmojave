@@ -101,6 +101,18 @@ val registry_find  : registry_hkey -> string -> string -> string
 val openfile : string -> Unix.open_flag list -> Unix.file_perm -> Unix.file_descr
 
 (*
+ * Simple file locking.
+ *)
+type flock_command =
+   LOCK_UN
+ | LOCK_SH
+ | LOCK_EX
+ | LOCK_TSH
+ | LOCK_TEX
+
+val flock : Unix.file_descr -> flock_command -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

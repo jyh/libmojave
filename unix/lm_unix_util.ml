@@ -195,6 +195,15 @@ let ftruncate =
    else
       (fun fd -> Unix.ftruncate fd (Unix.lseek fd 0 Unix.SEEK_CUR))
 
+type flock_command =
+   LOCK_UN
+ | LOCK_SH
+ | LOCK_EX
+ | LOCK_TSH
+ | LOCK_TEX
+
+external flock : Unix.file_descr -> flock_command -> unit = "lm_flock"
+
 (*
  * Open a file descriptor.
  * This hook is here so you can add print statements to

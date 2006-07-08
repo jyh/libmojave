@@ -25,11 +25,23 @@
  * @end[license]
  */
 #include <stdio.h>
+#include <caml/signals.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/custom.h>
 #include <caml/fail.h>
+
+/*
+ * Lock codes.
+ */
+#define LM_LOCK_UN      0
+#define LM_LOCK_SH      1
+#define LM_LOCK_EX      2
+#define LM_LOCK_TSH     3
+#define LM_LOCK_TEX     5
+
+#define FLOCK_LEN       ((unsigned int) ~0 >> 2)
 
 /*
  * Print the stack pointer for debugging.
@@ -174,6 +186,28 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
 }
 
 /*
+ * Translate flock operators.
+ */
+static int lockf_of_flock[] = {
+    F_ULOCK,
+    F_RLOCK,
+    F_LOCK,
+    F_TRLOCK,
+    F_TLOCK
+};
+
+/*
+ * flock wrapper.
+ */
+value lm_flock(value v_fd, value v_op)
+{
+    value v_kind;
+
+    v_kind = Val_int(lockf_of_flock(Int_val(v_op)));
+    return lockf_win32(v_fd, v_kind, Val_int(FLOCK_LEN));
+}
+
+/*
  * Truncate to the current position.
  */
 value ftruncate_win32(value v_fd)
@@ -249,6 +283,9 @@ value caml_registry_find(value v_hkey, value v_subkey, value v_field)
 }
 
 #else /* WIN32 */
+#include <unistd.h>
+#include <sys/file.h>
+#include <fcntl.h>
 
 value int_of_fd(value fd)
 {
@@ -276,6 +313,86 @@ value ftruncate_win32(value v_fd)
 value caml_registry_find(value v_key, value v_subkey, value v_field)
 {
     caml_raise_not_found();
+    return Val_unit;
+}
+
+/*
+ * Translations.
+ */
+#if defined(LOCK_UN) && defined(LOCK_SH) && defined(LOCK_EX)
+#define FLOCK_ENABLED
+static int flock_of_flock[] = {
+    LOCK_UN,
+    LOCK_SH,
+    LOCK_EX,
+    LOCK_SH | LOCK_NB,
+    LOCK_EX | LOCK_NB
+};
+#endif
+
+#if defined(F_RDLCK) && defined(F_WRLCK) && defined(F_UNLCK) && defined(F_SETLK) && defined(F_SETLKW) && defined(SEEK_SET)
+#define FCNTL_ENABLED
+static int fcntl_type_of_flock[] = {
+    F_UNLCK,
+    F_RDLCK,
+    F_WRLCK,
+    F_RDLCK,
+    F_WRLCK
+};
+
+static int fcntl_of_flock[] = {
+    F_SETLKW,
+    F_SETLKW,
+    F_SETLKW,
+    F_SETLK,
+    F_SETLK
+};
+#endif
+
+#if defined(F_ULOCK) && defined(F_LOCK) && defined(F_TLOCK)
+#define LOCKF_ENABLED
+static int lockf_of_flock[] = {
+    F_ULOCK,
+    F_LOCK,
+    F_LOCK,
+    F_TLOCK,
+    F_TLOCK
+};
+#endif
+
+value lm_flock(value v_fd, value v_op)
+{
+    int fd, op, cmd, code;
+
+    fd = Int_val(v_fd);
+    op = Int_val(v_op);
+#if defined(FLOCK_ENABLED)
+    cmd = flock_of_flock[op];
+    enter_blocking_section();
+    code = flock(fd, cmd);
+    leave_blocking_section();
+#elif defined(FCNTL_ENABLED)
+    {
+        struct flock info;
+        cmd = fcntl_of_flock[op];
+        info.l_type = fcntl_type_of_flock[op];
+        info.l_whence = SEEK_SET;
+        info.l_start = 0;
+        info.l_len = FLOCK_LEN;
+        enter_blocking_section();
+        code = fcntl(fd, cmd, &info);
+        leave_blocking_section();
+    }
+#elif defined(LOCKF_ENABLED)
+    cmd = lockf_of_flock[op];
+    enter_blocking_section();
+    code = lockf(fd, cmd, FLOCK_LEN);
+    leave_blocking_section();
+#else
+    code = -1;
+#endif
+    if(code < 0)
+        failwith("flock");
     return Val_unit;
 }
 
