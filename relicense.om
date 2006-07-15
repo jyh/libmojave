@@ -1,0 +1,300 @@
+LGPL() =
+    value $"""\
+$(prefix)This library is free software; you can redistribute it and/or
+$(prefix)modify it under the terms of the GNU Lesser General Public
+$(prefix)License as published by the Free Software Foundation,
+$(prefix)version 2.1 of the License.
+$(prefix)
+$(prefix)This library is distributed in the hope that it will be useful,
+$(prefix)but WITHOUT ANY WARRANTY; without even the implied warranty of
+$(prefix)MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+$(prefix)Lesser General Public License for more details.
+$(prefix)
+$(prefix)You should have received a copy of the GNU Lesser General Public
+$(prefix)License along with this library; if not, write to the Free Software
+$(prefix)Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+$(prefix)
+$(prefix)Additional permission is given to link this library with the
+$(prefix)OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
+$(prefix)and you may distribute the linked executables.  See the file
+$(prefix)LICENSE.libmojave for more details."""
+
+relicense(name) =
+    name = $(file $(name))
+    bakname = $(file $(name).bak)
+    if $(not $(file-exists $(bakname)))
+        mv $(name) $(bakname)
+    stdout = $(fopen $(name), w)
+    printflag = true
+    nextprint = false
+    awk($(bakname))
+    case $'^\(.*Copyright.*\)Jason Hickey\(.*\)$'
+        println($"$(1)Mojave Group$(2)")
+        printflag = false
+        nextprint = true
+        export
+    case $'^\(.*\)This .* is free software; you can redistribute it and/or'
+        printflag = false
+        prefix = $1
+        export
+    case $'(Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.)|(LICENSE.OMake for more details.)'
+        nextprint = true
+        println($(LGPL))
+        export
+    default
+        if $(printflag)
+            println($"$0")
+        if $(nextprint)
+            printflag = true
+            nextprint = false
+            export
+        export
+    close($(stdout))
+
+FILES[] =
+    ./unix/lm_mmap_pipe.ml
+    ./unix/lm_unix_util.mli
+    ./unix/lm_id.ml
+    ./unix/lm_mmap.ml
+    ./unix/lm_unix_util.ml
+    ./unix/lm_uname.mli
+    ./unix/lm_inet.mli
+    ./unix/lm_rusage.ml
+    ./unix/lm_rusage.mli
+    ./unix/lm_mmap_pipe.mli
+    ./unix/lm_mmap.mli
+    ./unix/lm_uname.ml
+    ./unix/lm_notify.ml
+    ./unix/lm_notify.mli
+    ./unix/lm_dll.ml
+    ./unix/lm_inet.ml
+    ./unix/lm_id.mli
+    ./util/lm_float80.mli
+    ./util/lm_clock.mli
+    ./util/lm_config.mli
+    ./util/lm_float80.ml
+    ./util/lm_location.ml
+    ./util/lm_fmarshal.ml
+    ./util/lm_ssl.ml
+    ./util/lm_symbol_matrix.mli
+    ./util/lm_ncurses.ml
+    ./util/lm_location.mli
+    ./util/lm_ctype.ml
+    ./util/lm_readline.mli
+    ./util/lm_symbol_hash.ml
+    ./util/lm_rawfloat.ml
+    ./util/lm_ncurses_display.ml
+    ./util/lm_format_util.mli
+    ./util/lm_parse_id.mli
+    ./util/lm_glob.mli
+    ./util/lm_interval_set.ml
+    ./util/lm_lexer.mli
+    ./util/lm_hash.mli
+    ./util/lm_db.ml
+    ./util/lm_fmarshal.mli
+    ./util/lm_rawint.ml
+    ./util/lm_readline.ml
+    ./util/lm_lexer.ml
+    ./util/lm_channel.mli
+    ./util/lm_loop.ml
+    ./util/lm_trace.mli
+    ./util/lm_dlist.ml
+    ./util/lm_bitmatrix.mli
+    ./util/lm_ssl.mli
+    ./util/lm_attribute.mli
+    ./util/lm_flags.ml
+    ./util/lm_ctype.mli
+    ./util/lm_interval_set.mli
+    ./util/lm_parse_id.ml
+    ./util/lm_channel.ml
+    ./util/lm_table_graph.ml
+    ./util/lm_terminfo.ml
+    ./util/lm_parser.ml
+    ./util/lm_table_graph.mli
+    ./util/lm_glob.ml
+    ./util/lm_hash.ml
+    ./util/lm_position.mli
+    ./util/lm_symbol_hash.mli
+    ./util/lm_rawfloat.mli
+    ./util/lm_ncurses_display.mli
+    ./util/lm_terminfo.mli
+    ./util/lm_loop.mli
+    ./util/lm_config.ml
+    ./util/lm_listbuf.mli
+    ./util/lm_flags.mli
+    ./util/lm_parser.mli
+    ./util/lm_symbol.ml
+    ./util/lm_profile.ml
+    ./util/lm_symbol_matrix.ml
+    ./util/lm_symbol.mli
+    ./util/lm_format_util.ml
+    ./util/lm_command_util.mli
+    ./util/lm_arg.mli
+    ./util/lm_trace.ml
+    ./util/lm_position.ml
+    ./util/lm_arg.ml
+    ./util/lm_field_table.ml
+    ./util/lm_field_table.mli
+    ./util/lm_db.mli
+    ./util/lm_clock.ml
+    ./util/lm_rawint.mli
+    ./util/lm_bitmatrix.ml
+    ./util/lm_attribute.ml
+    ./util/lm_profile.mli
+    ./util/lm_dlist.mli
+    ./util/lm_ncurses.mli
+    ./util/lm_listbuf.ml
+    ./util/lm_command_util.ml
+    ./cutil/lm_mmap.c
+    ./cutil/lm_mmap.h
+    ./cutil/lm_uname_ext.c
+    ./cutil/lm_unix_cutil.c
+    ./cutil/unixsupport.h
+    ./cutil/lm_ctype.c
+    ./cutil/lm_marshal_shared.c
+    ./cutil/lm_marshal_shared.h
+    ./cutil/lm_config.c
+    ./cutil/lm_dll.c
+    ./cutil/lm_dll.h
+    ./cutil/lm_raw.c
+    ./cutil/lm_ssl.c
+    ./cutil/fam_inotify.c
+    ./cutil/lm_abstract.c
+    ./cutil/lm_float.c
+    ./cutil/inotify-test.c
+    ./cutil/lm_printf.c
+    ./cutil/fam_win32.c
+    ./cutil/lm_dll_hooks.h
+    ./cutil/fam_kqueue.c
+    ./cutil/lm_channel.c
+    ./cutil/lm_compat_win32.c
+    ./cutil/lm_compat_win32.h
+    ./cutil/fam_pseudo.h
+    ./cutil/lm_heap.c
+    ./cutil/lm_heap.h
+    ./cutil/lm_notify.c
+    ./cutil/lm_nocompare.c
+    ./stdlib/lm_filename_util.ml
+    ./stdlib/lm_char.ml
+    ./stdlib/lm_array.mli
+    ./stdlib/lm_map.ml
+    ./stdlib/lm_map_sig.ml
+    ./stdlib/lm_hash_set.mli
+    ./stdlib/lm_array_linear_set.mli
+    ./stdlib/lm_test_sig.ml
+    ./stdlib/lm_serial_map.ml
+    ./stdlib/lm_num.ml
+    ./stdlib/lm_large_array.ml
+    ./stdlib/lm_string.mli
+    ./stdlib/lm_rformat.mli
+    ./stdlib/lm_index.mli
+    ./stdlib/lm_hash_set.ml
+    ./stdlib/lm_rformat_raw.mli
+    ./stdlib/lm_thread_util.mli
+    ./stdlib/lm_format.ml
+    ./stdlib/lm_thread_shell.ml
+    ./stdlib/lm_make_printf.mli
+    ./stdlib/lm_set.ml
+    ./stdlib/lm_imp_dag.mli
+    ./stdlib/lm_hashtbl_util.mli
+    ./stdlib/lm_sys.ml
+    ./stdlib/lm_filename_util.mli
+    ./stdlib/lm_char.mli
+    ./stdlib/lm_splay_linear_set.mli
+    ./stdlib/lm_rformat.ml
+    ./stdlib/lm_thread_util.ml
+    ./stdlib/lm_splay_set.mli
+    ./stdlib/lm_test.mli
+    ./stdlib/lm_string_util.ml
+    ./stdlib/lm_big_int.ml
+    ./stdlib/lm_format.mli
+    ./stdlib/lm_set_sig.ml
+    ./stdlib/lm_make_printf.ml
+    ./stdlib/lm_thread_shell.mli
+    ./stdlib/lm_int_util.mli
+    ./stdlib/lm_nocompare.mli
+    ./stdlib/lm_dag_sig.ml
+    ./stdlib/lm_set.mli
+    ./stdlib/lm_debug.ml
+    ./stdlib/lm_list.ml
+    ./stdlib/lm_printf_rbuffer.ml
+    ./stdlib/lm_rprintf.mli
+    ./stdlib/lm_array_linear_set.ml
+    ./stdlib/lm_file_util.mli
+    ./stdlib/lm_map.mli
+    ./stdlib/lm_int_util.ml
+    ./stdlib/lm_array_sig.ml
+    ./stdlib/lm_small_set.ml
+    ./stdlib/lm_string_util.mli
+    ./stdlib/lm_rformat_tex.mli
+    ./stdlib/lm_table_util.mli
+    ./stdlib/lm_rformat_text.ml
+    ./stdlib/lm_thread_pool.mli
+    ./stdlib/lm_test.ml
+    ./stdlib/lm_pervasives.h
+    ./stdlib/lm_printf.ml
+    ./stdlib/lm_printf.mli
+    ./stdlib/lm_buffer.mli
+    ./stdlib/lm_small_set.mli
+    ./stdlib/lm_thread_core_null.ml
+    ./stdlib/lm_ref_util.mli
+    ./stdlib/lm_splay_table.mli
+    ./stdlib/lm_rprintf.ml
+    ./stdlib/lm_sys.mli
+    ./stdlib/lm_ref_util.ml
+    ./stdlib/lm_thread_pool_null.ml
+    ./stdlib/lm_large_array_weak.mli
+    ./stdlib/lm_thread_core.mli
+    ./stdlib/lm_array.ml
+    ./stdlib/lm_string.ml
+    ./stdlib/lm_index.ml
+    ./stdlib/lm_rformat_raw.ml
+    ./stdlib/lm_imp_dag.ml
+    ./stdlib/lm_hashtbl_util.ml
+    ./stdlib/lm_thread.mli
+    ./stdlib/lm_file_util.ml
+    ./stdlib/lm_big_int.mli
+    ./stdlib/lm_rformat_tex.ml
+    ./stdlib/lm_table_util.ml
+    ./stdlib/lm_buffer.ml
+    ./stdlib/lm_large_array_weak.ml
+    ./stdlib/lm_heap.ml
+    ./stdlib/lm_list_util.mli
+    ./stdlib/lm_thread_event.ml
+    ./stdlib/lm_string_set.ml
+    ./stdlib/lm_heap.mli
+    ./stdlib/lm_cycle_dag.mli
+    ./stdlib/lm_thread_pool_system.ml
+    ./stdlib/lm_thread_event.mli
+    ./stdlib/lm_string_set.mli
+    ./stdlib/lm_rformat_html.mli
+    ./stdlib/lm_serial_map.mli
+    ./stdlib/lm_debug.mli
+    ./stdlib/lm_list_util.ml
+    ./stdlib/lm_num.mli
+    ./stdlib/lm_large_array.mli
+    ./stdlib/lm_array_util.ml
+    ./stdlib/lm_int_set.ml
+    ./stdlib/lm_linear_set_sig.ml
+    ./stdlib/lm_splay_set.ml
+    ./stdlib/lm_thread.ml
+    ./stdlib/lm_rformat_html.ml
+    ./stdlib/lm_array_util.mli
+    ./stdlib/lm_int_set.mli
+    ./stdlib/lm_thread_core_system.ml
+    ./stdlib/lm_list.mli
+    ./stdlib/lm_splay_linear_set.ml
+    ./stdlib/lm_nocompare.ml
+    ./stdlib/lm_printf_rbuffer.mli
+    ./stdlib/lm_splay_table.ml
+    ./stdlib/lm_cycle_dag.ml
+    ./stdlib/lm_thread_sig.ml
+    ./stdlib/lm_rformat_text.mli
+    ./system/lm_marshal_buf.ml
+    ./system/lm_marshal_buf.mli
+    ./system/lm_marshal_sig.ml
+    ./system/lm_marshal_shared.ml
+    ./system/lm_marshal_shared.mli
+    
+foreach(i, $(FILES))
+    relicense($i)
