@@ -33,11 +33,16 @@ relicense(name) =
         printflag = false
         nextprint = true
         export
+    case $'^\(.*Copyright.*\)Mojave Group[, ]*Cornell.*$'
+        println($"$(1)PRL Group, Cornell University and Caltech")
+        printflag = false
+        nextprint = true
+        export
     case $'^\(.*\)This .* is free software; you can redistribute it and/or'
         printflag = false
         prefix = $1
         export
-    case $'(Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.)|(LICENSE.OMake for more details.)'
+    case $'(Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.)|(LICENSE.(OMake|libmojave) for more details.)'
         nextprint = true
         println($(LGPL))
         export
@@ -49,6 +54,7 @@ relicense(name) =
             nextprint = false
             export
         export
+    rm -f $(bakname)
     close($(stdout))
 
 FILES[] =

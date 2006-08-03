@@ -36,7 +36,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998, 1999-2005 Mojave Group, Cornell University
+ * Copyright (C) 1998, 1999-2005 PRL Group, Cornell University and Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
