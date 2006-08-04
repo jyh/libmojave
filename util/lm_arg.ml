@@ -339,7 +339,16 @@ let is_invert_prefix name =
    && String.unsafe_get name 4 = '-'
 
 let strip_invert_prefix name =
-   String.sub name 4 (String.length name - 4)
+   "-" ^ (String.sub name 4 (String.length name - 4))
+
+let is_invertable_option opt = function
+   Set _
+ | Clear _
+ | SetFold _
+ | ClearFold _ ->
+      String.length opt > 1 && opt.[0] = '-'
+ | _ ->
+      false
 
 let lookup_option options name =
    if is_invert_prefix name then
@@ -355,7 +364,7 @@ let lookup_option options name =
              | ClearFold f, "" ->
                   SetFold f, ""
              | _ ->
-                  raise (BogusArg "not an invertible option")
+                  raise (BogusArg "not an invertible option: ")
          with
             BogusArg _
           | Not_found ->
@@ -431,26 +440,31 @@ let usage spec =
          let opt = opt ^ arg in
 
             (* Display information on a single option. *)
-            if String.length opt > 20 then
+            (if String.length opt > 19 then
                (* option name too long to fit on one line *)
-               printf "@ %s@ %20s" opt ""
+               printf "@ %s@ %19s" opt ""
             else
-               printf "@ %-20s" opt;
-            printf ":  ";
+               printf "@ %-19s" opt);
+            (if is_invertable_option opt spec then
+               printf "*:  "
+            else
+               printf " :  ");
             print_doc_string doc) spec
 
 let usage (mode, spec) usage_msg =
    (* Display help for all sections. *)
    printf "@[<v 0>%s." usage_msg;
+   List.iter (fun (section, spec) ->
+      printf "@ @ @[<v 3>%s:" section;
+      usage spec;
+      printf "@]") spec;
    (match mode with
        StrictOptions ->
           ()
      | MultiLetterOptions ->
           printf "@ Single-letter options may be concatenated as part of a single option.");
-   List.iter (fun (section, spec) ->
-      printf "@ @ @[<v 3>%s:" section;
-      usage spec;
-      printf "@]") spec;
+   (if List.exists (fun (_, spec) -> List.exists (fun (opt, spec, _) -> is_invertable_option opt spec) spec) spec then
+      printf "@ @ (*) Prefix the option with \"--no\" to disable.");
    printf "@]@."
 
 
