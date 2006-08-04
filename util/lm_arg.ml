@@ -197,11 +197,39 @@ let char_table_lookup table ch =
             None
 
 
+(* lookup_option
+   We also allow --no-* prefixes on Boolean options.
+
+   JYH: this is perhaps not the simplest way to deal
+   with inversion, but the implementation is simple.  *)
+let is_invert_prefix name =
+   String.length name > 5
+   && String.unsafe_get name 0 = '-'
+   && String.unsafe_get name 1 = '-'
+   && String.unsafe_get name 2 = 'n'
+   && String.unsafe_get name 3 = 'o'
+   && String.unsafe_get name 4 = '-'
+
+let strip_invert_prefix name =
+   String.sub name 4 (String.length name - 4)
+
+let is_invertable_option opt = function
+   Set _
+ | Clear _
+ | SetFold _
+ | ClearFold _ ->
+      String.length opt > 1 && opt.[0] = '-'
+ | _ ->
+      false
+
+
 (* add_option
    Add a new option name to the option tree.  If the exact option already
    exists, then an exception is thrown.  If a prefix or suffix of this
    option is already defined, then no error occurs.  *)
 let add_option options name spec =
+   if is_invert_prefix name then
+      raise (BogusArg ("Option contains an invertion prefix: " ^ name));
    let length = String.length name in
 
    (* deconstruct_name
@@ -324,32 +352,6 @@ let lookup_option_core options name =
    in
       lookup_name options 0
 
-
-(* lookup_option
-   We also allow --no-* prefixes on Boolean options.
-
-   JYH: this is perhaps not the simplest way to deal
-   with inversion, but the implementation is simple.  *)
-let is_invert_prefix name =
-   String.length name > 5
-   && String.unsafe_get name 0 = '-'
-   && String.unsafe_get name 1 = '-'
-   && String.unsafe_get name 2 = 'n'
-   && String.unsafe_get name 3 = 'o'
-   && String.unsafe_get name 4 = '-'
-
-let strip_invert_prefix name =
-   "-" ^ (String.sub name 4 (String.length name - 4))
-
-let is_invertable_option opt = function
-   Set _
- | Clear _
- | SetFold _
- | ClearFold _ ->
-      String.length opt > 1 && opt.[0] = '-'
- | _ ->
-      false
-
 let lookup_option options name =
    if is_invert_prefix name then
       let orig_name = strip_invert_prefix name in
@@ -364,11 +366,11 @@ let lookup_option options name =
              | ClearFold f, "" ->
                   SetFold f, ""
              | _ ->
-                  raise (BogusArg "not an invertible option: ")
+                  raise (BogusArg "Not an invertible option: ")
          with
             BogusArg _
           | Not_found ->
-               lookup_option_core options name
+                raise (BogusArg ("No such option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
    else
       lookup_option_core options name
 
