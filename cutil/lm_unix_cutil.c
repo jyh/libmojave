@@ -208,7 +208,7 @@ value lm_flock(value v_fd, value v_op)
 {
     value v_kind;
 
-    v_kind = Val_int(lockf_of_flock(Int_val(v_op)));
+    v_kind = Val_int(lockf_of_flock[Int_val(v_op)]);
     return lockf_win32(v_fd, v_kind, Val_int(FLOCK_LEN));
 }
 
