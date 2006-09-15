@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -48,15 +48,23 @@ type mode =
  | InOutChannel
 
 (* Creation *)
-val create        : int -> string -> kind -> mode -> bool -> Unix.file_descr option -> t
+val create        : string -> kind -> mode -> bool -> Unix.file_descr option -> t
 val name          : t -> string
 val descr         : t -> Unix.file_descr
 val close         : t -> unit
 val info          : t -> int * kind * mode * bool
+
+val set_id        : t -> int -> unit
+
 val of_string     : string -> t
 val of_substring  : string -> int -> int -> t
 val of_loc_string : string -> int -> int -> string -> t
 val of_fun        : (string -> int -> int -> int) -> (string -> int -> int -> int) -> t
+
+(* Output to strings *)
+val create_string     : unit -> t
+val create_loc_string : string -> int -> int -> t
+val to_string         : t -> string
 
 (* Set the file and line number *)
 val set_line      : t -> string -> int -> unit

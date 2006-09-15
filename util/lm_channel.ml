@@ -26,16 +26,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -79,7 +79,7 @@ let fun_sym    = Lm_symbol.add ".fun"
  * to perform asynchronous writes on pipes.
  *)
 type channel =
-   { channel_id           : int;
+   { mutable channel_id   : int;
      channel_fd           : Unix.file_descr option;
      channel_kind         : kind;
      channel_mode         : mode;
@@ -120,9 +120,12 @@ type channel =
 
      (*
       * out_max is the total amount of data in the output buffer.
+      * If out_expand is true, the outbuffer is expanded instead
+      * instead of flushing.
       *)
+     out_expand           : bool;
      mutable out_max      : int;
-     out_buffer           : string;
+     mutable out_buffer   : string;
 
      (*
       * In text mode, the output is double-buffered because
@@ -201,7 +204,7 @@ let null_writer _ _ _ =
 (*
  * Empty buffer.
  *)
-let create id file kind mode binary fd =
+let create file kind mode binary fd =
    let kind =
       match fd with
          Some fd ->
@@ -220,7 +223,7 @@ let create id file kind mode binary fd =
       else
          String.create (buf_size * 2)
    in
-      { channel_id     = id;
+      { channel_id     = 0;
         channel_fd     = fd;
         channel_kind   = kind;
         channel_mode   = mode;
@@ -239,6 +242,7 @@ let create id file kind mode binary fd =
         lex_index      = 0;
 
         out_max        = 0;
+        out_expand     = false;
         out_buffer     = out_buffer;
 
         write_pid      = 0;
@@ -249,6 +253,9 @@ let create id file kind mode binary fd =
         read_fun       = default_reader fd;
         write_fun      = default_writer fd
       }
+
+let set_id info id =
+   info.channel_id <- id
 
 let of_string file line char s =
    let len = String.length s in
@@ -271,6 +278,7 @@ let of_string file line char s =
         lex_index    = 0;
 
         out_max      = 0;
+        out_expand   = false;
         out_buffer   = "";
 
         write_pid    = 0;
@@ -302,6 +310,7 @@ let of_fun read write =
      lex_index    = 0;
 
      out_max      = 0;
+     out_expand   = false;
      out_buffer   = String.create buf_size;
 
      write_pid    = 0;
@@ -350,6 +359,44 @@ let set_binary_mode =
 let set_io_functions info reader writer =
    info.read_fun <- reader;
    info.write_fun <- writer
+
+let create_loc_string_aux file line char =
+   { channel_id     = 0;
+     channel_fd     = None;
+     channel_kind   = FileChannel;
+     channel_mode   = OutChannel;
+     channel_file   = file;
+     channel_binary = true;
+
+     start_line     = line;
+     start_char     = char;
+     middle_index   = 0;
+     middle_line    = line;
+     middle_char    = char;
+
+     in_index     = 0;
+     in_max       = 0;
+     in_buffer    = "";
+     lex_index    = 0;
+
+     out_max      = 0;
+     out_expand   = true;
+     out_buffer   = String.create buf_size;
+
+     write_pid    = 0;
+     write_index  = 0;
+     write_max    = 0;
+     write_buffer = "";
+
+     read_fun     = null_reader;
+     write_fun    = null_writer
+   }
+
+let create_loc_string file line char =
+   create_loc_string_aux (Lm_symbol.add file) line char
+
+let create_string () =
+   create_loc_string_aux string_sym 1 0
 
 (************************************************************************
  * Line envding translation.
@@ -501,6 +548,31 @@ let reset_output_buffer info =
    info.write_max    <- 0
 
 (************************************************************************
+ * Output string buffers.
+ *)
+
+(*
+ * For string buffers, expand the output instead of
+ * flushing.
+ *)
+let expand_output info =
+   let { out_buffer = buffer;
+         out_max    = max
+       } = info
+   in
+      if max = String.length buffer then
+         let buffer2 = String.create (max * 2) in
+            String.blit buffer 0 buffer2 0 max;
+            info.out_buffer <- buffer2
+
+let to_string info =
+   let { out_buffer = buffer;
+         out_max = max
+       } = info
+   in
+      String.sub buffer 0 max
+
+(************************************************************************
  * Flushing and filling.
  *)
 
@@ -552,7 +624,7 @@ let flush_output_once info =
 let flush_aux info =
    setup_write_buffer info;
    let { write_buffer = buf;
-         write_fun  = writer
+         write_fun    = writer
        } = info
    in
 
@@ -575,7 +647,10 @@ let flush_output info =
    let pid = info.write_pid in
       if pid <> 0 then
          Lm_thread_pool.waitpid pid;
-      flush_aux info
+      if info.out_expand then
+         expand_output info
+      else
+         flush_aux info
 
 (*
  * Start an output thread trying to write the data to the pipe.
@@ -622,7 +697,7 @@ let rec output_char info c =
        } = info
    in
       flush_input info;
-      if max = buf_size then
+      if max = String.length buffer then
          begin
             flush_output info;
             output_char info c
@@ -644,7 +719,7 @@ let rec output_buffer info buf off len =
          out_buffer = buffer
        } = info
    in
-   let avail = buf_size - max in
+   let avail = String.length buffer - max in
       flush_input info;
       if len <> 0 then
          if avail = 0 then
