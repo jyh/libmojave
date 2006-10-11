@@ -64,10 +64,10 @@ typedef struct {
 #define FAMInfo_val(v)         ((FAMInfo *) Data_custom_val(v))
 #define FAMConnection_val(v)   ((FAMInfo_val(v)->fc))
 
-#ifdef WIN32
-#define ErrFmt(buffer, fmt) sprintf(buffer, fmt, FamErrlist[FAMErrno])
-#else
+#ifdef HAVE_SNPRINTF
 #define ErrFmt(buffer, fmt) snprintf(buffer, sizeof(buffer), fmt, FamErrlist[FAMErrno])
+#else
+#define ErrFmt(buffer, fmt) sprintf(buffer, fmt, FamErrlist[FAMErrno])
 #endif
 
 #define CheckCode(fmt, expr)                    \

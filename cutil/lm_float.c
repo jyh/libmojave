@@ -91,12 +91,12 @@ value string_of_float80(value f) {
    
    /* Print the floating-point value to a buffer */
    val = load_float80(f);
-#ifdef WIN32
-   sprintf(buffer, "%Lg", val);
-#else
+#ifdef HAVE_SNPRINTF
    snprintf(buffer, sizeof(buffer), "%Lg", val);
-#endif
+#else
+   sprintf(buffer, "%Lg", val);
    buffer[sizeof(buffer) - 1] = '\0';
+#endif
    
    /* Allocate a new string block to contain result */
    block = copy_string(buffer);
@@ -191,12 +191,12 @@ value float80_format(value fmt, value f) {
    
    /* Print the floating-point value to a buffer */
    val = load_float80(f);
-#ifdef WIN32
-   sprintf(buffer, String_val(fmt), val);
-#else
+#ifdef HAVE_SNPRINTF
    snprintf(buffer, sizeof(buffer), String_val(fmt), val);
-#endif
+#else
+   sprintf(buffer, String_val(fmt), val);
    buffer[sizeof(buffer) - 1] = '\0';
+#endif
    
    /* Allocate a new string block to contain result */
    block = copy_string(buffer);

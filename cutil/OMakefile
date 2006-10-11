@@ -27,6 +27,24 @@ CFILES[] =
     lm_notify
 
 #
+# XXX: snprintf.om will be added in OMake 0.9.8
+#
+if $(test -r $(STDLIB)/configure/snprintf.om)
+    open configure/snprintf
+    export
+else
+    # XXX: HACK
+    static. =
+        print($"--- Checking snprintf availability... ")
+        SNPRINTF_AVAILABLE = $(CheckLib $(EMPTY), snprintf)
+        println($"""($(if $(not $(SNPRINTF_AVAILABLE)), $"NOT ")found)""")
+    export
+
+if $(SNPRINTF_AVAILABLE)
+    CFLAGS += -DHAVE_SNPRINTF
+    export
+
+#
 # Libraries
 #
 StaticCLibraryInstall($(LMINSTALL), $(LIB), liblmcutil, $(CFILES))
