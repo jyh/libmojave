@@ -1,18 +1,29 @@
 #
+# XXX: 0.9.8 defines Shell.ln-or-cp, but we want to allow 0.9.6.9 too
+#
+if $(not $(Shell.object-mem ln-or-cp))
+    Shell. +=
+        ln-or-cp(argv) =
+            src = $(file $(nth 0, $(argv)))
+            dst = $(file $(nth 1, $(argv)))
+            $(symlink $(src), $(dst))
+    export
+
+#
 # Threads are optional
 #
 if $(THREADS_ENABLED)
     lm_thread_core.ml: lm_thread_core_system.ml
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 
     lm_thread_pool.ml: lm_thread_pool_system.ml
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 else
     lm_thread_core.ml: lm_thread_core_null.ml
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 
     lm_thread_pool.ml: lm_thread_pool_null.ml
-        $(symlink $<, $@)
+        ln-or-cp $< $@
 
 OCamlGeneratedFiles(lm_thread_pool.ml lm_thread_core.ml)
 
