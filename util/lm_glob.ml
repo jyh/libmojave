@@ -27,16 +27,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -159,6 +159,7 @@ type glob_option =
  | GlobNoCheck                        (* If an expansion fails, return the expansion literally *)
  | GlobIgnoreCheck                    (* If an expansion fails, it expands to nothing *)
  | GlobDot                            (* Allow wildcards to match filenames with a leading . *)
+ | GlobOnlyFiles                      (* Return only non-directories in the result *)
  | GlobOnlyDirs                       (* Return only directories in the result *)
  | GlobCVSIgnore                      (* Ignore files as specified by .cvsignore files *)
  | GlobIgnore of string list          (* Ignore the files that match the pattern *)
@@ -179,6 +180,7 @@ type glob_options =
      glob_escape    : bool;
      glob_check     : glob_check;
      glob_dot       : bool;
+     glob_files     : bool;
      glob_dirs      : bool;
      glob_cvs       : bool;
      glob_ignore    : (string -> bool);
@@ -194,6 +196,7 @@ let default_glob_options =
      glob_escape    = true;
      glob_check     = NoMatchError;
      glob_dot       = false;
+     glob_files     = false;
      glob_dirs      = false;
      glob_cvs       = false;
      glob_ignore    = (fun _ -> false);
@@ -527,6 +530,7 @@ let create_options l =
                 | GlobNoCheck     -> { options with glob_check = NoMatchPreserve }
                 | GlobIgnoreCheck -> { options with glob_check = NoMatchIgnore }
                 | GlobDot         -> { options with glob_dot = true }
+                | GlobOnlyFiles   -> { options with glob_files = true }
                 | GlobOnlyDirs    -> { options with glob_dirs = true }
                 | GlobCVSIgnore   -> { options with glob_cvs = true }
                 | GlobIgnoreFun f -> { options with glob_ignore = f }
@@ -632,6 +636,7 @@ let glob_dir_pattern options root dirs names dir pattern =
                let dir_flag = is_dir root_name in
                let dirs, names =
                   if (options.glob_dot || name.[0] <> '.')
+                     && (not options.glob_files || not dir_flag)
                      && (not options.glob_dirs || dir_flag)
                      && LmStr.string_match pattern name 0
                      && not (options.glob_ignore name)
