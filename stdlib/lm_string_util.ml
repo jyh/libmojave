@@ -9,16 +9,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -253,6 +253,42 @@ let js_escaped s =
 (*
  * Escape a string using the HTML conventions.
  *)
+let html_pre_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let _ =
+            match c with
+               '<' ->
+                  Buffer.add_string buf "&lt;"
+             | '>' ->
+                  Buffer.add_string buf "&gt;"
+             | '&' ->
+                  Buffer.add_string buf "&amp;"
+             | '"' ->
+                  Buffer.add_string buf "&quot;"
+             | ' '
+             | '\r'
+             | '\n'
+             | '\t' ->
+                  Buffer.add_char buf c
+             | _ ->
+                  if c < ' ' || c >= '\127' then begin
+                      Buffer.add_string buf "&#";
+                      Buffer.add_string buf (string_of_int (Char.code c));
+                      Buffer.add_char buf ';'
+                  end
+                  else
+                      Buffer.add_char buf c
+         in
+            loop (succ i)
+   in
+      loop 0
+
 let html_escaped s =
    let len = String.length s in
    let buf = Buffer.create len in
