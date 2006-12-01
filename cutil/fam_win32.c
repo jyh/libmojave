@@ -6,7 +6,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004-2006 Mojave Group, Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,12 +27,15 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{nogin@metaprl.org}
  * @end[license]
  */
 #ifdef WIN32
 #ifdef FAM_ENABLED
+
+/* Disable some of the warnings */
+#pragma warning( disable : 4127 )
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0400
@@ -217,7 +220,7 @@ static int monitor_wait(FAMConnection *fc, DWORD interval)
      */
     // enter_blocking_section();
     status = WaitForMultipleObjects(ncount, handles, FALSE, interval);
-    if(status == -1)
+    if(status == WAIT_FAILED)
         code = GetLastError();
     // leave_blocking_section();
 
@@ -231,13 +234,13 @@ static int monitor_wait(FAMConnection *fc, DWORD interval)
         fprintf(stderr, "WaitForMultipleObjects: status=%d ncount=%d\n", status, ncount);
         print_error_code("WaitForMultipleObjects", code);
 #endif
-        status = -1;
+        status = WAIT_FAILED;
     }
 #ifdef FAM_DEBUG
     fprintf(stderr, "Woke up on request %d\n", status);
     fflush(stderr);
 #endif
-    return status;
+    return (status == WAIT_FAILED ? -1 : 0);
 }
 
 /*

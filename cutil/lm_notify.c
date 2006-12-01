@@ -39,8 +39,10 @@
 
 #ifdef FAM_ENABLED
 
-#ifdef WIN32
+#ifdef WIN32 
 #include <windows.h>
+/* Disable some of the warnings */
+#pragma warning( disable : 4100 4189 4127 4702 )
 #endif /* WIN32 */
 
 #ifdef FAM_PSEUDO
@@ -284,7 +286,6 @@ value om_notify_next_event(value v_fc)
     CAMLlocal2(v_name, v_tuple);
     FAMConnection *fc;
     FAMEvent event;
-    value tuple;
     int code;
 
     fc = FAMConnection_val(v_fc);

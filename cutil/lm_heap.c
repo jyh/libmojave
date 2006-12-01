@@ -38,6 +38,11 @@
 #include <caml/fail.h>
 #include <caml/custom.h>
 
+#if defined(WIN32) || defined(_WIN32)
+/* Disable some of the warnings */
+#pragma warning( disable : 4146 )
+#endif
+
 extern char *caml_young_start, *caml_young_ptr, *caml_young_limit, *caml_young_end;
 
 static char *null = 0;
@@ -61,7 +66,7 @@ static void search_pointer(char **pointers, char *name, unsigned bound, char *p,
             j = k;
     }
     p2 = pointers[i];
-    if(p2 != p && Tag_val(p) != Infix_tag) {
+    if((p2 != p) && (Tag_val(p) != Infix_tag)) {
         fprintf(stderr, "%s: illegal pointer: 0x%08lx < 0x%08lx < 0x%08lx, size = %lud, tag = %d\n", 
                 name,
                 (unsigned long) p2, (unsigned long) p, (unsigned long) pointers[i + 1],

@@ -38,6 +38,12 @@
 #include <caml/fail.h>
 #include <caml/custom.h>
 
+#ifdef WIN32 
+#include <windows.h>
+/* Disable some of the warnings */
+#pragma warning( disable : 4100 )
+#endif /* WIN32 */
+
 /*
  * Character classes.
  */
@@ -51,7 +57,7 @@ static value get_chars(int (*f)(int))
     p = buf;
     for(i = 0; i != 256; i++) {
         if(f(i))
-            *p++ = i;
+            *p++ = (char) i;
     }
     s = alloc_string(p - buf);
     memcpy(String_val(s), buf, p - buf);

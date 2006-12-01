@@ -37,6 +37,9 @@
 #include <caml/custom.h>
 
 #ifdef WIN32
+/* Disable some of the warnings */
+#pragma warning( disable : 4100 4201 ) 
+
 #include <windows.h>
 #include <tlhelp32.h>
 #include <shlobj.h>

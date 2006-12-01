@@ -414,5 +414,12 @@ int FAMMonitorDirectoryTree(FAMConnection *fc, const char *name, FAMRequest *req
     FAMErrno = FAM_NOT_IMPLEMENTED;
     return -1;
 }
+#else /* FAM_INOTIFY */
+
+#if defined(WIN32) || defined(_WIN32)
+/* Disable the "translation unit is empty" warning */
+#pragma warning( disable : 4206 )
+#endif
 
 #endif /* FAM_INOTIFY */
+

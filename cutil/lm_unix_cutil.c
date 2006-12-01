@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003 Mojave Group, Caltech
+ * Copyright (C) 2003-2006 Mojave Group, Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,11 @@
 #include <caml/memory.h>
 #include <caml/custom.h>
 #include <caml/fail.h>
+
+#if defined(WIN32) || defined(_WIN32)
+/* Disable some of the warnings */
+#pragma warning( disable : 4100 4201 4127 4189 4702 )
+#endif
 
 /*
  * Lock codes.
@@ -104,8 +109,8 @@ value lockf_win32(value v_fd, value v_kind, value v_len)
     int kind = Int_val(v_kind);
     int len = Int_val(v_len);
     OVERLAPPED overlapped;
-    int code, flags;
-    DWORD pos, error;
+    int code, flags = 0;
+    DWORD pos, error = 0;
 
     /* Get the current position in the file */
     pos = SetFilePointer(fd, 0, 0, FILE_CURRENT);
@@ -235,7 +240,7 @@ value caml_registry_find(value v_hkey, value v_subkey, value v_field)
     const char *subkey, *field;
     DWORD len;
     LONG code;
-    HKEY hkey;
+    HKEY hkey = 0;
 
     /* Get the arguments */
     switch(Int_val(v_hkey)) {

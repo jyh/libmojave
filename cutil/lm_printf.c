@@ -51,7 +51,7 @@ value ml_print_char(value v_fmt, value v_char)
 {
     char buffer[BUFSIZE];
     char *fmt = String_val(v_fmt);
-    char c = Int_val(v_char);
+    char c = (char) Int_val(v_char);
 #ifdef HAVE_SNPRINTF
     if(snprintf(buffer, sizeof(buffer), fmt, c) < 0)
         failwith("ml_print_char");
