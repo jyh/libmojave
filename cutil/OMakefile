@@ -25,6 +25,7 @@ CFILES[] =
     fam_kqueue
     fam_inotify
     lm_notify
+    lm_termsize
 
 #
 # XXX: snprintf.om will be added in OMake 0.9.8
