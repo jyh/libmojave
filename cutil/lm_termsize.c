@@ -19,14 +19,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey <jyh@cs.caltech.edu>
- * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Authors: Jason Hickey <jyh@cs.caltech.edu>
+ *          Aleksey Nogin <nogin@cs.cornell.edu>
  */
 #include <stdio.h>
 #ifdef __CYGWIN__
 #   include <sys/termios.h>
 #endif
-#ifndef WIN32
+#ifdef WIN32
+#   include <Windows.h>
+#   pragma warning (disable: 4127 4189 4702)
+#else
 #   include <sys/ioctl.h>
 #endif
 
@@ -45,14 +48,22 @@ value caml_term_size(value arg)
 
     /* Get the terminal size, return None on failure */
 #ifdef WIN32
-    Field(buf, 0) = Val_int(24);
-    Field(buf, 1) = Val_int(80);
+    {
+        HANDLE fd = *(HANDLE *)Data_custom_val(arg);
+        CONSOLE_SCREEN_BUFFER_INFO ConsoleInfo;
+        if (! GetConsoleScreenBufferInfo(fd, &ConsoleInfo))
+            failwith("lm_termsize.c: caml_term_size: GetConsoleScreenBufferInfo failed");
+
+        Field(buf, 0) = Val_int(ConsoleInfo.dwSize.Y);
+        Field(buf, 1) = Val_int(ConsoleInfo.dwSize.X);
+    }
 #else
     {
+        int fd = Int_val(arg);
         struct winsize ws;
 
-        if(ioctl(Int_val(arg), TIOCGWINSZ, &ws) < 0)
-            failwith("termsize: standard input is not a terminal");
+        if(ioctl(fd, TIOCGWINSZ, &ws) < 0)
+            failwith("lm_termsize.c: caml_term_size: not a terminal");
     
         /* Return the pair of numbers */
         Field(buf, 0) = Val_int(ws.ws_row);
