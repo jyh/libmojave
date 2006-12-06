@@ -27,6 +27,7 @@ UTIL_FILES[] =
     lm_ncurses_display
     lm_format_util
     lm_command_util
+    lm_termsize
     lm_arg
     lm_ssl
     lm_config
@@ -35,4 +36,3 @@ UTIL_FILES[] =
     lm_lexer
     lm_parser
     lm_glob
-    lm_termsize

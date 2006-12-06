@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000 Jason Hickey, Caltech
+ * Copyright (C) 2000-2006 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,10 +29,12 @@ val term_size : file_descr -> int * int
 val min_screen_width : int ref
 val term_width : out_channel -> int -> int
 
+val stdout_width : int
+val stderr_width : int
+
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

@@ -390,12 +390,10 @@ let compute_option_tree spec =
 (***  Help System  ***)
 
 (* Wraps at terminal width *)
-let rec print_doc_string s =
-   (*
-    * XXX: TODO: Use MetaPRL's termsize.c/mp_term.ml to get the actual terminal width instead of
-    * using the default 80.
-    *)
-   let width = 80 - 27 in
+let rec print_doc_string opt_width s =
+   let width = Lm_termsize.stdout_width - opt_width in
+   let margin = String.make (opt_width + 1) ' ' in
+   let () = margin.[0] <- '\n' in
    let len = String.length s in
       if len <= width then
          print_string s
@@ -403,62 +401,70 @@ let rec print_doc_string s =
          if String.rcontains_from s width ' ' then begin
             let i = String.rindex_from s width ' ' in
                print_string (String.sub s 0 i);
-               print_string "\n                          ";
-               print_doc_string (String.sub s (i+1) (len - i - 1))
+               print_string margin;
+               print_doc_string opt_width (String.sub s (i+1) (len - i - 1))
          end else begin
             print_string (String.sub s 0 width);
-            print_string "\n                          ";
-            print_doc_string (String.sub s width (len - width))
+            print_string margin;
+            print_doc_string opt_width (String.sub s width (len - width))
          end
+
+let usage_arg = function
+   Unit _
+ | Set _
+ | Clear _
+ | UnitFold _
+ | SetFold _
+ | ClearFold _
+ | Usage ->
+      ""
+ | String _
+ | StringFold _ ->
+      " <string>"
+ | Int _
+ | IntFold _ ->
+      " <number>"
+ | Float _
+ | FloatFold _ ->
+      " <float>"
+ | Rest _
+ | RestFold _ ->
+      " ..."
 
 (* usage
    Display the usage message and help text for the options.  *)
-let usage spec =
+let usage opt_width spec =
    List.iter (fun (opt, spec, doc) ->
          (* Descriptive text for the option argument *)
-         let arg =
-            match spec with
-               Unit _
-             | Set _
-             | Clear _
-             | UnitFold _
-             | SetFold _
-             | ClearFold _
-             | Usage ->
-                  ""
-             | String _
-             | StringFold _ ->
-                  " <string>"
-             | Int _
-             | IntFold _ ->
-                  " <number>"
-             | Float _
-             | FloatFold _ ->
-                  " <float>"
-             | Rest _
-             | RestFold _ ->
-                  " ..."
-         in
-         let opt = opt ^ arg in
+         let opt = opt ^ (usage_arg spec) in
 
             (* Display information on a single option. *)
-            (if String.length opt > 19 then
+            (if String.length opt > opt_width then
                (* option name too long to fit on one line *)
-               printf "@ %s@ %19s" opt ""
+               printf "@ %s@ %*s" opt opt_width ""
             else
-               printf "@ %-19s" opt);
+               printf "@ %-*s" opt_width opt);
             (if is_invertable_option opt spec then
                printf "*:  "
             else
                printf " :  ");
-            print_doc_string doc) spec
+            print_doc_string (opt_width + 7) doc) spec
+
+let usage_length (opt, spec, _) =
+   String.length opt + String.length (usage_arg spec)
 
 let usage (mode, spec) usage_msg =
    (* Display help for all sections. *)
+   let opt_max_length =
+      List.fold_left (fun i (_, spec) ->
+         (List.fold_left (fun i opt -> max i (usage_length opt))) i spec)
+      0 spec
+   in
+   let opt_width = min opt_max_length ((max 80 Lm_termsize.stdout_width) / 3 - 7) in
    printf "@[<v 0>%s." usage_msg;
    List.iter (fun (section, spec) ->
       printf "@ @ @[<v 3>%s:" section;
-      usage spec;
+      usage opt_width spec;
       printf "@]") spec;
    (match mode with
        StrictOptions ->
