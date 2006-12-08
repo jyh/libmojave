@@ -42,7 +42,7 @@
 #ifdef WIN32 
 #include <windows.h>
 /* Disable some of the warnings */
-#pragma warning( disable : 4100 4189 4127 4702 )
+#pragma warning( disable : 4100 4189 4127 4702 4996 )
 #endif /* WIN32 */
 
 #ifdef FAM_PSEUDO

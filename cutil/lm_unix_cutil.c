@@ -39,7 +39,7 @@
 
 #if defined(WIN32) || defined(_WIN32)
 /* Disable some of the warnings */
-#pragma warning( disable : 4100 4201 4127 4189 4702 )
+#pragma warning( disable : 4100 4201 4127 4189 4702 4996 )
 #endif
 
 /*

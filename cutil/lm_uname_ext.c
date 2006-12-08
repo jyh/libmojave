@@ -38,7 +38,7 @@
 #ifdef WIN32
 #include <windows.h>
 /* Disable some of the warnings */
-#pragma warning( disable : 4127 4189 4702 )
+#pragma warning( disable : 4127 4189 4702 4996 )
 
 /*
  * Fake utsname.
