@@ -1,4 +1,11 @@
 #
+# Make sure omake is up-to-date
+#
+OMakeVersion(0.9.8)
+
+open configure/snprintf.om
+
+#
 # LibMojave C files
 #
 CFILES[] =
@@ -26,20 +33,6 @@ CFILES[] =
     fam_inotify
     lm_notify
     lm_termsize
-
-#
-# XXX: snprintf.om will be added in OMake 0.9.8
-#
-if $(test -r $(STDLIB)/configure/snprintf.om)
-    include $(STDLIB)/configure/snprintf.om
-    export
-else
-    # XXX: HACK
-    static. =
-        print($"--- Checking snprintf availability... ")
-        SNPRINTF_AVAILABLE = $(CheckLib $(EMPTY), snprintf)
-        println($"""($(if $(not $(SNPRINTF_AVAILABLE)), $"NOT ")found)""")
-    export
 
 if $(SNPRINTF_AVAILABLE)
     CFLAGS += -DHAVE_SNPRINTF

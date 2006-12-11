@@ -1,13 +1,7 @@
 #
-# XXX: 0.9.8 defines Shell.ln-or-cp, but we want to allow 0.9.6.9 too
+# Make sure omake is up-to-date
 #
-if $(not $(Shell.object-mem ln-or-cp))
-    Shell. +=
-        ln-or-cp(argv) =
-            src = $(file $(nth 0, $(argv)))
-            dst = $(file $(nth 1, $(argv)))
-            $(symlink $(src), $(dst))
-    export
+OMakeVersion(0.9.8)
 
 #
 # Threads are optional
