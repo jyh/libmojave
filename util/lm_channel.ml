@@ -974,7 +974,7 @@ let rec find_write_empty l wfd =
    match wfd with
       fd :: wfd ->
          let l =
-            if fd.out_max = 0 then
+            if fd.out_max = 0 || fd.out_expand then
                fd :: l
             else
                l
