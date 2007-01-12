@@ -28,6 +28,11 @@ if $(LMINSTALL)
 else
     OCamlLibrary(lm, $(FILES))
 
+if $(not $(defined CLEAN))
+    .PHONY: clean
+    CLEAN = rm -rf *.cm* *~ .\#* *.o *.obj *.a *.lib *.exe *.omc *.tmp
+    export
+
 clean:
     $(CLEAN)
 
