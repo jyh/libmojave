@@ -1085,7 +1085,7 @@ let rec select_poll rfd_pipes rfd_sockets wfd_pipes wfd_sockets efd_sockets expi
 let select rfd wfd efd timeout =
    let rfd_files, rfd_pipes, rfd_sockets = classify [] [] [] rfd in
    let wfd_files, wfd_pipes, wfd_sockets = classify [] [] [] wfd in
-   let efd_files, efd_pipes, efd_sockets = classify [] [] [] efd in
+   let efd_files, _efd_pipes, efd_sockets = classify [] [] [] efd in
       if rfd_files <> [] || wfd_files <> [] || efd_files <> [] then
          rfd_files, wfd_files, efd_files
       else

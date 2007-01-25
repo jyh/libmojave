@@ -9,16 +9,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -173,21 +173,21 @@ let pp_print_newline form () =
    format_newline form.form_buffer;
    flush_form form
 
-let pp_print_if_newline form () =
+let pp_print_if_newline _form () =
    ()
 
-let pp_open_tbox form () =
+let pp_open_tbox _form () =
    ()
 
-let pp_close_tbox form () =
+let pp_close_tbox _form () =
    ()
 
 let pp_print_tbreak = pp_print_break
 
-let pp_set_tab form () =
+let pp_set_tab _form () =
    ()
 
-let pp_print_tab form () =
+let pp_print_tab _form () =
    ()
 
 let pp_set_margin form margin =

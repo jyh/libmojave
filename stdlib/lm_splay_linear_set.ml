@@ -17,16 +17,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -241,14 +241,14 @@ struct
          rotate_left parent
     | [Right parent] ->
          rotate_right parent
-    | Left parent :: Left grandparent :: ancestors ->
+    | Left _parent :: Left grandparent :: ancestors ->
          (
             rotate_left grandparent;
             rotate_left grandparent;  (* parent has moved into grandparent's pos
 ition *)
             lift ancestors
          )
-    | Right parent :: Right grandparent :: ancestors ->
+    | Right _parent :: Right grandparent :: ancestors ->
          (
             rotate_right grandparent;
             rotate_right grandparent;  (* parent has moved into grandparent's po
@@ -430,7 +430,7 @@ sition *)
             end
        | _ ->
             begin match collect_aux (min/2) start lst with
-               (left,lend,[]) as c -> c
+               (_left,_lend,[]) as c -> c
              | left, lend, (ArrayElement h)::t ->
                   let right, rend, rlst = collect_aux (min - min/2 - 1) (succ lend) t in
                   { tree = Node (lend,h,left,right,rend-start) },rend,rlst
@@ -453,22 +453,22 @@ sition *)
    let rec for_all (f : elt -> bool) = function
       { tree = Leaf } ->
          true
-    | { tree = Node (ind, e, t1, t2, i) } ->
+    | { tree = Node (_ind, e, t1, t2, _i) } ->
          f e && for_all f t1 && for_all f t2
     | { tree = Lazy (f', tree) } as t ->
          t.tree <- go_down f' tree;
          for_all f t
-    | { tree = Offset (i, t) } ->
+    | { tree = Offset (_i, t) } ->
          for_all f t
 
    let rec exists (f : elt -> bool) = function
       { tree = Leaf } ->
          false
-    | { tree = Node (ind, e, t1, t2, i) } ->
+    | { tree = Node (_ind, e, t1, t2, _i) } ->
          f e || exists f t1 || exists f t2
     | { tree = Lazy (f', tree) } as t ->
          t.tree <- go_down f' tree;
          exists f t
-    | { tree = Offset (i, t) } ->
+    | { tree = Offset (_i, t) } ->
          exists f t
 end

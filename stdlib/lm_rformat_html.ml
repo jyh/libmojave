@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -250,20 +250,20 @@ let html_tag tagger buf =
       Some { html_tag_begin = FunTagger tagger } ->
          (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
     | Some { html_tag_begin = StringTagger tagger } ->
-         (fun s -> Queue.add (InvisibleString tagger) buf.html_line)
+         (fun _s -> Queue.add (InvisibleString tagger) buf.html_line)
     | Some { html_tag_begin = NoTagger }
     | None ->
-         (fun s -> ())
+         (fun _s -> ())
 
 let html_etag tagger buf =
    match tagger with
       Some { html_tag_end = FunTagger tagger } ->
          (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
     | Some { html_tag_end = StringTagger tagger } ->
-         (fun s -> Queue.add (InvisibleString tagger) buf.html_line)
+         (fun _s -> Queue.add (InvisibleString tagger) buf.html_line)
     | Some { html_tag_end = NoTagger }
     | None ->
-         (fun s -> ())
+         (fun _s -> ())
 
 (*
  * An HTML printer.

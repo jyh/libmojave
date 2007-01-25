@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -658,7 +658,6 @@ struct
 
    let pp_print_prod_item_core info buf item =
       let { prod_item_action = action;
-            prod_item_prec   = pre;
             prod_item_name   = name;
             prod_item_left   = left;
             prod_item_right  = right
@@ -685,8 +684,7 @@ struct
          eprintf "@]"
 
    let pp_print_info_item info buf info_item =
-      let { info_grammar = gram;
-            info_hash = hash;
+      let { info_hash = hash;
             info_hash_state_item = hash_state_item
           } = info
       in
@@ -1205,7 +1203,7 @@ struct
     * The main issue is that right2 may be constructed from
     * the right-hand-sides of several productions.
     *)
-   let build_lookahead_item info table v =
+   let build_lookahead_item _info table v =
       (* Fixpoint *)
       let step venv =
          IVarTable.fold (fun (venv, changed) v e1 ->
@@ -1904,10 +1902,7 @@ struct
     * Error messages.
     *)
    let shift_reduce_conflict info state v shift_state reduce_item =
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
+      let { info_hash = hash } = info in
       let { hash_prod_item_state = hash_prod_item } = hash in
       let pp_print_ivar = pp_print_ivar hash in
       let pp_print_iaction = pp_print_iaction hash in
@@ -1922,10 +1917,7 @@ struct
             raise (Invalid_argument "Lm_parser.shift_reduce_conflict\n\tset MP_DEBUG=parse_conflict_is_warning to ignore this error")
 
    let reduce_reduce_conflict info state v reduce_item action =
-      let { info_grammar = gram;
-            info_hash = hash
-          } = info
-      in
+      let { info_hash = hash } = info in
       let { hash_prod_item_state = hash_prod_item } = hash in
       let pp_print_ivar = pp_print_ivar hash in
       let pp_print_iaction = pp_print_iaction hash in
@@ -1946,9 +1938,7 @@ struct
    let process_reduce_actions info reduce_actions action_table =
       let { info_grammar         = gram;
             info_prec            = var_prec_table;
-            info_hash_state_item = hash_state_item;
-            info_hash =
-               { hash_prod_item_state = hash_prod_item }
+            info_hash = { hash_prod_item_state = hash_prod_item }
           } = info
       in
       let { gram_prec_table = prec_table } = gram in
@@ -2164,7 +2154,7 @@ struct
    (*
     * Exceptions.
     *)
-   let parse_error loc hash run stack state (v : ivar) =
+   let parse_error loc hash run _stack state (v : ivar) =
       let { pda_info = { pda_items = items; pda_next = next } } = run.run_states.(state) in
       let pp_print_ivar = pp_print_ivar hash in
       let buf = stdstr in
@@ -2224,7 +2214,7 @@ struct
                         raise (Invalid_argument "pda_lookahead")
 
       and pda_goto_lookahead arg stack state_loc_x name tok =
-         let state, loc, x = state_loc_x in
+         let state, loc, _x = state_loc_x in
          let () =
             if !debug_parse then
                eprintf "State %d: Goto lookahead: production %a@." (**)

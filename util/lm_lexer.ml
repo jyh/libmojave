@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -1609,10 +1609,7 @@ struct
             let accum, final1 = nfa_state accum (NfaActionArgStop (argindex, final.nfa_state_index)) in
             let accum, start1 = nfa_state accum NfaActionNone in
             let start = set_action start (NfaActionArgStart (argindex, start1.nfa_state_index)) in
-            let { nfa_clause = clause;
-                  nfa_arg_number = argnumber
-                } = info
-            in
+            let { nfa_arg_number = argnumber } = info in
             let accum = { accum with nfa_arg_index = succ argindex } in
             let info = { info with nfa_arg_number  = succ argnumber } in
             let accum, info, start1, states =
@@ -1701,7 +1698,7 @@ struct
                     nfa_arg_number  = 0
                   }
                in
-               let accum, info, start, states = compile_clause accum info states regex in
+               let accum, _info, start, states = compile_clause accum info states regex in
                let actions = IntTable.add actions id action in
                let starts = start.nfa_state_index :: starts in
                let states = start :: states in
@@ -2161,7 +2158,7 @@ struct
                         in
                         let final =
                            match final', final with
-                              Some (clause_id', nid'), Some clause_id ->
+                              Some (clause_id', _nid'), Some clause_id ->
                                  let clause_id'' = Action.choose clause_id' clause_id in
                                     if clause_id'' = clause_id' then
                                        final'
@@ -2365,8 +2362,7 @@ struct
     * an entry in the transition table yet.
     *)
    let create_entry dfa dfa_state c =
-      let { dfa_nfa_hash = nfa_hash;
-            dfa_dfa_hash = dfa_hash;
+      let { dfa_dfa_hash = dfa_hash;
             dfa_table = table
           } = dfa
       in
@@ -2618,7 +2614,6 @@ struct
             nfa_table         = nfa_table;
             nfa_start         = nfa_start;
             nfa_actions       = actions;
-            nfa_args          = nfa_args;
             nfa_search_start  = nfa_search_start;
             nfa_search_states = nfa_search_states
           } = nfa
@@ -2678,8 +2673,8 @@ struct
     * then we have seen all the rest of the clauses too.
     *)
    let union info1 info2 =
-      let { lex_exp = exp1; lex_dfa = dfa1 } = info1 in
-      let { lex_exp = exp2; lex_dfa = dfa2 } = info2 in
+      let { lex_exp = exp1 } = info1 in
+      let { lex_exp = exp2 } = info2 in
          (* Catch degenerate cases first *)
          match exp1.exp_clauses, exp2.exp_clauses with
             [], _ -> info2

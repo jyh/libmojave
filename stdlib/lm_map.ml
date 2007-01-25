@@ -26,16 +26,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -1588,7 +1588,7 @@ struct
       if MMap.cardinality set1 = MMap.cardinality set2 then
          let list1 = MMap.to_list set1 in
          let list2 = MMap.to_list set2 in
-            List.for_all2 (fun (x1, x2) (y1, y2) ->
+            List.for_all2 (fun (_x1, x2) (_y1, y2) ->
                   List.length x2 = List.length y2 && List.for_all2 eq x2 y2) list1 list2
       else
          false

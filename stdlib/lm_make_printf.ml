@@ -53,16 +53,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -183,7 +183,7 @@ struct
    (*
     * Next arg should be an int.
     *)
-   let rec print_bool buf i len s fmt info =
+   let rec print_bool buf i len s fmt _info =
       let print b =
          let str = ext_print_string fmt (if b then "true" else "false") in
             Args.print_string buf str;
@@ -191,7 +191,7 @@ struct
       in
          Obj.magic print
 
-   and print_char buf i len s fmt info =
+   and print_char buf i len s fmt _info =
       let print c =
          let str = ext_print_char fmt c in
             Args.print_string buf str;
@@ -199,7 +199,7 @@ struct
       in
          Obj.magic print
 
-   and print_int buf i len s fmt info spec =
+   and print_int buf i len s fmt _info _spec =
       let print x =
          let str = ext_print_int fmt x in
             Args.print_string buf str;
@@ -207,7 +207,7 @@ struct
       in
          Obj.magic print
 
-   and print_float buf i len s fmt info spec =
+   and print_float buf i len s fmt _info _spec =
       let print x =
          let str = ext_print_float fmt x in
             Args.print_string buf str;
@@ -215,7 +215,7 @@ struct
       in
          Obj.magic print
 
-   and print_string buf i len s fmt info =
+   and print_string buf i len s fmt _info =
       let print str =
          let str = ext_print_string fmt str in
             Args.print_string buf str;
@@ -223,24 +223,24 @@ struct
       in
          Obj.magic print
 
-   and print_user1 buf i len s fmt info =
+   and print_user1 buf i len s _fmt _info =
       let print f =
          f buf;
          print_loop buf i len s
       in
          Obj.magic print
 
-   and print_user2 buf i len s fmt info =
+   and print_user2 buf i len s _fmt _info =
       let print f x =
          f buf x;
          print_loop buf i len s
       in
          Obj.magic print
 
-   and print_dummy buf i len s =
+   and print_dummy _buf _i _len _s =
       Obj.magic ()
 
-   and print_percent buf i len s fmt info =
+   and print_percent buf i len s fmt _info =
       let str = ext_print_string fmt "%" in
          Args.print_string buf str;
          print_loop buf i len s
