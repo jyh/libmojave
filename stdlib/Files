@@ -17,7 +17,6 @@ STDLIB_FILES[] =
     lm_array_util
     lm_string_util
     lm_list_util
-    lm_filename_util
     lm_file_util
     lm_int_util
     lm_hashtbl_util

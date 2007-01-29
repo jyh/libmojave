@@ -35,4 +35,5 @@ UTIL_FILES[] =
     lm_hash
     lm_lexer
     lm_parser
+    lm_filename_util
     lm_glob
