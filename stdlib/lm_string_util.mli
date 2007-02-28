@@ -44,6 +44,11 @@ val string_compare : string -> string -> int
 val equal_substring : string -> int -> string -> bool
 
 (*
+ * Check whether the first string is a prefix of the second.
+ *)
+val is_string_prefix : string -> string -> bool
+
+(*
  * Hex representation of a string.
  *)
 val unhex : char -> int

@@ -65,6 +65,17 @@ let string_compare s1 s2 =
        | i -> i
 
 (*
+ * String prefix.
+ *)
+let rec is_string_prefix_aux s1 s2 i len =
+   i = len || (String.unsafe_get s1 i = String.unsafe_get s2 i && is_string_prefix_aux s1 s2 (i + 1) len)
+
+let is_string_prefix s1 s2 =
+   let len1 = String.length s1 in
+   let len2 = String.length s2 in
+      len1 <= len2 && is_string_prefix_aux s1 s2 0 len1
+
+(*
  * Compare a substring.
  *)
 let rec equal_substring_aux s1 s2 len2 i1 i2 =
