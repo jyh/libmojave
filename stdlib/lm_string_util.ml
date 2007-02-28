@@ -1488,9 +1488,6 @@ let encode_hex_name uri =
             ('0'..'9' | 'A'..'Z' | 'a'..'z' | '/' | '_' | '-' | '.') as c ->
                buf.[j] <- c;
                convert (succ i) (succ j)
-          | ' ' ->
-               buf.[j] <- '+';
-               convert (succ i) (succ j)
           | c ->
                let code = Char.code c in
                   buf.[j] <- '%';
