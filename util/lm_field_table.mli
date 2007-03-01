@@ -114,6 +114,8 @@ end
  * FieldMTable is a table that allows multiple
  * definitions for each external field name.
  *)
+type ext_symbol = symbol
+type int_symbol = symbol
 module type FieldMTableSig =
 sig
    (*
@@ -130,13 +132,13 @@ sig
     * Add an entry.  The first var is the external name,
     * the second var is the internal name.
     *)
-   val add : 'a t -> symbol -> symbol -> 'a -> 'a t
+   val add : 'a t -> ext_symbol -> int_symbol -> 'a -> 'a t
 
    (*
     * Get the entries for the external name.
     *)
-   val find_ext : 'a t -> symbol -> (symbol * 'a) list
-   val find_int : 'a t -> symbol -> symbol * 'a
+   val find_ext : 'a t -> ext_symbol -> (int_symbol * 'a) list
+   val find_int : 'a t -> int_symbol -> ext_symbol * 'a
 
    (*
     * Allow replacement of ext entries.
@@ -146,19 +148,19 @@ sig
     * replacement is accepted, and if no replacement is found, this
     * function raises Not_found.
     *)
-   val replace_ext : 'a t -> symbol -> (symbol -> 'a -> symbol * 'a) -> 'a t
+   val replace_ext : 'a t -> ext_symbol -> (int_symbol -> 'a -> int_symbol * 'a) -> 'a t
 
    (*
     * Return the list of fields.
     *)
-   val to_list : 'a t -> (symbol * symbol * 'a) list
+   val to_list : 'a t -> (ext_symbol * int_symbol * 'a) list
 
    (*
     * Iterators.
     *)
-   val debug_iter : (symbol -> symbol -> 'a -> int -> unit) -> 'a t -> unit
-   val map : (symbol -> symbol -> 'a -> symbol * 'b) -> 'a t -> 'b t
-   val fold : ('a -> symbol -> symbol -> 'b -> 'a) -> 'a -> 'b t -> 'a
+   val debug_iter : (ext_symbol -> int_symbol -> 'a -> int -> unit) -> 'a t -> unit
+   val map : (ext_symbol -> int_symbol -> 'a -> int_symbol * 'b) -> 'a t -> 'b t
+   val fold : ('a -> ext_symbol -> int_symbol -> 'b -> 'a) -> 'a -> 'b t -> 'a
 end
 
 (*
