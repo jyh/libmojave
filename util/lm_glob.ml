@@ -54,6 +54,8 @@ open Lm_filename_util
  * Tilde expansion.
  *)
 
+external lm_users : unit -> Unix.passwd_entry list = "lm_users"
+
 (*
  * Keep a table of entries.
  * Whenever we look a value in the passwd file,
@@ -141,6 +143,8 @@ let getpwnam user =
       tilde_insert dir user;
       dir
 
+let gethomedir = getpwnam
+
 (*
  * Try to figure out the home directory as best as possible.
  *)
@@ -148,6 +152,19 @@ let home_dir =
    let home = Lm_unix_util.home_dir in
       tilde_insert home "";
       home
+
+(*
+ * Get a list of all the users.
+ *)
+let getusers () =
+   let users = lm_users () in
+      List.map (fun entry ->
+            let { Unix.pw_name = name;
+                  Unix.pw_dir  = dir
+                } = entry
+            in
+               tilde_insert dir name;
+               name) users
 
 (************************************************************************
  * Glob expansion.

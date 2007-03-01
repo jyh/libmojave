@@ -60,6 +60,17 @@ val default_glob_options : glob_options
 val home_dir : string
 
 (*
+ * Get a list of all the users in the system.
+ * On non-unix systems, returns the empty list.
+ *)
+val getusers : unit -> string list
+
+(*
+ * Get the home directory for a user.
+ *)
+val gethomedir : string -> string
+
+(*
  * Try to collapse a filename.
  * Tilde-expansion will invert this process.
  *)

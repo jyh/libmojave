@@ -294,8 +294,10 @@ value caml_registry_find(value v_hkey, value v_subkey, value v_field)
 
 #else /* WIN32 */
 #include <unistd.h>
-#include <sys/file.h>
 #include <fcntl.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 value int_of_fd(value fd)
 {
@@ -407,3 +409,64 @@ value lm_flock(value v_fd, value v_op)
 }
 
 #endif /* !WIN32 */
+
+/************************************************************************
+ * Password file (only on Unix).
+ */
+#ifdef WIN32
+
+/*
+ * The empty array.
+ */
+value lm_users(value v_unit)
+{
+    return Atom(0);
+}
+
+#else /* !WIN32 */
+
+/*
+ * Scan the password file.
+ *
+type passwd_entry = {
+  	pw_name : string;
+  	pw_passwd : string;
+  	pw_uid : int;
+  	pw_gid : int;
+  	pw_gecos : string;
+  	pw_dir : string;
+  	pw_shell : string;
+}
+ */
+value lm_users(value v_unit)
+{
+    CAMLparam1(v_unit);
+    CAMLlocal3(users, entry, cons);
+    struct passwd *entryp;
+
+    /* Create a list of users */
+    users = Val_emptylist;
+
+    /* Scan the password file */
+    setpwent();
+    while((entryp = getpwent())) {
+        entry = caml_alloc_tuple(7);
+        Store_field(entry, 0, caml_copy_string(entryp->pw_name));
+        Store_field(entry, 1, caml_copy_string(entryp->pw_passwd));
+        Store_field(entry, 2, Val_int(entryp->pw_uid));
+        Store_field(entry, 3, Val_int(entryp->pw_gid));
+        Store_field(entry, 4, copy_string(entryp->pw_gecos));
+        Store_field(entry, 5, copy_string(entryp->pw_dir));
+        Store_field(entry, 6, copy_string(entryp->pw_shell));
+        cons = caml_alloc_tuple(2);
+        Store_field(cons, 0, entry);
+        Store_field(cons, 1, users);
+        users = cons;
+    }
+    endpwent();
+
+    CAMLreturn(users);
+}
+
+#endif /* !WIN32 */
+   
