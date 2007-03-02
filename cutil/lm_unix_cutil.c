@@ -420,7 +420,7 @@ value lm_flock(value v_fd, value v_op)
  */
 value lm_users(value v_unit)
 {
-    return Atom(0);
+    return Val_emptylist;
 }
 
 #else /* !WIN32 */
@@ -455,7 +455,11 @@ value lm_users(value v_unit)
         Store_field(entry, 1, caml_copy_string(entryp->pw_passwd));
         Store_field(entry, 2, Val_int(entryp->pw_uid));
         Store_field(entry, 3, Val_int(entryp->pw_gid));
+#ifdef __BEOS__
+        Store_field(entry, 4, copy_string(""));
+#else
         Store_field(entry, 4, copy_string(entryp->pw_gecos));
+#endif
         Store_field(entry, 5, copy_string(entryp->pw_dir));
         Store_field(entry, 6, copy_string(entryp->pw_shell));
         cons = caml_alloc_tuple(2);
