@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 PRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2007 PRL Group, Cornell University and Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,8 +31,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <anogin@hrl.com>
  *)
 open Lm_printf
 
@@ -48,6 +48,7 @@ type registry_hkey =
 
 external print_stack_pointer : unit -> unit = "lm_print_stack_pointer"
 external registry_find   : registry_hkey -> string -> string -> string = "caml_registry_find"
+external getpwents : unit -> Unix.passwd_entry list = "lm_getpwents"
 
 (*
  * Read the exact amount.
@@ -219,7 +220,6 @@ let openfile = Unix.openfile
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)

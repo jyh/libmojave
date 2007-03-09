@@ -418,7 +418,7 @@ value lm_flock(value v_fd, value v_op)
 /*
  * The empty array.
  */
-value lm_users(value v_unit)
+value lm_getpwents(value v_unit)
 {
     return Val_emptylist;
 }
@@ -438,7 +438,7 @@ type passwd_entry = {
   	pw_shell : string;
 }
  */
-value lm_users(value v_unit)
+value lm_getpwents(value v_unit)
 {
     CAMLparam1(v_unit);
     CAMLlocal3(users, entry, cons);

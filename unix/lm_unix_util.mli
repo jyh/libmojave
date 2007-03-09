@@ -10,7 +10,7 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2005 PRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2007 PRL Group, Cornell University and Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,8 +31,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <anogin@hrl.com>
  *)
 
 (*
@@ -118,9 +118,13 @@ type flock_command =
 val flock : Unix.file_descr -> flock_command -> unit
 
 (*
+ * Scan the password database for entries.
+ *)
+val getpwents : unit -> Unix.passwd_entry list
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
  * End:
  * -*-
  *)
