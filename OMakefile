@@ -28,8 +28,18 @@ if $(LMINSTALL)
 else
     OCamlLibrary(lm, $(FILES))
 
+open build/svn_realclean
+
 if $(not $(defined CLEAN))
-    .PHONY: clean
+    .PHONY: clean realclean
+
+    if $(not $(defined FORCE_REALCLEAN))
+        FORCE_REALCLEAN = false
+        export
+
+    realclean: clean
+        svn_realclean $(if $(FORCE_REALCLEAN), -f) -i .omakedb -i .omakedb.lock
+
     CLEAN = rm -rf *.cm* *~ .\#* *.o *.obj *.a *.lib *.exe *.omc *.tmp
     export
 
