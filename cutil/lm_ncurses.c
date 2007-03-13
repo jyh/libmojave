@@ -18,7 +18,7 @@
    }
 
 
-#if NCURSES
+#ifdef NCURSES
 /* From this point, we assume ncurses support is present. */
 
 

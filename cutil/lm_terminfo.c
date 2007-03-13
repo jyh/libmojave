@@ -8,15 +8,12 @@
 #include <caml/memory.h>
 
 
-#if NCURSES
-
+#ifdef NCURSES
 
 /* Headers that are readline-specific must be included here. */
-
 #include <ncurses.h>
 
-/* XXX: TODO (nogin 2005/08/29): this ifdef should be configure-based */
-#ifdef __CYGWIN32__
+#ifdef TERMH_IN_NCURSES
 #  include <ncurses/term.h>
 #else
 #  include <term.h>
@@ -67,11 +64,11 @@ value caml_tgetstr(value id) {
    /* Lookup the requested capability name.  Note that we only get terminfo
       if we compiled with readline support; otherwise it will not be linked
       in.  */
-#if NCURSES
+#ifdef NCURSES
    if(load_terminfo() == 0) {
       termdata = tigetstr(String_val(id));
    }
-#endif
+#endif /* NCURSES */
 
    /* Note that tigetstr will return either 0 or -1 on error. */
    if(termdata == NULL || termdata == (char *)(-1)) {

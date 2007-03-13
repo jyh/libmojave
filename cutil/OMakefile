@@ -3,7 +3,16 @@
 #
 OMakeVersion(0.9.8)
 
-open configure/snprintf.om
+open configure/snprintf
+open configure/ncurses
+
+if $(and $(LM_STANDALONE), $(NCURSES_AVAILABLE))
+    CFLAGS += -DNCURSES
+    export
+
+if $(NCURSES_TERMH_IN_NCURSES)
+    CFLAGS += -DTERMH_IN_NCURSES
+    export
 
 #
 # LibMojave C files
