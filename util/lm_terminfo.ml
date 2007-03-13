@@ -54,10 +54,12 @@ let exit_attribute_mode = "sgr0"
 
 (* xterm_ok ()
    Check for an XTerm-compatible terminal, for the XTerm escapes.  *)
+
+(* XXX: strictly speaking, we should be using the "tsl"/"fsl" capabilities here, but those are often missing *)
 let xterm_ok () =
    try
       match Sys.getenv "TERM" with
-         "xterm" | "color_xterm" ->
+         "xterm" | "color_xterm" | "xterm-color" | "konsole" | "rxvt" ->
             true
        | _ ->
             false
