@@ -295,11 +295,16 @@ let pp_print_stat buf stat =
          hash_collisions = collisions
        } = stat
    in
-      fprintf buf "@ @[<hv 3>%s: reintern = %d, compare = %d, collisions = %d@]" (**)
+      fprintf buf "@[<hv 3>%s: reintern = %d, compare = %d, collisions = %d@]@\n" (**)
          debug reintern compare collisions
 
 let pp_print_hash_stats buf =
    List.iter (pp_print_stat buf) !hash_stats
+
+(*
+ * let () =
+ *    at_exit (fun () -> pp_print_hash_stats stderr)
+ *)
 
 (*
  * Make a hash item.
@@ -1320,7 +1325,7 @@ struct
           } = buf
       in
       let code = (code + i + 1) mod hash_length in
-         buf.hash_digest <- (digest lsl 3) lxor (digest lsr 1) lxor (Array.unsafe_get hash_data code);
+         buf.hash_digest <- digest lxor (Array.unsafe_get hash_data code);
          buf.hash_code <- code
 
    let add_bits buf i =
@@ -1400,8 +1405,7 @@ struct
       in
       let code = (code + digest_length + i) mod hash_length in
          for i = 0 to digest_length - 1 do
-            let v = digest.(i) in
-               digest.(i) <- (v lsl 3) lxor (v lsr 1) lxor (Array.unsafe_get hash_data (code + i))
+            digest.(i) <- digest.(i) lxor (Array.unsafe_get hash_data (code + i))
          done;
          buf.hash_code <- code
 
