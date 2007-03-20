@@ -1338,8 +1338,8 @@ struct
 
    let add_float buf x =
       let i = Int64.bits_of_float x in
-         add_int buf (Int64.to_int (Int64.shift_right i 6));
-         add_int buf (Int64.to_int (Int64.shift_right i 3));
+         add_int buf (Int64.to_int (Int64.shift_right i 48));
+         add_int buf (Int64.to_int (Int64.shift_right i 24));
          add_int buf (Int64.to_int i)
 
    (*
@@ -1373,7 +1373,6 @@ module HashDigest : HashDigestSig =
 struct
    type t =
       { hash_digest         : int array;
-        mutable hash_length : int;              (* For stats *)
         mutable hash_code   : int
       }
 
@@ -1382,7 +1381,6 @@ struct
     *)
    let create () =
       { hash_digest = Array.create digest_length 0;
-        hash_length = 0;
         hash_code   = 0
       }
 
@@ -1391,7 +1389,6 @@ struct
     *)
    let add_bits buf i =
       let { hash_digest = digest;
-            hash_length = length;
             hash_code   = code
           } = buf
       in
@@ -1400,8 +1397,7 @@ struct
             let v = digest.(i) in
                digest.(i) <- (v lsl 3) lxor (v lsr 1) lxor (Array.unsafe_get hash_data (code + i))
          done;
-         buf.hash_code <- code;
-         buf.hash_length <- succ length
+         buf.hash_code <- code
 
    (*
     * Add the characters in a string.
@@ -1435,8 +1431,8 @@ struct
 
    let add_float buf x =
       let i = Int64.bits_of_float x in
-         add_int buf (Int64.to_int (Int64.shift_right i 6));
-         add_int buf (Int64.to_int (Int64.shift_right i 3));
+         add_int buf (Int64.to_int (Int64.shift_right i 48));
+         add_int buf (Int64.to_int (Int64.shift_right i 24));
          add_int buf (Int64.to_int i)
 
    (*
@@ -1458,8 +1454,8 @@ end;;
 
 (*
  * The default function for combinding hash values.
- *  * XXX: JYH: we should try using a smarter hash function.
- *   *)
+ * XXX: JYH: we should try using a smarter hash function.
+ *)
 let hash_combine i1 i2 =
    (i1 lsl 2) lxor (i1 lsr 2) lxor i2
 
