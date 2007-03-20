@@ -474,7 +474,7 @@ struct
                   stats.hash_collisions <- succ stats.hash_collisions;
                   let cmp = Arg.compare elt1 elt2 in
                      if cmp = 0 then
-                        eprintf "Hash is broken@.";
+                        invalid_arg "Lm_hash is broken@.";
                      cmp
                end
 end;;
@@ -490,7 +490,7 @@ end;;
  *)
 
 (* %%MAGICBEGIN%% *)
-let hash_length = 6217
+let hash_length = 6229 (* Must be a prime *)
 let digest_length = 16
 let hash_data =
    [|0x04a018c6; 0x5ba7b0f2; 0x04dcf08b; 0x1e5a22cc; 0x2523b9ea; 0x4b92b691; 0x0bcaf015; 0x0a5d5109;
@@ -1274,8 +1274,11 @@ let hash_data =
      0x1a1f3371; 0x61cc8fb3; 0x3711c483; 0x28a61268; 0x2ed93c6e; 0x2e42ed8c; 0x1a387531; 0x6b1bd449;
      0x301efe32; 0x5dcf70d0; 0x3dd03c00; 0x1153313d; 0x129c2b48; 0x3b9d34b9; 0x2ba65435; 0x6e0426bb;
      0x1955c17b; 0x4f0e1b76; 0x028d41c9; 0x02d475d3; 0x2ef7c30f; 0x2ea73087; 0x357c92a5; 0x4141569c;
-     0x27f6f470|]
+     |]
 (* %%MAGICEND%% *)
+
+let () =
+   assert(Array.length hash_data >= hash_length + digest_length - 1)
 
 (************************************************
  * Integer hashes.
@@ -1285,6 +1288,7 @@ sig
    type t
 
    val create     : unit -> t
+   val add_bits   : t -> int -> unit
    val add_int    : t -> int -> unit
    val add_float  : t -> float -> unit
    val add_string : t -> string -> unit
@@ -1310,31 +1314,33 @@ struct
    (*
     * Add an integer.
     *)
-   let add_bits buf i =
+   let add_truncated_bits buf i =
       let { hash_digest = digest;
             hash_code   = code
           } = buf
       in
-      let code = ((code + i + 1) land 0x3fffffff) mod hash_length in
+      let code = (code + i + 1) mod hash_length in
          buf.hash_digest <- (digest lsl 3) lxor (digest lsr 1) lxor (Array.unsafe_get hash_data code);
          buf.hash_code <- code
+
+   let add_bits buf i =
+      add_truncated_bits buf (i land 0x7ff)
 
    (*
     * Add the characters in a string.
     *)
    let add_string buf s =
       for i = 0 to pred (String.length s) do
-         add_bits buf (Char.code (String.unsafe_get s i))
+         add_truncated_bits buf (Char.code (String.unsafe_get s i))
       done
 
    (*
     * Numbers.
     *)
    let add_int buf i =
-      add_bits buf (i land 0xff);
-      add_bits buf ((i lsr 8) land 0xff);
-      add_bits buf ((i lsr 16) land 0xff);
-      add_bits buf ((i lsr 24) land 0xff)
+      add_bits buf i;
+      add_bits buf (i lsr 11);
+      add_bits buf (i lsr 22)
 
    let add_float buf x =
       let i = Int64.bits_of_float x in
@@ -1387,47 +1393,49 @@ struct
    (*
     * Add an integer.
     *)
-   let add_bits buf i =
+   let add_truncated_bits buf i =
       let { hash_digest = digest;
             hash_code   = code
           } = buf
       in
-      let code = ((code + digest_length + i) land 0x3fffffff) mod hash_length in
+      let code = (code + digest_length + i) mod hash_length in
          for i = 0 to digest_length - 1 do
             let v = digest.(i) in
                digest.(i) <- (v lsl 3) lxor (v lsr 1) lxor (Array.unsafe_get hash_data (code + i))
          done;
          buf.hash_code <- code
 
+   let add_bits buf i =
+      add_truncated_bits buf (i land 0x7ff)
+
    (*
     * Add the characters in a string.
     *)
    let add_char buf c =
-      add_bits buf (Char.code c)
+      add_truncated_bits buf (Char.code c)
 
    let add_string buf s =
       for i = 0 to pred (String.length s) do
-         add_bits buf (Char.code (String.unsafe_get s i))
+         add_char buf (String.unsafe_get s i)
       done
 
    let add_substring buf s off len =
       if off < 0 || len < 0 || off + len > String.length s then
          raise (Invalid_argument "Lm_hash.add_substring");
       for i = off to pred (off + len) do
-         add_bits buf (Char.code (String.unsafe_get s i))
+         add_char buf (String.unsafe_get s i)
       done
 
    (*
     * Numbers.
     *)
    let add_bool buf b =
-      add_bits buf (if b then 1 else 0)
+      add_truncated_bits buf (if b then 1 else 0)
 
    let add_int buf i =
-      add_bits buf (i land 0xff);
-      add_bits buf ((i lsr 8) land 0xff);
-      add_bits buf ((i lsr 16) land 0xff);
-      add_bits buf ((i lsr 24) land 0xff)
+      add_bits buf i;
+      add_bits buf (i lsr 11);
+      add_bits buf (i lsr 22)
 
    let add_float buf x =
       let i = Int64.bits_of_float x in

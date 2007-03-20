@@ -185,6 +185,7 @@ sig
    type t
 
    val create     : unit -> t
+   val add_bits   : t -> int -> unit (* Adds the last 11 bits *)
    val add_int    : t -> int -> unit
    val add_float  : t -> float -> unit
    val add_string : t -> string -> unit
@@ -196,7 +197,7 @@ sig
    type t
 
    val create        : unit -> t
-   val add_bits      : t -> int -> unit
+   val add_bits      : t -> int -> unit (* Adds the last 11 bits *)
    val add_bool      : t -> bool -> unit
    val add_int       : t -> int -> unit
    val add_float     : t -> float -> unit
