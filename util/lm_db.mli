@@ -12,16 +12,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -36,6 +36,10 @@ type t = Unix.file_descr
 type tag = int
 type magic = string
 type digest = string
+type hostname = string
+type named_value = string * string
+
+type entry_pred = tag -> named_value list -> hostname -> digest -> bool
 
 (*
  * Some kinds of entries are host-independent.
@@ -58,6 +62,15 @@ type host =
 val add    : t -> string -> tag * host -> magic -> digest -> 'a -> unit
 val find   : t -> string -> tag * host -> magic -> digest -> 'a
 val remove : t -> string -> tag * host -> magic -> unit
+
+(*
+ * Somewhat more general interface.
+ *)
+val first_entry_tag : tag
+
+val append_entry : t -> string -> tag -> named_value list -> digest -> 'a -> unit
+val find_entry   : t -> string -> entry_pred -> 'a
+val remove_entry : t -> string -> entry_pred -> unit
 
 (*!
  * @docoff

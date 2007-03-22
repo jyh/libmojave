@@ -18,25 +18,30 @@
  * is an entry with the current hostname, and the magic number
  * doesn't match, it is out-of-date.
  *
+ * NOTE: This has been updated to allowed for key-value pairs
+ * in the header.  It looks pretty dumb, but I (jyh) want to keep
+ * the file format backward-compatible.  So we stuff all the key/value
+ * pairs in the magic number.
+ *
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004-2007 Mojave Group, Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -61,6 +66,12 @@ type t = Unix.file_descr
 type tag = int
 type magic = string
 type digest = string
+type hostname = string
+type named_value = string * string
+
+type entry_pred = tag -> named_value list -> hostname -> digest -> bool
+
+let first_entry_tag = 1000
 
 (*
  * Some kinds of entries are host-independent.
@@ -125,8 +136,9 @@ let file_shift fd pos1 pos2 =
          else
             pos1
    in
-   let pos1 = copy pos1 pos2 in
-      seek_and_truncate fd pos1
+   let pos = copy pos1 pos2 in
+      seek_and_truncate fd pos;
+      ignore (Unix.lseek fd pos1 Unix.SEEK_SET)
 
 (*
  * If some kind of error happens while removing an entry,
@@ -162,10 +174,40 @@ let unmarshal_string inx =
             really_input inx s 0 len;
             s
 
+let unmarshal_strings_old inx =
+   let magic = unmarshal_string inx in
+      ["MAGIC", magic]
+
+let unmarshal_strings_new inx =
+   (* Total size of all the entries *)
+   let _ = input_binary_int inx in
+
+   (* Number of key/value pairs *)
+   let len = input_binary_int inx in
+      (* Read the key/value pairs *)
+      if len < 0 || len >= 1024 then
+         raise (Failure "unmarshal_string")
+      else
+         let rec loop strings i =
+            if i = len then
+               List.rev strings
+            else
+               let key = unmarshal_string inx in
+               let value = unmarshal_string inx in
+                  loop ((key, value) :: strings) (i + 1)
+         in
+            loop [] 0
+
+let unmarshal_strings inx tag =
+   if tag < first_entry_tag then
+      unmarshal_strings_old inx
+   else
+      unmarshal_strings_new inx
+
 (*
  * Search for the appropriate entry.
  *)
-let find fd filename (tag, host_mode) magic digest =
+let find_entry fd filename test =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -173,16 +215,15 @@ let find fd filename (tag, host_mode) magic digest =
    (* Find the appropriate entry *)
    let unmarshal_entry () =
       (* Get the header *)
-      let tag' = unmarshal_tag inx in
-      let host' = unmarshal_string inx in
-      let magic' = unmarshal_string inx in
-      let digest' = unmarshal_digest inx in
-         if tag' = tag && magic' = magic && digest' = digest && (host_mode = HostIndependent || host' = hostname) then begin
+      let tag = unmarshal_tag inx in
+      let host = unmarshal_string inx in
+      let strings = unmarshal_strings inx tag in
+      let digest = unmarshal_digest inx in
+         if test tag strings host digest then begin
             (* Found a matching entry *)
             if !debug_db then
-               eprintf "@[<v 3>Marshal.from_channel: %s@ save tag/digest: %d/%s@ wanted tag/digest: %d/%s@." (**)
+               eprintf "@[<v 3>Marshal.from_channel: %s@ save tag/digest: %d/%s@." (**)
                   filename
-                  tag' (Lm_string_util.hexify digest')
                   tag (Lm_string_util.hexify digest);
             let x = UnmarshalValue (Marshal.from_channel inx) in
                if !debug_db then
@@ -211,7 +252,7 @@ let find fd filename (tag, host_mode) magic digest =
           | Sys_error _
           | Invalid_argument _ ->
                if !debug_db then
-                  eprintf "Lm_db.find: %s: failed %d/%s@." filename tag (Lm_string_util.hexify digest);
+                  eprintf "Lm_db.find: %s: failed@." filename;
                seek_and_truncate fd start;
                raise Not_found
       in
@@ -226,6 +267,16 @@ let find fd filename (tag, host_mode) magic digest =
       else
          raise Not_found
 
+let find fd filename (tag, host_mode) magic digest =
+   let test tag' strings host' digest' =
+      match strings with
+         ["MAGIC", magic'] ->
+            tag' = tag && magic' = magic && digest' = digest && (host_mode = HostIndependent || host' = hostname)
+       | _ ->
+            false
+   in
+      find_entry fd filename test
+
 (*
  * Remove an entry.  Search through the existing entries
  * to find one with the same tag.  If the host is significant,
@@ -238,7 +289,7 @@ let marshal_magic fd =
       output_binary_int outx magic;
       Pervasives.flush outx
 
-let remove fd filename (tag, host_mode) magic =
+let remove_entry fd filename test =
    let _ = Unix.lseek fd 0 Unix.SEEK_SET in
    let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
@@ -246,14 +297,14 @@ let remove fd filename (tag, host_mode) magic =
    (* Find the appropriate entry *)
    let unmarshal_entry () =
       (* Get the header *)
-      let tag' = unmarshal_tag inx in
-      let host' = unmarshal_string inx in
-      let magic' = unmarshal_string inx in
-      let _ = unmarshal_digest inx in
+      let tag = unmarshal_tag inx in
+      let host = unmarshal_string inx in
+      let strings = unmarshal_strings inx tag in
+      let digest = unmarshal_digest inx in
       let () = really_input inx head 0 Marshal.header_size in
       let size = Marshal.data_size head 0 in
       let pos = pos_in inx + size in
-         if tag' = tag && (host' = hostname || host_mode = HostIndependent && magic' = magic) then
+         if test tag strings host digest then
             RemoveEntry pos
          else begin
             seek_in inx pos;
@@ -277,7 +328,8 @@ let remove fd filename (tag, host_mode) magic =
       in
          match code with
             RemoveEntry pos ->
-               remove_entry fd start pos
+               remove_entry fd start pos;
+               search ()
           | RemoveNext ->
                search ()
           | RemoveRest ->
@@ -287,6 +339,16 @@ let remove fd filename (tag, host_mode) magic =
          search ()
       else
          marshal_magic fd
+
+let remove fd filename (tag, host_mode) magic =
+   let test tag' strings host' digest' =
+      match strings with
+         ["MAGIC", magic'] ->
+            tag' = tag && (host' = hostname || host_mode = HostIndependent && magic' = magic)
+       | _ ->
+            false
+   in
+      remove_entry fd filename test
 
 (*
  * Add an entry.
@@ -305,7 +367,18 @@ let marshal_string outx s =
       output_binary_int outx len;
       Pervasives.output_string outx s
 
-let marshal_entry fd filename (tag, _) magic_number digest x =
+let marshal_strings outx sl =
+   let len =
+      List.fold_left (fun len (key, value) ->
+            len + String.length key + String.length value + 8) 4 sl
+   in
+      output_binary_int outx len;
+      output_binary_int outx (List.length sl);
+      List.iter (fun (key, value) ->
+            marshal_string outx key;
+            marshal_string outx value) sl
+
+let marshal_entry fd filename tag magic_number digest x =
    let outx = Unix.out_channel_of_descr fd in
       marshal_tag outx tag;
       marshal_string outx hostname;
@@ -320,9 +393,25 @@ let marshal_entry fd filename (tag, _) magic_number digest x =
          eprintf "Marshal.to_channel: %s: done@." filename;
       Pervasives.flush outx
 
-let add fd filename tag magic digest x =
+let add fd filename ((code, _) as tag) magic digest x =
    remove fd filename tag magic;
-   marshal_entry fd filename tag magic digest x
+   marshal_entry fd filename code magic digest x
+
+let append_entry fd filename tag strings digest x =
+   let _ = Unix.lseek fd 0 Unix.SEEK_END in
+   let outx = Unix.out_channel_of_descr fd in
+      marshal_tag outx tag;
+      marshal_string outx hostname;
+      marshal_strings outx strings;
+      marshal_digest outx digest;
+      if !debug_db then
+         eprintf "@[<v 3>Marshal.to_channel: %s@ tag/digest: %d/%s@]@." (**)
+            filename
+            tag (Lm_string_util.hexify digest);
+      Marshal.to_channel outx x [];
+      if !debug_db then
+         eprintf "Marshal.to_channel: %s: done@." filename;
+      Pervasives.flush outx
 
 (*!
  * @docoff

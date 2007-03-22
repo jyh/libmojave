@@ -33,6 +33,7 @@ UTIL_FILES[] =
     lm_config
     lm_channel
     lm_hash
+    lm_string_hash
     lm_lexer
     lm_parser
     lm_filename_util
