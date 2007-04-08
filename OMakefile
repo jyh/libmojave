@@ -23,10 +23,12 @@ if $(not $(defined LMINSTALL))
     LMINSTALL = false
     export
 
-if $(LMINSTALL)
-    OCamlLibraryInstall($(LMINSTALL), $(LIB), lm, $(FILES))
-else
-    OCamlLibrary(lm, $(FILES))
+section
+    ABORT_ON_DEPENDENCY_ERRORS = false
+    if $(LMINSTALL)
+        OCamlLibraryInstall($(LMINSTALL), $(LIB), lm, $(FILES))
+    else
+        OCamlLibrary(lm, $(FILES))
 
 open build/svn_realclean
 
