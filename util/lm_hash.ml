@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005-2006 Mojave Group, Caltech
+ * Copyright (C) 2005-2007 Mojave Group, Caltech and HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com} @{nogin@metaprl.org}
  * @end[license]
  *)
 open Lm_printf
@@ -485,7 +485,8 @@ struct
                end
 
    let equal item1 item2 =
-      compare item1 item2 = 0
+      (item1 == item2) || (item1.item_hash = item2.item_hash && (get item1) == (get item2))
+
 end;;
 
 (************************************************************************
