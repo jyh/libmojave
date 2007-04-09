@@ -157,7 +157,8 @@ static int gRequestNum = 0;
 static void free_dir(DirInfo *dir)
 {
     close(dir->handle);
-    free(dir->kevent);
+    if(dir->kevent)
+        free(dir->kevent);
     free(dir);
 }
 
@@ -206,10 +207,16 @@ static int monitor_start(FAMConnection *fc, DirInfo *dir)
                 "  kevent code: %d\n", dir->handle, code);
         fflush(stderr);
 #endif
-        free(kev);
     }
     if(code < 0)
+    {
+        if(kev)
+        {
+            free(kev);
+            dir->kevent = NULL;
+        }
         perror("monitor_start");
+    }
     return code;
 }
 
