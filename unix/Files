@@ -7,3 +7,4 @@ UNIX_FILES[] =
     lm_uname
     lm_unix_util
     lm_notify
+    lm_dll

@@ -138,7 +138,8 @@ static DllHooks hooks = {
     caml_callback_exn,
     caml_callback2_exn,
     caml_register_global_root,
-    caml_modify
+    caml_modify,
+    &caml_local_roots
 };
 
 /************************************************************************
@@ -437,12 +438,13 @@ static value alloc_dll(DllExport *values, value v_globals)
     v_fields = alloc_fields(v_strings, values->fields);
 
     /* Allocate the result */
-    v_tuple = alloc_tuple(5);
+    v_tuple = alloc_tuple(6);
     Store_field(v_tuple, 0, alloc_objects(v_strings, v_fields, values->objects));
     Store_field(v_tuple, 1, alloc_enums(v_strings, values->enums));
     Store_field(v_tuple, 2, alloc_values(v_strings, v_fields, values->values));
-    Store_field(v_tuple, 3, (value) values->set_callback_handler);
-    Store_field(v_tuple, 4, v_globals);
+    Store_field(v_tuple, 3, Val_int(values->callback_count));
+    Store_field(v_tuple, 4, (value) values->set_callback_handlers);
+    Store_field(v_tuple, 5, v_globals);
     CAMLreturn(v_tuple);
 }
 
@@ -453,14 +455,18 @@ static value alloc_dll(DllExport *values, value v_globals)
 /*
  * Open a dynamic link library.
  */
-value lm_dlopen(value v_filename, value v_flags)
+value lm_dlopen(value v_path, value v_filename, value v_flags)
 {
-    CAMLparam2(v_filename, v_flags);
+    CAMLparam3(v_path, v_filename, v_flags);
     CAMLlocal1(v_globals);
     DllExport *values;
     int flags;
     void *dll;
     value v;
+
+    char path[1 << 16];
+    int index, argc, i, len;
+    char *s;
 
     /* Parse the flags */
     flags = RTLD_LAZY;
@@ -482,6 +488,24 @@ value lm_dlopen(value v_filename, value v_flags)
             break;
         }
     }
+
+    /* Compute and set the path */
+    index = 0;
+    argc = Wosize_val(v_path);
+    for(i = 0; i < argc; i++) {
+        s = String_val(Field(v_path, i));
+        len = strlen(s);
+        if(index + len > sizeof(path) - 2) {
+            fprintf(stderr, "LD_LIBRARY_PATH is too long\n");
+            break;
+        }
+        if(i)
+            path[index++] = ':';
+        memcpy(path + index, s, len);
+        index += len;
+    }
+    path[index] = 0;
+    setenv("DYLD_LIBRARY_PATH", path, 1);
 
     /* Now open the lib */
     dll = dlopen(String_val(v_filename), flags);
@@ -525,14 +549,13 @@ value lm_dlopen_static(DllExport *values)
 /*
  * Set the callback handler.
  */
-typedef void (*SetHandler)(value);
+typedef value (*SetHandler)(value);
 typedef value (*FunPointer)(value);
 
 value lm_set_callback_handler(value v_set, value v_handler)
 {
     SetHandler set = (SetHandler) v_set;
-    set(v_handler);
-    return Val_unit;
+    return set(v_handler);
 }
 
 /*

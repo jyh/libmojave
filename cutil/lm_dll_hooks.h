@@ -38,7 +38,8 @@
  * Initialization code.
  */
 static DllHooks *dll_hooks;
-static value dll_callback_handler;
+static value dll_callback_handlers;
+static struct caml__roots_block **dll_local_roots;
 
 #undef alloc
 #undef alloc_tuple
@@ -53,6 +54,7 @@ static value dll_callback_handler;
 #undef callback_exn
 #undef callback2_exn
 #undef register_global_root
+#undef caml_local_roots
 
 #define alloc(n, t)                     (dll_hooks->alloc_hook(n, t))
 #define alloc_tuple(n)                  (dll_hooks->alloc_tuple_hook(n))
@@ -68,6 +70,7 @@ static value dll_callback_handler;
 #define callback2_exn(f, arg1, arg2)    (dll_hooks->callback2_exn_hook(f, arg1, arg2))
 #define register_global_root(v)         (dll_hooks->register_global_root_hook(v))
 #define caml_modify(vp, v)              (dll_hooks->modify(vp, v))
+#define caml_local_roots                (*dll_local_roots)
 
 /*
  * Strings have special marshalers.

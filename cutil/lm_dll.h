@@ -121,6 +121,7 @@ typedef struct {
     value (*callback2_exn_hook)(value, value, value);
     void (*register_global_root_hook)(value *);
     void (*modify)(value *, value);
+    struct caml__roots_block **dll_local_roots;
 } DllHooks;
 
 /*
@@ -131,7 +132,8 @@ typedef struct {
     int magic;
     int version;
     value (*initialize_dll)(DllHooks *);
-    void (*set_callback_handler)(value handler);
+    int callback_count;
+    value (*set_callback_handlers)(value handlers);
     char **strings;
     DllField **fields;
     DllObject *objects;

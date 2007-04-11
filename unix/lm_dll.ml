@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -176,7 +176,7 @@ sig
    (*
     * Open the DLL.
     *)
-   val opendll       : string -> open_flags -> t option
+   val opendll       : string array -> string -> open_flags -> t option
 
    (*
     * Open the static info.
@@ -246,13 +246,18 @@ struct
    type dll_sym
 
    (* The function to set the callback handler *)
-   type set_handler
+   type handler_count = int
+   type set_handlers
 
    (* Function with type information *)
    type dll_fun = dll_sym dll_value
 
    (* The DLL info *)
-   type t = dll_fun dll * set_handler
+   type t =
+      { dll_info          : dll_fun dll;
+        dll_handler_count : handler_count;
+        dll_set_handlers  : set_handlers
+      }
 
    (*
     * The raw information returned by the DLL.
@@ -285,7 +290,7 @@ struct
       }
 
    type raw_info =
-      Export of raw_object array * raw_enum array * raw_value array * set_handler * Obj.t
+      Export of raw_object array * raw_enum array * raw_value array * handler_count * set_handlers * Obj.t
     | NoExport
 
    (* This is raised if an argument can't be coerced to the right type *)
@@ -297,7 +302,7 @@ struct
    (************************************************************************
     * Open the DLL.
     *)
-   external dlopen  : string -> open_flags -> raw_info = "lm_dlopen";;
+   external dlopen  : string array -> string -> open_flags -> raw_info = "lm_dlopen";;
 
    (*
     * Convert the DLL info.
@@ -357,7 +362,7 @@ struct
       in
          { info with value_fun = info }
 
-   let build_dll objects enums values set_handler globals =
+   let build_dll objects enums values handler_count set_handlers globals =
       let objects = Array.map build_object objects in
       let enums   = Array.map build_enum enums in
       let values  = Array.map build_value values in
@@ -368,20 +373,23 @@ struct
            dll_globals = globals
          }
       in
-         info, set_handler
+         { dll_info = info;
+           dll_handler_count = handler_count;
+           dll_set_handlers = set_handlers
+         }
 
    (*
     * Open and format the DLL.
     *)
-   let opendll name flags =
-      match dlopen name flags with
-         Export (objects, enums, values, set_handler, globals) ->
-            Some (build_dll objects enums values set_handler globals)
+   let opendll path name flags =
+      match dlopen path name flags with
+         Export (objects, enums, values, handler_count, set_handlers, globals) ->
+            Some (build_dll objects enums values handler_count set_handlers globals)
        | NoExport ->
             None
 
-   let info (x, _) =
-      x
+   let info x =
+      x.dll_info
 
    (************************************************************************
     * Static version.
@@ -390,24 +398,31 @@ struct
 
    let open_static info =
       match dlopen_static info with
-         Export (objects, enums, values, set_handler, globals) ->
-            build_dll objects enums values set_handler globals
+         Export (objects, enums, values, handler_count, set_handlers, globals) ->
+            build_dll objects enums values handler_count set_handlers globals
        | NoExport ->
             raise (Failure "Lm_dll.open_static")
 
-   let get_enum (info, _) i j =
+   let get_enum { dll_info = info } i j =
       info.dll_enums.(i).enum_fields.(j).enum_field_value
 
-   let get_globals (info, _) =
+   let get_globals { dll_info = info } =
       info.dll_globals
 
    (************************************************************************
-    * Set the callback handler.
+    * Set the callback handlers, all to the same value.
+    *
+    * Note: ML files wil not usually use this, preferring
+    * to install multiple callbacks directly.
     *)
-   external set_handler : set_handler -> (Obj.t -> int) -> unit = "lm_set_callback_handler"
+   external set_handlers : set_handlers -> (Obj.t -> int) array -> unit = "lm_set_callback_handler"
 
-   let set_callback_handler (_, info) f =
-      set_handler info f
+   let set_callback_handler info f =
+      let { dll_handler_count = handler_count;
+            dll_set_handlers = info
+          } = info
+      in
+         set_handlers info (Array.create handler_count f)
 
    (************************************************************************
     * Unsafe application.
