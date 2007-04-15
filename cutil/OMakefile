@@ -42,6 +42,7 @@ CFILES[] =
     fam_inotify
     lm_notify
     lm_termsize
+    lm_dll
 
 if $(SNPRINTF_AVAILABLE)
     CFLAGS += -DHAVE_SNPRINTF
