@@ -39,7 +39,106 @@
 #include <caml/fail.h>
 #include <caml/callback.h>
 #include "lm_dll.h"
+#include "lm_dll_pointers.h"
 
+/************************************************************************
+ * More allocation.
+ */
+value lm_dll_malloc(value v_size)
+{
+    return dll_malloc(Int_val(v_size));
+}
+
+value lm_dll_free(value v)
+{
+    unsigned long off, size;
+    char *p, *base;
+
+    if(v == 0)
+        failwith("lm_dll_free: free a null pointer");
+    p = DllPointer_pointer_val(v);
+    if(p == 0)
+        failwith("lm_dll_free: free a null pointer");
+
+    /* Do not free pointers into the custom block */
+    base = Data_custom_val(v);
+    size = Wosize_val(v);
+    if((p - base) > size)
+        free(p);
+    DllPointer_pointer_val(v) = 0;
+    return Val_unit;
+}
+
+/*
+ * String allocation.
+ */
+value lm_dll_strdup(value v_str)
+{
+    CAMLparam1(v_str);
+    CAMLlocal1(v);
+    int size, len;
+    char *s, *p;
+
+    s = String_val(v_str);
+    len = strlen(s);
+    v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer) + len + 1, 0, 1);
+    p = Data_custom_val(v) + sizeof(DllPointer);
+    memcpy(p, s, len);
+    p[len] = 0;
+    DllPointer_pointer_val(v) = p;
+    CAMLreturn(v);
+}
+
+value lm_dll_string_of_pointer(value v_ptr)
+{
+    return copy_string(DllPointer_pointer_val(v_ptr));
+}
+
+/*
+ * String array allocation.
+ */
+value lm_dll_pointer_of_string_array(value v_argv)
+{
+    CAMLparam1(v_argv);
+    CAMLlocal1(v);
+    char **p, *top, *s;
+    int i, len, words, size;
+
+    /* Calculate the total storage size */
+    words = Wosize_val(v_argv);
+    size = sizeof(char *) * (words + 1);
+    for(i = 0; i != words; i++)
+        size += strlen(String_val(Field(v_argv, i))) + 1;
+
+    /* Copy the entries */
+    p = malloc((words + 1) * sizeof(char *));
+    if(p == 0)
+        failwith("ml_dll_pointer_of_string_array: out of memory");
+    top = (char *) (p + words + 1);
+    for(i = 0; i != words; i++) {
+        s = String_val(Field(v_argv, i));
+        len = strlen(s);
+        memcpy(top, s, len);
+        p[i] = top;
+        top[len] = 0;
+        top += len + 1;
+    }
+    p[i] = 0;
+
+    /* Allocate the pointer */
+    v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer), 0, 1);
+    DllPointer_pointer_val(v) = p;
+    CAMLreturn(v);
+}        
+
+value lm_dll_string_array_of_pointer(value v_ptr)
+{
+    return caml_copy_string_array(DllPointer_pointer_val(v_ptr));
+}
+
+/************************************************************************
+ * Win32 section.
+ */
 #ifdef WIN32
 
 /*
@@ -96,6 +195,7 @@ value lm_dlapply(value v_sym, value v_args)
 value lm_dlnull(value v_arg)
 {
     CAMLparam1(v_arg);
+    failwith("lm_dlnull");
     CAMLreturn(Val_unit);
 }
 
@@ -114,6 +214,10 @@ value lm_dlint_of_pointer(value v_arg)
 }
 
 #else /* !WIN32 */
+
+/************************************************************************
+ * UNIX.
+ */
 
 #include <dlfcn.h>
 
@@ -141,73 +245,6 @@ static DllHooks hooks = {
     caml_modify,
     &caml_local_roots
 };
-
-/************************************************************************
- * Pointers are custom blocks.
- */
-typedef struct _dll_pointer {
-    void *p;
-} DllPointer;
-
-static DllPointer dll_null_pointer;
-
-#define DllPointer_val(v)         ((DllPointer *) Data_custom_val(v))
-#define DllPointer_pointer_val(v) (DllPointer_val(v)->p)
-
-static int dll_pointer_compare(value v1, value v2)
-{
-    void *p1 = DllPointer_pointer_val(v1);
-    void *p2 = DllPointer_pointer_val(v2);
-    int i;
-
-    if(p1 < p2)
-        i = -1;
-    else if(p1 > p2)
-        i = 1;
-    else
-        i = 0;
-    return i;
-}
-
-static long dll_pointer_hash(value v)
-{
-    CAMLparam1(v);
-    void *p = DllPointer_pointer_val(v);
-    CAMLreturn((long) p);
-}
-
-static void dll_pointer_serialize(value v, unsigned long *wsize_32, unsigned long *wsize_64)
-{
-    *wsize_32 = 4;
-    *wsize_64 = 8;
-}
-
-static unsigned long dll_pointer_deserialize(void *dst)
-{
-    *(DllPointer *)dst = dll_null_pointer;
-    return sizeof(DllPointer);
-}
-
-static struct custom_operations dll_pointer_ops = {
-    "dll_pointer",
-    custom_finalize_default,
-    dll_pointer_compare,
-    dll_pointer_hash,
-    dll_pointer_serialize,
-    dll_pointer_deserialize
-};
-
-static inline value dll_unmarshal_pointer(void *p)
-{
-    value v = alloc_custom(&dll_pointer_ops, sizeof(DllPointer), 0, 1);
-    DllPointer_pointer_val(v) = p;
-    return v;
-}
-
-static inline void *dll_marshal_pointer(value v)
-{
-    return DllPointer_pointer_val(v);
-}
 
 /************************************************************************
  * Allocate of C data.

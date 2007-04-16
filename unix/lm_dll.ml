@@ -238,6 +238,17 @@ sig
 
    val pointer_of_int : int -> Obj.t
    val int_of_pointer : Obj.t -> int
+
+   (*
+    * Allocation on the C heap.
+    *)
+   val malloc                  : int -> t_void dll_pointer
+   val free                    : 'a dll_pointer -> unit
+   val strdup                  : string -> t_char dll_pointer
+   val pointer_of_string       : string -> t_char dll_pointer
+   val string_of_pointer       : t_char dll_pointer -> string
+   val pointer_of_string_array : string array -> t_char dll_pointer dll_pointer
+   val string_array_of_pointer : t_char dll_pointer dll_pointer -> string array
 end;;
 
 module Dll : DllSig =
@@ -446,6 +457,17 @@ struct
 
    external pointer_of_int : int -> Obj.t = "lm_dlpointer_of_int"
    external int_of_pointer : Obj.t -> int = "lm_dlint_of_pointer"
+
+   (*
+    * Allocation on the C heap.
+    *)
+   external malloc : int -> t_void dll_pointer = "lm_dll_malloc"
+   external free : 'a dll_pointer -> unit = "lm_dll_free"
+   external strdup : string -> t_char dll_pointer = "lm_dll_strdup"
+   external pointer_of_string : string -> t_char dll_pointer = "lm_dll_strdup"
+   external string_of_pointer : t_char dll_pointer -> string = "lm_dll_string_of_pointer"
+   external pointer_of_string_array : string array -> t_char dll_pointer dll_pointer = "lm_dll_pointer_of_string_array"
+   external string_array_of_pointer : t_char dll_pointer dll_pointer -> string array = "lm_dll_string_array_of_pointer"
 
    (************************************************************************
     * Function calls.

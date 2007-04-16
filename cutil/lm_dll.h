@@ -145,6 +145,14 @@ typedef struct {
  * Default definitions for the internal keywords.
  */
 #define __dll_callback  static
-#define __dll_hidden
+#define __dll_typedef   typedef
+#define DLL_REF(x)      *x
+
+/*
+ * Public values.
+ */
+value lm_dll_malloc(value v_size);
+value lm_dll_strdup(value v_str);
+value lm_dll_getstr(value v_ptr);
 
 #endif /* _LM_DLL_H */
