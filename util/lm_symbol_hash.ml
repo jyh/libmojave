@@ -343,8 +343,7 @@ let rec pp_print_symbol_list buf vl =
 (*
  * Compare for equality.
  *)
-let eq v1 v2 =
-   SymbolHash.compare v1 v2 = 0
+let eq = SymbolHash.equal
 
 let compare = SymbolHash.compare
 
