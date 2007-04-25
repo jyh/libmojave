@@ -30,6 +30,12 @@
  * @end[license]
  */
 
+/* For Caml */
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+
 #ifdef DETECT_FS_CASE_SENSITIVE_GETATTRLIST
 /* This is the OS X implementation, using getattrlist. */
 
@@ -39,11 +45,6 @@
 /* For getattrlist */
 #include <sys/attr.h>
 #include <unistd.h>
-/* For Caml */
-#include <caml/mlvalues.h>
-#include <caml/signals.h>
-#include <caml/fail.h>
-#include <caml/memory.h>
 /* Other various includes */
 #include <memory.h>
 #include <errno.h>
