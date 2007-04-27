@@ -326,6 +326,9 @@ let lookup_option_core options name =
                None ->
                   (* No option with this prefix was defined *)
                   raise (BogusArg ("No such option: " ^ name))
+             | Some (SpecNode (Unit _ | Set _ | Clear _ | UnitFold _ | SetFold _ | ClearFold _ | Usage )) ->
+                  (* Name was too long; can not assume a name/value pair *)
+                  raise (BogusArg ("No such option: " ^ name ^ " (option " ^ (String.sub name 0 offset) ^ " does not take arguments)"))
              | Some (SpecNode spec) ->
                   (* Name was too long; assume it was a name/value pair *)
                   spec, String.sub name offset (length - offset)
@@ -498,11 +501,14 @@ let advance_options mode _argv argv_length current =
 (* get_next_arg
    Get the next argument in the argument stream.  Returns
    the argument string, as well as the new current marker.  *)
-let get_next_arg argv argv_length current =
+let get_next_arg opt argv argv_length current =
    if current < argv_length then
       argv.(current), current + 1
    else
-      raise (BogusArg "Missing argument")
+      if (opt <> "") then
+         raise (BogusArg ("Option " ^ opt ^ " requires an argument"))
+      else
+         raise (Invalid_argument "Lm_arg: internal error")
 
 (* get_next_option
    In StrictMode, this is the same as get_next_arg.
@@ -511,11 +517,11 @@ let get_next_arg argv argv_length current =
 let rec get_next_option mode argv argv_length current =
    match mode with
       StrictMode ->
-         let opt, current = get_next_arg argv argv_length current in
+         let opt, current = get_next_arg "" argv argv_length current in
             opt, current, mode
     | MultiLetterMode ->
          (* See if the next argument is an option *)
-         let opt, current = get_next_arg argv argv_length current in
+         let opt, current = get_next_arg "" argv argv_length current in
             if String.length opt >= 2 && opt.[0] = '-' && is_alnum opt.[1] then
                get_next_option (MultiLetterPending (opt, 1)) argv argv_length current
             else
@@ -576,7 +582,7 @@ let fold_argv argv (mode_info, spec_info) arg default usage_msg =
                       | StringFold _, ""
                       | IntFold _,    ""
                       | FloatFold _,  "" ->
-                           let s, current = get_next_arg argv argv_length current in
+                           let s, current = get_next_arg opt argv argv_length current in
                               s, current, arg
 
                       | Unit _,       ""
@@ -614,7 +620,7 @@ let fold_argv argv (mode_info, spec_info) arg default usage_msg =
                            in
                               rest_function arg current
                       | _ ->
-                           raise (BogusArg ("Option '" ^ opt ^ "' cannot accept an argument"))
+                           raise (Invalid_argument "Lm_arg: internal error")
                   in
 
                   (* Actually process the option. *)
