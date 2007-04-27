@@ -612,7 +612,7 @@ let fold_argv argv (mode_info, spec_info) arg default usage_msg =
                            in
                               rest_function arg current
                       | _ ->
-                           raise (BogusArg "Option cannot accept an argument")
+                           raise (BogusArg ("Option '" ^ opt ^ "' cannot accept an argument"))
                   in
 
                   (* Actually process the option. *)
