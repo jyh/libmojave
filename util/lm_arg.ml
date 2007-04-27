@@ -366,11 +366,13 @@ let lookup_option options name =
              | ClearFold f, "" ->
                   SetFold f, ""
              | _ ->
-                  raise (BogusArg "Not an invertible option: ")
+                  raise (Failure "invert")
          with
             BogusArg _
           | Not_found ->
-                raise (BogusArg ("No such option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
+               raise (BogusArg ("No such option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
+          | Failure "invert" ->
+               raise (BogusArg ("Not an invertable option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
    else
       lookup_option_core options name
 
