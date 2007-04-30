@@ -105,6 +105,10 @@ value lm_fs_case_sensitive(value path_val) {
 
 #else /* not DETECT_FS_CASE_SENSITIVE_GETATTRLIST */
 
+#ifdef _WIN32
+#pragma warning( disable : 4100 )
+#endif /* _WIN32 */
+
 value lm_fs_case_sensitive_available(value _unit) {
     return Val_false;
 }
