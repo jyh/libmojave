@@ -374,212 +374,88 @@ struct
                end
 
    let equal item1 item2 =
-      (item1 == item2) || (item1.item_hash = item2.item_hash && (get item1) == (get item2))
-
+      (item1 == item2) || (item1.item_hash = item2.item_hash && get item1 == get item2)
 end
 
 (*
  * A version with two equalities
+ * In the item, the first field is the coarse hash.
  *)
+(* %%MAGICBEGIN%% *)
+type 'a hash_marshal_eq_item = (int * 'a) hash_marshal_item
+(* %%MAGICEND%% *)
+
 module MakeHashMarshalEq (Arg : HashMarshalEqArgSig) =
 struct
    type elt = Arg.t
-   type t = elt hash_marshal_item
+   type t = elt hash_marshal_eq_item
 
-   (* Keep a hash-cons table based on a weak comparison *)
-   module WeakCompare =
+   module NormalArg =
    struct
-      type t = elt hash_marshal_item
+      type t          = int * Arg.t
+      let debug       = Arg.debug
 
-      let compare item1 item2 =
-         let hash1 = item1.item_hash in
-         let hash2 = item2.item_hash in
-            if hash1 < hash2 then
+      let hash (i, v) =
+         i lxor Arg.fine_hash v
+
+      let compare (i1, v1) (i2, v2) =
+         if i1 < i2 then
+            -1
+         else if i1 > i2 then
+            1
+         else
+            Arg.fine_compare v1 v2
+
+      let reintern ((i, x) as item) =
+         let y = Arg.reintern x in
+            if y == x then
+               item
+            else
+               i, y
+   end;;
+
+   module Normal = MakeHashMarshal (NormalArg);;
+
+   let create x =
+      Normal.create (Arg.coarse_hash x, x);;
+
+   let intern x =
+      Normal.intern (Arg.coarse_hash x, x);;
+
+   let get info =
+      snd (Normal.get info);;
+
+   let hash info =
+      fst (Normal.get info);;
+
+   let compare item1 item2 =
+      Normal.stats.hash_compare <- succ Normal.stats.hash_compare;
+      if item1.item_val == item2.item_val then
+         0
+      else
+         let hash1, elt1 = Normal.get item1 in
+         let hash2, elt2 = Normal.get item2 in
+            if elt1 == elt2 then
+               0
+            else if hash1 < hash2 then
                -1
             else if hash1 > hash2 then
                1
-            else
-               Arg.strong_compare item1.item_val item2.item_val
-   end;;
-
-   module Table = Lm_map.LmMake (WeakCompare);;
-
-   let table = ref Table.empty
-
-   (*
-    * Keep track of collisions for debugging.
-    *)
-   let stats =
-      { hash_debug       = Arg.debug;
-        hash_reintern    = 0;
-        hash_compare     = 0;
-        hash_collisions  = 0
-      }
-
-   let () =
-      hash_stats := stats :: !hash_stats
-
-   (*
-    * We need to work nicely with threads.
-    *)
-   let lock_mutex = MutexCore.create ()
-   let lock_cond  = ConditionCore.create ()
-   let lock_id    = ref None
-
-   let unlock_outermost () =
-      MutexCore.lock lock_mutex;
-      lock_id := None;
-      ConditionCore.signal lock_cond;
-      MutexCore.unlock lock_mutex
-
-   let synchronize_outermost id f x =
-      lock_id := Some id;
-      MutexCore.unlock lock_mutex;
-      try
-         let x = f x in
-            unlock_outermost ();
-            x
-      with
-         exn ->
-            unlock_outermost ();
-            raise exn
-
-   let synchronize f x =
-      let id = ThreadCore.id (ThreadCore.self ()) in
-         MutexCore.lock lock_mutex;
-         match !lock_id with
-            None ->
-               synchronize_outermost id f x
-          | Some id' ->
-               if id' = id then begin
-                  MutexCore.unlock lock_mutex;
-                  f x
-               end
-               else begin
-                  ConditionCore.wait lock_cond lock_mutex;
-                  synchronize_outermost id f x
-               end
-
-   let synchronize =
-      if ThreadCore.enabled then
-         synchronize
-      else
-         (fun f x -> f x)
-
-   (*
-    * When creating an item, look it up in the table.
-    *)
-   let create_core elt =
-      let item =
-         { item_ref  = current_ref;
-           item_val  = elt;
-           item_hash = Arg.hash elt
-         }
-      in
-         try Table.find !table item with
-            Not_found ->
-               table := Table.add !table item item;
-               item
-
-   let create elt =
-      synchronize create_core elt
-
-   let intern elt =
-      let item =
-         { item_ref  = current_ref;
-           item_val  = elt;
-           item_hash = Arg.hash elt
-         }
-      in
-         Table.find !table item
-
-   (*
-    * Reintern.  This will take an item that may-or-may-not be hashed
-    * and produce a new one that is hashed.
-    *)
-   let reintern_core item1 =
-      stats.hash_reintern <- succ stats.hash_reintern;
-      try
-         let item2 = Table.find !table item1 in
-            if item2 != item1 then begin
-               item1.item_val <- item2.item_val;
-               item1.item_ref <- current_ref
-            end;
-            item2
-      with
-         Not_found ->
-            item1.item_val <- Arg.reintern item1.item_val;
-            item1.item_ref <- current_ref;
-            table := Table.add !table item1 item1;
-            item1
-
-   let reintern item =
-      synchronize reintern_core item
-
-   (*
-    * Access to the element.
-    *)
-   let get item =
-      if item.item_ref == current_ref then
-         item.item_val
-      else
-         (reintern item).item_val
-
-   let hash item =
-      item.item_hash
-
-   (*
-    * String pointer-based comparison.
-    *)
-   let compare item1 item2 =
-      stats.hash_compare <- succ stats.hash_compare;
-      let hash1 = item1.item_hash in
-      let hash2 = item2.item_hash in
-         if hash1 < hash2 then
-            -1
-         else if hash1 > hash2 then
-            1
-         else if item1.item_val == item2.item_val then
-            0
-         else
-            let elt1 = get item1 in
-            let elt2 = get item2 in
-               if elt1 == elt2 then
-                  0
-               else begin
-                  stats.hash_collisions <- succ stats.hash_collisions;
-                  Arg.weak_compare elt1 elt2
-               end
+            else begin
+               Normal.stats.hash_collisions <- succ Normal.stats.hash_collisions;
+               Arg.coarse_compare elt1 elt2
+            end
 
    let equal item1 item2 =
-      (item1 == item2) || (item1.item_hash = item2.item_hash && Arg.weak_equal (get item1) (get item2))
+      (item1 == item2) || (let hash1, val1 = Normal.get item1 in
+                           let hash2, val2 = Normal.get item2 in
+                              (val1 == val2 || (hash1 = hash2 && Arg.coarse_compare val1 val2 = 0)))
 
-   let strong_compare item1 item2 =
-      stats.hash_compare <- succ stats.hash_compare;
-      let hash1 = item1.item_hash in
-      let hash2 = item2.item_hash in
-         if hash1 < hash2 then
-            -1
-         else if hash1 > hash2 then
-            1
-         else if item1.item_val == item2.item_val then
-            0
-         else
-            let elt1 = get item1 in
-            let elt2 = get item2 in
-               if elt1 == elt2 then
-                  0
-               else begin
-                  stats.hash_collisions <- succ stats.hash_collisions;
-                  let cmp = Arg.strong_compare elt1 elt2 in
-                     if cmp = 0 then
-                        invalid_arg "Lm_hash is broken@.";
-                     cmp
-               end
+   let fine_hash info = info.item_hash
+   let fine_compare = Normal.compare
+   let fine_equal = Normal.equal
 
-   let strong_equal item1 item2 =
-      (item1 == item2) || (item1.item_hash = item2.item_hash && (get item1) == (get item2))
-
+   let reintern = Normal.reintern
 end
 
 (************************************************************************

@@ -168,10 +168,10 @@ end
  *   considered equivalent for the purposes of sets and tables, but they may
  *   have some individual representational characteristics that should be
  *   preserved.
- * 
+ *
  * An example of this is filenames on case-insensitive case-preserving
  * filesystems. Here the strong equality is the normal string equality
- * (ensures case preservation) and the weak equality is the equality of the 
+ * (ensures case preservation) and the weak equality is the equality of the
  * canonical (e.g. lowercase) representations (ensures case insensitivity).
  *)
 
@@ -187,21 +187,15 @@ sig
 
    (*
     * The client needs to provide the hash and the two comparison functions.
-    * 
-    * Note: the two comparison functions do not have to fully agree, but the following
-    * implications must hold:
-    * (strong_compare a b = 0) => (weak_compare a b = 0) <=> (weak_equal a b) => (hash a = hash b)
-    * 
-    * The last implication is worth emphasizing - the hash function should agree
-    * with the weak equality - in other words, it is the _canonical_
-    * representation that should be hashed.
     *)
-   val hash : t -> int
-   val weak_compare : t -> t -> int
-   val weak_equal : t -> t -> bool
-   val strong_compare : t -> t -> int
+   val fine_hash      : t -> int
+   val fine_compare   : t -> t -> int
 
-   val reintern : t -> t
+   val coarse_hash    : t -> int
+   val coarse_compare : t -> t -> int
+
+   (* Rehash the value *)
+   val reintern       : t -> t
 end
 
 (*
@@ -209,9 +203,11 @@ end
  *)
 module type HashMarshalEqSig =
 sig
-   include HashMarshalSig (* The default equality is the weak one *)
-   val strong_compare : t -> t -> int
-   val strong_equal : t -> t -> bool
+   include HashMarshalSig (* The default equality is the coarse one *)
+
+   val fine_hash    : t -> int
+   val fine_compare : t -> t -> int
+   val fine_equal   : t -> t -> bool
 end
 
 (************************************************************************

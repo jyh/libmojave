@@ -69,12 +69,13 @@ module MakeHashCons (Arg : HashArgSig)
  * it is hard to define the type recursively otherwise.
  *)
 type 'a hash_marshal_item
+type 'a hash_marshal_eq_item
 
 (*
  * Make a hash item.
  *)
 module MakeHashMarshal (Arg : HashMarshalArgSig)
-: HashMarshalSig 
+: HashMarshalSig
    with type elt = Arg.t
    with type t = Arg.t hash_marshal_item
 
@@ -82,9 +83,9 @@ module MakeHashMarshal (Arg : HashMarshalArgSig)
  * A variant with two equalities (see Lm_hash_sig for detail)
  *)
 module MakeHashMarshalEq (Arg : HashMarshalEqArgSig)
-: HashMarshalEqSig 
+: HashMarshalEqSig
    with type elt = Arg.t
-   with type t = Arg.t hash_marshal_item
+   with type t = Arg.t hash_marshal_eq_item
 
 val pp_print_hash_stats : formatter -> unit
 
