@@ -78,6 +78,14 @@ module MakeHashMarshal (Arg : HashMarshalArgSig)
    with type elt = Arg.t
    with type t = Arg.t hash_marshal_item
 
+(*
+ * A variant with two equalities (see Lm_hash_sig for detail)
+ *)
+module MakeHashMarshalEq (Arg : HashMarshalEqArgSig)
+: HashMarshalEqSig 
+   with type elt = Arg.t
+   with type t = Arg.t hash_marshal_item
+
 val pp_print_hash_stats : formatter -> unit
 
 (************************************************************************
