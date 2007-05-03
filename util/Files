@@ -32,6 +32,7 @@ UTIL_FILES[] =
     lm_ssl
     lm_config
     lm_channel
+    lm_hash_sig
     lm_hash
     lm_string_hash
     lm_lexer

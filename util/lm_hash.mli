@@ -4,7 +4,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2005-2006 Mojave Group, Caltech
+ * Copyright (C) 2005-2007 Mojave Group, California Institute of Technology
+ * and HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,46 +27,17 @@
  * LICENSE.libmojave for more details.
  *
  * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_printf
+open Lm_hash_sig
 
 (************************************************************************
  * A basic table for adding a hash code to every element.
  * Nothing else is done, so comparisons are still slow.
  * This table is safe to marshal.
  *)
-module type HashArgSig =
-sig
-   type t
-
-   (* For debugging *)
-   val debug : string
-
-   (* The client needs to provide hash and comparison functions *)
-   val hash : t -> int
-   val compare : t -> t -> int
-end;;
-
-(*
- * A basic hashtbale.
- *)
-module type HashSig =
-sig
-   type elt
-   type t
-
-   (* Creation *)
-   val create : elt -> t
-   val get : t -> elt
-
-   (* Hash code *)
-   val hash : t -> int
-
-   (* Comparison *)
-   val compare : t -> t -> int
-end;;
-
 module MakeHash (Arg : HashArgSig)
 : HashSig with type elt = Arg.t;;
 
@@ -79,39 +51,10 @@ module MakeHash (Arg : HashArgSig)
  * If you need a version that is safe to marshal, consider using the
  * HashMarshal below.  It is only slightly slower.
  *)
-module type HashConsSig =
-sig
-   type hash
-   type state
-   type elt
-   type t
-
-   (* States *)
-   val create_state : unit -> state
-   val length : state -> int
-
-   (* Normal creation *)
-   val icreate : state -> hash -> t
-   val create : state -> elt -> t
-   val get : state -> t -> elt
-
-   (* Hash code *)
-   val hash : t -> int
-
-   (* Comparison *)
-   val compare : t -> t -> int
-
-   (* Map over an array of hash codes *)
-   val map_array : (t -> elt -> 'a) -> state -> 'a array
-
-   (* Fold over all of the items *)
-   val fold : ('a -> t -> 'a) -> 'a -> state -> 'a
-end
-
 module MakeHashCons (Arg : HashArgSig)
 : HashConsSig
   with type elt = Arg.t
-  with type hash = MakeHash(Arg).t;;
+  with type hash = MakeHash(Arg).t
 
 (************************************************************************
  * Marshalable version.
@@ -121,95 +64,27 @@ module MakeHashCons (Arg : HashArgSig)
  * the cell will point somewhere else, so we know that the value
  * must be reinterned.  The hash codes are preseved across
  * marshaling.
- *)
-
-(*
- * The client needs to provide these functions.
- *)
-module type HashMarshalArgSig =
-sig
-   type t
-
-   (* For debugging *)
-   val debug : string
-
-   (* The client needs to provide hash and comparison functions *)
-   val hash : t -> int
-   val compare : t -> t -> int
-   val reintern : t -> t
-end;;
-
-(*
- * This is what we get.
  *
  * BUG: we break abstraction here a little because
  * it is hard to define the type recursively otherwise.
  *)
 type 'a hash_marshal_item
 
-module type HashMarshalSig =
-sig
-   type elt
-   type t = elt hash_marshal_item
-
-   (* Creation *)
-   val create   : elt -> t
-
-   (* The intern function fails with Not_found if the node does not already exist *)
-   val intern   : elt -> t
-
-   (* Destructors *)
-   val get      : t -> elt
-   val hash     : t -> int
-
-   (* Comparison *)
-   val equal    : t -> t -> bool
-   val compare  : t -> t -> int
-
-   (* Rehash the value *)
-   val reintern : t -> t
-end;;
-
 (*
  * Make a hash item.
  *)
 module MakeHashMarshal (Arg : HashMarshalArgSig)
-: HashMarshalSig with type elt = Arg.t;;
+: HashMarshalSig 
+   with type elt = Arg.t
+   with type t = Arg.t hash_marshal_item
 
 val pp_print_hash_stats : formatter -> unit
 
 (************************************************************************
  * Better-than-usual hashes.
  *)
-module type HashCodeSig =
-sig
-   type t
-
-   val create     : unit -> t
-   val add_bits   : t -> int -> unit (* Adds the last 11 bits *)
-   val add_int    : t -> int -> unit
-   val add_float  : t -> float -> unit
-   val add_string : t -> string -> unit
-   val code       : t -> int
-end;;
-
-module type HashDigestSig =
-sig
-   type t
-
-   val create        : unit -> t
-   val add_bits      : t -> int -> unit (* Adds the last 11 bits *)
-   val add_bool      : t -> bool -> unit
-   val add_int       : t -> int -> unit
-   val add_float     : t -> float -> unit
-   val add_char      : t -> char -> unit
-   val add_string    : t -> string -> unit
-   val add_substring : t -> string -> int -> int -> unit
-   val digest        : t -> string
-end;;
-
-module HashCode : HashCodeSig;;
-module HashDigest : HashDigestSig;;
+module HashCode : HashCodeSig
+module HashDigest : HashDigestSig
 
 (************************************************************************
  * Helper functions.

@@ -26,53 +26,17 @@
  * LICENSE.libmojave for more details.
  *
  * Author: Jason Hickey @email{jyh@cs.caltech.edu}
- * Modified By: Aleksey Nogin @email{anogin@hrl.com} @{nogin@metaprl.org}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com} @email{nogin@metaprl.org}
  * @end[license]
  *)
 open Lm_printf
 open Lm_thread_core
 
+open Lm_hash_sig
+
 (************************************************************************
  * A generic hash module to make comparisons faster.
  * This version uses a state for hash-consing.
- *)
-
-(*
- * The client needs to provide these functions.
- *)
-module type HashArgSig =
-sig
-   type t
-
-   (* For debugging *)
-   val debug : string
-
-   (* The client needs to provide hash and comparison functions *)
-   val hash : t -> int
-   val compare : t -> t -> int
-end
-
-(*
- * This is what we get.
- *)
-module type HashSig =
-sig
-   type elt
-   type t
-
-   (* Creation *)
-   val create : elt -> t
-   val get : t -> elt
-
-   (* Hash code *)
-   val hash : t -> int
-
-   (* Comparison *)
-   val compare : t -> t -> int
-end
-
-(*
- * Make a hash item.
  *)
 module MakeHash (Arg : HashArgSig)
 : HashSig with type elt = Arg.t =
@@ -99,42 +63,10 @@ struct
          -1
       else
          1
-end;;
+end
 
 (************************************************************************
  * Table-based hashing.
- *)
-module type HashConsSig =
-sig
-   type hash
-   type state
-   type elt
-   type t
-
-   (* States *)
-   val create_state : unit -> state
-   val length : state -> int
-
-   (* Normal creation *)
-   val icreate : state -> hash -> t
-   val create : state -> elt -> t
-   val get : state -> t -> elt
-
-   (* Hash code *)
-   val hash : t -> int
-
-   (* Comparison *)
-   val compare : t -> t -> int
-
-   (* Map over an array of hash codes *)
-   val map_array : (t -> elt -> 'a) -> state -> 'a array
-
-   (* Fold over all of the items *)
-   val fold : ('a -> t -> 'a) -> 'a -> state -> 'a
-end
-
-(*
- * This provides hash-consing.
  *)
 module MakeHashCons (Arg : HashArgSig)
 : HashConsSig
@@ -211,7 +143,7 @@ struct
             fold (succ i) (f x i)
       in
          fold 0 x
-end;;
+end
 
 (************************************************************************
  * Marshalable version.
@@ -222,22 +154,6 @@ end;;
  * must be rehashed.
  *)
 
-(*
- * The client needs to provide these functions.
- *)
-module type HashMarshalArgSig =
-sig
-   type t
-
-   (* For debugging *)
-   val debug : string
-
-   (* The client needs to provide hash and comparison functions *)
-   val hash : t -> int
-   val compare : t -> t -> int
-   val reintern : t -> t
-end
-
 (* %%MAGICBEGIN%% *)
 type 'a hash_marshal_item =
    { mutable item_ref : unit ref;
@@ -245,32 +161,6 @@ type 'a hash_marshal_item =
      item_hash        : int
    }
 (* %%MAGICEND%% *)
-
-(*
- * This is what we get.
- *)
-module type HashMarshalSig =
-sig
-   type elt
-   type t = elt hash_marshal_item
-
-   (* Creation *)
-   val create   : elt -> t
-
-   (* The intern function fails with Not_found if the node does not already exist *)
-   val intern   : elt -> t
-
-   (* Destructors *)
-   val get      : t -> elt
-   val hash     : t -> int
-
-   (* Comparison *)
-   val equal    : t -> t -> bool
-   val compare  : t -> t -> int
-
-   (* Rehash the value *)
-   val reintern : t -> t
-end;;
 
 (*
  * The reference in the current process.
@@ -310,8 +200,7 @@ let pp_print_hash_stats buf =
 (*
  * Make a hash item.
  *)
-module MakeHashMarshal (Arg : HashMarshalArgSig)
-: HashMarshalSig with type elt = Arg.t =
+module MakeHashMarshal (Arg : HashMarshalArgSig) =
 struct
    type elt = Arg.t
    type t = elt hash_marshal_item
@@ -487,7 +376,7 @@ struct
    let equal item1 item2 =
       (item1 == item2) || (item1.item_hash = item2.item_hash && (get item1) == (get item2))
 
-end;;
+end
 
 (************************************************************************
  * Better-than usual hash functions.
@@ -1293,18 +1182,6 @@ let () =
 (************************************************
  * Integer hashes.
  *)
-module type HashCodeSig =
-sig
-   type t
-
-   val create     : unit -> t
-   val add_bits   : t -> int -> unit
-   val add_int    : t -> int -> unit
-   val add_float  : t -> float -> unit
-   val add_string : t -> string -> unit
-   val code       : t -> int
-end;;
-
 (* %%MAGICBEGIN%% *)
 module HashCode : HashCodeSig =
 struct
@@ -1369,21 +1246,6 @@ end
 (************************************************
  * Digest-based hashes.
  *)
-module type HashDigestSig =
-sig
-   type t
-
-   val create        : unit -> t
-   val add_bits      : t -> int -> unit
-   val add_bool      : t -> bool -> unit
-   val add_int       : t -> int -> unit
-   val add_float     : t -> float -> unit
-   val add_char      : t -> char -> unit
-   val add_string    : t -> string -> unit
-   val add_substring : t -> string -> int -> int -> unit
-   val digest        : t -> string
-end;;
-
 (* %%MAGICBEGIN%% *)
 module HashDigest : HashDigestSig =
 struct
