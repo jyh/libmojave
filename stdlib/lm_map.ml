@@ -1233,7 +1233,7 @@ struct
    (*
     * Search without reorganizing the tree.
     *)
-   let rec mem_aux tree key =
+   let rec mem tree key =
       match tree with
          Black (key', _, left, right, _)
        | Red (key', _, left, right, _) ->
@@ -1241,15 +1241,27 @@ struct
                if comp = 0 then
                   true
                else if comp < 0 then
-                  mem_aux left key
+                  mem left key
                else
-                  mem_aux right key
+                  mem right key
 
        | Leaf ->
             false
 
-   let mem tree key =
-      mem_aux tree key
+   let rec find_key tree key =
+      match tree with
+         Black (key', _, left, right, _)
+       | Red (key', _, left, right, _) ->
+            let comp = Base.compare key key' in
+               if comp = 0 then
+                  Some key'
+               else if comp < 0 then
+                  find_key left key
+               else
+                  find_key right key
+
+       | Leaf ->
+            None
 
    (*
     * An empty tree is just a leaf.
@@ -1468,6 +1480,8 @@ struct
    let remove = MMap.remove
 
    let mem = MMap.mem
+
+   let find_key = MMap.find_key
 
    let iter f t =
       MMap.iter (fun i l ->
