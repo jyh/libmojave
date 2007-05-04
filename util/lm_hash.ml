@@ -447,9 +447,13 @@ struct
             end
 
    let equal item1 item2 =
-      (item1 == item2) || (let hash1, val1 = Normal.get item1 in
-                           let hash2, val2 = Normal.get item2 in
-                              (val1 == val2 || (hash1 = hash2 && Arg.coarse_compare val1 val2 = 0)))
+      (item1 == item2)
+      || (let hash1, val1 = Normal.get item1 in
+          let hash2, val2 = Normal.get item2 in
+             (val1 == val2)
+             || ((hash1 == hash2)
+                 && (Normal.stats.hash_collisions <- succ Normal.stats.hash_collisions;
+                     Arg.coarse_compare val1 val2 = 0)))
 
    let fine_hash info = info.item_hash
    let fine_compare = Normal.compare
