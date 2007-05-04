@@ -382,7 +382,7 @@ end
  * In the item, the first field is the coarse hash.
  *)
 (* %%MAGICBEGIN%% *)
-type 'a hash_marshal_eq_item = (int * 'a) hash_marshal_item
+type 'a hash_marshal_eq_item = ('a * 'a hash_marshal_item) hash_marshal_item
 (* %%MAGICEND%% *)
 
 module MakeHashMarshalEq (Arg : HashMarshalEqArgSig) =
@@ -390,76 +390,82 @@ struct
    type elt = Arg.t
    type t = elt hash_marshal_eq_item
 
-   module NormalArg =
+   module CoarseArg =
    struct
-      type t          = int * Arg.t
-      let debug       = Arg.debug
+      type t     = Arg.t
+      let debug  = Arg.debug ^ ":coarse"
 
-      let hash (i, v) =
-         i lxor Arg.fine_hash v
-
-      let compare (i1, v1) (i2, v2) =
-         if i1 < i2 then
-            -1
-         else if i1 > i2 then
-            1
-         else
-            Arg.fine_compare v1 v2
-
-      let reintern ((i, x) as item) =
-         let y = Arg.reintern x in
-            if y == x then
-               item
-            else
-               i, y
+      let hash     = Arg.coarse_hash
+      let compare  = Arg.coarse_compare
+      let reintern = Arg.reintern
    end;;
 
-   module Normal = MakeHashMarshal (NormalArg);;
+   module Coarse = MakeHashMarshal (CoarseArg);;
+
+   (*
+    * We fold the Coarse item into the fine
+    * item only so we don't have to create three
+    * modules (the final one being a pair of fine
+    * and coarse).
+    *)
+   module FineArg =
+   struct
+      type t     = Arg.t * Coarse.t
+      let debug  = Arg.debug ^ ":fine"
+
+      (*
+       * We're assuming that the fine hash is a
+       * refinement of the coarse one.
+       *)
+      let hash (fine, _) =
+         Arg.fine_hash fine
+
+      let compare (fine1, _) (fine2, _) =
+         Arg.fine_compare fine1 fine2
+
+      let reintern ((fine, coarse) as item) =
+         let fine' = Arg.reintern fine in
+         let coarse' = Coarse.reintern coarse in
+            if fine' == fine && coarse' == coarse then
+               item
+            else
+               fine', coarse'
+   end;;
+
+   module Fine = MakeHashMarshal (FineArg);;
 
    let create x =
-      Normal.create (Arg.coarse_hash x, x);;
+      Fine.create (x, Coarse.create x)
 
    let intern x =
-      Normal.intern (Arg.coarse_hash x, x);;
+      Fine.intern (x, Coarse.intern x)
 
    let get info =
-      snd (Normal.get info);;
+      fst (Fine.get info)
+
+   (*
+    * The default functions are the coarse versions.
+    *)
+   let get_coarse info =
+      snd (Fine.get info)
 
    let hash info =
-      fst (Normal.get info);;
+      Coarse.hash (get_coarse info)
 
    let compare item1 item2 =
-      Normal.stats.hash_compare <- succ Normal.stats.hash_compare;
-      if item1.item_val == item2.item_val then
-         0
-      else
-         let hash1, elt1 = Normal.get item1 in
-         let hash2, elt2 = Normal.get item2 in
-            if elt1 == elt2 then
-               0
-            else if hash1 < hash2 then
-               -1
-            else if hash1 > hash2 then
-               1
-            else begin
-               Normal.stats.hash_collisions <- succ Normal.stats.hash_collisions;
-               Arg.coarse_compare elt1 elt2
-            end
+      Coarse.compare (get_coarse item1) (get_coarse item2)
 
    let equal item1 item2 =
-      (item1 == item2)
-      || (let hash1, val1 = Normal.get item1 in
-          let hash2, val2 = Normal.get item2 in
-             (val1 == val2)
-             || ((hash1 == hash2)
-                 && (Normal.stats.hash_collisions <- succ Normal.stats.hash_collisions;
-                     Arg.coarse_compare val1 val2 = 0)))
+      Coarse.equal (get_coarse item1) (get_coarse item2)
 
-   let fine_hash info = info.item_hash
-   let fine_compare = Normal.compare
-   let fine_equal = Normal.equal
+   (*
+    * Also export the fine versions.
+    *)
+   let fine_hash = Fine.hash
+   let fine_compare = Fine.compare
+   let fine_equal = Fine.equal
 
-   let reintern = Normal.reintern
+   let reintern = Fine.reintern
 end
 
 (************************************************************************
