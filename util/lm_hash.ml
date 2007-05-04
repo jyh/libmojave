@@ -378,8 +378,10 @@ struct
 end
 
 (*
- * A version with two equalities
- * In the item, the first field is the coarse hash.
+ * A version with two equalities.
+ * The fine equality is used for cons-hashing, but the coarse
+ * version is used for external comparisons.  The fine equality
+ * must be a refinement of the coarse equality.
  *)
 (* %%MAGICBEGIN%% *)
 type 'a hash_marshal_eq_item = ('a * 'a hash_marshal_item) hash_marshal_item
