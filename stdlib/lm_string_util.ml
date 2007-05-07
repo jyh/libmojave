@@ -634,6 +634,12 @@ let tokens_data info s =
 let tokens_string info s =
    let len = String.length s in
    let wrap = info.tokens_wrap_string in
+   let wrap_prefix prefix s off len =
+      if len <> 0 then
+         wrap (String.sub s off len) :: prefix
+      else
+         prefix
+   in
 
    (* Scanning whitespace *)
    let rec scan_white tokens i =
@@ -655,9 +661,9 @@ let tokens_string info s =
    (* Scanning a quoted word *)
    and scan_quote tokens prefix delim start i =
       if i >= len then
-         let head = wrap (String.sub s start (len - start)) in
+         let head = wrap_prefix prefix s start (len - start) in
             { info with tokens_list = tokens;
-                        tokens_prefix = QuotePrefix (delim, (head :: prefix))
+                        tokens_prefix = QuotePrefix (delim, head)
             }
       else
          let c = String.unsafe_get s i in
@@ -672,14 +678,15 @@ let tokens_string info s =
    (* Scanning a word *)
    and scan_word tokens prefix start i =
       if i >= len then
-         { info with tokens_list = tokens;
-                     tokens_prefix = WordPrefix ((wrap (String.sub s start (len - start))) :: prefix)
-         }
+         let prefix = wrap_prefix prefix s start (len - start) in
+            { info with tokens_list = tokens;
+                        tokens_prefix = WordPrefix prefix
+            }
       else
          match String.unsafe_get s i with
             ' ' | '\t' | '\n' | '\r' | '\012' ->
-               let head = wrap (String.sub s start (i - start)) in
-               let head_tok = info.tokens_group (head :: prefix) in
+               let head = wrap_prefix prefix s start (i - start) in
+               let head_tok = info.tokens_group head in
                   scan_white (head_tok :: tokens) (succ i)
           | '"' | '\'' as c ->
                scan_quote tokens prefix c start (succ i)
