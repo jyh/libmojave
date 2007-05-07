@@ -752,7 +752,22 @@ let tokens_lex info s =
    in
    let len = String.length s in
 
-   (* Scanning whitespace *)
+   (* Don't add empty strings *)
+   let wrap_data_prefix prefix s off len =
+      if len <> 0 then
+         wrap_data (String.sub s off len) :: prefix
+      else
+         prefix
+   in
+
+   let wrap_string_prefix prefix s off len =
+      if len <> 0 then
+         wrap_string (String.sub s off len) :: prefix
+      else
+         prefix
+   in
+
+  (* Scanning whitespace *)
    let rec scan_white tokens i =
       if i = len then
          { info with tokens_list   = tokens;
@@ -775,14 +790,14 @@ let tokens_lex info s =
    (* Scanning a quoted word *)
    and scan_quote tokens prefix delim start i =
       if i >= len then
-         let head = wrap_data (String.sub s start (len - start)) in
+         let head = wrap_data_prefix prefix s start (len - start) in
             { info with tokens_list   = tokens;
-                        tokens_prefix =  QuotePrefix (delim, head :: prefix)
+                        tokens_prefix =  QuotePrefix (delim, head)
             }
       else
          match buffer_get_quoted s i with
             BufQuote c when c = delim ->
-               let prefix = wrap_data (String.sub s start (i - start)) :: prefix in
+               let prefix = wrap_data_prefix prefix s start (i - start) in
                   scan_word tokens prefix (succ i) (succ i)
           | BufBackslash ->
                scan_quote tokens prefix delim start (i + 2)
@@ -796,23 +811,21 @@ let tokens_lex info s =
    (* Scanning a word *)
    and scan_word tokens prefix start i =
       if i >= len then
-         let head = wrap_string (String.sub s start (len - start)) in
+         let head = wrap_string_prefix prefix s start (len - start) in
             { info with tokens_list   = tokens;
-                        tokens_prefix = WordPrefix (head :: prefix)
+                        tokens_prefix = WordPrefix head
             }
       else
          match buffer_get_token lexer s i len with
             BufWhite ->
-               let head = wrap_string (String.sub s start (i - start)) in
-               let head = group (head :: prefix) in
+               let head = group (wrap_string_prefix prefix s start (i - start)) in
                   scan_white (head :: tokens) (succ i)
           | BufToken len ->
-               let head1 = wrap_string (String.sub s start (i - start)) in
-               let head1 = group (head1 :: prefix) in
+               let head1 = group (wrap_string_prefix prefix s start (i - start)) in
                let head2 = wrap_token (String.sub s i len) in
                   scan_white (head2 :: head1 :: tokens) (i + len)
           | BufQuote c ->
-               let prefix = wrap_string (String.sub s start (i - start)) :: prefix in
+               let prefix = wrap_string_prefix prefix s start (i - start) in
                   scan_quote tokens prefix c (succ i) (succ i)
           | BufBackslash ->
                scan_word tokens prefix start (i + 2)

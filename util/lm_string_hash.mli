@@ -24,8 +24,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_hash
 open Lm_printf
+open Lm_hash_sig
 
 module StringHash : HashMarshalSig with type elt = string
 

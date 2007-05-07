@@ -28,6 +28,7 @@
 open Lm_hash
 open Lm_printf
 open Lm_location
+open Lm_hash_sig
 
 (*
  * Compare two paths.
