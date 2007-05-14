@@ -223,6 +223,8 @@ static DllHooks hooks = {
     caml_copy_string,
     caml_copy_string_array,
     caml_copy_int32,
+    caml_copy_nativeint,
+    caml_copy_int64,
     caml_copy_double,
     caml_named_value,
     caml_callback,
@@ -350,7 +352,7 @@ static value alloc_enum_field(value v_strings, DllEnumField *field)
 
     v_tuple = alloc_tuple(2);
     Store_field(v_tuple, 0, Field(v_strings, field->name));
-    Store_field(v_tuple, 1, Val_int(field->value));
+    Store_field(v_tuple, 1, copy_nativeint(field->value));
     CAMLreturn(v_tuple);
 }
 

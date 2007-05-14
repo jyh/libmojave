@@ -112,7 +112,9 @@ typedef struct {
     value (*alloc_custom_hook)(struct custom_operations *ops, unsigned long size, mlsize_t mem, mlsize_t max);
     value (*copy_string_hook)(const char *s);
     value (*copy_string_array_hook)(const char **s);
-    value (*copy_int32_hook)(int i);
+    value (*copy_int32_hook)(int32 i);
+    value (*copy_nativeint_hook)(intnat i);
+    value (*copy_int64_hook)(int64 i);
     value (*copy_double_hook)(double x);
     value *(*named_value_hook)(char *name);
     value (*callback1_hook)(value, value);
@@ -147,12 +149,5 @@ typedef struct {
 #define __dll_callback  static
 #define __dll_typedef   typedef
 #define DLL_REF(x)      *x
-
-/*
- * Public values.
- */
-value lm_dll_malloc(value v_size);
-value lm_dll_strdup(value v_str);
-value lm_dll_getstr(value v_ptr);
 
 #endif /* _LM_DLL_H */

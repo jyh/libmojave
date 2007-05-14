@@ -93,7 +93,7 @@ type dll_object_type =
  *)
 type dll_enum_field =
    { enum_field_name  : symbol;
-     enum_field_value : int
+     enum_field_value : Nativeint.t
    }
 
 type dll_enum =
@@ -146,7 +146,7 @@ type dll_export
  *)
 type t_void = unit
 type t_char = char
-type t_int  = int
+type t_int  = Nativeint.t
 type t_float = float
 type t_double = float
 type t___builtin_va_list
@@ -187,7 +187,7 @@ sig
     * Get the value of an enum.
     * This is mainly for use by generated code.
     *)
-   val get_enum      : t -> int -> int -> int
+   val get_enum      : t -> int -> int -> Nativeint.t
 
    (*
     * Get the global variables.
@@ -203,7 +203,7 @@ sig
     * Use this function if you want to handle callbacks.
     * Eventually, it would be good to make the return value general.
     *)
-   val set_callback_handler : t -> (Obj.t -> int) -> unit
+   val set_callback_handler : t -> (Obj.t -> Nativeint.t) -> unit
 
    (*
     * Apply a function.  This should be reasonably safe, as long
@@ -285,7 +285,7 @@ struct
 
    type raw_enum_field =
       { raw_enum_field_name  : string;
-        raw_enum_field_value : int
+        raw_enum_field_value : Nativeint.t
       }
 
    type raw_enum =
@@ -426,7 +426,7 @@ struct
     * Note: ML files wil not usually use this, preferring
     * to install multiple callbacks directly.
     *)
-   external set_handlers : set_handlers -> (Obj.t -> int) array -> unit = "lm_set_callback_handler"
+   external set_handlers : set_handlers -> (Obj.t -> Nativeint.t) array -> unit = "lm_set_callback_handler"
 
    let set_callback_handler info f =
       let { dll_handler_count = handler_count;

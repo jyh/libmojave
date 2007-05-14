@@ -47,6 +47,8 @@ static struct caml__roots_block **dll_local_roots;
 #undef copy_string
 #undef copy_string_array
 #undef copy_int32
+#undef copy_int64
+#undef copy_nativeint
 #undef copy_double
 #undef named_value
 #undef callback
@@ -62,6 +64,8 @@ static struct caml__roots_block **dll_local_roots;
 #define copy_string(s)                  (dll_hooks->copy_string_hook(s))
 #define copy_string_array(s)            (dll_hooks->copy_string_array_hook(s))
 #define copy_int32(i)                   (dll_hooks->copy_int32_hook(i))
+#define copy_nativeint(i)               (dll_hooks->copy_nativeint_hook(i))
+#define copy_int64(i)                   (dll_hooks->copy_int64_hook(i))
 #define copy_double(x)                  (dll_hooks->copy_double_hook(x))
 #define named_value(name)               (dll_hooks->named_value_hook(name))
 #define callback(f, arg1)               (dll_hooks->callback1_hook(f, arg1))

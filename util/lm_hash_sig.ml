@@ -220,6 +220,9 @@ sig
    val create     : unit -> t
    val add_bits   : t -> int -> unit (* Adds the last 11 bits *)
    val add_int    : t -> int -> unit
+   val add_nativeint : t -> Nativeint.t -> unit
+   val add_int32  : t -> Int32.t -> unit
+   val add_int64  : t -> Int64.t -> unit
    val add_float  : t -> float -> unit
    val add_string : t -> string -> unit
    val code       : t -> int
@@ -233,6 +236,9 @@ sig
    val add_bits      : t -> int -> unit (* Adds the last 11 bits *)
    val add_bool      : t -> bool -> unit
    val add_int       : t -> int -> unit
+   val add_nativeint : t -> Nativeint.t -> unit
+   val add_int32  : t -> Int32.t -> unit
+   val add_int64  : t -> Int64.t -> unit
    val add_float     : t -> float -> unit
    val add_char      : t -> char -> unit
    val add_string    : t -> string -> unit

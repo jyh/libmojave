@@ -1321,11 +1321,22 @@ struct
       add_bits buf (i lsr 11);
       add_bits buf (i lsr 22)
 
+   let add_int32 buf i =
+      add_bits buf (Int32.to_int (Int32.shift_right_logical i 16));
+      add_bits buf (Int32.to_int i)
+
+   let add_int64 buf i =
+      add_int buf (Int64.to_int (Int64.shift_right_logical i 48));
+      add_int buf (Int64.to_int (Int64.shift_right_logical i 24));
+      add_int buf (Int64.to_int i)
+
+   let add_nativeint buf i =
+      add_int buf (Nativeint.to_int (Nativeint.shift_right_logical i 48));
+      add_int buf (Nativeint.to_int (Nativeint.shift_right_logical i 24));
+      add_int buf (Nativeint.to_int i)
+
    let add_float buf x =
-      let i = Int64.bits_of_float x in
-         add_int buf (Int64.to_int (Int64.shift_right i 48));
-         add_int buf (Int64.to_int (Int64.shift_right i 24));
-         add_int buf (Int64.to_int i)
+      add_int64 buf (Int64.bits_of_float x)
 
    (*
     * Extract the digest.
@@ -1399,6 +1410,20 @@ struct
       add_bits buf i;
       add_bits buf (i lsr 11);
       add_bits buf (i lsr 22)
+
+   let add_int32 buf i =
+      add_bits buf (Int32.to_int (Int32.shift_right_logical i 16));
+      add_bits buf (Int32.to_int i)
+
+   let add_int64 buf i =
+      add_int buf (Int64.to_int (Int64.shift_right_logical i 48));
+      add_int buf (Int64.to_int (Int64.shift_right_logical i 24));
+      add_int buf (Int64.to_int i)
+
+   let add_nativeint buf i =
+      add_int buf (Nativeint.to_int (Nativeint.shift_right_logical i 48));
+      add_int buf (Nativeint.to_int (Nativeint.shift_right_logical i 24));
+      add_int buf (Nativeint.to_int i)
 
    let add_float buf x =
       let i = Int64.bits_of_float x in
