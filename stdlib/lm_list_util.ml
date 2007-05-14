@@ -9,16 +9,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -32,6 +32,31 @@
  * Exception for operations that have no effect.
  *)
 exception Unchanged
+
+(*
+ * Array-style operations.
+ *)
+let sub =
+   let rec skip l off len =
+      if off = 0 then
+         collect [] l len
+      else
+         match l with
+            _ :: l ->
+               skip l (off - 1) len
+          | [] ->
+               raise (Invalid_argument "Lm_list_util.sub")
+   and collect l1 l2 len =
+      if len = 0 then
+         List.rev l1
+      else
+         match l2 with
+            x :: l2 ->
+               collect (x :: l1) l2 (len - 1)
+          | [] ->
+               raise (Invalid_argument "Lm_list_util.sub")
+   in
+      skip
 
 (*
  * Iterate over two lists, but stop at the end of the

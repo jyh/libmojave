@@ -59,12 +59,6 @@ value lm_dll_free(value v)
     p = DllPointer_pointer_val(v);
     if(p == 0)
         failwith("lm_dll_free: free a null pointer");
-
-    /* Do not free pointers into the custom block */
-    base = Data_custom_val(v);
-    size = Wosize_val(v);
-    if((p - base) > size)
-        free(p);
     DllPointer_pointer_val(v) = 0;
     return Val_unit;
 }
@@ -81,11 +75,10 @@ value lm_dll_strdup(value v_str)
 
     s = String_val(v_str);
     len = strlen(s);
-    v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer) + len + 1, 0, 1);
-    p = Data_custom_val(v) + sizeof(DllPointer);
+    v = dll_malloc(len + 1);
+    p = DllPointer_pointer_val(v);
     memcpy(p, s, len);
     p[len] = 0;
-    DllPointer_pointer_val(v) = p;
     CAMLreturn(v);
 }
 
@@ -111,10 +104,9 @@ value lm_dll_pointer_of_string_array(value v_argv)
         size += strlen(String_val(Field(v_argv, i))) + 1;
 
     /* Copy the entries */
-    p = malloc((words + 1) * sizeof(char *));
-    if(p == 0)
-        failwith("ml_dll_pointer_of_string_array: out of memory");
-    top = (char *) (p + words + 1);
+    v = dll_malloc(size);
+    p = (char **) DllPointer_pointer_val(v);
+    top = (char *) (p + (words + 1));
     for(i = 0; i != words; i++) {
         s = String_val(Field(v_argv, i));
         len = strlen(s);
@@ -124,10 +116,6 @@ value lm_dll_pointer_of_string_array(value v_argv)
         top += len + 1;
     }
     p[i] = 0;
-
-    /* Allocate the pointer */
-    v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer), 0, 1);
-    DllPointer_pointer_val(v) = p;
     CAMLreturn(v);
 }        
 

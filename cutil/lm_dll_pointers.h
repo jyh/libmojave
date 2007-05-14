@@ -105,19 +105,23 @@ static inline void *dll_marshal_pointer(value v)
     return p;
 }
 
-/************************************************************************
- * An ML-allocated pointer.
+/*
+ * For allocated values, we have to allocate with malloc(3),
+ * because otherwise the value may move around.
  */
-static void ml_pointer_finalize(value v)
+static void dll_malloc_finalize(value v)
 {
     void *p = DllPointer_pointer_val(v);
-    free(p);
-    DllPointer_pointer_val(v) = 0;
+
+    if(p) {
+        free(p);
+        DllPointer_pointer_val(v) = 0;
+    }
 }
 
-static struct custom_operations ml_pointer_ops = {
-    "ml_pointer",
-    ml_pointer_finalize,
+static struct custom_operations dll_malloc_ops = {
+    "dll_malloc",
+    dll_malloc_finalize,
     dll_pointer_compare,
     dll_pointer_hash,
     dll_pointer_serialize,
@@ -129,26 +133,15 @@ static value dll_malloc(unsigned size)
     value v;
     void *p;
 
-    v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer) + size, 0, 1);
-    p = Data_custom_val(v) + sizeof(DllPointer);
+    v = alloc_custom(&dll_malloc_ops, sizeof(DllPointer), 0, 1);
+    p = malloc(size);
+    if(p == 0) {
+        fprintf(stderr, "dll_malloc: out of memory");
+        exit(1);
+    }
     memset(p, 0, size);
     DllPointer_pointer_val(v) = p;
     return v;
 }
-
-static value dll_unmarshal_copy(unsigned size, void *p1)
-{
-    value v;
-
-    if(p1) {
-        v = alloc_custom(&ml_pointer_ops, sizeof(DllPointer) + size, 0, 1);
-        char *p2 = Data_custom_val(v) + sizeof(DllPointer);
-        memcpy(p2, p1, size);
-        DllPointer_pointer_val(v) = p2;
-    }
-    else
-        v = 0;
-    return v;
-}    
 
 #endif /* _LM_DLL_POINTERS */
