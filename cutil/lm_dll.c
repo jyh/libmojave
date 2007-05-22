@@ -201,6 +201,20 @@ value lm_dlint_of_pointer(value v_arg)
     CAMLreturn(Val_unit);
 }
 
+value lm_dlpointer_of_nativeint(value v_arg)
+{
+    CAMLparam1(v_arg);
+    failwith("lm_dlpointer_of_nativeint");
+    CAMLreturn(Val_unit);
+}
+
+value lm_dlnativeint_of_pointer(value v_arg)
+{
+    CAMLparam1(v_arg);
+    failwith("lm_dlnativeint_of_pointer");
+    CAMLreturn(Val_unit);
+}
+
 #else /* !WIN32 */
 
 /************************************************************************
@@ -620,9 +634,28 @@ value lm_dlint_of_pointer(value v_arg)
     if(Is_long(v_arg))
         v = v_arg;
     else if(Tag_val(v_arg) == Custom_tag && strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0)
-        v = Val_int(dll_marshal_pointer(v_arg));
+        v = Val_int((value) dll_marshal_pointer(v_arg));
     else
         failwith("int_of_pointer: not a pointer or integer");
+    CAMLreturn(v);
+}
+
+value lm_dlpointer_of_nativeint(value v_arg)
+{
+    return dll_unmarshal_pointer((void *) Nativeint_val(v_arg));
+}
+
+value lm_dlnativeint_of_pointer(value v_arg)
+{
+    CAMLparam1(v_arg);
+    CAMLlocal1(v);
+
+    if(Is_long(v_arg))
+        v = v_arg;
+    else if(Tag_val(v_arg) == Custom_tag && strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0)
+        v = copy_nativeint((value) dll_marshal_pointer(v_arg));
+    else
+        failwith("nativeint_of_pointer: not a pointer or integer");
     CAMLreturn(v);
 }
 

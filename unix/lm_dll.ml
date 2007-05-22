@@ -236,13 +236,15 @@ sig
 
    val p_NULL         : 'a dll_pointer
 
-   val pointer_of_int : int -> Obj.t
-   val int_of_pointer : Obj.t -> int
+   val pointer_of_int : int -> t_void dll_pointer
+   val int_of_pointer : t_void dll_pointer -> int
+   val pointer_of_nativeint : Nativeint.t -> t_void dll_pointer
+   val nativeint_of_pointer : t_void dll_pointer -> Nativeint.t
 
    (*
     * Allocation on the C heap.
     *)
-   val malloc                  : int -> t_void dll_pointer
+   val malloc                  : int -> 'a dll_pointer
    val free                    : 'a dll_pointer -> unit
    val strdup                  : string -> t_char dll_pointer
    val pointer_of_string       : string -> t_char dll_pointer
@@ -455,13 +457,15 @@ struct
    let is_null x =
       Obj.repr x == null
 
-   external pointer_of_int : int -> Obj.t = "lm_dlpointer_of_int"
-   external int_of_pointer : Obj.t -> int = "lm_dlint_of_pointer"
+   external pointer_of_int : int -> t_void dll_pointer = "lm_dlpointer_of_int"
+   external int_of_pointer : t_void dll_pointer -> int = "lm_dlint_of_pointer"
+   external pointer_of_nativeint : Nativeint.t -> t_void dll_pointer = "lm_dlpointer_of_nativeint"
+   external nativeint_of_pointer : t_void dll_pointer -> Nativeint.t = "lm_dlnativeint_of_pointer"
 
    (*
     * Allocation on the C heap.
     *)
-   external malloc : int -> t_void dll_pointer = "lm_dll_malloc"
+   external malloc : int -> 'a dll_pointer = "lm_dll_malloc"
    external free : 'a dll_pointer -> unit = "lm_dll_free"
    external strdup : string -> t_char dll_pointer = "lm_dll_strdup"
    external pointer_of_string : string -> t_char dll_pointer = "lm_dll_strdup"
