@@ -20,7 +20,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003 Mojave Group, Caltech
+ * Copyright (C) 2003-2007 Mojave Group, California Institute of Technology
+ * and HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,8 +42,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_printf
@@ -168,13 +169,16 @@ external pipe_kind : Unix.file_descr -> kind = "omake_shell_pipe_kind"
 
 (*
  * Default readers and writers.
+ * 
+ * XXX: We treat the "broken pipe" errors as EOFs.
  *)
 let default_reader fd buf off len =
    match fd with
       Some fd ->
          blocking_section (fun () ->
                try Unix.read fd buf off len with
-                  Unix.Unix_error (Unix.EUNKNOWNERR 0, _, _) ->
+                  Unix.Unix_error (Unix.EUNKNOWNERR 0, _, _)
+                | Unix.Unix_error (Unix.EPIPE, _, _) ->
                      0) ()
     | None ->
          raise (Unix.Unix_error (Unix.EINVAL, "default_reader", ""))
@@ -1293,12 +1297,9 @@ struct
          channel.in_index <- max
 end
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
