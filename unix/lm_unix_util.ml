@@ -10,7 +10,8 @@
  * See the file doc/htmlman/default.html or visit http://metaprl.org/
  * for more information.
  *
- * Copyright (C) 1998-2007 PRL Group, Cornell University and Caltech
+ * Copyright (C) 1998-2007 PRL Group, Cornell University, California
+ * Institute of Technology and HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,21 +83,25 @@ let rec copy_file_fd buffer from_fd to_fd =
 
 let copy_file from_name to_name mode =
    let from_fd = Unix.openfile from_name [Unix.O_RDONLY] 0o666 in
+   let () =
       try
          let to_fd = Unix.openfile to_name [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
+         let () =
             try
                copy_file_fd (String.create 8192) from_fd to_fd;
-               Unix.close from_fd;
-               Unix.close to_fd;
-               Unix.chmod to_name mode
+               Unix.fchmod to_fd mode
             with
                x ->
                   Unix.close to_fd;
                   raise x
+         in
+            Unix.close to_fd
       with
          x ->
             Unix.close from_fd;
             raise x
+   in
+      Unix.close from_fd
 
 (*
  * Make a directory hierarchy.
