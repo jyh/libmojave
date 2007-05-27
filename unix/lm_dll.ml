@@ -246,6 +246,7 @@ sig
     *)
    val malloc                  : int -> 'a dll_pointer
    val free                    : 'a dll_pointer -> unit
+   val pointer_array           : 'a dll_pointer array -> 'a dll_pointer dll_pointer
    val strdup                  : string -> t_char dll_pointer
    val pointer_of_string       : string -> t_char dll_pointer
    val string_of_pointer       : t_char dll_pointer -> string
@@ -467,6 +468,7 @@ struct
     *)
    external malloc : int -> 'a dll_pointer = "lm_dll_malloc"
    external free : 'a dll_pointer -> unit = "lm_dll_free"
+   external pointer_array : 'a dll_pointer array -> 'a dll_pointer dll_pointer = "lm_dll_pointer_array"
    external strdup : string -> t_char dll_pointer = "lm_dll_strdup"
    external pointer_of_string : string -> t_char dll_pointer = "lm_dll_strdup"
    external string_of_pointer : t_char dll_pointer -> string = "lm_dll_string_of_pointer"

@@ -64,6 +64,26 @@ value lm_dll_free(value v)
 }
 
 /*
+ * Array of pointers.
+ * NULL terminated.
+ */
+value lm_dll_pointer_array(value v_array)
+{
+    CAMLparam1(v_array);
+    CAMLlocal1(v);
+    int i, words;
+    void **p;
+
+    words = Wosize_val(v_array);
+    v = dll_malloc((words + 1) * sizeof(void *));
+    p = DllPointer_pointer_val(v);
+    for(i = 0; i != words; i++)
+        p[i] = DllPointer_pointer_val(Field(v_array, i));
+    p[i] = 0;
+    CAMLreturn(v);
+}
+
+/*
  * String allocation.
  */
 value lm_dll_strdup(value v_str)
