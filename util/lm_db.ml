@@ -26,7 +26,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004-2007 Mojave Group, Caltech
+ * Copyright (C) 2004-2007 Mojave Group, California Institute of Technology and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,8 +48,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_printf
@@ -290,12 +291,10 @@ let marshal_magic fd =
       Pervasives.flush outx
 
 let remove_entry fd filename test =
-   let _ = Unix.lseek fd 0 Unix.SEEK_SET in
-   let inx = Unix.in_channel_of_descr fd in
    let head = String.create Marshal.header_size in
 
    (* Find the appropriate entry *)
-   let unmarshal_entry () =
+   let unmarshal_entry inx =
       (* Get the header *)
       let tag = unmarshal_tag inx in
       let host = unmarshal_string inx in
@@ -316,10 +315,10 @@ let remove_entry fd filename test =
     * Search through the entries.  If an exception is raised,
     * truncate the file at the start of the entry.
     *)
-   let rec search () =
+   let rec search inx =
       let start = pos_in inx in
       let code =
-         try unmarshal_entry () with
+         try unmarshal_entry inx with
             End_of_file
           | Failure _
           | Sys_error _
@@ -329,16 +328,19 @@ let remove_entry fd filename test =
          match code with
             RemoveEntry pos ->
                remove_entry fd start pos;
-               seek_in inx 0;
-               seek_in inx start;
-               search ()
+               ignore(Unix.lseek fd 0 Unix.SEEK_SET);
+               let inx = Unix.in_channel_of_descr fd in
+                  seek_in inx start;
+                  search inx
           | RemoveNext ->
-               search ()
+               search inx
           | RemoveRest ->
                seek_and_truncate fd start
    in
+   let _ = Unix.lseek fd 0 Unix.SEEK_SET in
+   let inx = Unix.in_channel_of_descr fd in
       if unmarshal_magic inx then
-         search ()
+         search inx
       else
          marshal_magic fd
 
@@ -415,12 +417,9 @@ let append_entry fd filename tag strings digest x =
          eprintf "Marshal.to_channel: %s: done@." filename;
       Pervasives.flush outx
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
