@@ -329,6 +329,8 @@ let remove_entry fd filename test =
          match code with
             RemoveEntry pos ->
                remove_entry fd start pos;
+               seek_in inx 0;
+               seek_in inx start;
                search ()
           | RemoveNext ->
                search ()

@@ -31,6 +31,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+val debug_db : bool ref
+
 type t = Unix.file_descr
 
 type tag = int
