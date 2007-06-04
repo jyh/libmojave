@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004-2006 Mojave Group, Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,7 +132,7 @@ let path_of_name name =
       Lm_filename_util.AbsolutePath (root, path) ->
          root, path
     | Lm_filename_util.RelativePath _ ->
-         raise (Invalid_argument ("Omake_notify.path_of_name: " ^ name ^ ": all paths must be absolute"))
+         raise (Invalid_argument ("Lm_notify.path_of_name: " ^ name ^ ": all paths must be absolute"))
 
 (*
  * Check if a filename is part of a directory tree.
@@ -342,18 +342,18 @@ let pending notify =
  *)
 let next_event notify =
    if !debug_notify then
-      eprintf "Omake_notify.next_event: starting@.";
+      eprintf "Lm_notify.next_event: starting@.";
    let { ne_request = request;
          ne_name = name;
          ne_code = code
        } = notify_next_event notify.notify_info
    in
    if !debug_notify then
-      eprintf "Omake_notify.next_event: received event for name %s, code %s@." name (string_of_code code);
+      eprintf "Lm_notify.next_event: received event for name %s, code %s@." name (string_of_code code);
    let job =
       try IntTable.find notify.notify_requests request with
          Not_found ->
-            raise (Invalid_argument "Omake_notify.next_event: unknown request")
+            raise (Invalid_argument "Lm_notify.next_event: unknown request")
    in
    let filename =
       if Filename.is_relative name then
@@ -362,17 +362,14 @@ let next_event notify =
          name
    in
       if !debug_notify then
-         eprintf "Omake_notify.next_event: filename is %s@." filename;
+         eprintf "Lm_notify.next_event: filename is %s@." filename;
       { notify_code = code;
         notify_name = filename
       }
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
