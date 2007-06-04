@@ -4,7 +4,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004-2006 Mojave Group, Caltech
+ * Copyright (C) 2004-2007 Mojave Group, Caltifornia Institute of Technology,
+ * and HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,8 +26,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_debug
@@ -223,6 +224,8 @@ let monitor notify dir recursive =
    in
    let name = name_of_dir dir in
       if not (is_monitored_name requests name) then
+         if !debug_notify then
+            eprintf "Lm_notify.monitor: %s, recursive: %b@." name recursive;
          let request = notify_monitor_directory info dir recursive in
          let job =
             { job_dir       = dir;
