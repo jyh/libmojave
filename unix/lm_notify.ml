@@ -223,7 +223,7 @@ let monitor notify dir recursive =
        } = notify
    in
    let name = name_of_dir dir in
-      if not (is_monitored_name requests name) then
+      if not (is_monitored_name requests name) then begin
          if !debug_notify then
             eprintf "Lm_notify.monitor: %s, recursive: %b@." name recursive;
          let request = notify_monitor_directory info dir recursive in
@@ -239,6 +239,7 @@ let monitor notify dir recursive =
          let requests = IntTable.add requests request job in
             notify.notify_dirs <- dirs;
             notify.notify_requests <- requests
+      end
 
 (*
  * Suspend notifications.
