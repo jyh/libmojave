@@ -1,32 +1,41 @@
 #
-# Testing for inotifyx
+# Testing for inotify on Linux
 #
+open build/C
 open configure/Configure
 open configure/fam
-open build/C
+
+TEST_PROG = $"""
+#include <stdio.h>
+#include "inotify.h"
+#include "inotify-syscalls.h"
+
+int main(int argc, char **argv)
+{
+    int fd, wd;
+
+    fd = inotify_init();
+    if(fd < 0)
+        return 1;
+
+    wd = inotify_add_watch(fd, ".", IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_DELETE);
+    if(wd < 0)
+        return 1;
+
+    return 0;
+}
+"""
 
 static. =
-        print(--- Testing for inotify... )
-        cd libmojave/cutil
-
-        # Check inotify
+        ConfMsgChecking(for inotify)
         INOTIFY_AVAILABLE = $(CheckLib $(EMPTY), inotify_init inotify_add_watch inotify_rm_watch)
         INOTIFY_HEADERS = $(CheckHeader $"<sys/inotify.h>")
         if $(not $(INOTIFY_AVAILABLE))
-            # The command line
-            private.tmp = $(tmpfile omake)
-            private.command = $(CC) -o $(tmp) inotify-test.c
-            if $(shell-success-null $(command))
-                INOTIFY_AVAILABLE = $(shell-success-null $(tmp))
-                export INOTIFY_AVAILABLE
-            rm $(tmp)
+            # XXX: need a better way of locating the header files.
+            public.CFLAGS += $(mapprefix -I, $(dir libmojave/cutil src/libmojave-external/cutil cutil))
+            INOTIFY_AVAILABLE = $(TryRunC $(TEST_PROG))
             export INOTIFY_AVAILABLE
-
-        if $(INOTIFY_AVAILABLE)
-            println($'(available)')
-            export
-        else
-            println($'(disabled)')
+        ConfMsgFound($(INOTIFY_AVAILABLE))
 
 if $(INOTIFY_AVAILABLE)
         FAM_AVAILABLE = true
