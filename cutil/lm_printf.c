@@ -106,7 +106,6 @@ value ml_print_float(value v_fmt, value v_float)
     return copy_string(buffer);
 }
 
-
 /*
  * Print a string.
  */
@@ -126,6 +125,54 @@ value ml_print_string(value v_fmt, value v_string)
     s = String_val(v_string);
     len = strlen(s);
     if(len < BUFSIZE) {
+        size = BUFSIZE;
+        bufp = buffer;
+    }
+    else {
+        size = len * 2;
+        bufp = malloc(size);
+        if(bufp == 0)
+            failwith("ml_print_string");
+    }
+
+#ifdef HAVE_SNPRINTF
+    code = snprintf(bufp, size, fmt, s);
+#else
+    code = sprintf(bufp, fmt, s);
+#endif
+    if(code < 0) {
+        if(bufp != buffer)
+            free(buffer);
+        failwith("ml_print_string");
+    }
+    v_result = copy_string(bufp);
+    if(bufp != buffer)
+        free(buffer);
+    return v_result;
+}
+
+/*
+ * Print a string.
+ */
+value ml_print_string2(value v_width, value v_fmt, value v_string)
+{
+    char buffer[BUFSIZE], *bufp;
+    int width, len, size, code;
+    char *fmt, *s;
+    value v_result;
+
+    /* Degenerate case if the format is %s */
+    fmt = String_val(v_fmt);
+    if(strcmp(fmt, "%s") == 0)
+        return v_string;
+
+    /* Make an attempt to ensure that the buffer is large enough */
+    s = String_val(v_string);
+    len = strlen(s);
+    width = Int_val(v_width);
+    if(width > len)
+        len = width;
+    if(len < BUFSIZE / 2) {
         size = BUFSIZE;
         bufp = buffer;
     }
