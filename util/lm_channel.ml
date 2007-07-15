@@ -169,7 +169,7 @@ external pipe_kind : Unix.file_descr -> kind = "omake_shell_pipe_kind"
 
 (*
  * Default readers and writers.
- * 
+ *
  * XXX: We treat the "broken pipe" errors as EOFs.
  *)
 let default_reader fd buf off len =

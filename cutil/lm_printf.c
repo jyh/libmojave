@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -107,20 +108,47 @@ value ml_print_float(value v_fmt, value v_float)
 
 
 /*
- * Print an int.
+ * Print a string.
  */
 value ml_print_string(value v_fmt, value v_string)
 {
-    char buffer[BUFSIZE];
-    char *fmt = String_val(v_fmt);
-    char *s = String_val(v_string);
+    char buffer[BUFSIZE], *bufp;
+    int len, size, code;
+    char *fmt, *s;
+    value v_result;
+
+    /* Degenerate case if the format is %s */
+    fmt = String_val(v_fmt);
+    if(strcmp(fmt, "%s") == 0)
+        return v_string;
+
+    /* Make an attempt to ensure that the buffer is large enough */
+    s = String_val(v_string);
+    len = strlen(s);
+    if(len < BUFSIZE) {
+        size = BUFSIZE;
+        bufp = buffer;
+    }
+    else {
+        size = len * 2;
+        bufp = malloc(size);
+        if(bufp == 0)
+            failwith("ml_print_string");
+    }
+
 #ifdef HAVE_SNPRINTF
-    if(snprintf(buffer, sizeof(buffer), fmt, s) < 0)
-        failwith("ml_print_string");
+    code = snprintf(bufp, size, fmt, s);
 #else
-    if(sprintf(buffer, fmt, s) < 0)
-        failwith("ml_print_string");
+    code = sprintf(bufp, fmt, s);
 #endif
-    return copy_string(buffer);
+    if(code < 0) {
+        if(bufp != buffer)
+            free(buffer);
+        failwith("ml_print_string");
+    }
+    v_result = copy_string(bufp);
+    if(bufp != buffer)
+        free(buffer);
+    return v_result;
 }
 
