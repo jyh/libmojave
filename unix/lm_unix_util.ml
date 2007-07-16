@@ -142,6 +142,15 @@ external init : unit -> unit = "lm_compat_init"
 let () = init ()
 
 (*
+ * Get the pid of the process holding the lock
+ *)
+external lm_getlk : Unix.file_descr -> Unix.lock_command -> int = "lm_getlk"
+
+let getlk fd cmd =
+   let res = lm_getlk fd cmd in
+      if res = 0 then None else Some res
+
+(*
  * Convert a fd to an integer (for debugging).
  *)
 external int_of_fd : Unix.file_descr -> int = "int_of_fd"

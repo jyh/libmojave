@@ -397,15 +397,42 @@ value lm_flock(value v_fd, value v_op)
     }
 #elif defined(LOCKF_ENABLED)
     cmd = lockf_of_flock[op];
-    enter_blocking_section();
+    caml_enter_blocking_section();
     code = lockf(fd, cmd, FLOCK_LEN);
-    leave_blocking_section();
+    caml_leave_blocking_section();
 #else
     code = -1;
 #endif
     if(code < 0)
-        failwith("flock");
+        caml_failwith("flock");
     return Val_unit;
+}
+
+value lm_getlk(value v_fd, value v_op)
+{
+#if defined(FCNTL_ENABLED)
+	int fd, op, code;
+	struct flock info;
+
+	fd = Int_val(v_fd);
+	op = Int_val(v_op);
+	info.l_type = op;
+	info.l_whence = SEEK_SET;
+	info.l_start = 0;
+	info.l_len = 0;
+	caml_enter_blocking_section();
+	code = fcntl(fd, F_GETLK, &info);
+	caml_leave_blocking_section();
+	if (code < 0)
+		failwith("lm_getlk");
+	if (info.l_type == F_UNLCK)
+		return Val_int(0);
+	else
+		return Val_int(info.l_pid);
+
+#else /* FCNTL_ENABLED */
+	caml_failwith("lm_getlk: not supported")
+#endif /* FCNTL_ENABLED */
 }
 
 #endif /* !WIN32 */

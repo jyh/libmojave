@@ -80,6 +80,7 @@ val int_of_fd : Unix.file_descr -> int
  * Lock utilities.
  *)
 val lockf : Unix.file_descr -> Unix.lock_command -> int -> unit
+val getlk : Unix.file_descr -> Unix.lock_command -> int option
 
 (*
  * File truncation.
