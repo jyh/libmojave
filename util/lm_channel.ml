@@ -130,8 +130,8 @@ type channel =
 
      (*
       * In text mode, the output is double-buffered because
-      * of line ending translation.  In binary mode, the write_buffer
-      * is the same as the out_buffer.
+      * of line ending translation.  
+      * INVARIANT: In binary mode, the write_buffer is the same as the out_buffer.
       *
       * write_pid is the pid of the output thread, or 0 if there is no output thread.
       * write_index is the amount of data that has been written to the file.
@@ -295,6 +295,7 @@ let of_string file line char s =
       }
 
 let of_fun read write =
+   let out_buffer = String.create buf_size in
    { channel_id     = 0;
      channel_fd     = None;
      channel_kind   = FileChannel;
@@ -315,12 +316,12 @@ let of_fun read write =
 
      out_max      = 0;
      out_expand   = false;
-     out_buffer   = String.create buf_size;
+     out_buffer   = out_buffer;
 
      write_pid    = 0;
      write_index  = 0;
      write_max    = 0;
-     write_buffer = String.create buf_size;
+     write_buffer = out_buffer;
 
      read_fun     = read;
      write_fun    = write
@@ -365,6 +366,7 @@ let set_io_functions info reader writer =
    info.write_fun <- writer
 
 let create_loc_string_aux file line char =
+   let out_buffer = String.create buf_size in
    { channel_id     = 0;
      channel_fd     = None;
      channel_kind   = FileChannel;
@@ -385,12 +387,12 @@ let create_loc_string_aux file line char =
 
      out_max      = 0;
      out_expand   = true;
-     out_buffer   = String.create buf_size;
+     out_buffer   = out_buffer;
 
      write_pid    = 0;
      write_index  = 0;
      write_max    = 0;
-     write_buffer = "";
+     write_buffer = out_buffer;
 
      read_fun     = null_reader;
      write_fun    = null_writer
@@ -564,10 +566,13 @@ let expand_output info =
          out_max    = max
        } = info
    in
-      if max = String.length buffer then
+      if max = String.length buffer then begin
          let buffer2 = String.create (max * 2) in
             String.blit buffer 0 buffer2 0 max;
-            info.out_buffer <- buffer2
+            info.out_buffer <- buffer2;
+            if info.channel_binary then
+               info.write_buffer <- buffer2;
+      end
 
 let to_string info =
    let { out_buffer = buffer;
