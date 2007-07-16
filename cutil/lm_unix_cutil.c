@@ -293,6 +293,7 @@ value caml_registry_find(value v_hkey, value v_subkey, value v_field)
 }
 
 #else /* WIN32 */
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/file.h>
@@ -423,8 +424,11 @@ value lm_getlk(value v_fd, value v_op)
 	caml_enter_blocking_section();
 	code = fcntl(fd, F_GETLK, &info);
 	caml_leave_blocking_section();
-	if (code < 0)
-		failwith("lm_getlk");
+	if (code < 0) {
+		char buf[2048];
+		sprintf(buf, "lm_getlk error: %i", errno);
+		caml_failwith(buf);
+	}
 	if (info.l_type == F_UNLCK)
 		return Val_int(0);
 	else
