@@ -185,7 +185,7 @@ struct
     *)
    let rec print_bool buf i len s fmt _info =
       let print b =
-         let str = ext_print_string fmt (if b then "true" else "false") in
+         let str = ext_print_string2 fmt (if b then "true" else "false") in
             Args.print_string buf str;
             print_loop buf i len s
       in
@@ -241,7 +241,7 @@ struct
       Obj.magic ()
 
    and print_percent buf i len s fmt _info =
-      let str = ext_print_string fmt "%" in
+      let str = ext_print_string2 fmt "%" in
          Args.print_string buf str;
          print_loop buf i len s
 
