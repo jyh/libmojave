@@ -72,15 +72,15 @@ typedef struct {
 #define ErrFmt(buffer, fmt) sprintf(buffer, fmt, FamErrlist[FAMErrno])
 #endif
 
-#define CheckCode(fmt, expr)                    \
-    enter_blocking_section();                   \
-    code = expr;                                \
-    leave_blocking_section();                   \
-    if(code < 0) {                              \
-        char buffer[256];                       \
-        ErrFmt(buffer, fmt);                    \
-        failwith(buffer);                       \
-    }
+#define CheckCode(fmt, expr)                 \
+     enter_blocking_section();               \
+     code = expr;                            \
+     leave_blocking_section();               \
+     if(code < 0) {                          \
+         char buffer[256];                   \
+         ErrFmt(buffer, fmt);                \
+         failwith(buffer);                   \
+     }
 
 static int fam_connection_compare(value v1, value v2)
 {
@@ -105,7 +105,8 @@ static void fam_connection_finalize(value v_info)
 
     info = FAMInfo_val(v_info);
     if(info->is_open) {
-        FAMClose(info->fc);
+        int code;
+        CheckCode("om_notify_close: %s", FAMClose(info->fc));
         free(info->fc);
         info->is_open = 0;
     }
@@ -204,14 +205,13 @@ value om_notify_monitor_directory(value v_fc, value v_name, value v_recursive)
     recursive = Int_val(v_recursive);
     if(recursive) {
 #ifdef WIN32
-        code = FAMMonitorDirectoryTree(fc, name, &request, 0);
+        CheckCode("om_notify_monitor_directory: %s", FAMMonitorDirectoryTree(fc, name, &request, 0));
 #else /* WIN32 */
         failwith("om_notify_monitor_directory: recursive monitoring is not allowed");
 #endif /* !WIN32 */
     }
     else
-        code = FAMMonitorDirectory(fc, name, &request, 0);
-    CheckCode("om_notify_monitor_directory: %s", code);
+        CheckCode("om_notify_monitor_directory: %s", FAMMonitorDirectory(fc, name, &request, 0));
     CAMLreturn(Val_int(request.reqnum));
 }
 
@@ -392,3 +392,7 @@ value om_notify_next_event(value v_fc)
 }
 
 #endif /* !FAM_ENABLED */
+
+/*
+ * vim:tw=100:ts=4:et:sw=4:cin
+ */
