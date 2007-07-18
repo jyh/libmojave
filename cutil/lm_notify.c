@@ -67,9 +67,9 @@ typedef struct {
 #define FAMConnection_val(v)   ((FAMInfo_val(v)->fc))
 
 #ifdef HAVE_SNPRINTF
-#define ErrFmt(buffer, fmt) snprintf(buffer, sizeof(buffer), fmt, FamErrlist[FAMErrno])
+#define ErrFmt(buffer, name) snprintf(buffer, sizeof(buffer), "%s: %s", name, FamErrlist[FAMErrno])
 #else
-#define ErrFmt(buffer, fmt) sprintf(buffer, fmt, FamErrlist[FAMErrno])
+#define ErrFmt(buffer, name) sprintf(buffer, "%s: %s", name, FamErrlist[FAMErrno])
 #endif
 
 #define CheckCode(fmt, expr)                 \
@@ -106,7 +106,7 @@ static void fam_connection_finalize(value v_info)
     info = FAMInfo_val(v_info);
     if(info->is_open) {
         int code;
-        CheckCode("om_notify_close: %s", FAMClose(info->fc));
+        CheckCode("om_notify_close", FAMClose(info->fc));
         free(info->fc);
         info->is_open = 0;
     }
@@ -149,9 +149,9 @@ value om_notify_open(value v_unit)
     if(fc == 0)
         invalid_argument("om_notify_open: out of memory");
     info->fc = fc;
-    CheckCode("om_notify_open: %s", FAMOpen(fc));
+    CheckCode("om_notify_open", FAMOpen(fc));
 #ifdef HAVE_FAMNOEXISTS
-    CheckCode("om_notify_open: FAMNoExists: %s", FAMNoExists(fc));
+    CheckCode("om_notify_open: FAMNoExists", FAMNoExists(fc));
 #endif /* HAVE_FAMNOEXISTS */
     info->is_open = 1;
     CAMLreturn(v);
@@ -205,13 +205,13 @@ value om_notify_monitor_directory(value v_fc, value v_name, value v_recursive)
     recursive = Int_val(v_recursive);
     if(recursive) {
 #ifdef WIN32
-        CheckCode("om_notify_monitor_directory: %s", FAMMonitorDirectoryTree(fc, name, &request, 0));
+        CheckCode("om_notify_monitor_directory", FAMMonitorDirectoryTree(fc, name, &request, 0));
 #else /* WIN32 */
         failwith("om_notify_monitor_directory: recursive monitoring is not allowed");
 #endif /* !WIN32 */
     }
     else
-        CheckCode("om_notify_monitor_directory: %s", FAMMonitorDirectory(fc, name, &request, 0));
+        CheckCode("om_notify_monitor_directory", FAMMonitorDirectory(fc, name, &request, 0));
     CAMLreturn(Val_int(request.reqnum));
 }
 
@@ -227,7 +227,7 @@ value om_notify_suspend(value v_fc, value v_request)
 
     fc = FAMConnection_val(v_fc);
     request.reqnum = Int_val(v_request);
-    CheckCode("om_notify_suspend: %s", FAMSuspendMonitor(fc, &request));
+    CheckCode("om_notify_suspend", FAMSuspendMonitor(fc, &request));
     CAMLreturn(Val_unit);
 }
 
@@ -243,7 +243,7 @@ value om_notify_resume(value v_fc, value v_request)
 
     fc = FAMConnection_val(v_fc);
     request.reqnum = Int_val(v_request);
-    CheckCode("om_notify_resume: %s", FAMResumeMonitor(fc, &request));
+    CheckCode("om_notify_resume", FAMResumeMonitor(fc, &request));
     CAMLreturn(Val_unit);
 }
 
@@ -259,7 +259,7 @@ value om_notify_cancel(value v_fc, value v_request)
 
     fc = FAMConnection_val(v_fc);
     request.reqnum = Int_val(v_request);
-    CheckCode("om_notify_cancel: %s", FAMCancelMonitor(fc, &request));
+    CheckCode("om_notify_cancel", FAMCancelMonitor(fc, &request));
     CAMLreturn(Val_unit);
 }
 
@@ -273,7 +273,7 @@ value om_notify_pending(value v_fc)
     int code;
 
     fc = FAMConnection_val(v_fc);
-    CheckCode("om_notify_pending: %s", FAMPending(fc));
+    CheckCode("om_notify_pending", FAMPending(fc));
     CAMLreturn(code ? Val_true : Val_false);
 }
 
@@ -289,7 +289,7 @@ value om_notify_next_event(value v_fc)
     int code;
 
     fc = FAMConnection_val(v_fc);
-    CheckCode("om_notify_next_event: %s", FAMNextEvent(fc, &event));
+    CheckCode("om_notify_next_event", FAMNextEvent(fc, &event));
     code = event.code;
     if(code < 1 || code > 10)
         failwith("om_notify_next_event: code out of bounds");
