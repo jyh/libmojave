@@ -8,7 +8,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003-2005 Mojave Group, Caltech
+ * Copyright (C) 2003-2007 Mojave Group, California Institute of Technology, and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +30,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_printf
@@ -82,6 +83,7 @@ type pool =
      mutable pool_ready_length : int;
      mutable pool_running      : job IntTable.t;
      mutable pool_finished     : job list;
+     mutable pool_break        : bool;
      pool_finished_wait        : Condition.t;
      pool_consumer_wait        : Condition.t;
      pool_lock                 : Mutex.t
@@ -97,6 +99,7 @@ let pool =
      pool_ready_length  = 0;
      pool_running       = IntTable.empty;
      pool_finished      = [];
+     pool_break         = false;
      pool_finished_wait = Condition.create ();
      pool_consumer_wait = Condition.create ();
      pool_lock          = Mutex.create ()
@@ -142,44 +145,65 @@ let resume_inner_section f x =
  * Thread main loop.
  *)
 let thread_main_loop () =
-   let id = Thread.id (Thread.self ()) in
-   let _ = Thread.sigmask Unix.SIG_SETMASK [Sys.sigint; Sys.sigquit] in
-      Mutex.lock pool.pool_lock;
-      if !debug_thread then
-         eprintf "Thread %d: entered main loop@." id;
-      let rec loop () =
-         match pool.pool_ready with
-            job :: rest ->
-               pool.pool_ready <- rest;
-               pool.pool_ready_length <- pred pool.pool_ready_length;
-               pool.pool_running <- IntTable.add pool.pool_running job.job_id job;
-               if !debug_thread then
-                  eprintf "Thread %d: calling function: %d@." id job.job_id;
-               (try job.job_fun () with
-                   exn ->
-                      eprintf "Omake_exec_thread: thread raised exception: %s: %d@." (Printexc.to_string exn) job.job_id;
-                      ());
-               pool.pool_running <- IntTable.remove pool.pool_running job.job_id;
-               if job.job_visible then
-                  begin
+   try
+      let id = Thread.id (Thread.self ()) in
+      let _ = Thread.sigmask Unix.SIG_SETMASK [Sys.sigint; Sys.sigquit] in
+         Mutex.lock pool.pool_lock;
+         if !debug_thread then
+            eprintf "Thread %d: entered main loop@." id;
+         let rec loop () =
+            match pool.pool_ready with
+               job :: rest ->
+                  pool.pool_ready <- rest;
+                  pool.pool_ready_length <- pred pool.pool_ready_length;
+                  pool.pool_running <- IntTable.add pool.pool_running job.job_id job;
+                  if !debug_thread then
+                     eprintf "Thread %d: calling function: %d@." id job.job_id;
+                  (try job.job_fun () with
+                      Sys.Break ->
+                         if !debug_thread then
+                            eprintf "Lm_thread_pool_system: %d: Break@." job.job_id;
+                         pool.pool_break <- true;
+                         Condition.signal pool.pool_finished_wait
+                    | exn ->
+                         eprintf "Lm_thread_pool_system: thread raised exception: %s: %d@." (Printexc.to_string exn) job.job_id);
+                  pool.pool_running <- IntTable.remove pool.pool_running job.job_id;
+                  if job.job_visible then begin
                      pool.pool_finished <- job :: pool.pool_finished;
                      Condition.signal pool.pool_finished_wait
                   end;
-               loop ()
-          | [] ->
-               if !debug_thread then
-                  eprintf "Thread %d: waiting@." id;
-               Condition.wait pool.pool_consumer_wait pool.pool_lock;
-               if !debug_thread then
-                  eprintf "Thread %d: waited@." id;
-               loop ()
-      in
-         loop ()
+                  if not pool.pool_break then
+                     loop ()
+             | [] ->
+                  if !debug_thread then
+                     eprintf "Thread %d: waiting@." id;
+                  Condition.wait pool.pool_consumer_wait pool.pool_lock;
+                  if !debug_thread then
+                     eprintf "Thread %d: waited@." id;
+                  if not pool.pool_break then
+                     loop ()
+         in
+            loop ()
+   with Sys.Break ->
+      pool.pool_break <- true;
+      if !debug_thread then
+         eprintf "Lm_thead_pool_system: break@.";
+      Mutex.unlock pool.pool_lock;
+      Condition.signal pool.pool_finished_wait;
+      Condition.signal pool.pool_consumer_wait
 
 (*
  * Start a thread doing something.
  *)
 let create visible f =
+   (*
+    * XXX: TODO: we may want to support "restarting" a pool after it was killed
+    * with a Ctrl-C, but for now the transition to pool_break state is a kiss of
+    * death.
+    *)
+   if pool.pool_break then
+      raise Sys.Break;
+
    let id = succ pool.pool_pid in
    let job =
       { job_id = id;
@@ -210,13 +234,16 @@ let create visible f =
  *)
 let wait () =
    (* Wait until a thread finishes *)
-   while pool.pool_finished = [] do
+   while pool.pool_finished = [] && not pool.pool_break do
       if !debug_thread then
          eprintf "Main: waiting: %d+%d@." pool.pool_ready_length (IntTable.cardinal pool.pool_running);
       Condition.wait pool.pool_finished_wait pool.pool_lock;
       if !debug_thread then
          eprintf "Main: waited@.";
    done;
+
+   if pool.pool_break then
+      raise Sys.Break;
 
    (* Return pids of all the threads that finished *)
    let pids = List.map (fun job -> job.job_id) pool.pool_finished in
@@ -228,20 +255,20 @@ let wait () =
  *)
 let waitpid id =
    (* Wait until a thread finishes *)
-   while IntTable.mem pool.pool_running id do
+   while IntTable.mem pool.pool_running id && not pool.pool_break do
       if !debug_thread then
          eprintf "Main: waiting: %d+%d@." pool.pool_ready_length (IntTable.cardinal pool.pool_running);
       Condition.wait pool.pool_finished_wait pool.pool_lock;
       if !debug_thread then
          eprintf "Main: waited@.";
-   done
+   done;
 
-(*!
- * @docoff
- *
+   if pool.pool_break then
+      raise Sys.Break;
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
