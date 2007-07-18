@@ -39,7 +39,7 @@
 
 #if defined(WIN32) || defined(_WIN32)
 /* Disable some of the warnings */
-#pragma warning( disable : 4100 4201 4127 4189 4702 4996 )
+#pragma warning( disable : 4100 4201 4127 4189 4702 4716 4996 )
 #endif
 
 /*
@@ -409,36 +409,6 @@ value lm_flock(value v_fd, value v_op)
     return Val_unit;
 }
 
-value lm_getlk(value v_fd, value v_op)
-{
-#if defined(FCNTL_ENABLED)
-	int fd, op, code;
-	struct flock info;
-
-	fd = Int_val(v_fd);
-	op = Int_val(v_op);
-	info.l_type = op;
-	info.l_whence = SEEK_SET;
-	info.l_start = 0;
-	info.l_len = 0;
-	caml_enter_blocking_section();
-	code = fcntl(fd, F_GETLK, &info);
-	caml_leave_blocking_section();
-	if (code < 0) {
-		char buf[2048];
-		sprintf(buf, "lm_getlk error: %i", errno);
-		caml_failwith(buf);
-	}
-	if (info.l_type == F_UNLCK)
-		return Val_int(0);
-	else
-		return Val_int(info.l_pid);
-
-#else /* FCNTL_ENABLED */
-	caml_failwith("lm_getlk: not supported")
-#endif /* FCNTL_ENABLED */
-}
-
 #endif /* !WIN32 */
 
 /************************************************************************
@@ -505,3 +475,32 @@ value lm_getpwents(value v_unit)
 
 #endif /* !WIN32 */
    
+value lm_getlk(value v_fd, value v_op)
+{
+#if defined(FCNTL_ENABLED)
+	int fd, op, code;
+	struct flock info;
+
+	fd = Int_val(v_fd);
+	op = Int_val(v_op);
+	info.l_type = op;
+	info.l_whence = SEEK_SET;
+	info.l_start = 0;
+	info.l_len = 0;
+	caml_enter_blocking_section();
+	code = fcntl(fd, F_GETLK, &info);
+	caml_leave_blocking_section();
+	if (code < 0) {
+		char buf[2048];
+		sprintf(buf, "lm_getlk error: %i", errno);
+		caml_failwith(buf);
+	}
+	if (info.l_type == F_UNLCK)
+		return Val_int(0);
+	else
+		return Val_int(info.l_pid);
+
+#else /* FCNTL_ENABLED */
+	caml_failwith("lm_getlk: not supported");
+#endif /* FCNTL_ENABLED */
+}
