@@ -178,6 +178,7 @@ struct
    external ext_print_char : string -> char -> string     = "ml_print_char"
    external ext_print_int : string -> int -> string       = "ml_print_int"
    external ext_print_float : string -> float -> string   = "ml_print_float"
+   external ext_print_string : string -> string -> string = "ml_print_string"
    external ext_print_string2 : int -> string -> string -> string = "ml_print_string2"
 
    (*
@@ -185,7 +186,7 @@ struct
     *)
    let rec print_bool buf i len s fmt _info =
       let print b =
-         let str = ext_print_string2 fmt (if b then "true" else "false") in
+         let str = ext_print_string fmt (if b then "true" else "false") in
             Args.print_string buf str;
             print_loop buf i len s
       in
@@ -215,7 +216,7 @@ struct
       in
          Obj.magic print
 
-   and print_string buf i len s fmt _info =
+   and print_string buf i len s fmt info =
       let print str =
          let str = ext_print_string2 (max info.field_width info.field_precision) fmt str in
             Args.print_string buf str;
@@ -241,7 +242,7 @@ struct
       Obj.magic ()
 
    and print_percent buf i len s fmt _info =
-      let str = ext_print_string2 fmt "%" in
+      let str = ext_print_string fmt "%" in
          Args.print_string buf str;
          print_loop buf i len s
 
