@@ -192,7 +192,7 @@ struct
        | { field_width = None; field_precision = Some width } ->
             width
        | { field_width = None; field_precision = None } ->
-            i
+            0
 
    (*
     * Next arg should be an int.
