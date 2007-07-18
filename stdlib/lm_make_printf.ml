@@ -182,6 +182,19 @@ struct
    external ext_print_string2 : int -> string -> string -> string = "ml_print_string2"
 
    (*
+    * Maximum width specified in the format.
+    *)
+   let max_width info =
+      match info with
+         { field_width = Some width; field_precision = Some pre } ->
+            max width pre
+       | { field_width = Some width; field_precision = None }
+       | { field_width = None; field_precision = Some width } ->
+            width
+       | { field_width = None; field_precision = None } ->
+            i
+
+   (*
     * Next arg should be an int.
     *)
    let rec print_bool buf i len s fmt _info =
@@ -218,7 +231,7 @@ struct
 
    and print_string buf i len s fmt info =
       let print str =
-         let str = ext_print_string2 (max info.field_width info.field_precision) fmt str in
+         let str = ext_print_string2 (max_width info) fmt str in
             Args.print_string buf str;
             print_loop buf i len s
       in
