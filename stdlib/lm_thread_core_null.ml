@@ -30,6 +30,7 @@
  * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
+open Lm_debug
 
 let debug_mutex =
    create_debug (**)
@@ -67,7 +68,7 @@ end
  *)
 module ConditionCore =
 struct
-   type t = unt
+   type t = unit
    type mutex = MutexCore.t
 
    let create () =
