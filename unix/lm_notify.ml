@@ -194,6 +194,8 @@ let create () =
          Failure _ ->
             None
    in
+      if !debug_notify then
+         eprintf "Lm_notify.create: fd = %i@." (Lm_unix_util.int_of_fd fd);
       { notify_info     = info;
         notify_fd       = fd;
         notify_dirs     = StringTable.empty;
@@ -338,7 +340,10 @@ let cancel_all notify =
  * Check for a pending event.
  *)
 let pending notify =
-   notify_pending notify.notify_info
+   let pending = notify_pending notify.notify_info in
+      if !debug_notify then
+         eprintf "Lm_notify.pending: %s@." (if pending then "true" else "false");
+      pending
 
 (*
  * Get the next event.
