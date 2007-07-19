@@ -33,7 +33,7 @@ module type MutexSig =
 sig
    type t
 
-   val create      : unit -> t
+   val create      : string -> t
    val lock        : t -> unit
    val try_lock    : t -> bool
    val unlock      : t -> unit
@@ -91,16 +91,14 @@ sig
    val enabled : bool
    val create : ('a -> 'b) -> 'a -> t
    val self : unit -> t
+   val join : t -> unit
    val id : t -> int
    val sigmask : Unix.sigprocmask_command -> int list -> int list
 end
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

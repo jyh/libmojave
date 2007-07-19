@@ -5,7 +5,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003 Mojave Group, Caltech
+ * Copyright (C) 2003-2007 Mojave Group, California Instititue of Technology, and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_debug
@@ -45,6 +46,8 @@ let debug_lock =
 
 module Mutex = MutexCore
 module Condition = ConditionCore
+module MutexDebug = MutexCoreDebug
+module ConditionDebug = ConditionCoreDebug
 
 (*
  * The state identifier is just an integer.
@@ -138,7 +141,7 @@ let state =
         thread_state  = 1
       }
    in
-      { state_lock    = Mutex.create ();
+      { state_lock    = Mutex.create "Lm_thread.state";
         state_threads = IntTable.add IntTable.empty thread_id current;
         state_index   = 2
       }
@@ -226,7 +229,10 @@ let create_thread f x =
                eprintf "Uncaught thread exception: %s@." (Printexc.to_string exn);
                cleanup ()
    in
-      ThreadCore.create start ()
+   let child = ThreadCore.create start () in
+      if !debug_lock then
+         eprintf "Started child %i from thread %t@." (ThreadCore.id child) print_thread_id;
+      child
 
 (*
  * Get the thread info for the current thread.
@@ -628,6 +634,7 @@ struct
    let enabled = ThreadCore.enabled
    let create = create_thread
    let self = ThreadCore.self
+   let join = ThreadCore.join
    let id = ThreadCore.id
    let sigmask = ThreadCore.sigmask
 end
@@ -662,12 +669,9 @@ struct
    let get = get
 end
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

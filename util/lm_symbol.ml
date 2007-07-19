@@ -52,7 +52,7 @@ let empty_var = (0,"")
 
 let new_number, make =
    let count = ref 100 in
-   let lock = Mutex.create () in
+   let lock = Mutex.create "Lm_symbol" in
       (fun () ->
             Mutex.lock lock;
             let i = !count in

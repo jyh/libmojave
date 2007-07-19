@@ -4,7 +4,8 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2003 Mojave Group, Caltech
+ * Copyright (C) 2003-2007 Mojave Group, California Instititute of Technology, and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,8 +26,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
 open Lm_thread_sig
@@ -36,12 +37,14 @@ module Condition : ConditionSig with type mutex = Mutex.t
 module Thread    : ThreadSig
 module State     : StateSig
 
-(*!
- * @docoff
- *
+val debug_lock : bool ref
+
+module MutexDebug     : MutexSig
+module ConditionDebug : ConditionSig with type mutex = MutexDebug.t
+
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

@@ -39,6 +39,11 @@ open Lm_debug
 open Lm_thread
 
 (*
+module Mutex     = MutexDebug
+module Condition = ConditionDebug
+*)
+
+(*
  * Build debugging.
  *)
 let debug_thread =
@@ -79,6 +84,7 @@ type job =
 type pool =
    { mutable pool_pid          : int;
      mutable pool_size         : int;
+     mutable pool_members      : Thread.t list;
      mutable pool_ready        : job list;
      mutable pool_ready_length : int;
      mutable pool_running      : job IntTable.t;
@@ -95,6 +101,7 @@ type pool =
 let pool =
    { pool_pid           = 1;
      pool_size          = 0;
+     pool_members       = [];
      pool_ready         = [];
      pool_ready_length  = 0;
      pool_running       = IntTable.empty;
@@ -102,7 +109,7 @@ let pool =
      pool_break         = false;
      pool_finished_wait = Condition.create ();
      pool_consumer_wait = Condition.create ();
-     pool_lock          = Mutex.create ()
+     pool_lock          = Mutex.create "Lm_thread_pool"
    }
 
 (*
@@ -147,6 +154,8 @@ let resume_inner_section f x =
 let thread_main_loop () =
    try
       let id = Thread.id (Thread.self ()) in
+      if !debug_thread then
+         eprintf "Thread %d: starting@." id;
       let _ = Thread.sigmask Unix.SIG_SETMASK [Sys.sigint; Sys.sigquit] in
          Mutex.lock pool.pool_lock;
          if !debug_thread then
@@ -216,11 +225,12 @@ let create visible f =
       pool.pool_ready_length <- succ pool.pool_ready_length;
 
       (* Enlarge the pool if needed *)
-      if pool.pool_size < pool.pool_ready_length + IntTable.cardinal pool.pool_running then
-         begin
-            pool.pool_size <- succ pool.pool_size;
-            ignore (Thread.create thread_main_loop ())
-         end;
+      if pool.pool_size < pool.pool_ready_length + IntTable.cardinal pool.pool_running then begin
+         pool.pool_size <- succ pool.pool_size;
+         if !debug_thread then
+            eprintf "Starting a new worker thread, total worker threads: %d@." pool.pool_size;
+         pool.pool_members <- (Thread.create thread_main_loop ()) :: pool.pool_members
+      end;
 
       (* Wake up one of the waiters if they are waiting *)
       Condition.signal pool.pool_consumer_wait;

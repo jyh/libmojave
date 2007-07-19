@@ -80,7 +80,7 @@ let empty_var = SymbolHash.create (0, "")
 
 let new_number, make =
    let count = ref 100 in
-   let lock = Mutex.create () in
+   let lock = Mutex.create "Lm_symbol_hash" in
       (fun () ->
             Mutex.lock lock;
             let i = !count in
