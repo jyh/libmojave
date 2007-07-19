@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------
  *
  * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004-2007 Mojave Group, Caltech
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ val string_of_code    : code -> string
 val enabled           : bool
 val create            : unit -> t
 val close             : t -> unit
-val file_descr        : t -> Unix.file_descr
+val file_descr        : t -> Unix.file_descr option
 val monitor           : t -> string -> bool -> unit
 val pending           : t -> bool
 val next_event        : t -> event
@@ -80,12 +80,9 @@ val suspend_all       : t -> unit
 val resume_all        : t -> unit
 val cancel_all        : t -> unit
 
-(*!
- * @docoff
- *
+(*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

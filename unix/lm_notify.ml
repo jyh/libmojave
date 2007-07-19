@@ -99,7 +99,7 @@ type info
 
 type t =
    { notify_info                 : info;
-     notify_fd                   : Unix.file_descr;
+     notify_fd                   : Unix.file_descr option;
      mutable notify_dirs         : request StringTable.t;
      mutable notify_requests     : job IntTable.t
    }
@@ -190,10 +190,9 @@ let enabled = notify_enabled ()
 let create () =
    let info = notify_open () in
    let fd =
-      (* Use stdin for Win32 *)
-      try notify_fd info with
+      try Some (notify_fd info) with
          Failure _ ->
-            Unix.stdin
+            None
    in
       { notify_info     = info;
         notify_fd       = fd;
