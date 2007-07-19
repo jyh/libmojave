@@ -198,6 +198,56 @@ let pp_print_hash_stats buf =
  *)
 
 (*
+ * We need to work nicely with threads.
+ *
+ * Note that the reintern function may be recursive, so we need to account for cases,
+ * where the current thread is already holding the lock.
+ * Almost every accesses come from the main thread with very little if any contention from other
+ * threads. This makes it more effiecient to use a single global lock (as opposed to having a
+ * separate lock for each instance of the functor), so that mutually recursive reintern calls only
+ * have to lock one lock, not all of them.
+ *
+ * Finally, we do not care about race conditions for the statistics
+ *)
+module Synchronize : sig
+   val synchronize : ('a -> 'b) -> 'a -> 'b
+end = struct
+   let lock_mutex = MutexCore.create ()
+   let lock_id = ref None
+
+   let unsynchronize () =
+      lock_id := None;
+      MutexCore.unlock lock_mutex
+
+   let synchronize f x =
+      let id = ThreadCore.id (ThreadCore.self ()) in
+         match !lock_id with
+            Some id' when id = id' ->
+               (*
+                * We are already holding the lock. This means:
+                *  - we do not have to do anything special
+                *  - reading the shared lock_id ref could not have created a race condition
+                *)
+               f x
+          | _ ->
+               MutexCore.lock lock_mutex;
+               lock_id := Some id;
+               try
+                  let res = f x in
+                     unsynchronize();
+                     res
+               with exn ->
+                  unsynchronize();
+                  raise exn
+end
+
+let synchronize =
+   if ThreadCore.enabled then
+      Synchronize.synchronize
+   else
+      (fun f -> f)
+
+(*
  * Make a hash item.
  *)
 module MakeHashMarshal (Arg : HashMarshalArgSig) =
@@ -239,53 +289,6 @@ struct
       hash_stats := stats :: !hash_stats
 
    (*
-    * We need to work nicely with threads.
-    *)
-   let lock_mutex = MutexCore.create ()
-   let lock_cond  = ConditionCore.create ()
-   let lock_id    = ref None
-
-   let unlock_outermost () =
-      MutexCore.lock lock_mutex;
-      lock_id := None;
-      ConditionCore.signal lock_cond;
-      MutexCore.unlock lock_mutex
-
-   let synchronize_outermost id f x =
-      lock_id := Some id;
-      MutexCore.unlock lock_mutex;
-      try
-         let x = f x in
-            unlock_outermost ();
-            x
-      with
-         exn ->
-            unlock_outermost ();
-            raise exn
-
-   let synchronize f x =
-      let id = ThreadCore.id (ThreadCore.self ()) in
-         MutexCore.lock lock_mutex;
-         match !lock_id with
-            None ->
-               synchronize_outermost id f x
-          | Some id' ->
-               if id' = id then begin
-                  MutexCore.unlock lock_mutex;
-                  f x
-               end
-               else begin
-                  ConditionCore.wait lock_cond lock_mutex;
-                  synchronize_outermost id f x
-               end
-
-   let synchronize =
-      if ThreadCore.enabled then
-         synchronize
-      else
-         (fun f x -> f x)
-
-   (*
     * When creating an item, look it up in the table.
     *)
    let create_core elt =
@@ -300,8 +303,7 @@ struct
                table := Table.add !table item item;
                item
 
-   let create elt =
-      synchronize create_core elt
+   let create = synchronize create_core
 
    let intern elt =
       let item =
@@ -332,8 +334,7 @@ struct
             table := Table.add !table item1 item1;
             item1
 
-   let reintern item =
-      synchronize reintern_core item
+   let reintern = synchronize reintern_core
 
    (*
     * Access to the element.
