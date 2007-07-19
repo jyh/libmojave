@@ -190,12 +190,16 @@ let enabled = notify_enabled ()
 let create () =
    let info = notify_open () in
    let fd =
-      try Some (notify_fd info) with
-         Failure _ ->
-            None
+      try 
+         let fd = notify_fd info in
+            if !debug_notify then
+               eprintf "Lm_notify.create: fd = %i@." (Lm_unix_util.int_of_fd fd);
+            Some fd
+      with Failure _ ->
+         if !debug_notify then
+            eprintf "Lm_notify.create: no fd @.";
+         None
    in
-      if !debug_notify then
-         eprintf "Lm_notify.create: fd = %i@." (Lm_unix_util.int_of_fd fd);
       { notify_info     = info;
         notify_fd       = fd;
         notify_dirs     = StringTable.empty;
