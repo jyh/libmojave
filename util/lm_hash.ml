@@ -212,7 +212,7 @@ let pp_print_hash_stats buf =
 module Synchronize : sig
    val synchronize : ('a -> 'b) -> 'a -> 'b
 end = struct
-   let lock_mutex = MutexCore.create "Lm_hash.Synchronize"
+   let lock_mutex = MutexCore.create ()
    let lock_id = ref None
 
    let unsynchronize () =
