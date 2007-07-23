@@ -122,7 +122,7 @@ let alloc_lock, free_lock =
  * Keep a global mutex for mutual exclusion on all
  * sync operations.
  *)
-let global_lock = Mutex.create ()
+let global_lock = Mutex.create "Lm_thread_event"
 
 let sync_lock () =
    eprintf "Lm_thread_event.lock@.";

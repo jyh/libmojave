@@ -52,7 +52,7 @@ type t = string
  *    2. Process identifier
  *    3. A unique number in this process
  *)
-let id_lock = Mutex.create ()
+let id_lock = Mutex.create "Lm_id"
 let id_value = ref 0
 
 let create () =

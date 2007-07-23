@@ -39,7 +39,7 @@ open Lm_thread
 (*
  * Printer locking.
  *)
-let print_lock = Mutex.create ()
+let print_lock = Mutex.create "Lm_thread_util"
 
 let lock_printer () =
    Mutex.lock print_lock
