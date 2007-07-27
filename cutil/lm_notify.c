@@ -73,6 +73,7 @@ typedef struct {
 #endif
 
 #define CheckCode(fmt, expr)                 \
+  do {                                       \
      enter_blocking_section();               \
      code = expr;                            \
      leave_blocking_section();               \
@@ -80,7 +81,8 @@ typedef struct {
          char buffer[256];                   \
          ErrFmt(buffer, fmt);                \
          failwith(buffer);                   \
-     }
+     }                                       \
+  } while(0)
 
 static int fam_connection_compare(value v1, value v2)
 {
