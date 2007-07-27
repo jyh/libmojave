@@ -116,7 +116,7 @@ typedef struct {
     value (*copy_nativeint_hook)(intnat i);
     value (*copy_int64_hook)(int64 i);
     value (*copy_double_hook)(double x);
-    value *(*named_value_hook)(char *name);
+    value *(*named_value_hook)(const char *name);
     value (*callback1_hook)(value, value);
     value (*callback2_hook)(value, value, value);
     value (*callback1_exn_hook)(value, value);
