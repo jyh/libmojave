@@ -181,7 +181,9 @@ let thread_main_loop () =
                      pool.pool_finished <- job :: pool.pool_finished;
                      Condition.signal pool.pool_finished_wait
                   end;
-                  if not pool.pool_break then
+                  if pool.pool_break then
+                     Mutex.unlock pool.pool_lock
+                  else
                      loop ()
              | [] ->
                   if !debug_thread then
