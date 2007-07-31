@@ -3,7 +3,8 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000-2006 Mojave Group, Caltech
+ * Copyright (C) 2000-2007 Mojave Group, California Institute of Technology, and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +26,7 @@
  * LICENSE.libmojave for more details.
  *
  * Author: Jason Hickey <jyh@cs.caltech.edu>
- * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@metaprl.org>, <anogin@hrl.com>
  *)
 include Format
 
@@ -214,10 +215,20 @@ let print_int_list =
 let out_channel_of_formatter out =
    out
 
+let rec pp_print_any_list print buf = function
+   [] ->
+      ()
+ | [a] ->
+      print buf a
+ | a::rest ->
+      print buf a;
+      pp_print_string buf ";";
+      pp_print_space buf ();
+      pp_print_any_list print buf rest
+
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)

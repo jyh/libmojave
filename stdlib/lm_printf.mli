@@ -3,7 +3,8 @@
  *
  * ----------------------------------------------------------------
  *
- * Copyright (C) 2000-2005 Mojave Group, Caltech
+ * Copyright (C) 2000-2007 Mojave Group, California Institute of Technology, and
+ * HRL Laboratories, LLC
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,8 +25,8 @@
  * and you may distribute the linked executables.  See the file
  * LICENSE.libmojave for more details.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey @email{jyh@cs.caltech.edu}
+ * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  *)
 
 (*
@@ -253,10 +254,16 @@ val pp_get_all_formatter_output_functions :
  *)
 val out_channel_of_formatter : Format.formatter -> out_channel
 
+(************************************************************************
+ * Helper utilities.
+ *)
+
+(* Prints a "; "- separated list. *)
+val pp_print_any_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
+
 (*
  * -*-
  * Local Variables:
- * Caml-master: "compile"
  * End:
  * -*-
  *)
