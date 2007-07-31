@@ -112,6 +112,8 @@ struct
 
    let sigmask _ mask =
       mask
+
+   let raise_ctrl_c_wrapper f x = f x
 end
 
 (*

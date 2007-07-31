@@ -63,6 +63,10 @@ struct
    type t = Thread.t
    type id = int
 
+   type 'a result =
+      Result of 'a
+    | Exn of exn
+
    let enabled = true
    let create = Thread.create
    let self = Thread.self
@@ -73,6 +77,29 @@ struct
          (fun _ mask -> mask)
       else
          Thread.sigmask
+
+   let raise_ctrl_c_wrapper f x =
+      let running = ref true in
+      let result = ref (Exn (Invalid_argument "Lm_thread_core.raise_ctrl_c_wrapper")) in
+      let run () =
+         begin try
+            result := Result (f x);
+         with exn ->
+            result := Exn exn
+         end;
+         running := false
+      in
+      let rec wait () =
+         if !running then begin
+            Thread.delay 0.1;
+            wait ()
+         end else
+            match !result with
+               Result res -> res
+             | Exn exn -> raise exn
+      in
+         ignore (Thread.create run ());
+         wait ()
 end
 
 let debug_mutex =
@@ -188,6 +215,7 @@ struct
                eprintf "!!! Lm_thread_core_system.ConditionCore.wait: insonsistency! Thread %i receiving a lock %s, which is already locked by %i@." (my_id()) l.id id;
       end;
       l.locked <- Some (my_id())
+
 end
 
 (*

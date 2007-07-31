@@ -637,6 +637,7 @@ struct
    let join = ThreadCore.join
    let id = ThreadCore.id
    let sigmask = ThreadCore.sigmask
+   let raise_ctrl_c_wrapper = ThreadCore.raise_ctrl_c_wrapper
 end
 
 (*

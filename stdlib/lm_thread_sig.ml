@@ -94,6 +94,16 @@ sig
    val join : t -> unit
    val id : t -> int
    val sigmask : Unix.sigprocmask_command -> int list -> int list
+
+   (*
+    * XXX: This is a hack to address the "Sys.Break does not get raised inside
+    * C blocking sections" problem.
+    * See http://caml.inria.fr/pub/ml-archives/caml-list/2007/07/3662ad69f77253674f580b174c85dfbb.en.html for detail.
+    * The (raise_ctrl_c_wrapper f x) behaves like (f x), except that it makes
+    * sure that any Ctrl-C event quickly results in a Sys.Break exception, even
+    * if f spends "forever" inside a C blocking section.
+    *)
+   val raise_ctrl_c_wrapper: ('a -> 'b) -> 'a -> 'b
 end
 
 (*
