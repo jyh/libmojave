@@ -1300,7 +1300,7 @@ struct
           } = buf
       in
       let code = (code + i + 1) mod hash_length in
-         buf.hash_digest <- digest lxor (Array.unsafe_get hash_data code);
+         buf.hash_digest <- (digest * 3) lxor (Array.unsafe_get hash_data code);
          buf.hash_code <- code
 
    let add_bits buf i =
@@ -1376,7 +1376,7 @@ struct
       in
       let code = (code + digest_length + i) mod hash_length in
          for i = 0 to digest_length - 1 do
-            digest.(i) <- digest.(i) lxor (Array.unsafe_get hash_data (code + i))
+            digest.(i) <- (digest.(i) * 3) lxor (Array.unsafe_get hash_data (code + i))
          done;
          buf.hash_code <- code
 
