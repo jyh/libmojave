@@ -784,12 +784,18 @@ let glob_name options root dir name =
                   [], []
          else
             dirs, names
-   else
+   else if Filename.is_relative name then
       let name      = unescape options name in
       let root_dir  = filename_concat root dir in
       let root_name = filename_concat root_dir name in
       let file_name = filename_concat dir name in
          if is_dir root_name then
+            [file_name], []
+         else
+            [], [file_name]
+   else
+      let file_name = unescape options name in
+         if is_dir file_name then
             [file_name], []
          else
             [], [file_name]
