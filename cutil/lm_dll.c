@@ -643,7 +643,7 @@ value lm_dlnull(value v_arg)
 
 value lm_dlpointer_of_int(value v_arg)
 {
-    return dll_unmarshal_pointer((void *) Int_val(v_arg));
+    return dll_unmarshal_pointer((void *) Long_val(v_arg));
 }
 
 value lm_dlint_of_pointer(value v_arg)
