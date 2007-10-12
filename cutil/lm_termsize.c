@@ -23,13 +23,14 @@
  *          Aleksey Nogin <nogin@cs.cornell.edu>
  */
 #include <stdio.h>
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__svr4__)
 #   include <sys/termios.h>
 #endif
 #ifdef WIN32
 #   include <Windows.h>
 #   pragma warning (disable: 4127 4189 4702)
 #else
+#   include <unistd.h>
 #   include <sys/ioctl.h>
 #endif
 
