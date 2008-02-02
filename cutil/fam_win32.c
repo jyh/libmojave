@@ -366,7 +366,7 @@ static int monitor_directory(FAMConnection *fc, const char *name, FAMRequest *re
     /* Get a handle to the directory for synchronous operation */
     dir_handle = CreateFile(name,
                             GENERIC_READ,
-                            FILE_SHARE_READ | FILE_SHARE_DELETE,
+                            FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
                             NULL,
                             OPEN_EXISTING,
                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
