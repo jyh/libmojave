@@ -58,7 +58,8 @@ value caml_term_size(value arg)
         Field(buf, 0) = Val_int(ConsoleInfo.dwSize.Y);
         Field(buf, 1) = Val_int(ConsoleInfo.dwSize.X);
     }
-#else
+#else /* WIN32 */
+#ifdef TIOCGWINSZ
     {
         int fd = Int_val(arg);
         struct winsize ws;
@@ -70,8 +71,12 @@ value caml_term_size(value arg)
         Field(buf, 0) = Val_int(ws.ws_row);
         Field(buf, 1) = Val_int(ws.ws_col);
     }
-#endif
+#else /* TIOCGWINSZ */
+   /* Assume that the terminal is 80 by 25 */
+   Field(buf, 0) = Val_int( 25 );
+   Field(buf, 1) = Val_int( 80 );
+#endif /* TIOCGWINSZ */
+#endif /* WIN32 */
 
     CAMLreturn(buf);
 }
-
