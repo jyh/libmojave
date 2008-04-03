@@ -653,7 +653,8 @@ value lm_dlint_of_pointer(value v_arg)
 
     if(Is_long(v_arg))
         v = v_arg;
-    else if(Tag_val(v_arg) == Custom_tag && strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0)
+    // TODO: DN - Should we compare against both "dll_pointer" and "dll_malloc" or just use "dll_pointer" when we malloc...?
+    else if(Tag_val(v_arg) == Custom_tag && (strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0 || strcmp(Custom_ops_val(v_arg)->identifier, "dll_malloc") == 0))
         v = Val_int((value) dll_marshal_pointer(v_arg));
     else
         failwith("int_of_pointer: not a pointer or integer");
@@ -672,7 +673,8 @@ value lm_dlnativeint_of_pointer(value v_arg)
 
     if(Is_long(v_arg))
         v = v_arg;
-    else if(Tag_val(v_arg) == Custom_tag && strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0)
+    // TODO: DN - Should we compare against both "dll_pointer" and "dll_malloc" or just use "dll_pointer" when we malloc...?
+    else if(Tag_val(v_arg) == Custom_tag && (strcmp(Custom_ops_val(v_arg)->identifier, "dll_pointer") == 0 || strcmp(Custom_ops_val(v_arg)->identifier, "dll_malloc") == 0))
         v = copy_nativeint((value) dll_marshal_pointer(v_arg));
     else
         failwith("nativeint_of_pointer: not a pointer or integer");
