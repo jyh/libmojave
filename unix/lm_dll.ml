@@ -470,7 +470,7 @@ struct
    external free : 'a dll_pointer -> unit = "lm_dll_free"
    external pointer_array : 'a dll_pointer array -> 'a dll_pointer dll_pointer = "lm_dll_pointer_array"
    external strdup : string -> t_char dll_pointer = "lm_dll_strdup"
-   external pointer_of_string : string -> t_char dll_pointer = "lm_dll_strdup"
+   external pointer_of_string : string -> t_char dll_pointer = "lm_dll_pointer_of_string"
    external string_of_pointer : t_char dll_pointer -> string = "lm_dll_string_of_pointer"
    external pointer_of_string_array : string array -> t_char dll_pointer dll_pointer = "lm_dll_pointer_of_string_array"
    external string_array_of_pointer : t_char dll_pointer dll_pointer -> string array = "lm_dll_string_array_of_pointer"

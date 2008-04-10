@@ -102,6 +102,22 @@ value lm_dll_strdup(value v_str)
     CAMLreturn(v);
 }
 
+value lm_dll_pointer_of_string(value v_str)
+{
+    CAMLparam1(v_str);
+    CAMLlocal1(v);
+    int size, len;
+    char *s, *p;
+
+    s = String_val(v_str);
+    len = string_length(v_str);
+    v = dll_malloc(len + 1);
+    p = DllPointer_pointer_val(v);
+    memcpy(p, s, len);
+    p[len] = 0;
+    CAMLreturn(v);
+}
+
 value lm_dll_string_of_pointer(value v_ptr)
 {
     return copy_string(DllPointer_pointer_val(v_ptr));
