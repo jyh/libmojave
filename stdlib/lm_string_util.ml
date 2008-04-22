@@ -214,18 +214,25 @@ let c_escaped s =
          let c = s.[i] in
          let _ =
             match c with
-               '"' ->
-                  Buffer.add_string buf "\\\""
+               '\b' ->
+                  Buffer.add_string buf "\\b"
+             | '\n' ->
+                  Buffer.add_string buf "\\n"
+             | '\r' ->
+                  Buffer.add_string buf "\\r"
+             | '\t' ->
+                  Buffer.add_string buf "\\t"
              | '\\' ->
                   Buffer.add_string buf "\\\\"
-             | ' '..'~' ->
-                  Buffer.add_char buf c
              | _ ->
-                  let code = Char.code c in
-                     Buffer.add_char buf '\\';
-                     Buffer.add_char buf (Char.chr (((code / 64) mod 8) + code0));
-                     Buffer.add_char buf (Char.chr (((code / 8) mod 8) + code0));
-                     Buffer.add_char buf (Char.chr ((code mod 8) + code0))
+                  if c >= ' ' && c <= '~' && c != '"' && c != '\'' then
+                     Buffer.add_char buf c
+                  else
+                     let code = Char.code c in
+                        Buffer.add_char buf '\\';
+                        Buffer.add_char buf (Char.chr (((code / 64) mod 8) + code0));
+                        Buffer.add_char buf (Char.chr (((code / 8) mod 8) + code0));
+                        Buffer.add_char buf (Char.chr ((code mod 8) + code0))
          in
             loop (succ i)
    in
