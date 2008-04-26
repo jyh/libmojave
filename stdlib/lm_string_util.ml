@@ -202,6 +202,34 @@ let strpat buffer start len pattern =
       (is_match start) - start
 
 (*
+ * Escape a string using SQL conventions.
+ *)
+let sql_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+         let _ =
+            match c with
+               '\000' ->
+                  Buffer.add_string buf "\\0"
+             | '\'' ->
+                  Buffer.add_string buf "\\'"
+             | '"' ->
+                  Buffer.add_string buf "\\\""
+             | '\\' ->
+                  Buffer.add_string buf "\\\\"
+             | _ ->
+                  Buffer.add_char buf c
+         in
+            loop (succ i)
+   in
+      loop 0
+
+(*
  * Escape a string using the C conventions.
  *)
 let c_escaped s =
