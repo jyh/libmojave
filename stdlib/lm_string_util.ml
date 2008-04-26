@@ -220,6 +220,12 @@ let sql_escaped s =
                   Buffer.add_string buf "\\'"
              | '"' ->
                   Buffer.add_string buf "\\\""
+             | '\n' ->
+                  Buffer.add_string buf "\\n"
+             | '\r' ->
+                  Buffer.add_string buf "\\r"
+             | '\t' ->
+                  Buffer.add_string buf "\\t"
              | '\\' ->
                   Buffer.add_string buf "\\\\"
              | _ ->
