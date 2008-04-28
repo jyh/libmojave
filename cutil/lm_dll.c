@@ -276,7 +276,7 @@ static DllHooks hooks = {
     caml_copy_nativeint,
     caml_copy_int64,
     caml_copy_double,
-    caml_named_value,
+    (value *(*)(char *name)) caml_named_value,
     caml_callback,
     caml_callback2,
     caml_callback_exn,
