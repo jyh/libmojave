@@ -1,6 +1,8 @@
 #
 # Include files from subdirectories
 #
+open build/C
+
 include stdlib/Files
 include system/Files
 include util/Files
@@ -21,6 +23,10 @@ USE_OCAMLFIND = false
 
 if $(not $(defined LMINSTALL))
     LMINSTALL = false
+    export
+
+if $(not $(defined LIB))
+    LIB = /dev/null
     export
 
 section
