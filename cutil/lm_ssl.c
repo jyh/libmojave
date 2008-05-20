@@ -542,9 +542,17 @@ value lm_ssl_flush(value v_info)
     BIO *bio;
 
     info = SslInfo_val(v_info);
+    enter_blocking_section();
     bio = SSL_get_wbio(info->ssl);
     if(bio)
+        /* XXX: BUG! 
+         * According to the man page:
+         * BIO_flush(), because it can write data may return 0 or -1 indicating that the call should be retried later
+         * in a similar manner to BIO_write().  The BIO_should_retry() call should be used and appropriate action
+         * taken is the call fails.
+         */
         BIO_flush(bio);
+    leave_blocking_section();
     return Val_unit;
 }
 
