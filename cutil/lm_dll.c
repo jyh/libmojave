@@ -38,6 +38,7 @@
 #include <caml/custom.h>
 #include <caml/fail.h>
 #include <caml/callback.h>
+#include <caml/signals.h>
 #include "lm_dll.h"
 #include "lm_dll_pointers.h"
 
@@ -283,7 +284,9 @@ static DllHooks hooks = {
     caml_callback2_exn,
     caml_register_global_root,
     caml_modify,
-    &caml_local_roots
+    &caml_local_roots,
+    caml_enter_blocking_section,
+    caml_leave_blocking_section
 };
 
 /************************************************************************

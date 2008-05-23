@@ -57,6 +57,8 @@ static struct caml__roots_block **dll_local_roots;
 #undef callback2_exn
 #undef register_global_root
 #undef caml_local_roots
+#undef enter_blocking_section
+#undef leave_blocking_section
 
 #define alloc(n, t)                     (dll_hooks->alloc_hook(n, t))
 #define alloc_tuple(n)                  (dll_hooks->alloc_tuple_hook(n))
@@ -75,6 +77,8 @@ static struct caml__roots_block **dll_local_roots;
 #define register_global_root(v)         (dll_hooks->register_global_root_hook(v))
 #define caml_modify(vp, v)              (dll_hooks->modify(vp, v))
 #define caml_local_roots                (*dll_local_roots)
+#define enter_blocking_section()        (dll_hooks->enter_blocking_section_hook())
+#define leave_blocking_section()        (dll_hooks->leave_blocking_section_hook())
 
 #include "lm_dll_pointers.h"
 
