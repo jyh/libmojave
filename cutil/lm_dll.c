@@ -286,7 +286,8 @@ static DllHooks hooks = {
     caml_modify,
     &caml_local_roots,
     caml_enter_blocking_section,
-    caml_leave_blocking_section
+    caml_leave_blocking_section,
+    caml_alloc_string,
 };
 
 /************************************************************************

@@ -106,7 +106,7 @@ typedef struct {
 /*
  * Hooks to provide OCaml functions.
  */
-typedef struct {
+typedef struct _dll_hooks {
     value (*alloc_hook)(mlsize_t, tag_t);
     value (*alloc_tuple_hook)(mlsize_t);
     value (*alloc_custom_hook)(struct custom_operations *ops, unsigned long size, mlsize_t mem, mlsize_t max);
@@ -126,6 +126,7 @@ typedef struct {
     struct caml__roots_block **dll_local_roots;
     void (*enter_blocking_section_hook)(void);
     void (*leave_blocking_section_hook)(void);
+    value (*alloc_string_hook)(mlsize_t);
 } DllHooks;
 
 /*
