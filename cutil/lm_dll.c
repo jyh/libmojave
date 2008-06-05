@@ -536,11 +536,13 @@ static value alloc_dll(DllExport *values, value v_globals)
 /*
  * Open a dynamic link library.
  */
-value lm_dlopen(value v_path, value v_filename, value v_flags)
+value lm_dlopen(value v_path, value v_filename, value v_tag, value v_flags)
 {
-    CAMLparam3(v_path, v_filename, v_flags);
+    CAMLparam4(v_path, v_filename, v_tag, v_flags);
     CAMLlocal1(v_globals);
+    char export[1024];
     DllExport *values;
+    char *tag;
     int flags;
     void *dll;
     value v;
@@ -594,7 +596,12 @@ value lm_dlopen(value v_path, value v_filename, value v_flags)
         failwith(dlerror());
 
     /* Load the value description */
-    values = dlsym(dll, "dll_export");
+    tag = String_val(v_tag);
+    if(*tag)
+        sprintf(export, "dll_%s_export", tag);
+    else
+        strcpy(export, "dll_export");
+    values = dlsym(dll, export);
     if(values) {
         if(values->magic != LM_DLL_MAGIC) {
             dlclose(dll);

@@ -176,7 +176,7 @@ sig
    (*
     * Open the DLL.
     *)
-   val opendll       : string array -> string -> open_flags -> t option
+   val opendll       : string array -> string -> ?tag:string -> open_flags -> t option
 
    (*
     * Open the static info.
@@ -316,7 +316,7 @@ struct
    (************************************************************************
     * Open the DLL.
     *)
-   external dlopen  : string array -> string -> open_flags -> raw_info = "lm_dlopen";;
+   external dlopen  : string array -> string -> string -> open_flags -> raw_info = "lm_dlopen";;
 
    (*
     * Convert the DLL info.
@@ -395,12 +395,17 @@ struct
    (*
     * Open and format the DLL.
     *)
-   let opendll path name flags =
-      match dlopen path name flags with
-         Export (objects, enums, values, handler_count, set_handlers, globals) ->
-            Some (build_dll objects enums values handler_count set_handlers globals)
-       | NoExport ->
-            None
+   let opendll path name ?tag flags =
+      let tag =
+         match tag with
+            Some s -> s
+          | None -> ""
+      in
+         match dlopen path name tag flags with
+            Export (objects, enums, values, handler_count, set_handlers, globals) ->
+               Some (build_dll objects enums values handler_count set_handlers globals)
+          | NoExport ->
+               None
 
    let info x =
       x.dll_info
