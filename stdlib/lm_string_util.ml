@@ -202,6 +202,48 @@ let strpat buffer start len pattern =
       (is_match start) - start
 
 (*
+ * Escape a string using URL conventions.
+ *)
+let hex_chars = [|'0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'; 'a'; 'b'; 'c'; 'd'; 'e'; 'f'|]
+
+let url_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+      for i = 0 to pred len do
+         let c = s.[i] in
+            match c with
+               '\000'..' '
+             | '<'
+             | '>'
+             | '#'
+             | '%'
+             | '{'
+             | '}'
+             | '|'
+             | '\\'
+             | '^'
+             | '~'
+             | '['
+             | ']'
+             | '`'
+             | ';'
+             | '/'
+             | '?'
+             | ':'
+             | '@'
+             | '='
+             | '&'
+             | '$' ->
+                  let code = Char.code c in
+                     Buffer.add_char buf '%';
+                     Buffer.add_char buf hex_chars.(code lsr 4);
+                     Buffer.add_char buf hex_chars.(code land 0xf)
+             | _ ->
+                  Buffer.add_char buf c
+      done;
+      Buffer.contents buf
+
+(*
  * Escape a string using SQL conventions.
  *)
 let sql_escaped s =
