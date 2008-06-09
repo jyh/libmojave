@@ -133,7 +133,6 @@ val sql_escaped : string -> string
  * This assumes single quotes.
  *)
 val js_escaped : string -> string
-val url_escaped : string -> string
 val html_escaped : string -> string
 val html_pre_escaped : string -> string
 val html_escaped_nonwhite : string -> string
