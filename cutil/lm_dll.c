@@ -161,6 +161,22 @@ value lm_dll_string_array_of_pointer(value v_ptr)
     return caml_copy_string_array(DllPointer_pointer_val(v_ptr));
 }
 
+value lm_dll_sub_string_array_of_pointer(value v_off, value v_len, value v_ptr)
+{
+    CAMLparam3(v_off, v_len, v_ptr);
+    CAMLlocal1(v_array);
+    int i, off, len;
+    char **argv;
+
+    off  = Int_val(v_off);
+    len  = Int_val(v_len);
+    argv = DllPointer_pointer_val(v_ptr);
+    v_array = caml_alloc(len, 0);
+    for(i = 0; i != len; i++)
+        Store_field(v_array, i, caml_copy_string(argv[i + off]));
+    CAMLreturn(v_array);
+}
+
 /************************************************************************
  * Win32 section.
  */

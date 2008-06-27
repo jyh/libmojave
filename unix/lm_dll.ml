@@ -252,6 +252,7 @@ sig
    val string_of_pointer       : t_char dll_pointer -> string
    val pointer_of_string_array : string array -> t_char dll_pointer dll_pointer
    val string_array_of_pointer : t_char dll_pointer dll_pointer -> string array
+   val sub_string_array_of_pointer : int -> int -> t_char dll_pointer dll_pointer -> string array
 end;;
 
 module Dll : DllSig =
@@ -479,6 +480,7 @@ struct
    external string_of_pointer : t_char dll_pointer -> string = "lm_dll_string_of_pointer"
    external pointer_of_string_array : string array -> t_char dll_pointer dll_pointer = "lm_dll_pointer_of_string_array"
    external string_array_of_pointer : t_char dll_pointer dll_pointer -> string array = "lm_dll_string_array_of_pointer"
+   external sub_string_array_of_pointer : int -> int -> t_char dll_pointer dll_pointer -> string array = "lm_dll_sub_string_array_of_pointer"
 
    (************************************************************************
     * Function calls.
