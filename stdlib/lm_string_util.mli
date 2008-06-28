@@ -127,6 +127,7 @@ val c_escaped : string -> string
  * SQL uses a different convention.
  *)
 val sql_escaped : string -> string
+val mysql_escaped : string -> string
 
 (*
  * Escape a string so that it can be read back in Javascript.

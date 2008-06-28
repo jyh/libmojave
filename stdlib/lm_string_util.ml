@@ -203,8 +203,26 @@ let strpat buffer start len pattern =
 
 (*
  * Escape a string using SQL conventions.
+ * Apparently, the only char we should escape is the single
+ * quote, which is turned into 2 single quotes.
  *)
 let sql_escaped s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec loop i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+            if c = '\'' then
+               Buffer.add_string buf "''"
+            else
+               Buffer.add_char buf c;
+            loop (i + 1)
+   in
+      loop 0
+
+let mysql_escaped s =
    let len = String.length s in
    let buf = Buffer.create len in
    let rec loop i =
