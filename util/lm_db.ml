@@ -290,7 +290,7 @@ let marshal_magic fd =
       output_binary_int outx magic;
       Pervasives.flush outx
 
-let remove_entry fd filename test =
+let remove_entry fd _filename test =
    let head = String.create Marshal.header_size in
 
    (* Find the appropriate entry *)
@@ -345,7 +345,7 @@ let remove_entry fd filename test =
          marshal_magic fd
 
 let remove fd filename (tag, host_mode) magic =
-   let test tag' strings host' digest' =
+   let test tag' strings host' _digest' =
       match strings with
          ["MAGIC", magic'] ->
             tag' = tag && (host' = hostname || host_mode = HostIndependent && magic' = magic)

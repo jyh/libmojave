@@ -489,7 +489,7 @@ struct
    (*
     * Type casting.
     *)
-   let void_of_value ty v =
+   let void_of_value _ty _v =
       Obj.repr ()
 
    let int_of_value ty v =
@@ -578,7 +578,7 @@ struct
    (*
     * Type casting.
     *)
-   let value_of_void v =
+   let value_of_void _v =
       ValUnit
 
    let value_of_int v =

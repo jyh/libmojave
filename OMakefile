@@ -2,6 +2,7 @@
 # Include files from subdirectories
 #
 open build/C
+open build/Common
 
 include stdlib/Files
 include system/Files

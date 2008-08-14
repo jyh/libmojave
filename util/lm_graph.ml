@@ -7,7 +7,7 @@ let rec list_remove n = function
   | m :: l ->
       if n == m then
         l
-      else 
+      else
         m :: list_remove n l
 
 type color = White | Black
@@ -44,7 +44,7 @@ let add_node g i =
       node_edges = [];
       node_color = White;
       node_next = next;
-      node_prev = g } 
+      node_prev = g }
   in
     g := Some n;
     match l with
@@ -52,7 +52,7 @@ let add_node g i =
       | Some m -> m.node_prev <- next; n
 
 (* add edge to g from node n to node m *)
-let add_edge g n m =
+let add_edge _g n m =
   if not (query n m) then
     (n.node_edges <- m :: n.node_edges;
      m.node_edges <- n :: m.node_edges;
@@ -97,7 +97,7 @@ let rec find p g =
 (* iteration over all nodes (unspecified order) *)
 let rec list_aux l g =
   match !g with
-      None -> l  
+      None -> l
     | Some n -> list_aux (n :: l) n.node_next
 let list g = list_aux [] g
 
@@ -139,7 +139,7 @@ let rec dfs_iter f n =
 
 let rec dfs_fold f i n =
   if n.node_color == White then (
-    n.node_color <- Black; 
+    n.node_color <- Black;
     List.fold_left (dfs_fold f) (f i n) n.node_edges)
   else
     i
