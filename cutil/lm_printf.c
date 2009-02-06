@@ -142,12 +142,12 @@ value ml_print_string(value v_fmt, value v_string)
 #endif
     if(code < 0) {
         if(bufp != buffer)
-            free(buffer);
+            free(bufp);
         failwith("ml_print_string");
     }
     v_result = copy_string(bufp);
     if(bufp != buffer)
-        free(buffer);
+        free(bufp);
     return v_result;
 }
 
@@ -190,12 +190,12 @@ value ml_print_string2(value v_width, value v_fmt, value v_string)
 #endif
     if(code < 0) {
         if(bufp != buffer)
-            free(buffer);
+            free(bufp);
         failwith("ml_print_string");
     }
     v_result = copy_string(bufp);
     if(bufp != buffer)
-        free(buffer);
+        free(bufp);
     return v_result;
 }
 
