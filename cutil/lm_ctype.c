@@ -59,7 +59,7 @@ static value get_chars(int (*f)(int))
         if(f(i))
             *p++ = (char) i;
     }
-    s = alloc_string(p - buf);
+    s = caml_alloc_string(p - buf);
     memcpy(String_val(s), buf, p - buf);
     return s;
 }

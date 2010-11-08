@@ -215,14 +215,14 @@ static int monitor_wait(FAMConnection *fc, DWORD interval)
     /*
      * Now wait for an event
      *
-     * The enter/leave_blocking_section is performed in
+     * The enter/caml_leave_blocking_section is performed in
      * omake_cnotify.c now.
      */
-    // enter_blocking_section();
+    // caml_enter_blocking_section();
     status = WaitForMultipleObjects(ncount, handles, FALSE, interval);
     if(status == WAIT_FAILED)
         code = GetLastError();
-    // leave_blocking_section();
+    // caml_leave_blocking_section();
 
     /* Return the index of the event */
     if(status >= WAIT_OBJECT_0 && status < WAIT_OBJECT_0 + ncount)
