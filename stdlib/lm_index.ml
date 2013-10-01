@@ -70,7 +70,9 @@ sig
    val mem : 'a t -> key -> bool
    val find : 'a t -> key -> 'a t * 'a
    val find_index : 'a t -> key -> 'a t
+   val find_index_opt : 'a t -> key -> ('a t) option
    val find_data : 'a t -> key -> 'a
+   val find_data_opt : 'a t -> key -> 'a option
 
    (* tests/lookups - multi level*)
    val mem_list : 'a t -> key list -> bool

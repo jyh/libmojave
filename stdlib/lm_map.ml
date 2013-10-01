@@ -605,9 +605,8 @@ struct
        | Right (Red (key0, data0, left0, _, size0)) :: path ->
             restore path (Red (key0, data0, left0, node, size0))
        | [] ->
-            (* JYH: seems like we spend all our time checking
-            check node     (* n8 debugging *)
-             *)
+            (* JYH: seems like we spend all our time checking *)
+            if false then check node else     (* n8 debugging *)
             node
        | Left Leaf :: _
        | Right Leaf :: _
@@ -1084,47 +1083,8 @@ struct
 
    let elements = to_list
 
-   let rec keys_aux elements = function
-      Black (key, _, left, right, _)
-    | Red (key, _, left, right, _)  ->
-         keys_aux (key :: keys_aux elements right) left
-    | Leaf ->
-         elements
-
-   let keys = keys_aux []
-
-   let rec reverse elements = function
-      h :: t ->
-         reverse (h :: elements) t
-    | [] ->
-         elements
-
-   let rec merge elements elements1 elements2 =
-      match elements1, elements2 with
-         ((key1, data1) as hd1) :: tl1, ((key2, data2) as hd2) :: tl2 ->
-            let comp = Base.compare key1 key2 in
-               if comp = 0 then
-                  merge ((key1, data1 @ data2) :: elements) tl1 tl2
-               else if comp < 0 then
-                  merge (hd1 :: elements) tl1 elements2
-               else
-                  merge (hd2 :: elements) elements1 tl2
-       | _, [] ->
-            reverse elements1 elements
-       | [], _ ->
-            reverse elements2 elements
-
    (*
     * Log of a number.
-    *)
-   let rec log2 i x =
-      if 1 lsl i >= x then
-         i
-      else
-         log2 (succ i) x
-
-   (*
-    * Build a set from a list.
     *)
    let rec log2 i j =
       if 1 lsl i >= j then
@@ -1132,6 +1092,9 @@ struct
       else
          log2 (succ i) j
 
+   (*
+    * Build a set from a list.
+    *)
    let rec of_array depth max_depth elements off len =
       if len = 1 then
          let key, data = elements.(off) in
@@ -1196,26 +1159,6 @@ struct
             union_aux append s1 s2
 
    (*
-    * See if two sets intersect.
-    *)
-   let rec intersect_aux elems1 elems2 =
-      match elems1, elems2 with
-         elem1 :: elems1', elem2 :: elems2' ->
-            let comp = Base.compare elem1 elem2 in
-               if comp = 0 then
-                  true
-               else if comp < 0 then
-                  intersect_aux elems1' elems2
-               else
-                  intersect_aux elems1 elems2'
-       | [], _
-       | _, [] ->
-            false
-
-   let intersectp s1 s2 =
-      intersect_aux (keys s1) (keys s2)
-
-   (*
     * Equality of sets.
     *)
    let equal eq set1 set2 =
@@ -1275,9 +1218,6 @@ struct
     | Black _ ->
          false
 
-   let make key data =
-      Black (key, data, Leaf, Leaf, 1)
-
    (*
     * Iterate a function over the hashtable.
     *)
@@ -1289,8 +1229,6 @@ struct
          iter f right
     | Leaf ->
          ()
-
-   let iter_all = iter
 
    let rec map f = function
       Black (key, data, left, right, size) ->
@@ -1320,20 +1258,6 @@ struct
       | Leaf ->
            Leaf
 
-   let rec mapi_all f = function
-      Black (key, data, left, right, size) ->
-         let left = mapi_all f left in
-         let data = f key data in
-         let right = mapi_all f right in
-            Black (key, data, left, right, size)
-      | Red (key, data, left, right, size) ->
-         let left = mapi_all f left in
-         let data = f key data in
-         let right = mapi_all f right in
-            Red (key, data, left, right, size)
-      | Leaf ->
-           Leaf
-
    let rec fold f arg = function
        Black (key, data, left, right, _)
      | Red (key, data, left, right, _) ->
@@ -1342,8 +1266,6 @@ struct
              fold f arg right
      | Leaf ->
           arg
-
-   let fold_all = fold
 
    let rec fold_map f arg = function
       Black (key, data, left, right, size) ->
@@ -1574,7 +1496,7 @@ struct
       in
          MMap.exists cmp_list t
 
-   let rec find_iter cmp t =
+   let find_iter cmp t =
       let rec cmp_list key l =
          match l with
             h :: t ->

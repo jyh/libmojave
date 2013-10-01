@@ -134,8 +134,6 @@ struct
        | Leaf ->
             fprintf out "Leaf"
 
-   let print_tree = pp_print_tree stdout
-
    (*
     * Check the size of the set.
     *)
@@ -986,38 +984,8 @@ struct
 
    let elements = to_list
 
-   let rec reverse elements = function
-      h :: t ->
-         reverse (h :: elements) t
-    | [] ->
-         elements
-
-   let rec merge elements elements1 elements2 =
-      match elements1, elements2 with
-         key1 :: tl1, key2 :: tl2 ->
-            let comp = Ord.compare key1 key2 in
-               if comp = 0 then
-                  merge (key1 :: elements) tl1 tl2
-               else if comp < 0 then
-                  merge (key1 :: elements) tl1 elements2
-               else
-                  merge (key2 :: elements) elements1 tl2
-       | _, [] ->
-            reverse elements1 elements
-       | [], _ ->
-            reverse elements2 elements
-
    (*
     * Log of a number.
-    *)
-   let rec log2 i x =
-      if 1 lsl i >= x then
-         i
-      else
-         log2 (succ i) x
-
-   (*
-    * Build a set from a list.
     *)
    let rec log2 i j =
       if 1 lsl i >= j then
@@ -1025,6 +993,9 @@ struct
       else
          log2 (succ i) j
 
+   (*
+    * Build a set from a list.
+    *)
    let rec of_sorted_array depth max_depth elements off len =
       if len = 1 then
          if depth = max_depth then
@@ -1186,7 +1157,7 @@ struct
    (*
     * Equality of sets.
     *)
-   let rec equal set1 set2 =
+   let equal set1 set2 =
       if cardinality set1 = cardinality set2 then
          let list1 = to_list set1 in
          let list2 = to_list set2 in

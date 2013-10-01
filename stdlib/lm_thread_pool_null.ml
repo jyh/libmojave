@@ -33,7 +33,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
 open Lm_debug
 
 (*

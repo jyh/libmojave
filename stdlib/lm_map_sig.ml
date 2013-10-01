@@ -84,6 +84,9 @@ module type LmMap =
 sig
    include LmMapBase
 
+   val elements : 'a t -> (key * 'a) list
+   val of_list : (key * 'a) list -> 'a t
+
    val union : (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 end
 

@@ -33,7 +33,6 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_thread_sig
 open Lm_thread_core
 open Lm_int_set
 

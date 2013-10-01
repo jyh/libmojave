@@ -32,7 +32,6 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_map_sig
 
 let debug_notify =
    create_debug {

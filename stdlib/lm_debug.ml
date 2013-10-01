@@ -314,9 +314,6 @@ let split c s =
 (*
  * Set debug flags from the environment.
  *)
-let set_possible_debug_flags _ _ flags =
-   List.iter (fun name -> set_possible_debug name true) (split ":" flags)
-
 let set_debug_flags flags =
    let names = split ":" flags in
       try List.iter (fun name -> set_debug name true) names with

@@ -136,6 +136,7 @@ sig
    include LmSet
 
    val print : out_channel -> t -> unit
+   val check : t -> t
 end
 
 (*

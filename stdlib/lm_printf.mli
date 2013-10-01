@@ -192,6 +192,15 @@ val flush_str_formatter          : unit -> string
 val formatter_of_buffer          : Buffer.t -> formatter
 val make_formatter               : (string -> int -> int -> unit) -> (unit -> unit) -> formatter
 
+(*
+ * Redirect formatter's output to both a channel and a log file.
+ * The log file will be appended (not truncated), lockf-mutexed,
+ * and all the entries will be annotated with the PID of the logger:
+ * [|PID1: string1|][|PID2: string2|]...
+ * (with consequetive non-NL strings from the same PID merged together).
+ *)
+val extra_formatting             : string -> Pervasives.out_channel -> formatter -> unit
+
 val pp_open_hbox                 : formatter -> unit -> unit
 val pp_open_vbox                 : formatter -> int -> unit
 val pp_open_hvbox                : formatter -> int -> unit

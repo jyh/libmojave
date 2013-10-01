@@ -40,6 +40,9 @@ let debug_string =
         debug_value = false
       }
 
+(*
+ * Need these for converting numbers.
+ *)
 let code0 = Char.code '0'
 let codea = Char.code 'a'
 let codeA = Char.code 'A'
@@ -1056,13 +1059,6 @@ let trim s =
          ""
       else
          String.sub s first (last - first + 1)
-
-(*
- * Need these for converting numbers.
- *)
-let code0 = Char.code '0'
-let codea = Char.code 'a'
-let codeA = Char.code 'A'
 
 (*
  * Turn a string into an argument list.

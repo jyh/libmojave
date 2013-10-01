@@ -63,6 +63,7 @@ val fail_map : ('a -> 'b) -> 'a list -> 'b list
 val some_map : ('a -> 'b option) -> 'a list -> 'b list
 val some_map_safe : ('a -> 'a option) -> 'a list -> 'a list
 val fold_left : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+val rev_map : ('a -> 'b) -> 'a list -> 'b list
 
 (*
  * Find the element that satisfies a predicate

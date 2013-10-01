@@ -162,8 +162,6 @@ type 'a option_node =
  | NameNode of 'a option_node CharTable.t
  | SpecOrName of 'a poly_spec * 'a option_node CharTable.t
 
-type 'a options = 'a option_node CharTable.t
-
 (* is_alnum
 
    test if a letter is a letter or number *)
