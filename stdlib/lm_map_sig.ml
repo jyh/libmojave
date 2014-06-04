@@ -34,7 +34,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_printf
 
 (************************************************************************
  * Maps.
@@ -155,14 +154,14 @@ type ('elt, 'data, 'table) table_methods =
      deletemax    : 'table -> ('elt * 'data list * 'table);
 
      (* Debugging *)
-     print        : out_channel -> 'table -> unit
+     print        : Lm_printf.out_channel -> 'table -> unit
    }
 
 (*
  * Creation functions.
  *)
 type ('elt, 'data, 'table) table_create_type =
-   (out_channel -> 'elt -> 'data list -> unit) ->    (* printer *)
+   (Lm_printf.out_channel -> 'elt -> 'data list -> unit) ->    (* printer *)
    ('elt -> 'elt -> int) ->                          (* comparison function *)
    ('data list -> 'data list -> 'data list) ->       (* append during union *)
    ('elt, 'data, 'table) table_methods
@@ -185,7 +184,7 @@ sig
    type elt
    type data
 
-   val print : out_channel -> elt -> data list -> unit
+   val print : Lm_printf.out_channel -> elt -> data list -> unit
    val compare : elt -> elt -> int
    val append : data list -> data list -> data list
 end
@@ -214,7 +213,7 @@ sig
    val map : (elt -> data -> data) -> t -> t
    val list_of : t -> (elt * data list) list
    val deletemax : t -> (elt * data list * t)
-   val print : out_channel -> t -> unit
+   val print : Lm_printf.out_channel -> t -> unit
 end
 
 (*

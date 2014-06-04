@@ -29,7 +29,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
 open Lm_location
 
 (*
@@ -117,7 +116,7 @@ sig
    type action
 
    (* For debugging *)
-   val pp_print_action : out_channel -> action -> unit
+   val pp_print_action : Lm_printf.out_channel -> action -> unit
 
    (* For creating sets and tables *)
    val hash : action -> int
@@ -174,7 +173,7 @@ sig
     * Print the lexer.
     * This is mainly for debugging.
     *)
-   val pp_print_lexer : out_channel -> t -> unit
+   val pp_print_lexer : Lm_printf.out_channel -> t -> unit
 
    (*
     * Hash code for the lexer.

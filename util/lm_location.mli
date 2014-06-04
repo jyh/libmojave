@@ -29,7 +29,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
 open Lm_symbol
 
 type loc
@@ -64,7 +63,7 @@ val union_loc : loc -> loc -> loc
 (*
  * Print a file location.
  *)
-val pp_print_location : out_channel -> loc -> unit
+val pp_print_location : Lm_printf.out_channel -> loc -> unit
 val string_of_location : loc -> string
 
 (*!

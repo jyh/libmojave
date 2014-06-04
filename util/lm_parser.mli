@@ -29,7 +29,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_printf
 open Lm_location
 
 val debug_parse       : bool ref
@@ -46,7 +45,7 @@ type assoc =
  | NonAssoc
  | NoneAssoc
 
-val pp_print_assoc : out_channel -> assoc -> unit
+val pp_print_assoc : Lm_printf.out_channel -> assoc -> unit
 
 module type PrecedenceArg =
 sig
@@ -63,7 +62,7 @@ sig
    val create_prec_gt : t -> precedence -> assoc  -> t * precedence
 
    (* Print a precedence *)
-   val pp_print_prec  : t -> out_channel -> precedence -> unit
+   val pp_print_prec  : t -> Lm_printf.out_channel -> precedence -> unit
 
    (* Comparison *)
    val add_assoc      : t -> precedence -> assoc -> t
@@ -92,7 +91,7 @@ sig
 
    (* For debugging *)
    val to_string : symbol -> string
-   val pp_print_symbol : out_channel -> symbol -> unit
+   val pp_print_symbol : Lm_printf.out_channel -> symbol -> unit
 
    (* Sets and tables *)
    val hash_symbol : symbol -> int
@@ -102,7 +101,7 @@ sig
    type action
 
    (* For debugging *)
-   val pp_print_action : out_channel -> action -> unit
+   val pp_print_action : Lm_printf.out_channel -> action -> unit
 
    (* For set and table building *)
    val hash_action : action -> int
@@ -180,7 +179,7 @@ sig
    val build : t -> bool -> unit
 
    (* Print the grammar *)
-   val pp_print_parser : out_channel -> t -> unit
+   val pp_print_parser : Lm_printf.out_channel -> t -> unit
 
    (* Now the actual machine *)
    val parse :

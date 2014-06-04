@@ -34,7 +34,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_printf
 
 (*
  * Used for expressing sharing constraints.
@@ -60,7 +59,7 @@ module type OrderedTypeDebug =
 sig
    type t
 
-   val print : out_channel -> t -> unit
+   val print : Lm_printf.out_channel -> t -> unit
    val compare : t -> t -> int
 end
 
@@ -135,7 +134,7 @@ module type LmSetDebug =
 sig
    include LmSet
 
-   val print : out_channel -> t -> unit
+   val print : Lm_printf.out_channel -> t -> unit
    val check : t -> t
 end
 
@@ -147,7 +146,7 @@ sig
    include MinimalSetSig
 
    (* Debugging function *)
-   val print : out_channel -> t -> unit
+   val print : Lm_printf.out_channel -> t -> unit
 end
 
 (*

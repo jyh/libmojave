@@ -46,7 +46,6 @@
  * Modified By: Aleksey Nogin @email{anogin@hrl.com}
  * @end[license]
  *)
-open Lm_printf
 open Lm_symbol
 open Lm_location
 
@@ -186,7 +185,7 @@ let default_reader fd buf off len =
 (*
  * Convert a fd to an integer (for debugging).
  *)
-external int_of_fd : Unix.file_descr -> int = "int_of_fd"
+(* external int_of_fd : Unix.file_descr -> int = "int_of_fd" *)
 
 let default_writer fd buf off len =
    match fd with
@@ -403,8 +402,10 @@ let create_string () =
    create_loc_string_aux string_sym 1 0
 
 (************************************************************************
- * Line envding translation.
+ * Line ending translation.
  *)
+
+(*
 let debug_get s i =
    eprintf "String.get: %d[%d]@." (String.length s) i;
    String.get s i
@@ -412,11 +413,12 @@ let debug_get s i =
 let debug_set s i c =
    eprintf "String.set: %d[%d]@." (String.length s) i;
    String.set s i c
+ *)
 
 let string_get = String.unsafe_get
 let string_set = String.unsafe_set
 
-let rec expand_text obuffer omax wbuffer =
+let expand_text obuffer omax wbuffer =
    assert (omax >= 0 && omax <= String.length obuffer && omax * 2 <= String.length wbuffer);
    let rec copy1 src dst =
       if src = omax then

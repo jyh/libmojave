@@ -100,7 +100,7 @@ let equal_substring s1 off s2 =
 let for_all f s =
    let len = String.length s in
    let rec check i =
-      (i = len) or (f s.[i] & check (succ i))
+      (i = len) || (f s.[i] && check (succ i))
    in
       check 0
 
@@ -1213,7 +1213,7 @@ let make name i c =
 let sub name s i len =
    if !debug_string then
       let len' = String.length s in
-         if i >= 0 & len >= 0 & i + len < len' then
+         if i >= 0 && len >= 0 && i + len < len' then
             String.sub s i len
          else
             begin
@@ -1227,7 +1227,7 @@ let blit name froms i tos j len =
    if !debug_string then
       let from_len = String.length froms in
       let to_len = String.length tos in
-         if i >= 0 & j >= 0 & len >= 0 & i + len < from_len & j + len < to_len then
+         if i >= 0 && j >= 0 && len >= 0 && i + len < from_len && j + len < to_len then
             String.blit froms i tos j len
          else
             begin
@@ -1240,7 +1240,7 @@ let blit name froms i tos j len =
 let set name s i c =
    if !debug_string then
       let len = String.length s in
-         if i >= 0 & i < len then
+         if i >= 0 && i < len then
             String.set s i c
          else
             begin
@@ -1252,7 +1252,7 @@ let set name s i c =
 
 let get name s i =
    let len = String.length s in
-      if i >= 0 & i < len then
+      if i >= 0 && i < len then
          String.get s i
       else
          begin
@@ -1508,7 +1508,7 @@ let decode_hex_name uri =
             buf.[i] <- ' ';
             convert (i + 1) (j + 1)
          end
-      else if uri.[j] = '%' & j < len - 2 then
+      else if uri.[j] = '%' && j < len - 2 then
          begin
             buf.[i] <- unhex_char uri.[j + 1] uri.[j + 2];
             convert (i + 1) (j + 3)

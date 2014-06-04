@@ -143,7 +143,6 @@ val length_eq : 'a list -> 'b list -> bool
  *)
 val replacef_nth     : int -> ('a -> 'a) -> 'a list -> 'a list
 val replacef_arg_nth : int -> ('a -> 'a * 'b) -> 'a list -> 'a list * 'b
-val replace_nth      : int -> 'a -> 'a list -> 'a list
 val replaceq         : 'a -> 'a -> 'a list -> 'a list
 val replace_first    : ('a -> bool) -> 'a -> 'a list -> 'a list
 val replace_all      : ('a -> bool) -> 'a -> 'a list -> 'a list

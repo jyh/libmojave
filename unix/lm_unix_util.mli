@@ -41,7 +41,7 @@
 val print_stack_pointer : unit -> unit
 
 (*
- * Location of the home directory.
+ * Location of the home directory or the current user.
  *)
 val home_dir : string
 
@@ -65,11 +65,6 @@ val copy_file : string -> string -> int -> unit
  * Make all the directories in a path.
  *)
 val mkdirhier : string -> unit
-
-(*
- * Home directory of the current user.
- *)
-val home_dir : string
 
 (*
  * C interface.

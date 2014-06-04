@@ -64,8 +64,8 @@ sig
    val int_pos     : int -> t pos -> t pos
    val string_pos  : string -> t pos -> t pos
    val symbol_pos  : symbol -> t pos -> t pos
-   val del_pos     : (out_channel -> unit) -> loc -> t pos
-   val del_exp_pos : (out_channel -> unit) -> t pos -> t pos
+   val del_pos     : (Lm_printf.out_channel -> unit) -> loc -> t pos
+   val del_exp_pos : (Lm_printf.out_channel -> unit) -> t pos -> t pos
 
    (* Utilities *)
    val loc_of_pos  : t pos -> loc

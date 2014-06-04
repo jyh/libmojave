@@ -56,8 +56,8 @@ let stdout_width = term_width_fd Unix.stdout 80
 let stderr_width = term_width_fd Unix.stderr 80
 
 let () =
-   if stdout_width <> 80 then pp_set_margin stdout stdout_width;
-   if stderr_width <> 80 then pp_set_margin stderr stderr_width
+   if stdout_width <> 80 then pp_set_margin Lm_printf.stdout stdout_width;
+   if stderr_width <> 80 then pp_set_margin Lm_printf.stderr stderr_width
 
 (*
  * -*-

@@ -69,8 +69,8 @@ and 'a exn_loc =
  | DebugInt     of int * 'a pos
  | DebugString  of string * 'a pos
  | DebugSymbol  of symbol * 'a pos
- | DebugDel     of (out_channel -> unit) * loc
- | DebugDelExp  of (out_channel -> unit) * 'a pos
+ | DebugDel     of (Lm_printf.out_channel -> unit) * loc
+ | DebugDelExp  of (Lm_printf.out_channel -> unit) * 'a pos
 (* %%MAGICEND%% *)
 
 (*
@@ -93,8 +93,8 @@ sig
    val int_pos     : int -> t pos -> t pos
    val string_pos  : string -> t pos -> t pos
    val symbol_pos  : symbol -> t pos -> t pos
-   val del_pos     : (out_channel -> unit) -> loc -> t pos
-   val del_exp_pos : (out_channel -> unit) -> t pos -> t pos
+   val del_pos     : (Lm_printf.out_channel -> unit) -> loc -> t pos
+   val del_exp_pos : (Lm_printf.out_channel -> unit) -> t pos -> t pos
 
    (* Utilities *)
    val loc_of_pos : t pos -> loc

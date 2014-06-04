@@ -370,7 +370,7 @@ let replace_basename s1 s2 =
 let simplify_path path =
    let rec simplify path' = function
       dir::tl ->
-         if dir = "" or dir = "." then
+         if dir = "" || dir = "." then
             simplify path' tl
          else if dir = ".." then
             match path' with
