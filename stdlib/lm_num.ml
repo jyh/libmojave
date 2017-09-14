@@ -18,16 +18,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -72,12 +72,12 @@ let add_num i j =
    match i, j with
       Int i, Int j ->
          let sum = i + j in
-            if (i>0) & (j>0) then
+            if (i>0) && (j>0) then
                if max_int - i < j then
                   Big_int (add_big_int (big_int_of_int i) (big_int_of_int j))
                else
                   Int sum
-            else if (i<0) & (j<0) then
+            else if (i<0) && (j<0) then
                if min_int - i > j then
                   Big_int (add_big_int (big_int_of_int i) (big_int_of_int j))
                else
@@ -95,12 +95,12 @@ let sub_num i j =
    match i, j with
       Int i, Int j ->
          let diff = i - j in
-            if (i>0) & (j<0) then
+            if (i>0) && (j<0) then
                if i > max_int + j then
                   Big_int (sub_big_int (big_int_of_int i) (big_int_of_int j))
                else
                   Int diff
-            else if (i<0) & (j>0) then
+            else if (i<0) && (j>0) then
                if i < min_int + j then
                   Big_int (sub_big_int (big_int_of_int i) (big_int_of_int j))
                else

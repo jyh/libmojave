@@ -109,7 +109,7 @@ type channel =
       *)
      mutable in_index     : int;
      mutable in_max       : int;
-     mutable in_buffer    : string;
+     mutable in_buffer    : bytes;
 
      (*
       * For lexing from the buffer.
@@ -125,11 +125,11 @@ type channel =
       *)
      out_expand           : bool;
      mutable out_max      : int;
-     mutable out_buffer   : string;
+     mutable out_buffer   : bytes;
 
      (*
       * In text mode, the output is double-buffered because
-      * of line ending translation.  
+      * of line ending translation.
       * INVARIANT: In binary mode, the write_buffer is the same as the out_buffer.
       *
       * write_pid is the pid of the output thread, or 0 if there is no output thread.
@@ -139,13 +139,13 @@ type channel =
      mutable write_pid    : int;
      mutable write_index  : int;
      mutable write_max    : int;
-     mutable write_buffer : string;
+     mutable write_buffer : bytes;
 
      (*
       * These are the actual read and write functions.
       *)
-     mutable read_fun     : string -> int -> int -> int;
-     mutable write_fun    : string -> int -> int -> int
+     mutable read_fun     : bytes -> int -> int -> int;
+     mutable write_fun    : bytes -> int -> int -> int
    }
 
 type t = channel
@@ -219,12 +219,12 @@ let create file kind mode binary fd =
             kind
    in
    let binary = Sys.os_type <> "Win32" || binary in
-   let out_buffer = String.create buf_size in
+   let out_buffer = Bytes.create buf_size in
    let write_buffer =
       if binary then
          out_buffer
       else
-         String.create (buf_size * 2)
+         Bytes.create (buf_size * 2)
    in
       { channel_id     = 0;
         channel_fd     = fd;
@@ -241,7 +241,7 @@ let create file kind mode binary fd =
 
         in_index       = 0;
         in_max         = 0;
-        in_buffer      = String.create (succ buf_size);
+        in_buffer      = Bytes.create (succ buf_size);
         lex_index      = 0;
 
         out_max        = 0;
@@ -260,8 +260,8 @@ let create file kind mode binary fd =
 let set_id info id =
    info.channel_id <- id
 
-let of_string file line char s =
-   let len = String.length s in
+let of_bytes file line char s =
+   let len = Bytes.length s in
       { channel_id     = 0;
         channel_fd     = None;
         channel_kind   = FileChannel;
@@ -282,19 +282,19 @@ let of_string file line char s =
 
         out_max      = 0;
         out_expand   = false;
-        out_buffer   = "";
+        out_buffer   = Bytes.empty;
 
         write_pid    = 0;
         write_index  = 0;
         write_max    = 0;
-        write_buffer = "";
+        write_buffer = Bytes.empty;
 
         read_fun     = null_reader;
         write_fun    = null_writer
       }
 
 let of_fun read write =
-   let out_buffer = String.create buf_size in
+   let out_buffer = Bytes.create buf_size in
    { channel_id     = 0;
      channel_fd     = None;
      channel_kind   = FileChannel;
@@ -310,7 +310,7 @@ let of_fun read write =
 
      in_index     = 0;
      in_max       = 0;
-     in_buffer    = String.create buf_size;
+     in_buffer    = Bytes.create buf_size;
      lex_index    = 0;
 
      out_max      = 0;
@@ -327,13 +327,13 @@ let of_fun read write =
    }
 
 let of_loc_string file line char s =
-   of_string (Lm_symbol.add file) line char s
+   of_bytes (Lm_symbol.add file) line char (Bytes.of_string s)
 
 let of_substring s off len =
-   of_string string_sym 1 0 (String.sub s off len)
+   of_bytes string_sym 1 0 (Bytes.of_string (String.sub s off len))
 
 let of_string s =
-   of_string string_sym 1 0 (String.copy s)
+   of_bytes string_sym 1 0 (Bytes.of_string s)
 
 let info channel =
    let id = channel.channel_id in
@@ -363,7 +363,7 @@ let set_io_functions info reader writer =
    info.write_fun <- writer
 
 let create_loc_string_aux file line char =
-   let out_buffer = String.create buf_size in
+   let out_buffer = Bytes.create buf_size in
    { channel_id     = 0;
      channel_fd     = None;
      channel_kind   = FileChannel;
@@ -379,7 +379,7 @@ let create_loc_string_aux file line char =
 
      in_index     = 0;
      in_max       = 0;
-     in_buffer    = "";
+     in_buffer    = Bytes.empty;
      lex_index    = 0;
 
      out_max      = 0;
@@ -415,11 +415,11 @@ let debug_set s i c =
    String.set s i c
  *)
 
-let string_get = String.unsafe_get
-let string_set = String.unsafe_set
+let string_get = Bytes.unsafe_get
+let string_set = Bytes.unsafe_set
 
 let expand_text obuffer omax wbuffer =
-   assert (omax >= 0 && omax <= String.length obuffer && omax * 2 <= String.length wbuffer);
+   assert (omax >= 0 && omax <= Bytes.length obuffer && omax * 2 <= Bytes.length wbuffer);
    let rec copy1 src dst =
       if src = omax then
          dst
@@ -436,7 +436,7 @@ let expand_text obuffer omax wbuffer =
       copy1 0 0
 
 let squash_text buffer off amount =
-   assert (off >= 0 && amount >= 0 && off + amount <= String.length buffer);
+   assert (off >= 0 && amount >= 0 && off + amount <= Bytes.length buffer);
    if amount = 0 then
       0
    else
@@ -481,7 +481,7 @@ let line_of_index info buffer index =
             info.middle_char <- char;
             line, char
          end
-      else if buffer.[i] = '\n' then
+      else if Bytes.get buffer i = '\n' then
          search (succ line) 0 (succ i)
       else
          search line (succ char) (succ i)
@@ -512,7 +512,7 @@ let shift_input_buffer info =
    let lex_index = info.lex_index in
    let in_max = info.in_max in
    let line, char = line_of_index info in_buffer in_index in
-      String.blit in_buffer in_index in_buffer 0 (in_max - in_index);
+      Bytes.blit in_buffer in_index in_buffer 0 (in_max - in_index);
       info.start_line   <- line;
       info.start_char   <- char;
       info.middle_index <- 0;
@@ -560,9 +560,9 @@ let reset_output_buffer info =
 let expand_output info =
    let buffer = info.out_buffer in
    let max = info.out_max in
-      if max = String.length buffer then begin
-         let buffer2 = String.create (max * 2) in
-            String.blit buffer 0 buffer2 0 max;
+      if max = Bytes.length buffer then begin
+         let buffer2 = Bytes.create (max * 2) in
+            Bytes.blit buffer 0 buffer2 0 max;
             info.out_buffer <- buffer2;
             if info.channel_binary then
                info.write_buffer <- buffer2;
@@ -571,7 +571,7 @@ let expand_output info =
 let to_string info =
    let buffer = info.out_buffer in
    let max = info.out_max in
-      String.sub buffer 0 max
+      Bytes.to_string (Bytes.sub buffer 0 max)
 
 (************************************************************************
  * Flushing and filling.
@@ -690,14 +690,14 @@ let rec output_char info c =
    let max = info.out_max in
    let buffer = info.out_buffer in
       flush_input info;
-      if max = String.length buffer then
+      if max = Bytes.length buffer then
          begin
             flush_output info;
             output_char info c
          end
       else
          begin
-            buffer.[max] <- c;
+            Bytes.set buffer max c;
             info.out_max <- succ max
          end
 
@@ -710,7 +710,7 @@ let output_byte info c =
 let rec output_buffer info buf off len =
    let max = info.out_max in
    let buffer = info.out_buffer in
-   let avail = String.length buffer - max in
+   let avail = Bytes.length buffer - max in
       flush_input info;
       if len <> 0 then
          if avail = 0 then
@@ -761,7 +761,7 @@ let fillbuf info =
       else
          let extra =
             (* Read one extra char if we got an unfortunate read *)
-            if buf.[pred count] = '\r' then
+            if Bytes.get buf (pred count) = '\r' then
                reader buf count 1
             else
                0
@@ -785,7 +785,7 @@ let rec input_char info =
             input_char info
          end
       else
-         let c = buf.[index] in
+         let c = Bytes.get buf index in
             info.in_index <- succ index;
             c
 
@@ -814,7 +814,7 @@ let rec input_buffer info s off len =
             let amount = min avail len in
             let new_len = len - amount in
             let new_off = off + amount in
-               String.blit buf index s off amount;
+               Bytes.blit buf index s off amount;
                info.in_index <- index + amount;
                input_buffer info s new_off new_len
 
@@ -868,7 +868,7 @@ let read info s off len =
          reader s off len
       else
          let amount = min len avail in
-            String.blit buf index s off amount;
+            Bytes.blit buf index s off amount;
             info.in_index <- index + amount;
             amount
 
@@ -1108,7 +1108,7 @@ struct
          if index = 0 then
             bof
          else
-            Char.code buffer.[pred index]
+            Char.code (Bytes.get buffer (pred index))
       in
          channel.lex_index <- channel.in_index;
          prev
@@ -1136,7 +1136,7 @@ struct
    let lex_string channel pos =
       let start = channel.in_index in
       let buffer = channel.in_buffer in
-         String.sub buffer start pos
+         Bytes.to_string (Bytes.sub buffer start pos)
 
    (*
     * Get the string matched by the lexer.
@@ -1144,7 +1144,7 @@ struct
    let lex_substring channel off len =
       let start = channel.in_index in
       let buffer = channel.in_buffer in
-         String.sub buffer (start + off) len
+         Bytes.to_string (Bytes.sub buffer (start + off) len)
 
    (*
     * Fill the buffer in lex mode.
@@ -1156,7 +1156,7 @@ struct
       let start = channel.in_index in
       let reader = channel.read_fun in
       let binary = channel.channel_binary in
-      let len = String.length buffer in
+      let len = Bytes.length buffer in
       let amount = len - max in
          (* If we have space, fill it *)
          if amount > 1 then
@@ -1169,14 +1169,14 @@ struct
                         count
                      else
                         let extra =
-                           if buffer.[max + count - 1] = '\r' then
+                           if Bytes.get buffer (max + count - 1) = '\r' then
                               reader buffer (max + count) 1
                            else
                               0
                         in
                            squash_text buffer max (count + extra)
                   in
-                  let c = buffer.[max] in
+                  let c = Bytes.get buffer max in
                      channel.in_max <- max + count;
                      channel.lex_index <- succ max;
                      Char.code c
@@ -1196,8 +1196,8 @@ struct
           * Otherwise grow it.
           *)
          else
-            let new_buffer = String.create (Pervasives.max (len * 2) 32) in
-               String.blit buffer 0 new_buffer 0 max;
+            let new_buffer = Bytes.create (Pervasives.max (len * 2) 32) in
+               Bytes.blit buffer 0 new_buffer 0 max;
                channel.in_buffer <- new_buffer;
                lex_fill channel
 
@@ -1211,7 +1211,7 @@ struct
          if index = max then
             lex_fill channel
          else
-            let c = buffer.[index] in
+            let c = Bytes.get buffer index in
                channel.lex_index <- succ index;
                Char.code c
 
@@ -1252,7 +1252,7 @@ struct
       let max = channel.in_max in
       let buffer = channel.in_buffer in
       let start = channel.in_index in
-         Buffer.add_substring buf buffer start (max - start);
+         Buffer.add_subbytes buf buffer start (max - start);
          channel.in_index <- max
 end
 

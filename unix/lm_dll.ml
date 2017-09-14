@@ -442,7 +442,7 @@ struct
             dll_set_handlers = info
           } = info
       in
-         set_handlers info (Array.create handler_count f)
+         set_handlers info (Array.make handler_count f)
 
    (************************************************************************
     * Unsafe application.

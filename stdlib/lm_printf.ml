@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -45,18 +45,18 @@ let extra_formatting file chan formatter =
       ignore (Unix.lseek pid_fd 0 Unix.SEEK_SET);
       Unix.lockf pid_fd Unix.F_LOCK 0;
       try
-         let s = String.make 10 ' ' in
+         let s = Bytes.make 10 ' ' in
          let i = Unix.read pid_fd s 0 10 in
-         let s = String.sub s 0 i in
-            int_of_string s
+         let s = Bytes.sub s 0 i in
+            int_of_string (Bytes.to_string s)
       with _ ->
          0
    in
    let write_pid i =
       ignore (Unix.lseek pid_fd 0 Unix.SEEK_SET);
       let () = Unix.ftruncate pid_fd 0 in
-      let s = string_of_int i in
-         ignore (Unix.single_write pid_fd s 0 (String.length s));
+      let s = Bytes.of_string (string_of_int i) in
+         ignore (Unix.single_write pid_fd s 0 (Bytes.length s));
          ignore (Unix.lseek pid_fd 0 Unix.SEEK_SET);
          Unix.lockf pid_fd Unix.F_ULOCK 0
    in
@@ -108,14 +108,21 @@ let extra_formatting file chan formatter =
       let s = String.make i ' ' in
          out s 0 i;
    in
-      pp_set_all_formatter_output_functions formatter ~out ~flush ~newline ~spaces
+   let functions =
+      { out_string = out;
+        out_flush = flush;
+        out_newline = newline;
+        out_spaces = spaces
+      }
+   in
+      pp_set_formatter_out_functions formatter functions
 
 (*
  * Copy the std_formatter and err_formatter outputs to log files.
  *
  * XXX: TODO: for now this is commented out, we might consider doing
  * this based on an environment variable.
- 
+
 let () =
    extra_formatting "/tmp/mylog.out" stdout std_formatter;
    extra_formatting "/tmp/mylog.err" stderr err_formatter
@@ -184,10 +191,24 @@ let bprintf = bprintf
  * Formatting functions.
  *)
 let set_all_formatter_output_functions out flush newline spaces =
-   set_all_formatter_output_functions ~out ~flush ~newline ~spaces
+   let functions =
+      { out_string = out;
+        out_flush = flush;
+        out_newline = newline;
+        out_spaces = spaces
+      }
+   in
+      set_formatter_out_functions functions
 
 let pp_set_all_formatter_output_functions buf out flush newline spaces =
-   pp_set_all_formatter_output_functions buf ~out ~flush ~newline ~spaces
+   let functions =
+      { out_string = out;
+        out_flush = flush;
+        out_newline = newline;
+        out_spaces = spaces
+      }
+   in
+      pp_set_formatter_out_functions buf functions
 
 (*
  * List separated by semicolons.

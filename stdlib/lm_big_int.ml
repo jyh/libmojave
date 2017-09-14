@@ -18,16 +18,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -433,18 +433,18 @@ let string_of_big_int (sign, mag) =
     | digits ->
          let s, start =
             if sign then
-               String.create (List.length digits), 0
+               Bytes.create (List.length digits), 0
             else
-               String.make (succ (List.length digits)) '-', 1
+               Bytes.make (succ (List.length digits)) '-', 1
          in
          let rec collect i = function
             digit :: digits ->
-               s.[i] <- Char.chr (Char.code '0' + digit);
+               Bytes.set s i (Char.chr (Char.code '0' + digit));
                collect (succ i) digits
           | [] ->
                s
          in
-            collect start digits
+            Bytes.to_string (collect start digits)
    in
    let rec collect digits mag =
       if zeros mag then

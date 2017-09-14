@@ -102,10 +102,10 @@ struct
       let table = state.int_table in
       let len = Array.length table in
          if len = 0 then
-            let table = Array.create 32 x in
+            let table = Array.make 32 x in
                state.int_table <- table
          else if i = len then
-            let table2 = Array.create (len * 2) x in
+            let table2 = Array.make (len * 2) x in
                Array.blit table 0 table2 0 len;
                state.int_table <- table2
          else
@@ -1362,7 +1362,7 @@ struct
     * New buffer.
     *)
    let create () =
-      { hash_digest = Array.create digest_length 0;
+      { hash_digest = Array.make digest_length 0;
         hash_code   = 0
       }
 
@@ -1437,11 +1437,11 @@ struct
     *)
    let digest buf =
       let digest = buf.hash_digest in
-      let s = String.create digest_length in
+      let s = Bytes.create digest_length in
          for i = 0 to pred digest_length do
-            s.[i] <- Char.chr (digest.(i) land 0xff)
+            Bytes.set s i (Char.chr (digest.(i) land 0xff))
          done;
-         s
+         Bytes.to_string s
 end;;
 (* %%MAGICEND%% *)
 

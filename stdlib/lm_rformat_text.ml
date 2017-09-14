@@ -115,12 +115,13 @@ let line_format length fmt_fun =
          s
    in
       if (overflow && len > (length - 3)) || len > length then
-         begin
-            s.[length - 3] <- '.';
-            s.[length - 2] <- '.';
-            s.[length - 1] <- '.'
-         end;
-      s
+         let b = Bytes.of_string  s in
+            Bytes.set b (length - 3) '.';
+            Bytes.set b (length - 2) '.';
+            Bytes.set b (length - 1) '.';
+            Bytes.to_string b
+      else
+         s
 
 (*!
  * @docoff

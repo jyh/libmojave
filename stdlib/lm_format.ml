@@ -61,7 +61,8 @@ let default_max_indent = max_int
 let default_ellipsis = "..."
 let default_margin = 80
 
-let output_substring = output
+let output_substring out s off len =
+   output out (Bytes.of_string s) off len
 
 (*
  * Flush the buffer.

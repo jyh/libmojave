@@ -64,8 +64,8 @@ external serve          : int -> string -> string -> t       = "lm_ssl_serve"
  *)
 external lm_ssl_enabled  : unit -> bool                       = "lm_ssl_enabled"
 external lm_ssl_init     : unit -> unit                       = "lm_ssl_init"
-external lm_ssl_read     : t -> string -> int -> int -> int   = "lm_ssl_read"
-external lm_ssl_write    : t -> string -> int -> int -> int   = "lm_ssl_write"
+external lm_ssl_read     : t -> bytes -> int -> int -> int    = "lm_ssl_read"
+external lm_ssl_write    : t -> bytes -> int -> int -> int    = "lm_ssl_write"
 external lm_ssl_flush    : t -> unit                          = "lm_ssl_flush"
 
 (*
@@ -82,7 +82,7 @@ struct
    (* Some buffer type *)
    type t =
       { mutable windex : int;
-        buffer : string;
+        buffer : bytes;
         ssl    : ssl
       }
 
@@ -94,7 +94,7 @@ struct
    (* Create the output channel *)
    let create ssl =
       { windex = 0;
-        buffer = String.create buf_length;
+        buffer = Bytes.create buf_length;
         ssl = ssl
       }
 
@@ -129,7 +129,7 @@ struct
           } = out
       in
       let windex' = succ windex in
-         buf.[windex] <- c;
+         Bytes.set buf windex c;
          out.windex <- windex';
          if windex' = buf_length then
             flush out
@@ -213,7 +213,7 @@ struct
    type t =
       { mutable rindex : int;
         mutable length : int;
-        buffer : string;
+        buffer : bytes;
         ssl : ssl
       }
 
@@ -228,7 +228,7 @@ struct
    let create ssl =
       { rindex = 0;
         length = 0;
-        buffer = String.create buf_length;
+        buffer = Bytes.create buf_length;
         ssl = ssl
       }
 
@@ -274,7 +274,7 @@ struct
                input_char inx
             end
          else
-            let c = buf.[rindex] in
+            let c = Bytes.get buf rindex in
                inx.rindex <- succ rindex;
                c
 
@@ -300,7 +300,7 @@ struct
                else
                   Buffer.contents out
          else
-            let c = buf.[rindex] in
+            let c = Bytes.get buf rindex in
                if c = '\n' then
                   begin
                      inx.rindex <- succ rindex;
@@ -332,7 +332,7 @@ struct
       in
       let amount = min len (length - rindex) in
       let () =
-         String.blit buf rindex s off amount;
+         Bytes.blit buf rindex s off amount;
          inx.rindex <- rindex + amount
       in
          let off = off + amount in
@@ -366,7 +366,7 @@ struct
             end
          else
             begin
-               String.blit buf rindex s off len;
+               Bytes.blit buf rindex s off len;
                inx.rindex <- rindex + len
             end
 

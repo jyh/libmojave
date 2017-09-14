@@ -11,16 +11,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -161,26 +161,26 @@ ELSE (* ENSEMBLE undefined *)
     * form of the buffers.
     *)
    type wbuf =
-      { mutable wbuf_buf : string;
+      { mutable wbuf_buf : bytes;
         mutable wbuf_index : int;
         mutable wbuf_stop : int;
-        mutable wbuf_buffers : string list
+        mutable wbuf_buffers : bytes list
       }
 
-   type buf = string list
+   type buf = bytes list
 
    type rbuf =
-      { mutable rbuf_buf : string;
+      { mutable rbuf_buf : bytes;
         mutable rbuf_index : int;
         mutable rbuf_stop : int;
-        mutable rbuf_buffers : string list
+        mutable rbuf_buffers : bytes list
       }
 
    (*
     * Create a new buffer.
     *)
    let create () =
-      { wbuf_buf = String.create block_size;
+      { wbuf_buf = Bytes.create block_size;
         wbuf_index = 0;
         wbuf_stop = 0;
         wbuf_buffers = []
@@ -188,7 +188,7 @@ ELSE (* ENSEMBLE undefined *)
 
    let flush_write info =
       info.wbuf_buffers <- info.wbuf_buf :: info.wbuf_buffers;
-      info.wbuf_buf <- String.create block_size;
+      info.wbuf_buf <- Bytes.create block_size;
       info.wbuf_index <- 0
 
    (*
@@ -204,11 +204,11 @@ ELSE (* ENSEMBLE undefined *)
       h :: t ->
          { rbuf_buf = h;
            rbuf_index = 0;
-           rbuf_stop = String.length h;
+           rbuf_stop = Bytes.length h;
            rbuf_buffers = t
          }
     | [] ->
-         { rbuf_buf = "";
+         { rbuf_buf = Bytes.empty;
            rbuf_index = 0;
            rbuf_stop = 0;
            rbuf_buffers = []
@@ -222,7 +222,7 @@ ELSE (* ENSEMBLE undefined *)
          h :: t ->
             info.rbuf_buf <- h;
             info.rbuf_index <- 0;
-            info.rbuf_stop <- String.length h;
+            info.rbuf_stop <- Bytes.length h;
             info.rbuf_buffers <- t
        | [] ->
             raise (Invalid_argument "read")
@@ -250,13 +250,13 @@ ENDIF
          if len <= amount then
             begin
                (* Normal cas *)
-               String.blit buf off buf' start len;
+               Bytes.blit buf off buf' start len;
                info.wbuf_index <- start + len
             end
          else
             begin
                (* Write in multiple fragments *)
-               String.blit buf off buf' start amount;
+               Bytes.blit buf off buf' start amount;
                flush_write info;
                write info buf (off + amount) (len - amount)
             end
@@ -278,10 +278,10 @@ ENDIF
             end
          else
             begin
-               buf.[start] <- Char.chr ((i lsr 23) land 255);
-               buf.[start + 1] <- Char.chr ((i lsr 15) land 255);
-               buf.[start + 2] <- Char.chr ((i lsr 7) land 255);
-               buf.[start + 3] <- Char.chr (((i lsl 1) land 255) + 1);
+               Bytes.set buf start (Char.chr ((i lsr 23) land 255));
+               Bytes.set buf (start + 1) (Char.chr ((i lsr 15) land 255));
+               Bytes.set buf (start + 2) (Char.chr ((i lsr 7) land 255));
+               Bytes.set buf (start + 3) (Char.chr (((i lsl 1) land 255) + 1));
                info.wbuf_index <- start + word_size
             end
 
@@ -302,10 +302,10 @@ ENDIF
             end
          else
             begin
-               buf.[start] <- Char.chr ((i lsr 21) land 255);
-               buf.[start + 1] <- Char.chr ((i lsr 13) land 255);
-               buf.[start + 2] <- Char.chr ((i lsr 5) land 255);
-               buf.[start + 3] <- Char.chr (((i lsl 3) land 255) + (tag lsl 2) + 2);
+               Bytes.set buf start (Char.chr ((i lsr 21) land 255));
+               Bytes.set buf (start + 1) (Char.chr ((i lsr 13) land 255));
+               Bytes.set buf (start + 2) (Char.chr ((i lsr 5) land 255));
+               Bytes.set buf (start + 3) (Char.chr (((i lsl 3) land 255) + (tag lsl 2) + 2));
                info.wbuf_index <- start + word_size
             end
 
@@ -325,10 +325,10 @@ ENDIF
             end
          else
             begin
-               buf.[start] <- Char.chr tag;
-               buf.[start + 1] <- Char.chr ((i lsr 14) land 255);
-               buf.[start + 2] <- Char.chr ((i lsr 6) land 255);
-               buf.[start + 3] <- Char.chr ((i lsl 2) land 255);
+               Bytes.set buf start (Char.chr tag);
+               Bytes.set buf (start + 1) (Char.chr ((i lsr 14) land 255));
+               Bytes.set buf (start + 2) (Char.chr ((i lsr 6) land 255));
+               Bytes.set buf (start + 3) (Char.chr ((i lsl 2) land 255));
                info.wbuf_index <- start + word_size
             end
 
@@ -345,13 +345,13 @@ ENDIF
          if len <= amount then
             begin
                (* Usual case *)
-               String.blit buf' start buf off len;
+               Bytes.blit buf' start buf off len;
                info.rbuf_index <- start + len
             end
          else
             begin
                (* Fragment the read *)
-               String.blit buf' start buf off amount;
+               Bytes.blit buf' start buf off amount;
                flush_read info;
                read info buf (off + amount) (len - amount)
             end
@@ -371,7 +371,7 @@ ENDIF
                read_value_type info
             end
          else
-            match (Char.code buf.[start + 3]) land 3 with
+            match (Char.code (Bytes.get buf (start + 3))) land 3 with
                0 ->
                   TaggedValue
              | 2 ->
@@ -385,10 +385,10 @@ ENDIF
    let read_int info =
       let { rbuf_buf = buf; rbuf_index = start } = info in
       let i =
-         ((Char.code buf.[start]) lsl 23) +
-         ((Char.code buf.[start + 1]) lsl 15) +
-         ((Char.code buf.[start + 2]) lsl 7) +
-         ((Char.code buf.[start + 3]) lsr 1)
+         ((Char.code (Bytes.get buf start)) lsl 23) +
+         ((Char.code (Bytes.get buf (start + 1))) lsl 15) +
+         ((Char.code (Bytes.get buf (start + 2))) lsl 7) +
+         ((Char.code (Bytes.get buf (start + 3))) lsr 1)
       in
          info.rbuf_index <- start + word_size;
          i
@@ -397,15 +397,15 @@ ENDIF
     * Read the int2.
     *)
    let read_int2_tag info =
-      ((Char.code info.rbuf_buf.[info.rbuf_index + 3]) lsr 2) land 1
+      ((Char.code (Bytes.get info.rbuf_buf (info.rbuf_index + 3))) lsr 2) land 1
 
    let read_int2_value info =
       let { rbuf_buf = buf; rbuf_index = start } = info in
       let i =
-         ((Char.code buf.[start]) lsl 21) +
-         ((Char.code buf.[start + 1]) lsl 13) +
-         ((Char.code buf.[start + 2]) lsl 5) +
-         ((Char.code buf.[start + 3]) lsr 3)
+         ((Char.code (Bytes.get buf start)) lsl 21) +
+         ((Char.code (Bytes.get buf (start + 1))) lsl 13) +
+         ((Char.code (Bytes.get buf (start + 2))) lsl 5) +
+         ((Char.code (Bytes.get buf (start + 3))) lsr 3)
       in
          info.rbuf_index <- start + word_size;
          i
@@ -415,14 +415,14 @@ ENDIF
     *)
    let read_value_tag info =
       let { rbuf_buf = buf; rbuf_index = start } = info in
-         Char.code buf.[start]
+         Char.code (Bytes.get buf start)
 
    let read_value_value info =
       let { rbuf_buf = buf; rbuf_index = start } = info in
       let i =
-         ((Char.code buf.[start + 1]) lsl 14) +
-         ((Char.code buf.[start + 2]) lsl 6) +
-         ((Char.code buf.[start + 3]) lsr 2)
+         ((Char.code (Bytes.get buf (start + 1))) lsl 14) +
+         ((Char.code (Bytes.get buf (start + 2))) lsl 6) +
+         ((Char.code (Bytes.get buf (start + 3))) lsr 2)
       in
          info.rbuf_index <- start + word_size;
          i

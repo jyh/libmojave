@@ -45,16 +45,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -81,7 +81,7 @@ type pointer_hash_type
 external create_hash : unit -> pointer_hash_type = "ml_create_pointer_hash"
 external insert : pointer_hash_type -> int -> Obj.t -> unit = "ml_pointer_hash_insert"
 external lookup : pointer_hash_type -> Obj.t LargeWeakArray.t -> Obj.t -> int = "ml_pointer_hash_lookup"
-external local_write_block : Obj.t -> string -> int -> unit = "ml_write_block"
+external local_write_block : Obj.t -> bytes -> int -> unit = "ml_write_block"
 
 (*
  * Marshal module.
@@ -160,7 +160,7 @@ struct
         mutable marshal_view : Lm_id.t option array;
 
         mutable marshal_values : Obj.t LargeWeakArray.t;
-        mutable marshal_copies : string LargeArray.t;
+        mutable marshal_copies : bytes LargeArray.t;
         mutable marshal_hash : pointer_hash_type;
 
         marshal_local_tlb : int array;
@@ -198,7 +198,7 @@ struct
    (*
     * Empty string is used to initialize object copies.
     *)
-   let null_string = ""
+   let null_bytes = Bytes.empty
 
    (*
     * Create a marshal buffer.
@@ -210,12 +210,12 @@ struct
            marshal_view = [| Some id |];
 
            marshal_values = LargeWeakArray.create ();
-           marshal_copies = LargeArray.create null_string;
+           marshal_copies = LargeArray.create null_bytes;
            marshal_hash = create_hash ();
 
-           marshal_local_tlb = Array.create max_pages 0;
-           marshal_global_tlb = Array.create max_pages 0;
-           marshal_tmp_tlb = Array.create max_pages 0;
+           marshal_local_tlb = Array.make max_pages 0;
+           marshal_global_tlb = Array.make max_pages 0;
+           marshal_tmp_tlb = Array.make max_pages 0;
 
            marshal_free_index = 0;
            marshal_free_max = 0;
@@ -227,7 +227,7 @@ struct
            marshal_lookahead_free_list = tail_free_list 0;
            marshal_lookahead_pages = [];
 
-           marshal_page_table = Array.create max_pages None
+           marshal_page_table = Array.make max_pages None
          }
 
    (************************************************************************
@@ -256,7 +256,7 @@ struct
        * Global buffer operations.
        *)
       let global_write_string buf' =
-         Buf.write buf buf' 0 (String.length buf')
+         Buf.write buf buf' 0 (Bytes.length buf')
       in
       let global_write_int i =
          Buf.write_int buf i
@@ -275,22 +275,22 @@ struct
        * Local buffer operations.
        *)
       let local_write_int i buf index =
-         buf.[index] <- Char.chr ((i lsr 23) land 255);
-         buf.[index + 1] <- Char.chr ((i lsr 15) land 255);
-         buf.[index + 2] <- Char.chr ((i lsr 7) land 255);
-         buf.[index + 3] <- Char.chr (((i lsl 1) land 255) + 1)
+         Bytes.set buf (index) (Char.chr ((i lsr 23) land 255));
+         Bytes.set buf (index + 1) (Char.chr ((i lsr 15) land 255));
+         Bytes.set buf (index + 2) (Char.chr ((i lsr 7) land 255));
+         Bytes.set buf (index + 3) (Char.chr (((i lsl 1) land 255) + 1))
       in
       let local_write_shared_get i buf index =
-         buf.[index] <- Char.chr ((i lsr 21) land 255);
-         buf.[index + 1] <- Char.chr ((i lsr 13) land 255);
-         buf.[index + 2] <- Char.chr ((i lsr 5) land 255);
-         buf.[index + 3] <- Char.chr (((i lsl 3) land 255) + (shared_get lsl 2) + 2)
+         Bytes.set buf (index) (Char.chr ((i lsr 21) land 255));
+         Bytes.set buf (index + 1) (Char.chr ((i lsr 13) land 255));
+         Bytes.set buf (index + 2) (Char.chr ((i lsr 5) land 255));
+         Bytes.set buf (index + 3) (Char.chr (((i lsl 3) land 255) + (shared_get lsl 2) + 2))
       in
       let local_write_header tag i buf index =
-         buf.[index] <- Char.chr tag;
-         buf.[index + 1] <- Char.chr ((i lsr 14) land 255);
-         buf.[index + 2] <- Char.chr ((i lsr 6) land 255);
-         buf.[index + 3] <- Char.chr ((i lsl 2) land 255)
+         Bytes.set buf (index) (Char.chr tag);
+         Bytes.set buf (index + 1) (Char.chr ((i lsr 14) land 255));
+         Bytes.set buf (index + 2) (Char.chr ((i lsr 6) land 255));
+         Bytes.set buf (index + 3) (Char.chr ((i lsl 2) land 255))
       in
 
       (*
@@ -323,7 +323,7 @@ struct
                      info.marshal_free_max <- max;
                      allocated_global_pages := page :: !allocated_global_pages;
                      index
-         else if LargeArray.get marshal_copies index == null_string then
+         else if LargeArray.get marshal_copies index == null_bytes then
             alloc_search (succ index) max
          else
             begin
@@ -339,7 +339,7 @@ struct
        * For now, we allocate buffers on the heap.
        *)
       let alloc_buffer words =
-         String.create (words * word_size)
+         Bytes.create (words * word_size)
       in
 
       (*
@@ -435,7 +435,7 @@ struct
                marshal_value_entries obj (succ i) count lbuf (lindex + word_size)
             end
       in
-      let lbuf = "XXXXXXXXXXXXXXXX" in
+      let lbuf = Bytes.of_string "XXXXXXXXXXXXXXXX" in
          marshal_value (Obj.repr obj) lbuf 0;
          !allocated_global_pages
 

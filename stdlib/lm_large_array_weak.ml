@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -53,7 +53,7 @@ struct
       { array_shift = 0;
         array_mask = 0;
         array_length = 0;
-        array_buckets = Array.create 1 (Weak.create 0)
+        array_buckets = Array.make 1 (Weak.create 0)
       }
 
    (*
@@ -88,7 +88,7 @@ struct
 
                (* Now expand the major level *)
                let count = (i + max_length - 1) lsr max_shift in
-               let new_buckets = Array.create count buckets.(0) in
+               let new_buckets = Array.make count buckets.(0) in
                let old_length = Array.length buckets in
                   Array.blit buckets 0 new_buckets 0 old_length;
                   for i = old_length to pred count do

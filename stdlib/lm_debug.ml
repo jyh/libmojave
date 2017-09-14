@@ -16,16 +16,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -345,8 +345,15 @@ type 'a res =
 
 let tbl = Hashtbl.create 19
 
-let compare (_,t1) (_,t2) =
-   (t1.ok.wtime +. t1.exn.wtime) <= (t2.ok.wtime +. t2.exn.wtime)
+let compare (_, t1) (_, t2) =
+   let a = t1.ok.wtime +. t1.exn.wtime in
+   let b = t2.ok.wtime +. t2.exn.wtime in
+      if a < b then
+         -1
+      else if a > b then
+         1
+      else
+         0
 
 let report1 s t =
    let calls_f = float_of_int t.calls in
@@ -368,7 +375,7 @@ let add s t l = (s,t) :: l
 
 let report_timing () =
    if Hashtbl.length tbl > 0 then
-      List.iter report (Sort.list compare (Hashtbl.fold add tbl []))
+      List.iter report (List.sort compare (Hashtbl.fold add tbl []))
 
 let () = at_exit report_timing
 

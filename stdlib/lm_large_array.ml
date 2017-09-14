@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -55,7 +55,7 @@ struct
         array_shift = 0;
         array_mask = 0;
         array_length = 0;
-        array_buckets = Array.create 1 [||]
+        array_buckets = Array.make 1 [||]
       }
 
    (*
@@ -73,7 +73,7 @@ struct
       let log = succ (Lm_int_util.log2 i) in
       let length = 1 lsl log in
          if log <= max_shift then
-            let new_array = Array.create length x in
+            let new_array = Array.make length x in
             let old_array = buckets.(0) in
                Array.blit old_array 0 new_array 0 (Array.length old_array);
                info.array_shift <- log;
@@ -84,18 +84,18 @@ struct
             begin
                (* Possibly expand the first array to max_length *)
                (if info.array_length < max_length then
-                   let new_array = Array.create max_length x in
+                   let new_array = Array.make max_length x in
                    let old_array = buckets.(0) in
                       Array.blit old_array 0 new_array 0 (Array.length old_array);
                       buckets.(0) <- new_array);
 
                (* Now expand the major level *)
                let count = (i + max_length - 1) lsr max_shift in
-               let new_buckets = Array.create count buckets.(0) in
+               let new_buckets = Array.make count buckets.(0) in
                let old_length = Array.length buckets in
                   Array.blit buckets 0 new_buckets 0 old_length;
                   for i = old_length to pred count do
-                     new_buckets.(i) <- Array.create max_length x
+                     new_buckets.(i) <- Array.make max_length x
                   done;
                   info.array_shift <- max_shift;
                   info.array_mask <- pred max_length;

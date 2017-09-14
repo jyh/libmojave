@@ -22,16 +22,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -149,7 +149,7 @@ struct
            entry_version = version;
          }
       in
-      let newentries = Array.create (length + 1) entry in
+      let newentries = Array.make (length + 1) entry in
          Array.blit entries 0 newentries 0 length;
          dag.entries <- newentries;
          length
@@ -160,7 +160,7 @@ struct
    let delete dag node =
       let { entries = entries; version = version } = dag in
       let length = Array.length entries in
-      let newentries = Array.create (length - 1) entries.(0) in
+      let newentries = Array.make (length - 1) entries.(0) in
       let delete entry =
          entry.entry_in_edges <- list_delete node entry.entry_in_edges;
          entry.entry_out_edges <- list_delete node entry.entry_out_edges
@@ -209,7 +209,7 @@ struct
     *)
    let sweep_aux entries f oproj iproj =
       let len = Array.length entries in
-      let values = Array.create len None in
+      let values = Array.make len None in
       let rec expand i =
          match values.(i) with
             None ->
@@ -277,7 +277,7 @@ struct
    let sort info =
       let entries = info.entries in
       let length = Array.length entries in
-      let found = Array.create length false in
+      let found = Array.make length false in
       let roots = roots info in
       let rec collect l i =
          if found.(i) then
@@ -303,7 +303,7 @@ struct
                   loop searched t
                else
                   let edges = select entries.(node) in
-                     loop (node :: searched) (Sort.merge (<) edges t)
+                     loop (node :: searched) (List.merge Pervasives.compare edges t)
           | [] ->
                false
       in

@@ -143,7 +143,7 @@ struct
    let create size =
       let length = size * 11 in
          { hash_length = length;
-           hash_buckets = Array.create length []
+           hash_buckets = Array.make length []
          }
 
    (*
@@ -219,7 +219,7 @@ struct
    let create size =
       let length = size * 11 in
          { hash_length = length;
-           hash_buckets = Array.create length []
+           hash_buckets = Array.make length []
          }
 
    let copy table =

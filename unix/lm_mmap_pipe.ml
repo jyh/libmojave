@@ -16,16 +16,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -80,7 +80,7 @@ type t =
    { mmap_block_size : int;
      mmap_read_offset : int;
      mmap_write_offset : int;
-     mmap_data : string;
+     mmap_data : bytes;
      mmap_file : Lm_mmap.t;
      mmap_server : Unix.file_descr option;
      mutable mmap_socket : Unix.file_descr option
@@ -116,21 +116,21 @@ let ceil_word i =
  * Integer operations on string buffers.
  *)
 let get_int buf offset =
-   ((Char.code buf.[offset]) lsl 24)
-   lor ((Char.code buf.[offset + 1]) lsl 16)
-   lor ((Char.code buf.[offset + 2]) lsl 8)
-   lor (Char.code buf.[offset + 3])
+   ((Char.code (Bytes.get buf offset)) lsl 24)
+   lor ((Char.code (Bytes.get buf (offset + 1))) lsl 16)
+   lor ((Char.code (Bytes.get buf (offset + 2))) lsl 8)
+   lor (Char.code (Bytes.get buf (offset + 3)))
 
 let set_int buf offset code =
-   buf.[offset] <- Char.chr ((code lsr 24) land 255);
-   buf.[offset + 1] <- Char.chr ((code lsr 16) land 255);
-   buf.[offset + 2] <- Char.chr ((code lsr 8) land 255);
-   buf.[offset + 3] <- Char.chr (code land 255)
+   Bytes.set buf offset (Char.chr ((code lsr 24) land 255));
+   Bytes.set buf (offset + 1) (Char.chr ((code lsr 16) land 255));
+   Bytes.set buf (offset + 2) (Char.chr ((code lsr 8) land 255));
+   Bytes.set buf (offset + 3) (Char.chr (code land 255))
 
 (*
  * Character buffer for communication on the socket.
  *)
-let char_buf = String.create 1
+let char_buf = Bytes.make 1 ' '
 
 (*
  * Search for a free server.
@@ -188,12 +188,12 @@ let create_server dir =
          eprintf "Creating buffer %s%t" bufname eflush
    in
    let file = Lm_mmap.create bufname [Unix.O_RDWR; Unix.O_CREAT] 438 in
-   let buf = Lm_mmap.to_string file in
+   let buf = Lm_mmap.to_bytes file in
    let _ =
       if !debug_pipe then
-         eprintf "Buffer size: 0x%08x %d%t" (Obj.magic buf) (String.length buf) eflush
+         eprintf "Buffer size: 0x%08x %d%t" (Obj.magic buf) (Bytes.length buf) eflush
    in
-   let length = (String.length buf) lsr 1 in
+   let length = (Bytes.length buf) lsr 1 in
    let sock = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
    let at_exit () =
       eprintf "Lm_mmap_pipe: cleaning up server sockets%t" eflush;
@@ -230,7 +230,7 @@ let search_client dir =
 
             (* Connected to this server *)
             let count = Unix.read sock char_buf 0 1 in
-               if count = 1 && char_buf.[0] <> Char.chr 0 then
+               if count = 1 && (Bytes.get char_buf 0) <> Char.chr 0 then
                   filename, sock
                else
                   begin
@@ -252,12 +252,12 @@ let create_client dir =
    let filename, sock = search_client dir in
    let bufname = filename ^ buffer_suffix in
    let file = Lm_mmap.create bufname [Unix.O_RDWR] 438 in
-   let buf = Lm_mmap.to_string file in
+   let buf = Lm_mmap.to_bytes file in
    let _ =
       if !debug_pipe then
-         eprintf "Buffer size: 0x%08x %d%t" (Obj.magic buf) (String.length buf) eflush
+         eprintf "Buffer size: 0x%08x %d%t" (Obj.magic buf) (Bytes.length buf) eflush
    in
-   let length = (String.length buf) lsr 1 in
+   let length = (Bytes.length buf) lsr 1 in
       { mmap_block_size = length;
         mmap_read_offset = 0;
         mmap_write_offset = length;
@@ -301,7 +301,7 @@ let open_client mmap =
       { mmap_server = Some server; mmap_socket = Some _ } ->
          (* Only one client is allowed *)
          let sock, _ = Unix.accept server in
-            char_buf.[0] <- Char.chr 0;
+            Bytes.set char_buf 0 (Char.chr 0);
             try_write sock char_buf;
             Unix.close sock;
             false
@@ -313,7 +313,7 @@ let open_client mmap =
       } ->
          (* We're free, so accept this client *)
          let sock, _ = Unix.accept server in
-            char_buf.[0] <- Char.chr 1;
+            Bytes.set char_buf 0 (Char.chr 1);
             try_write sock char_buf;
             set_int buf (0 + full_offset) 0;
             set_int buf (length + full_offset) 0;
@@ -413,8 +413,8 @@ let read mmap raw_read =
             else
                let code = get_int buf (roffset + code_offset) in
                let name_length = get_int buf (roffset + name_length_offset) in
-               let name = String.create name_length in
-               let _ = String.blit buf (roffset + name_offset) name 0 name_length in
+               let name = Bytes.create name_length in
+               let _ = Bytes.blit buf (roffset + name_offset) name 0 name_length in
                let data_length = get_int buf (roffset + data_length_offset) in
                let offset = ceil_word (name_offset + name_length) in
                let data = raw_read buf (roffset + offset) data_length in

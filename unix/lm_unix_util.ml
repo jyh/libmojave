@@ -17,16 +17,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -74,7 +74,7 @@ let rec complete_write fd buf off len =
          complete_write fd buf (off + count) (len - count)
 
 let rec copy_file_fd buffer from_fd to_fd =
-   let count = Unix.read from_fd buffer 0 (String.length buffer) in
+   let count = Unix.read from_fd buffer 0 (Bytes.length buffer) in
       if count > 0 then
          begin
             complete_write to_fd buffer 0 count;
@@ -88,7 +88,7 @@ let copy_file from_name to_name mode =
          let to_fd = Unix.openfile to_name [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
          let () =
             try
-               copy_file_fd (String.create 8192) from_fd to_fd;
+               copy_file_fd (Bytes.create 8192) from_fd to_fd;
                Unix.fchmod to_fd mode
             with
                x ->

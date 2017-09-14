@@ -42,16 +42,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -687,7 +687,7 @@ let format_quoted_string buf str =
              | '\034' -> format_string buf "\\\034"
              | _ -> format_char buf c
    in
-   let quote_flag = (length = 0) or (quotep 0) or (str.[0] = '\'') in
+   let quote_flag = (length = 0) || (quotep 0) || (str.[0] = '\'') in
       if quote_flag then
          begin
             format_char buf '\034';
@@ -807,7 +807,7 @@ let get_formatted buf =
                     unformatted_index = index
       } ->
          { formatted_commands = commands;
-           formatted_breaks = Array.create (succ index) false;
+           formatted_breaks = Array.make (succ index) false;
            formatted_col = 0;
            formatted_maxx = 0;
            formatted_lmargin = 0, "";
@@ -983,13 +983,13 @@ and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks se
  *)
 and search_hzone buf stack lmargin rmargin col maxx search =
    let { unformatted_index = index } = get_unformatted buf in
-   let breaks = Array.create (succ index) false in
+   let breaks = Array.make (succ index) false in
       breaks.(0) <- true;
       search_tzone buf stack lmargin rmargin col maxx breaks search
 
 and search_szone buf stack lmargin rmargin col maxx search =
    let { unformatted_index = index } = get_unformatted buf in
-   let breaks = Array.create (succ index) false in
+   let breaks = Array.make (succ index) false in
       if search then
          search_tzone buf stack lmargin rmargin col maxx breaks search
       else
@@ -1275,7 +1275,7 @@ let unmarshal_buffers s =
    (* Check buffer *)
    let length = String.length s in
    let () =
-      if length <= Marshal.header_size || length < Marshal.total_size s 0 then
+      if length <= Marshal.header_size || length < Marshal.total_size (Bytes.of_string (String.sub s 0 Marshal.header_size)) 0 then
          raise (Failure "Lm_rformat.unmarshal_buffers")
    in
    let marshal = Marshal.from_string s 0 in

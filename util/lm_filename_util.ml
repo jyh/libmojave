@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -176,10 +176,10 @@ let string_of_root = function
    NullRoot ->
       separator_string
  | DriveRoot c ->
-      let s = String.make 3 c in
-         s.[1] <- ':';
-         s.[2] <- separator_char;
-         s
+      let s = Bytes.make 3 c in
+         Bytes.set s 1 ':';
+         Bytes.set s 2 separator_char;
+         Bytes.to_string s
 
 (*
  * Unescape a possibly quoted filename.
