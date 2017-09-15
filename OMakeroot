@@ -18,7 +18,11 @@ open configure/Configure
 LM_STANDALONE = true
 
 #
+# Options
+#
+OCAMLFLAGS += -warn-error Aez -w Aez -safe-string
+
+#
 # Include the OMakefile
 #
 .SUBDIRS: .
-

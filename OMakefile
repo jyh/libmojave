@@ -9,8 +9,6 @@ include system/Files
 include util/Files
 include unix/Files
 
-OCAMLFLAGS   += -safe-string
-
 STDLIB_FILES  = $(file $(addprefix stdlib/,  $(STDLIB_FILES)))
 SYSTEM_FILES  = $(file $(addprefix system/,  $(SYSTEM_FILES)))
 UTIL_FILES    = $(file $(addprefix util/,    $(UTIL_FILES)))
