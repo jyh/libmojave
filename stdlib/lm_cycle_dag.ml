@@ -95,11 +95,11 @@ let find_or_insert table node =
       Not_found ->
          insert_leaf table node
 
-let find { dag_table = table } node =
+let find { dag_table = table; _ } node =
    match Hashtbl.find table node with
-      { vert_data = Node (edge, _) } ->
+      { vert_data = Node (edge, _); _ } ->
          edge
-    | { vert_data = Leaf } ->
+    | { vert_data = Leaf; _ } ->
          raise Not_found
 
 (*

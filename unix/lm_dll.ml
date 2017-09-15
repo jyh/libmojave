@@ -29,9 +29,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_string_set
 open Lm_symbol
-open Lm_printf
 
 (*
  * Flags when a library is opened.
@@ -357,9 +355,10 @@ struct
          { enum_name = Lm_symbol.add name;
            enum_fields = Array.map build_enum_field fields
          }
-
+(* unused
    let pp_print_string_array buf sl =
       Array.iter (fun s -> fprintf buf " %s," s) sl
+*)
 
    let build_value info =
       let { raw_value_name = name;
@@ -423,10 +422,10 @@ struct
        | NoExport ->
             raise (Failure "Lm_dll.open_static")
 
-   let get_enum { dll_info = info } i j =
+   let get_enum { dll_info = info; _ } i j =
       info.dll_enums.(i).enum_fields.(j).enum_field_value
 
-   let get_globals { dll_info = info } =
+   let get_globals { dll_info = info; _ } =
       info.dll_globals
 
    (************************************************************************
@@ -439,7 +438,8 @@ struct
 
    let set_callback_handler info f =
       let { dll_handler_count = handler_count;
-            dll_set_handlers = info
+            dll_set_handlers = info;
+	    _
           } = info
       in
          set_handlers info (Array.make handler_count f)
@@ -612,7 +612,8 @@ struct
    let apply f args =
       let { value_fun = sym;
             value_arg_types = arg_types;
-            value_result_type = result_type
+            value_result_type = result_type;
+	    _
           } = f
       in
       let len1 = Array.length arg_types in

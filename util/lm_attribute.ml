@@ -110,7 +110,8 @@ let label_of_simple_term term =
  *)
 let apply down_union down term =
    let { term_label = loc;
-         term_core = core
+         term_core = core;
+	 _
        } = term
    in
    let core =
@@ -146,7 +147,7 @@ let dest_simple_core term =
  * It expects a function to compute the attribute from the
  * core and any delayed inherited attributes.
  *)
-let rec dest_up synthesize1 synthesize2 term =
+let dest_up synthesize1 synthesize2 term =
    match term.term_up with
       Some up ->
          up
@@ -166,7 +167,8 @@ let rec dest_up synthesize1 synthesize2 term =
  *)
 let pp_print_term pp_print_up pp_print_down pp_print_core buf t =
    let { term_up = up;
-         term_core = core
+         term_core = core;
+	 _
        } = t
    in
       fprintf buf "@[<hv 0>@[<hv 2>{ ";

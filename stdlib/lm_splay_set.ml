@@ -179,7 +179,7 @@ struct
     | Leaf ->
          raise (Invalid_argument "lift_right")
 
-   let rec splay_right = function
+   let splay_right = function
       Leaf ->
          Leaf
     | node ->

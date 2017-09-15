@@ -213,7 +213,9 @@ struct
    module IVar = MakeHashCons (VarArg);;
    module IVarSet = Lm_set.LmMake (IVar);;
    module IVarTable = Lm_map.LmMake (IVar);;
+(* unused
    module IVarMTable = Lm_map.LmMakeList (IVar);;
+*)
 
    type var = Var.t
    type ivar = IVar.t
@@ -234,7 +236,9 @@ struct
    module ActionSet = Lm_set.LmMake (Action);;
 
    module IAction = MakeHashCons (ActionArg);;
+(* unused
    module IActionSet = Lm_set.LmMake (IAction);;
+*)
 
    type action = Action.t
    type iaction = IAction.t
@@ -325,9 +329,11 @@ struct
 
    module ProdItem      = MakeHashCons (ProdItemArg);;
    module ProdItemSet   = Lm_set.LmMake (ProdItem);;
+(* unused
    module ProdItemTable = Lm_map.LmMake (ProdItem);;
 
    type prod_item = ProdItem.t
+*)
 
    (*
     * An LR(0) state is a set of ProdItems, and
@@ -433,7 +439,9 @@ struct
    type 'a pda_action =
       ReduceAction of iaction * ivar * int  (* semantic action, production name, #args *)
     | GotoAction   of 'a
+(* unused
     | AcceptAction
+*)
     | ErrorAction
 
    (*
@@ -552,25 +560,30 @@ struct
    (*
     * A state element is a set of items, with lookaheads for each.
     *)
+(* unused
    type info_item =
       { info_item_index   : int;
         info_item_empties : prop_entry list;
         info_item_closure : prop_entry list;
         info_item_entries : prop_entry array
       }
+*)
 
    (************************************************************************
     * Printing and errors.
     *)
+(* unused
    let string_of_var v =
       Arg.to_string (Var.get v)
+*)
 
    let pp_print_var buf v =
       Arg.pp_print_symbol buf (Var.get v)
 
-   let rec pp_print_vars buf vl =
+   let pp_print_vars buf vl =
       List.iter (fun v -> fprintf buf " %a" pp_print_var v) vl
 
+(* unused
    let pp_print_var_set buf s =
       VarSet.iter (fun v ->
             fprintf buf "@ %a" pp_print_var v) s
@@ -580,6 +593,7 @@ struct
             fprintf buf "@ @[<b 3>%a:%a@]" (**)
                pp_print_var v
                pp_print_var_set s) table
+*)
 
    let pp_print_action buf action =
       Arg.pp_print_action buf (Action.get action)
@@ -590,7 +604,7 @@ struct
    let pp_print_ivar hash buf v =
       Arg.pp_print_symbol buf (IVar.get hash.hash_ivar_state v)
 
-   let rec pp_print_ivars hash buf vl =
+   let pp_print_ivars hash buf vl =
       List.iter (fun v -> fprintf buf " %a" (pp_print_ivar hash) v) vl
 
    let pp_print_ivar_set hash buf s =
@@ -645,12 +659,16 @@ struct
             fprintf buf "goto %d" state
        | ErrorAction ->
             pp_print_string buf "error"
+(* unused
        | AcceptAction  ->
             pp_print_string buf "accept"
+*)
 
+(* unused
    let pp_print_pda_actions info buf actions =
       IVarTable.iter (fun v action ->
             fprintf buf "@ %a: %a" (pp_print_ivar info) v (pp_print_pda_action info) action) actions
+*)
 
    let pp_print_prod_item_core info buf item =
       let hash = info.info_hash in
@@ -673,6 +691,7 @@ struct
          pp_print_prod_item_set info buf items;
          eprintf "@]"
 
+(* unused
    let pp_print_info_item info buf info_item =
       let hash = info.info_hash in
       let hash_state_item = info.info_hash_state_item in
@@ -683,6 +702,7 @@ struct
                let _, prod_item = StateItem.get hash_state_item state_item in
                   fprintf buf "@ @[<hv 3>%a@ @[<b 2>#%a@]@]" (pp_print_prod_item info) prod_item (pp_print_ivar_set hash) lookahead) info_item.info_item_entries;
          fprintf buf "@]"
+*)
 
    let pp_print_info buf info =
       let hash = info.info_hash in
@@ -1937,8 +1957,8 @@ struct
                                  (* Reduce/reduce conflict *)
                                  reduce_reduce_conflict info state v item action2;
                                  actions
-                            | ErrorAction
-                            | AcceptAction ->
+                            | ErrorAction ->
+                            (* unused | AcceptAction -> *)
                                  raise (Invalid_argument "reduce_action")
                         with
                            Not_found ->
@@ -2019,7 +2039,7 @@ struct
          GotoAction state ->
             GotoAction (State.hash state)
        | ReduceAction _
-       | AcceptAction
+       (* unused | AcceptAction *)
        | ErrorAction as action ->
             action
 
@@ -2155,12 +2175,14 @@ struct
                      pda_goto_lookahead arg stack (state, loc, x) name tok
              | ErrorAction ->
                   parse_error loc hash run stack state v
+(* unused
              | AcceptAction ->
                   match stack with
                      [_, _, x] ->
                         arg, x
                    | _ ->
                         raise (Invalid_argument "pda_lookahead")
+*)
 
       and pda_goto_lookahead arg stack state_loc_x name tok =
          let state, loc, _x = state_loc_x in
@@ -2183,8 +2205,8 @@ struct
                   let stack = state_loc_x :: stack in
                      pda_lookahead arg stack new_state tok
              | ErrorAction
-             | ReduceAction _
-             | AcceptAction ->
+             | ReduceAction _ ->
+             (* unused | AcceptAction -> *)
                   eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
                   raise (Invalid_argument "pda_goto_lookahead: illegal action")
 
@@ -2224,8 +2246,8 @@ struct
                   let stack = (state, loc, x) :: stack in
                      pda_no_lookahead arg stack new_state
              | ErrorAction
-             | ReduceAction _
-             | AcceptAction ->
+             | ReduceAction _ ->
+             (* unused | AcceptAction -> *)
                   eprintf "pda_goto_no_lookahead: illegal action: %a@." (pp_print_pda_action hash) action;
                   raise (Invalid_argument "pda_goto_no_lookahead")
       in

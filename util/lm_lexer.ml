@@ -33,7 +33,6 @@ open Lm_hash
 open Lm_debug
 open Lm_printf
 open Lm_location
-open Lm_int_set
 
 let debug_lex =
    create_debug (**)
@@ -83,7 +82,7 @@ struct
     * Increment one of the counters.
     * Return the new counter value too.
     *)
-   let rec incr_counter counters i min final max start =
+   let incr_counter counters i min final max start =
       let rec incr counters i =
          match counters with
             counter :: counters ->
@@ -170,6 +169,7 @@ struct
    (*
     * Union of two sets.
     *)
+(* unused
    let rec union (s1 : t) (s2 : t) =
       match s1, s2 with
          i1 :: l1, i2 :: l2 ->
@@ -183,6 +183,7 @@ struct
             s1
        | [], _ ->
             s2
+*)
 end;;
 
 module DfaStateArg =
@@ -502,11 +503,13 @@ struct
    (*
     * This is the argument info we pass to the DFA.
     *)
+(* unused
    type arg =
       { arg_index     : int;
         arg_clause    : int;
         arg_number    : int
       }
+*)
 
    (*
     * This is the info we accumulate during compilation.
@@ -749,8 +752,10 @@ struct
 
    let xdigit_chars = explode_chars_add digit_chars "abcdefABCDEF"
 
+(* unused
    let white_or_bof_chars = IntSet.add space_chars bof
    let white_or_eof_chars = IntSet.add space_chars eof
+*)
    let word_chars = IntSet.add alnum_chars (Char.code '_')
 
    let all_chars =
@@ -1114,7 +1119,7 @@ struct
     *)
    and regex_chars_get_class chars name s i len =
       let charclass =
-         match String.lowercase name with
+         match String.lowercase_ascii name with
             "alnum" ->
                alnum_chars
           | "alpha" ->
@@ -1430,8 +1435,10 @@ struct
       NfaStateSet.iter (fun s ->
             fprintf buf "@ %a" (pp_print_nfa_id hash) s) states
 
+(* unused
    let pp_print_choices buf choices =
       IntSet.iter (fun i -> fprintf buf " %d" i) choices
+*)
 
    let pp_print_nfa_action buf action =
       match action with
@@ -1810,6 +1817,7 @@ struct
          List.iter (fun action -> fprintf buf "@ %a" pp_print_dfa_arg_action action) args;
          fprintf buf "@])@]"
 
+(* unused
    let pp_print_dfa_transition buf trans =
       match trans with
          DfaTransition (i, _) ->
@@ -1824,6 +1832,7 @@ struct
       Array.iter (fun (key, trans) ->
             fprintf buf "@ %d -> %a" key pp_print_dfa_transition trans) table;
       fprintf buf ")@]"
+*)
 
    (*
     * Print an argument.

@@ -85,8 +85,10 @@ let flags_set flags name value =
    else
       raise (Failure ("flags_set: flag " ^ name ^ " not defined"))
 
+(* unused
 let flags_is_set flags name =
    StringTable.mem flags.flag_values name
+*)
 
 let flags_get flags name =
    try
@@ -248,7 +250,7 @@ let flags_set_expr flags exprs =
          let length = String.length expr in
          let variable = String.sub expr 0 equals in
          let value = String.sub expr (equals + 1) (length - equals - 1) in
-            match String.lowercase value with
+            match String.lowercase_ascii value with
                "t" | "true" | "y" | "yes" ->
                   flags_set_bool flags variable true
              | "f" | "false" | "n" | "no" ->

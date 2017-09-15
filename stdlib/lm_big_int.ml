@@ -384,7 +384,7 @@ let div10 (sign, mag) =
 (*
  * Multiply a mag by a small int.
  *)
-let rec mult_mag_i i =
+let mult_mag_i i =
    let rec collect carry = function
       digit :: digits ->
          let z =

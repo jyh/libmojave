@@ -58,7 +58,7 @@ let create_handle x =
         data = x
       }
 
-let data { data = data } =
+let data { data = data; _ } =
    data
 
 (*

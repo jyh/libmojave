@@ -37,7 +37,7 @@
 
 open Lm_debug
 
-let debug_inet =
+let _debug_inet =
    create_debug (**)
       { debug_name = "inet";
         debug_description = "Display internet socket operations";

@@ -86,7 +86,7 @@ external local_write_block : Obj.t -> bytes -> int -> unit = "ml_write_block"
 (*
  * Marshal module.
  *)
-module Marshal (Buf : BufSig) =
+module XMarshal (Buf : BufSig) =
 struct
    (************************************************************************
     * CONSTANTS AND TYPES                                                  *
@@ -204,7 +204,7 @@ struct
     * Create a marshal buffer.
     * We always pre-allocate the first page.
     *)
-   let create () =
+   let _create () =
       let id = Lm_id.create () in
          { marshal_id = id;
            marshal_view = [| Some id |];
@@ -237,13 +237,14 @@ struct
    (*
     * Marshal an object.
     *)
-   let marshal info buf obj =
+   let _marshal info buf obj =
       (*
        * Break apart the info.
        *)
       let { marshal_values = marshal_values;
             marshal_copies = marshal_copies;
             marshal_hash = marshal_hash;
+	    _
           } = info
       in
 

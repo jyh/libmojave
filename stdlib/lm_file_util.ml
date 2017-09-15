@@ -56,7 +56,7 @@ let parse_path dir name =
    let len = String.length name in
    let rec aux path i j =
       if i < len then
-         if j = len or name.[j] = '/' then
+         if j = len || name.[j] = '/' then
             let word = Lm_string_util.sub "Lm_file_util.parse_path" name i (j - i) in
             let path' =
                match word with
@@ -75,7 +75,7 @@ let parse_path dir name =
          path
    in
    let path =
-      if len <> 0 & name.[0] = '/' then
+      if len <> 0 && name.[0] = '/' then
          []
       else
          dir

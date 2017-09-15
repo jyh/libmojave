@@ -155,7 +155,8 @@ let html_spacer buf =
 let html_prefix buf col =
    let { html_column = cur;
          html_prefix = prefix;
-         html_line = line
+         html_line = line;
+	 _
        } = buf
    in
 
@@ -247,21 +248,21 @@ let html_print_atomic buf s =
 
 let html_tag tagger buf =
    match tagger with
-      Some { html_tag_begin = FunTagger tagger } ->
+      Some { html_tag_begin = FunTagger tagger; _ } ->
          (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
-    | Some { html_tag_begin = StringTagger tagger } ->
+    | Some { html_tag_begin = StringTagger tagger; _ } ->
          (fun _s -> Queue.add (InvisibleString tagger) buf.html_line)
-    | Some { html_tag_begin = NoTagger }
+    | Some { html_tag_begin = NoTagger; _ }
     | None ->
          (fun _s -> ())
 
 let html_etag tagger buf =
    match tagger with
-      Some { html_tag_end = FunTagger tagger } ->
+      Some { html_tag_end = FunTagger tagger; _ } ->
          (fun s -> Queue.add (InvisibleString (tagger s)) buf.html_line)
-    | Some { html_tag_end = StringTagger tagger } ->
+    | Some { html_tag_end = StringTagger tagger; _ } ->
          (fun _s -> Queue.add (InvisibleString tagger) buf.html_line)
-    | Some { html_tag_end = NoTagger }
+    | Some { html_tag_end = NoTagger; _ }
     | None ->
          (fun _s -> ())
 
@@ -270,7 +271,8 @@ let html_etag tagger buf =
  *)
 let make_html_printer_aux tagger raw =
    let { raw_print_string  = output_string;
-         raw_print_newline = output_newline
+         raw_print_newline = output_newline;
+	 _
        } = raw
    in
    let print_string s =

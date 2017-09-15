@@ -78,7 +78,9 @@ let debug_rformat =
 let default_width = 80
 
 let eprintf = Format.eprintf
+(* unused
 let sprintf = Printf.sprintf
+*)
 
 (************************************************************************
  * TYPES                                                                *
@@ -286,9 +288,9 @@ let clear_buffer buf =
  *)
 let buffer_is_empty buf =
    match buf.buf_info with
-      Formatting { formatting_stack = [{ formatting_commands = [] }] }
-    | Unformatted { unformatted_commands = [] }
-    | Formatted { formatted_commands = [] } ->
+      Formatting { formatting_stack = [{ formatting_commands = []; _ }]; _ }
+    | Unformatted { unformatted_commands = []; _ }
+    | Formatted { formatted_commands = []; _ } ->
          true
     | _ ->
          false
@@ -314,7 +316,8 @@ let get_formatting_stack buf =
             buf.buf_info <- Formatting stack;
             stack
     | Formatted { formatted_commands = commands;
-                  formatted_breaks = breaks
+                  formatted_breaks = breaks;
+		  _
       } ->
          let stack =
             { formatting_stack =
@@ -331,7 +334,7 @@ let get_formatting_stack buf =
  * Depth of nesting.
  *)
 let zone_depth = function
-   { buf_info = Formatting stack } ->
+   { buf_info = Formatting stack; _ } ->
       List.length stack.formatting_stack - 1
  | _ ->
       0
@@ -426,7 +429,7 @@ let format_popm = format_ezone
  * End all open boxes.
  *)
 let format_flush buf =
-   let rec flush stack =
+   let flush stack =
       match stack.formatting_stack with
          [_] ->
             ()
@@ -443,7 +446,7 @@ let format_flush buf =
 let format_flush_popm buf =
    let rec flush stack =
       match stack.formatting_stack with
-         { formatting_buf = { buf_tag = MZoneTag _ } } :: _ ->
+         { formatting_buf = { buf_tag = MZoneTag _; _ }; _ } :: _ ->
             format_ezone buf;
             flush stack
        | _ ->
@@ -458,7 +461,8 @@ let flush_formatting buf =
    match buf.buf_info with
       Formatting { formatting_stack =
                       [{ formatting_commands = commands;
-                         formatting_index = index
+                         formatting_index = index;
+			 _
                        }]
       } ->
          buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
@@ -504,7 +508,8 @@ let push_command buf command =
    in
    let root = buf.buf_root in
    let { root_bound = bound;
-         root_count = count
+         root_count = count;
+	 _
        } = root
    in
       entry.formatting_commands <- command :: entry.formatting_commands;
@@ -528,7 +533,7 @@ let format_bound buf bound =
  *)
 exception NoBinder
 
-let rec get_soft_binder buf =
+let get_soft_binder buf =
    let rec search = function
       head :: tl ->
          let buf = head.formatting_buf in
@@ -559,7 +564,7 @@ let rec get_soft_binder buf =
    in
       search (get_formatting_stack buf).formatting_stack
 
-let rec get_hard_binder buf =
+let get_hard_binder buf =
    let rec search = function
       head :: tl ->
          let buf = head.formatting_buf in
@@ -677,7 +682,7 @@ let format_quoted_string buf str =
       else
          false
    in
-   let rec format_string' i =
+   let format_string' i =
       if i < length then
          let c = str.[i] in
             match c with
@@ -782,7 +787,8 @@ let rec get_unformatted buf =
       Unformatted info ->
          info
     | Formatted { formatted_commands = commands;
-                  formatted_breaks = breaks
+                  formatted_breaks = breaks;
+		  _
       } ->
          { unformatted_commands = commands;
            unformatted_index = Array.length breaks
@@ -829,7 +835,7 @@ let rec next_text_len stack = function
         | IZoneTag ->
              next_text_len stack t
         | _ ->
-             let { unformatted_commands = commands } = get_unformatted buf in
+             let { unformatted_commands = commands; _ } = get_unformatted buf in
                 next_text_len (t :: stack) commands)
  | _ :: t ->
       next_text_len stack t
@@ -869,7 +875,7 @@ let rec search_lzone buf lmargin rmargin col maxx search =
     | [] ->
          col, maxx
    in
-   let { unformatted_commands = commands } = get_unformatted buf in
+   let { unformatted_commands = commands; _ } = get_unformatted buf in
    let col, maxx = collect col maxx commands in
    let formatted =
       { formatted_commands = commands;
@@ -963,7 +969,7 @@ and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks se
     | [] ->
          col, maxx
    in
-   let { unformatted_commands = commands } = get_unformatted buf in
+   let { unformatted_commands = commands; _ } = get_unformatted buf in
    let col, maxx = collect col maxx search commands in
    let formatted =
       { formatted_commands = commands;
@@ -982,13 +988,13 @@ and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks se
  * Soft breaks are taken only if the margin would be exceeded otherwise.
  *)
 and search_hzone buf stack lmargin rmargin col maxx search =
-   let { unformatted_index = index } = get_unformatted buf in
+   let { unformatted_index = index; _ } = get_unformatted buf in
    let breaks = Array.make (succ index) false in
       breaks.(0) <- true;
       search_tzone buf stack lmargin rmargin col maxx breaks search
 
 and search_szone buf stack lmargin rmargin col maxx search =
-   let { unformatted_index = index } = get_unformatted buf in
+   let { unformatted_index = index; _ } = get_unformatted buf in
    let breaks = Array.make (succ index) false in
       if search then
          search_tzone buf stack lmargin rmargin col maxx breaks search
@@ -1048,6 +1054,7 @@ let compute_breaks buf width =
 (*
  * Refresh a buffer.
  *)
+(* unused
 let refresh_breaks buf =
    flush_formatting buf;
    match buf.buf_info with
@@ -1061,17 +1068,20 @@ let refresh_breaks buf =
     | Unformatted _
     | Formatting _ ->
          raise (Invalid_argument "Lm_rformat.compute_breaks")
+*)
 
 (*
  * "tab" to a position on the next line.
  *)
+(* unused
 let tab printer pos =
    printer ("\n" ^ (String.make pos ' '))
+*)
 
 (*
  * Some empty print functions.
  *)
-let print_arg1_invis _ =
+let _print_arg1_invis _ =
    ()
 
 let print_arg2_invis _ _ =
@@ -1121,7 +1131,8 @@ and print_tzone buf rmargin col printer tags =
       eprintf "Lm_rformat.print_tzone@.";
    let { formatted_commands = commands;
          formatted_breaks = breaks;
-         formatted_lmargin = ((lmargin', _) as lmargin)
+         formatted_lmargin = ((lmargin', _) as lmargin);
+	 _
        } = get_formatted buf
    in
    let rec print col = function

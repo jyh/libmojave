@@ -194,7 +194,7 @@ ELSE (* ENSEMBLE undefined *)
    (*
     * Static buffer.
     *)
-   let to_static { wbuf_buf = buf; wbuf_buffers = bufs } =
+   let to_static { wbuf_buf = buf; wbuf_buffers = bufs; _ } =
       List.rev (buf :: bufs)
 
    (*
@@ -243,7 +243,8 @@ ENDIF
    let rec write info buf off len =
       let { wbuf_buf = buf';
             wbuf_index = start;
-            wbuf_stop = stop
+            wbuf_stop = stop;
+	    _
           } = info
       in
       let amount = stop - start in
@@ -268,7 +269,8 @@ ENDIF
    let rec write_int info i =
       let { wbuf_buf = buf;
             wbuf_index = start;
-            wbuf_stop = stop
+            wbuf_stop = stop;
+	    _
           } = info
       in
          if start = stop then
@@ -289,10 +291,11 @@ ENDIF
     * Write an integer.
     * The LSB is set to 10.
     *)
-   let rec write_int2 info tag i =
+   let write_int2 info tag i =
       let { wbuf_buf = buf;
             wbuf_index = start;
-            wbuf_stop = stop
+            wbuf_stop = stop;
+	    _
           } = info
       in
          if start = stop then
@@ -315,7 +318,8 @@ ENDIF
    let rec write_tag info tag i =
       let { wbuf_buf = buf;
             wbuf_index = start;
-            wbuf_stop = stop
+            wbuf_stop = stop;
+	    _
           } = info
       in
          if start = stop then
@@ -338,7 +342,8 @@ ENDIF
    let rec read info buf off len =
       let { rbuf_buf = buf';
             rbuf_index = start;
-            rbuf_stop = stop
+            rbuf_stop = stop;
+	    _
           } = info
       in
       let amount = stop - start in
@@ -362,7 +367,8 @@ ENDIF
    let rec read_value_type info =
       let { rbuf_buf = buf;
             rbuf_index = start;
-            rbuf_stop = stop
+            rbuf_stop = stop;
+	    _
           } = info
       in
          if start = stop then
@@ -383,7 +389,7 @@ ENDIF
     * Read the int.
     *)
    let read_int info =
-      let { rbuf_buf = buf; rbuf_index = start } = info in
+      let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf start)) lsl 23) +
          ((Char.code (Bytes.get buf (start + 1))) lsl 15) +
@@ -400,7 +406,7 @@ ENDIF
       ((Char.code (Bytes.get info.rbuf_buf (info.rbuf_index + 3))) lsr 2) land 1
 
    let read_int2_value info =
-      let { rbuf_buf = buf; rbuf_index = start } = info in
+      let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf start)) lsl 21) +
          ((Char.code (Bytes.get buf (start + 1))) lsl 13) +
@@ -414,11 +420,11 @@ ENDIF
     * Read the tag.
     *)
    let read_value_tag info =
-      let { rbuf_buf = buf; rbuf_index = start } = info in
+      let { rbuf_buf = buf; rbuf_index = start; _ } = info in
          Char.code (Bytes.get buf start)
 
    let read_value_value info =
-      let { rbuf_buf = buf; rbuf_index = start } = info in
+      let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf (start + 1))) lsl 14) +
          ((Char.code (Bytes.get buf (start + 2))) lsl 6) +

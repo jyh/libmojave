@@ -82,6 +82,7 @@ let to_string (_, s) =
 (*
  * Mangle a string so it uses printable characters.
  *)
+(* unused
 let is_special s =
    let len = String.length s in
    let rec search i =
@@ -122,14 +123,16 @@ let mangle s =
    let buf = Buffer.create len in
       buffer_mangle buf s 0 len;
       Buffer.contents buf
-
+*)
 
 (*
  * Add a symbol to the table.
  *)
+(*
 let stop s =
    eprintf "Bogus symbol %s@." s;
    false
+*)
 
 let char0 = Char.code '0'
 
@@ -172,8 +175,10 @@ let add =
    in
       fun s -> loop s 1 0 (String.length s - 1)
 
+(*
 let add_mangle s =
    add (mangle s)
+*)
 
 let reintern (_, s) =
    add s
@@ -269,7 +274,7 @@ let string_of_ext_symbol (i, s) =
    let has_special_char s =
       try
          for i = 0 to String.length s - 1 do
-            let c = Char.lowercase (String.get s i) in
+            let c = Char.lowercase_ascii (String.get s i) in
                if not ((Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z')
                        || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
                        || c = '_')
@@ -310,13 +315,11 @@ let rec pp_print_symbol_list buf vl =
 (*
  * Print extended symbols. Used in FIR printing.
  *)
-exception Has
-
 let string_of_ext_symbol (i, s) =
    let has_special_char s =
       try
          for i = 0 to String.length s - 1 do
-            let c = Char.lowercase (String.get s i) in
+            let c = Char.lowercase_ascii (String.get s i) in
                if not ((Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z')
                        || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
                        || c = '_')

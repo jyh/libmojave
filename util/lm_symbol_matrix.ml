@@ -196,7 +196,7 @@ struct
    (*
     * Iteration.
     *)
-   let iter f { hash_buckets = buckets } =
+   let iter f { hash_buckets = buckets; _ } =
       Array.iter (fun entries ->
             List.iter (fun (v1, v2) -> f v1 v2) entries) buckets
 end
@@ -352,7 +352,7 @@ struct
    (*
     * Iteration.
     *)
-   let iter f { hash_buckets = buckets } =
+   let iter f { hash_buckets = buckets; _ } =
       Array.iter (fun entries ->
             List.iter (fun (v1, v2, depth) -> f v1 v2 depth) entries) buckets
 
@@ -360,14 +360,14 @@ struct
     * Map.
     *)
    let map f table =
-      let { hash_buckets = buckets } = table in
+      let { hash_buckets = buckets; _ } = table in
       let buckets = Array.map (List.map (fun (v1, v2, depth) -> v1, v2, f depth)) buckets in
          { table with hash_buckets = buckets }
 
    (*
     * Folding.
     *)
-   let fold f x { hash_buckets = buckets } =
+   let fold f x { hash_buckets = buckets; _ } =
       Array.fold_left (fun x entries ->
             List.fold_left (fun x (v1, v2, depth) ->
                   f x v1 v2 depth) x entries) x buckets

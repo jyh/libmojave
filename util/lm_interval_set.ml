@@ -131,11 +131,13 @@ struct
     *)
    let compare = Element.compare
 
+(*
    let lt x y =
       compare x y < 0
 
    let le x y =
       compare x y <= 0
+*)
 
    let eq x y =
       compare x y = 0
@@ -436,7 +438,6 @@ struct
 
    (*
     * Join intervals that have common endpoints.
-    *)
    let rec normalize = function
       (left, RightClosed x) :: (LeftClosed y, right) :: set when eq x y ->
          normalize ((left, right) :: set)
@@ -448,6 +449,7 @@ struct
          h :: normalize set
     | [] ->
          []
+    *)
 
    (*
     * Test subset.
@@ -559,10 +561,10 @@ struct
     | RightClosed x ->
          Closed x
 
-   let rec iter f set =
+   let iter f set =
       List.iter (fun (left, right) -> f (bound_of_left left) (bound_of_right right)) set
 
-   let rec fold f x set =
+   let fold f x set =
       List.fold_left (fun x (left, right) -> f x (bound_of_left left) (bound_of_right right)) x set
 end
 
@@ -591,11 +593,13 @@ struct
     *)
    let compare = Element.compare
 
+(*
    let lt x y =
       compare x y < 0
 
    let le x y =
       compare x y <= 0
+*)
 
    let eq x y =
       compare x y = 0
@@ -956,10 +960,10 @@ struct
    let bound_of_right x =
       Closed x
 
-   let rec iter f set =
+   let iter f set =
       List.iter (fun (left, right) -> f (bound_of_left left) (bound_of_right right)) set
 
-   let rec fold f x set =
+   let fold f x set =
       List.fold_left (fun x (left, right) -> f x (bound_of_left left) (bound_of_right right)) x set
 end
 

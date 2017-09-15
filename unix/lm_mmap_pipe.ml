@@ -270,7 +270,7 @@ let create_client dir =
 (*
  * Get the server socket for polling.
  *)
-let server_socket { mmap_server = server } =
+let server_socket { mmap_server = server; _ } =
    match server with
       Some sock ->
          sock
@@ -280,7 +280,7 @@ let server_socket { mmap_server = server } =
 (*
  * Get the client socket for polling.
  *)
-let client_socket { mmap_socket = client } =
+let client_socket { mmap_socket = client; _ } =
    match client with
       Some sock ->
          sock
@@ -298,7 +298,7 @@ let try_write sock buf =
  *)
 let open_client mmap =
    match mmap with
-      { mmap_server = Some server; mmap_socket = Some _ } ->
+      { mmap_server = Some server; mmap_socket = Some _; _ } ->
          (* Only one client is allowed *)
          let sock, _ = Unix.accept server in
             Bytes.set char_buf 0 (Char.chr 0);
@@ -309,7 +309,8 @@ let open_client mmap =
     | { mmap_server = Some server;
         mmap_socket = None;
         mmap_data = buf;
-        mmap_block_size = length
+        mmap_block_size = length;
+	_
       } ->
          (* We're free, so accept this client *)
          let sock, _ = Unix.accept server in
@@ -330,7 +331,7 @@ let open_client mmap =
 let close_client mmap =
    eprintf "Lm_mmap_pipe: closing client%t" eflush;
    match mmap with
-      { mmap_server = Some _; mmap_socket = Some sock; mmap_data = buf; mmap_block_size = length } ->
+      { mmap_server = Some _; mmap_socket = Some sock; mmap_data = buf; mmap_block_size = length; _ } ->
          set_int buf (0 + full_offset) 0;
          set_int buf (length + full_offset) 0;
          Unix.close sock;
@@ -362,7 +363,8 @@ let write mmap code name raw_write =
       Some sock ->
          let { mmap_write_offset = woffset;
                mmap_data = buf;
-               mmap_block_size = length
+               mmap_block_size = length;
+	       _
              } = mmap
          in
          let full = get_int buf (woffset + full_offset) in
@@ -400,7 +402,8 @@ let read mmap raw_read =
    match mmap.mmap_socket with
       Some sock ->
          let { mmap_read_offset = roffset;
-               mmap_data = buf
+               mmap_data = buf;
+	       _
              } = mmap
          in
          let full = get_int buf (roffset + full_offset) in

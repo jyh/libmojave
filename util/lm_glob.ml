@@ -47,7 +47,6 @@
  * @end[license]
  *)
 open Lm_lexer
-open Lm_printf
 open Lm_filename_util
 
 (************************************************************************

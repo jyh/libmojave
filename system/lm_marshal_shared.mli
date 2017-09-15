@@ -36,10 +36,7 @@
  * jyh@cs.cornell.edu
  *)
 
-(*
-open Lm_marshal_sig
-module Marshal : MarshalSig
-*)
+module XMarshal (Buf : Lm_marshal_sig.BufSig) : sig end
 
 (*
  * -*-

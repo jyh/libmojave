@@ -191,13 +191,13 @@ struct
    (*
     * Projections.
     *)
-   let node_value { entries = entries } i =
+   let node_value { entries = entries; _ } i =
       entries.(i).entry_value
 
-   let node_out_edges { entries = entries } i =
+   let node_out_edges { entries = entries; _ } i =
       entries.(i).entry_out_edges
 
-   let node_in_edges { entries = entries } i =
+   let node_in_edges { entries = entries; _ } i =
       entries.(i).entry_in_edges
 
    (*
@@ -235,29 +235,29 @@ struct
       in
          aux 0
 
-   let out_edges_f { entry_out_edges = edges } = edges
+   let out_edges_f { entry_out_edges = edges; _ } = edges
 
-   let in_edges_f { entry_in_edges = edges } = edges
+   let in_edges_f { entry_in_edges = edges; _ } = edges
 
-   let some_edges_f { entry_in_edges = _ } = []
+   let some_edges_f { entry_in_edges = _; _ } = []
 
-   let sweep_up { entries = entries } f =
+   let sweep_up { entries = entries; _ } f =
       sweep_aux entries f out_edges_f in_edges_f
 
-   let sweep_down { entries = entries } f =
+   let sweep_down { entries = entries; _ } f =
       sweep_aux entries f in_edges_f out_edges_f
 
-   let sweep_up_all { entries = entries } f =
+   let sweep_up_all { entries = entries; _ } f =
       sweep_aux entries f out_edges_f some_edges_f
 
-   let sweep_down_all { entries = entries } f =
+   let sweep_down_all { entries = entries; _ } f =
       sweep_aux entries f in_edges_f some_edges_f
 
    (*
     * Get the roots of the DAG.
     * These nodes have no in_edges.
     *)
-   let roots { entries = entries } =
+   let roots { entries = entries; _ } =
       let length = Array.length entries in
       let rec collect i =
          if i = length then
@@ -320,7 +320,8 @@ struct
       let { entry_in_edges = in_edges;
             entry_out_edges = out_edges;
             entry_no_relation = no_relation;
-            entry_version = version'
+            entry_version = version';
+	    _
           } = entry1
       in
       let no_relation =

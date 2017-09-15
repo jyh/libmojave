@@ -93,7 +93,7 @@ value load_int32(value v_string, value v_off)
     CAMLlocal1(result);
     int off, len;
     char *str;
-    int32 i;
+    int32_t i;
 
     /* Get arguments */
     str = String_val(v_string);
@@ -105,7 +105,7 @@ value load_int32(value v_string, value v_off)
         failwith("load_int32");
 
     /* Get the number */
-    i = *(int32 *)(str + off);
+    i = *(int32_t *)(str + off);
     result = copy_int32(i);
     CAMLreturn(result);
 }
@@ -116,7 +116,7 @@ value load_int64(value v_string, value v_off)
     CAMLlocal1(result);
     int off, len;
     char *str;
-    int64 i;
+    int64_t i;
 
     /* Get arguments */
     str = String_val(v_string);
@@ -128,7 +128,7 @@ value load_int64(value v_string, value v_off)
         failwith("load_int64");
 
     /* Get the number */
-    i = *(int64 *)(str + off);
+    i = *(int64_t *)(str + off);
     result = copy_int64(i);
     CAMLreturn(result);
 }
@@ -207,7 +207,7 @@ value store_int32(value v_string, value v_off, value v_val)
     CAMLlocal1(result);
     int off, len;
     char *str;
-    int32 i;
+    int32_t i;
 
     /* Get arguments */
     str = String_val(v_string);
@@ -220,7 +220,7 @@ value store_int32(value v_string, value v_off, value v_val)
         failwith("store_int32");
 
     /* Get the number */
-    *(int32 *)(str + off) = i;
+    *(int32_t *)(str + off) = i;
     CAMLreturn(Val_unit);
 }
 
@@ -230,7 +230,7 @@ value store_int64(value v_string, value v_off, value v_val)
     CAMLlocal1(result);
     int off, len;
     char *str;
-    int64 i;
+    int64_t i;
 
     /* Get arguments */
     str = String_val(v_string);
@@ -243,7 +243,7 @@ value store_int64(value v_string, value v_off, value v_val)
         failwith("store_int64");
 
     /* Get the number */
-    *(int64 *)(str + off) = i;
+    *(int64_t *)(str + off) = i;
     CAMLreturn(Val_unit);
 }
 
@@ -269,6 +269,3 @@ value store_float(value v_string, value v_off, value v_val)
     *(double *)(str + off) = x;
     CAMLreturn(Val_unit);
 }
-
-
-

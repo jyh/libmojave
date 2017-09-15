@@ -481,7 +481,7 @@ let menu_select numbered title entries =
       print_limited_line win (entry_name (row + n)) 0;
       match entry_key (row + n) with
          Some ch ->
-            print_limited_line win (sprintf " (%c)" (Char.uppercase ch)) 0
+            print_limited_line win (sprintf " (%c)" (Char.uppercase_ascii ch)) 0
        | None ->
             ()
    in
@@ -500,14 +500,14 @@ let menu_select numbered title entries =
    (* Match against a keystroke *)
    let match_key ch =
       if ch >= 0 && ch < 256 then
-         let ch = Char.uppercase (char_of_int ch) in
+         let ch = Char.uppercase_ascii (char_of_int ch) in
          let rec scan n =
             if n >= entry_count then
                None
             else
                match entry_key n with
                   Some ch'
-                  when ch = Char.uppercase ch' ->
+                  when ch = Char.uppercase_ascii ch' ->
                      Some n
                 | _ ->
                      scan (n + 1)

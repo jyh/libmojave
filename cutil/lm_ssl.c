@@ -11,16 +11,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation,
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Additional permission is given to link this library with the
  * OpenSSL project's "OpenSSL" library, and with the OCaml runtime,
  * and you may distribute the linked executables.  See the file
@@ -69,11 +69,11 @@ void leave_blocking_section(void);
 /*
  * Inet addresses are strings.
  */
-static value alloc_inet_addr(uint32 addr)
+static value alloc_inet_addr(uint32_t addr)
 {
     value a;
-    a = alloc_string(sizeof(uint32));
-    *(uint32 *)a = addr;
+    a = alloc_string(sizeof(uint32_t));
+    *(uint32_t *)a = addr;
     return a;
 }
 
@@ -335,7 +335,7 @@ value lm_ssl_bind(value v_info, value v_addr, value v_port)
 
     /* Get the address */
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_addr.s_addr = *(uint32_t *)v_addr;
     sin.sin_port = htons((short) Int_val(v_port));
 
     /* Perform the bind */
@@ -457,7 +457,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
 
     /* Get the address */
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_addr.s_addr = *(uint32_t *)v_addr;
     sin.sin_port = htons((short) Int_val(v_port));
 
     /* Make the connection */
@@ -545,7 +545,7 @@ value lm_ssl_flush(value v_info)
     enter_blocking_section();
     bio = SSL_get_wbio(info->ssl);
     if(bio)
-        /* XXX: BUG! 
+        /* XXX: BUG!
          * According to the man page:
          * BIO_flush(), because it can write data may return 0 or -1 indicating that the call should be retried later
          * in a similar manner to BIO_write().  The BIO_should_retry() call should be used and appropriate action
@@ -710,7 +710,7 @@ value lm_ssl_bind(value v_info, value v_addr, value v_port)
 
     /* Get the address */
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_addr.s_addr = *(uint32_t *)v_addr;
     sin.sin_port = htons((short) Int_val(v_port));
 
     /* Perform the bind */
@@ -796,7 +796,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
 
     /* Get the address */
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = *(uint32 *)v_addr;
+    sin.sin_addr.s_addr = *(uint32_t *)v_addr;
     sin.sin_port = htons((short) Int_val(v_port));
 
     /* Make the connection */

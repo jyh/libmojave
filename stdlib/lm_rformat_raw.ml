@@ -50,7 +50,7 @@ let raw_channel_printer out =
      raw_print_newline = (fun () -> output_char out '\n');
      raw_print_spaces  =
         (fun i ->
-              for i = 0 to pred i do
+              for _ = 0 to pred i do
                  output_char out ' '
               done)
    }
@@ -61,7 +61,7 @@ let raw_buffer_printer buf =
      raw_print_newline  = (fun () -> Buffer.add_char buf '\n');
      raw_print_spaces   =
         (fun i ->
-              for i = 0 to pred i do
+              for _ = 0 to pred i do
                  Buffer.add_char buf ' '
               done)
    }

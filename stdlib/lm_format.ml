@@ -74,7 +74,8 @@ let flush_form form =
          form_out_newline = out_newline;
          form_out_space   = out_space;
          form_margin      = margin;
-         form_divert      = divert
+         form_divert      = divert;
+	 _
        } = form
    in
       match divert with
@@ -223,7 +224,7 @@ let pp_set_formatter_out_channel form outx =
    form.form_out_flush <- (fun () -> flush outx);
    form.form_out_newline <- (fun () -> output_char outx '\n');
    form.form_out_space <- (fun i ->
-                                for j = 0 to pred i do
+                                for _ = 0 to pred i do
                                    output_char outx ' '
                                 done)
 
@@ -256,7 +257,7 @@ let formatter_of_out_channel outx =
      form_out_flush = (fun () -> flush outx);
      form_out_newline = (fun () -> output_char outx '\n');
      form_out_space = (fun i ->
-                            for j = 1 to i do
+                            for _ = 1 to i do
                                output_char outx ' '
                             done);
      form_max_boxes = default_max_boxes;
@@ -276,7 +277,7 @@ let formatter_of_buffer buf =
      form_out_newline = (fun () -> Buffer.add_char buf '\n');
      form_out_space =
         (fun i ->
-              for j = 1 to i do
+              for _ = 1 to i do
                  Buffer.add_char buf ' '
               done);
      form_max_boxes = default_max_boxes;
@@ -302,7 +303,7 @@ let make_formatter outx flush =
      form_out_flush = flush;
      form_out_newline = (fun () -> outx "\n" 0 1);
      form_out_space = (fun i ->
-                            for j = 1 to i do
+                            for _ = 1 to i do
                                outx " " 0 1
                             done);
      form_max_boxes = default_max_boxes;

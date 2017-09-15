@@ -31,8 +31,6 @@
  * @end[license]
  *)
 open Lm_thread
-open Lm_thread_sig
-open Lm_printf
 
 (*
  * List of states, indexed by pid.

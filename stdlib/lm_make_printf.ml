@@ -186,12 +186,12 @@ struct
     *)
    let max_width info =
       match info with
-         { field_width = Some width; field_precision = Some pre } ->
+         { field_width = Some width; field_precision = Some pre; _ } ->
             max width pre
-       | { field_width = Some width; field_precision = None }
-       | { field_width = None; field_precision = Some width } ->
+       | { field_width = Some width; field_precision = None; _ }
+       | { field_width = None; field_precision = Some width; _ } ->
             width
-       | { field_width = None; field_precision = None } ->
+       | { field_width = None; field_precision = None; _ } ->
             0
 
    (*

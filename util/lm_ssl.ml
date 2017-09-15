@@ -29,10 +29,12 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+(*
 let eprintf = Printf.eprintf
 let eflush out =
    output_char out '\n';
    flush out
+ *)
 
 open Lm_make_printf
 
@@ -125,7 +127,8 @@ struct
     *)
    let print_char out c =
       let { windex = windex;
-            buffer = buf
+            buffer = buf;
+	    _
           } = out
       in
       let windex' = succ windex in
@@ -140,7 +143,8 @@ struct
    let rec output out s off len =
       if len <> 0 then
          let { windex = windex;
-               buffer = buf
+               buffer = buf;
+	       _
              } = out
          in
          let amount = min len (buf_length - windex) in
@@ -265,7 +269,8 @@ struct
    let rec input_char inx =
       let { rindex = rindex;
             length = length;
-            buffer = buf
+            buffer = buf;
+	    _
           } = inx
       in
          if rindex = length then
@@ -284,7 +289,8 @@ struct
    let rec input_line_aux out inx =
       let { rindex = rindex;
             length = length;
-            buffer = buf
+            buffer = buf;
+	    _
           } = inx
       in
       let rec collect rindex =
@@ -327,7 +333,8 @@ struct
    let rec really_input_start inx s off len =
       let { rindex = rindex;
             length = length;
-            buffer = buf
+            buffer = buf;
+	    _
           } = inx
       in
       let amount = min len (length - rindex) in
@@ -356,7 +363,8 @@ struct
    and really_input_end inx s off len =
       let { rindex = rindex;
             length = length;
-            buffer = buf
+            buffer = buf;
+	    _
           } = inx
       in
          if length - rindex < len then

@@ -197,6 +197,7 @@ let get_help_item buf name help =
 let get_help buf run =
    let { ri_help_prefix = help_prefix;
          ri_commands    = commands;
+	 _
        } = run
    in
       fprintf buf "@[<v 0>%s" help_prefix;
@@ -273,6 +274,7 @@ let read_eval_print run =
          ri_commands    = commands;
          ri_hack_title  = hack_title;
          ri_arg_filter  = arg_filter;
+	 _
        } = run
    in
    let cnames = List.map (fun (name, _, _) -> name) commands in
@@ -372,7 +374,7 @@ let bad_arguments () =
    flag is true, then the user is presented with a cancel option and may
    respond specifically with cancel; otherwise, cancel is mapped to "no"
    and the user may not type "cancel" (although ^D will map to "no").  *)
-let rec int_yes_no_cancel appname hack_title prompt default cancel_ok =
+let int_yes_no_cancel appname hack_title prompt default cancel_ok =
    let rec loop () =
       try
          let default_name =
@@ -430,7 +432,7 @@ let rec int_yes_no_cancel appname hack_title prompt default cancel_ok =
    Some true if the user responds yes and Some false if the user responds
    no.  The default argument is None indicating cancel as default; other-
    wise it is (Some true) for yes or (Some false) for no.  *)
-let rec yes_no_cancel appname hack_title prompt default =
+let yes_no_cancel appname hack_title prompt default =
    int_yes_no_cancel appname hack_title prompt default true
 
 

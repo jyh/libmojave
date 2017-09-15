@@ -74,7 +74,7 @@ struct
          printf "%s Offset %d" s i;
          print_aux (s^"|") t
 
-   let print s t = print_aux s t; printf "%t" flush
+   let _print s t = print_aux s t; printf "%t" flush
 
    let rec length t = match t.tree with
       Leaf  -> 0
@@ -207,7 +207,7 @@ struct
    let new_node i e l r =
       { tree = Node(i,e,l,r,succ (length l) + (length r)) }
 
-   let rec rotate_left = function
+   let rotate_left = function
       { tree = Node (i,e,{tree=Node(il,el,left_left,left_right,_)},right,size) } as t ->
          t.tree <- Node(il,el,left_left,new_node i e left_right right,size)
     | _ -> raise (Invalid_argument "Linear_set.rotate_left")
@@ -221,7 +221,7 @@ struct
          rotate_left t
    *)
 
-   let rec rotate_right = function
+   let rotate_right = function
       { tree = Node (i,e,left,{tree=Node(ir,er,right_left,right_right,_)},size) } as t ->
          t.tree <- Node(ir,er,new_node i e left right_left,right_right,size)
     | _ -> raise (Invalid_argument "Linear_set.rotate_right")

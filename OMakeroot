@@ -20,7 +20,7 @@ LM_STANDALONE = true
 #
 # Options
 #
-OCAMLFLAGS += -warn-error Aez -w Aez -safe-string
+OCAMLFLAGS += -warn-error Aez-3-37-44-50 -w Aez-37-44-50 -safe-string
 
 #
 # Include the OMakefile

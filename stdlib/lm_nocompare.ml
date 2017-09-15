@@ -34,7 +34,7 @@
  *)
 type t
 
-external lm_nocompare_init  : unit -> unit = "lm_nocompare_init"
+(* external lm_nocompare_init  : unit -> unit = "lm_nocompare_init" *)
 external lm_nocompare_create : unit -> t = "lm_nocompare_create"
 external lm_nomarshal_create : unit -> t = "lm_nomarshal_create"
 

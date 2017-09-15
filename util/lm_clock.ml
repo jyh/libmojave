@@ -59,7 +59,7 @@ let clocks = ref StringSet.empty
  * Start given clock.
  * Raise an exception if clock does not exist.
  *)
-let clock_start name =
+let _clock_start name =
    try
       let clock = clock_find !clocks name in
       if clock.clock_active then
@@ -87,7 +87,7 @@ let clock_start name =
  * Stop given clock.
  * Raise an exception if clock does not exist.
  *)
-let clock_stop name =
+let _clock_stop name =
    try
       let clock = clock_find !clocks name in
       if not clock.clock_active then
@@ -133,7 +133,7 @@ let clock_tcalls name =
  * If clock does not exist, create it. Also, we ignore
  * the fact that the clock may be active.
  *)
-let clock_reset name =
+let _clock_reset name =
    let null_time =
       { Unix.tms_utime = 0.0;
         Unix.tms_stime = 0.0;
@@ -154,7 +154,7 @@ let clock_reset name =
  * Report on given clock.
  * Raise an exception if clock does not exist.
  *)
-let clock_report msg name =
+let _clock_report msg name =
    let ttime = clock_ttime name in
    let tcalls = clock_tcalls name in
    Lm_printf.print_string (Lm_printf.sprintf "%sTotal time in %s = %.2f sec, %d calls, %.5f sec/call\n" (**)

@@ -62,9 +62,12 @@ val output_rbuffer : out_channel -> Lm_rformat.buffer -> unit
 (*
  * These functions are bad style for functional programs.
  *)
+(*
+ * Redeclared below.
 val print_char    : char -> unit
 val print_int     : int -> unit
 val print_string  : string -> unit
+ *)
 val print_rbuffer : Lm_rformat.buffer -> unit
 
 val prerr_char    : char -> unit

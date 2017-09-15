@@ -188,7 +188,7 @@ struct
    (*
     * Number of entries in the table.
     *)
-   let cardinal { table_int = table } =
+   let cardinal { table_int = table; _ } =
       SymbolTable.cardinal table
 
    (*
@@ -313,7 +313,8 @@ struct
     *)
    let add table v_ext v_int x =
       let { table_count = index;
-            table_ext = etable
+            table_ext = etable;
+	    _
           } = table
       in
          { table_count = succ index;

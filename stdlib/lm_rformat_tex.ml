@@ -197,7 +197,8 @@ let tex_etag buf _ =
  *)
 let make_tex_printer_aux raw =
    let { raw_print_string  = output_string;
-         raw_print_newline = output_newline
+         raw_print_newline = output_newline;
+	 _
        } = raw
    in
    let print_string s =

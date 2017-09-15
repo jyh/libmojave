@@ -59,7 +59,7 @@ struct
    (*
     * Return the length.
     *)
-   let length { array_length = length } =
+   let length { array_length = length; _ } =
       length
 
    (*

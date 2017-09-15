@@ -208,7 +208,7 @@ let set_debug name flag =
  *)
 let set_possible_debug name flag =
    try set_debug name flag with
-      Failure "set_debug" ->
+      Failure s when s = "set_debug" ->
          let flag' = ref flag in
          let ninfo =
             { info_name = name;
@@ -379,11 +379,11 @@ let report_timing () =
 
 let () = at_exit report_timing
 
-let timing_wrap s f arg =
+let timing_wrap s (f : 'a -> 'b) (arg : 'a) =
    let start_f = gettimeofday () in
    let start_p = times () in
    let res =
-      try Ok (f arg)
+      try (Ok (f arg) : 'b res)
       with exn -> Exn exn
    in
    let end_f = gettimeofday () in

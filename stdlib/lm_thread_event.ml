@@ -35,7 +35,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_debug
 open Lm_printf
 open Lm_thread
 
@@ -230,7 +229,7 @@ let send chan x =
       (fun events -> event :: events)
 
 let receive chan =
-   let rec event =
+   let event =
       { event_poll = try_receive chan;
         event_block = block_receive chan
       }
@@ -252,7 +251,7 @@ let rec choose events events' =
     | [] ->
          events'
 
-let delay f events =
+let _delay f events =
    (f () events)
 
 let sequence events =
@@ -291,7 +290,7 @@ let sequence_final events =
  * Poll for a value in the event list.
  *)
 let rec poll_events = function
-   { event_poll = poll' } :: events ->
+   { event_poll = poll'; _ } :: events ->
       begin
          match poll' () with
             (Some _) as x ->
@@ -310,7 +309,7 @@ let block events =
    let slot = ref None in
    let performed = ref false in
    let rec block = function
-      { event_block = block' } :: events ->
+      { event_block = block'; _ } :: events ->
          block' (fun () -> block events) lock performed slot
     | [] ->
          sync_wait lock
@@ -332,8 +331,6 @@ let poll event =
 (*
  * Complete the specified event.
  *)
-let level = ref 0
-
 let sync _pid event =
    let events = event [] in
       sync_lock ();

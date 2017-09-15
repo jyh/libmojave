@@ -112,9 +112,9 @@ typedef struct _dll_hooks {
     value (*alloc_custom_hook)(struct custom_operations *ops, unsigned long size, mlsize_t mem, mlsize_t max);
     value (*copy_string_hook)(const char *s);
     value (*copy_string_array_hook)(const char **s);
-    value (*copy_int32_hook)(int32 i);
+    value (*copy_int32_hook)(int32_t i);
     value (*copy_nativeint_hook)(intnat i);
-    value (*copy_int64_hook)(int64 i);
+    value (*copy_int64_hook)(int64_t i);
     value (*copy_double_hook)(double x);
     value *(*named_value_hook)(char *name);
     value (*callback1_hook)(value, value);

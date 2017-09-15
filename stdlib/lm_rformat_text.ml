@@ -38,8 +38,10 @@ open Lm_rformat
 let print_arg1_invis _ =
    ()
 
+(* unused
 let print_arg2_invis _ _ =
    ()
+*)
 
 (*
  * Channel printer.
@@ -47,7 +49,8 @@ let print_arg2_invis _ _ =
 let make_text_printer raw =
    let { raw_print_string  = output_string;
          raw_print_newline = output_newline;
-         raw_print_spaces  = output_spaces
+         raw_print_spaces  = output_spaces;
+	 _
        } = raw
    in
    let print_string s =

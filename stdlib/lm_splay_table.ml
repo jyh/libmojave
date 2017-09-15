@@ -65,7 +65,7 @@ type ('elt, 'data) tree =
 type ('elt, 'data) table =
    ('elt, 'data) tree ref
 
-type ('elt, 'data) t = ('elt, 'data) table
+(* type ('elt, 'data) t = ('elt, 'data) table *)
 
 (*
  * Directions are used to define
@@ -575,18 +575,18 @@ let create
                   h :: rem
    in
 
-   let rec fst_mem_filt s = function
+   let rec _fst_mem_filt s = function
       [] ->
          []
     | (((v, _) as h) :: t) as l ->
          if mem s v then
-            let rem = fst_mem_filt s t in
+            let rem = _fst_mem_filt s t in
                if rem == t then
                   l
                else
                   h :: rem
          else
-            fst_mem_filt s t
+            _fst_mem_filt s t
    in
 
    let deletemax t =

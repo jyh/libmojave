@@ -372,7 +372,7 @@ let lookup_option options name =
             BogusArg _
           | Not_found ->
                raise (BogusArg ("No such option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
-          | Failure "invert" ->
+          | Failure s when s = "invert" ->
                raise (BogusArg ("Not an invertable option: " ^ orig_name ^ " (extracted from inverted: " ^ name ^ ")"))
    else
       lookup_option_core options name

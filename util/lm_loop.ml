@@ -110,6 +110,7 @@ type 'a t =
 (*
  * Subtract two sorted lists.
  *)
+(* unused
 let rec subtract_sorted_list l1 l2 =
    match l1, l2 with
       [], _ ->
@@ -140,16 +141,12 @@ let rec merge_sorted_list l1 l2 =
             x1 :: merge_sorted_list l1' l2
          else
             x2 :: merge_sorted_list l1 l2'
+*)
 
 (*
  * Print the tree.
  *)
 let tabstop = 3
-
-(*
- * BUG: inherit until we fix this file.
- *)
-let print_symbol = pp_print_symbol std_formatter
 
 let print_node_int s v =
    print_string s;
@@ -180,7 +177,8 @@ let print_node node =
          node_child = child;
          node_label = label;
          node_sdno = sdno;
-         node_size = size
+         node_size = size;
+ 	 _
        } = node
    in
       open_hvbox tabstop;
@@ -360,8 +358,10 @@ let node_of_id state id =
 let is_root_node node =
    node.node_id = 0
 
+(* unused
 let node_succ state node =
    List.map (node_of_id state) node.node_succ
+*)
 
 let node_pred state node =
    List.map (node_of_id state) node.node_pred
@@ -531,7 +531,7 @@ let eval state v =
  * Dominator calculation.
  *)
 let dominators state =
-   let { state_vertex = vertex } = state in
+   let { state_vertex = vertex; _ } = state in
    let n = Array.length state.state_vertex in
       for i = pred n downto 1 do
          let w = vertex.(i) in
@@ -592,11 +592,11 @@ let dominators state =
  *)
 let build_dtree state =
    Array.fold_left (fun dtree node ->
-         let { node_id = id } = node in
+         let { node_id = id; _ } = node in
             if id = 0 then
                dtree
             else
-               let { node_id = parent} = node_idom state node in
+               let { node_id = parent; _ } = node_idom state node in
                   NodeIdTable.filter_add dtree parent (fun children ->
                         let children =
                            match children with
@@ -662,7 +662,7 @@ let classify_nodes state dtree =
             else
                (* This node belongs to the current loop *)
                let classes = NodeIdTable.add classes id1 (parent_id, depth1) in
-               let { node_idom = idom } = node_of_id state id1 in
+               let { node_idom = idom; _ } = node_of_id state id1 in
                   reclassify classes parent_id depth1 idom
    in
 
@@ -671,7 +671,7 @@ let classify_nodes state dtree =
     *)
    let rec search loops classes parents depth id =
       (* Catch self-edges *)
-      let { node_succ = succ_edges } = node_of_id state id in
+      let { node_succ = succ_edges; _ } = node_of_id state id in
       let loops =
          if List.mem id succ_edges then
             NodeIdTable.add loops id []
@@ -793,7 +793,7 @@ let loop_nest state node_name =
 
 let dominators state _ =
    Array.fold_left (**)
-      (fun dom { node_name = name; node_idom = id } ->
+      (fun dom { node_name = name; node_idom = id; _ } ->
          let idom = state.state_nodes.(id) in
             SymbolTable.add dom name idom.node_name)
       SymbolTable.empty state.state_nodes
