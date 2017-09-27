@@ -482,7 +482,8 @@ struct
     * Outermost printf function.
     *)
    let fprintf buf =
-      let print s =
+      let print fmt =
+         let s = string_of_format fmt in
          print_loop buf 0 (String.length s) s
       in
          Obj.magic print
