@@ -200,7 +200,7 @@ let create_server dir =
       (try Unix.unlink bufname with Unix.Unix_error _ -> ());
       (try Unix.unlink sockname with Unix.Unix_error _ -> ())
    in
-      Pervasives.at_exit at_exit;
+      Stdlib.at_exit at_exit;
       Unix.bind sock (Unix.ADDR_UNIX sockname);
       Unix.listen sock 1;
       set_int buf (0 + full_offset) 0;

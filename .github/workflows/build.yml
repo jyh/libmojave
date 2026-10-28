@@ -1,0 +1,46 @@
+name: Build
+
+# Builds libmojave with OMake on a current OCaml and checks that the bytecode
+# and native archives each contain exactly the modules the Files lists name.
+# It does not run any tests (there are none yet), and it builds the Unix code
+# paths only: the Win32 branches are not compiled anywhere in CI.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  omake:
+    name: build with OMake (OCaml ${{ matrix.ocaml }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ocaml: ["5.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml }}
+      - run: opam install -y omake ocamlfind
+      - name: build
+        run: opam exec -- omake -j4
+      - name: the archives hold exactly the listed modules
+        run: |
+          for d in stdlib system util unix; do
+            sed -n 's/^ *\(lm_[a-z0-9_]*\) *$/\1/p' "$d/Files"
+          done | sort > listed.txt
+          test -s listed.txt || { echo "FAIL: no modules listed"; exit 1; }
+          for a in lm.cma lm.cmxa; do
+            test -f "$a" || { echo "FAIL: $a was not built"; exit 1; }
+            opam exec -- ocamlobjinfo "$a" | sed -n -e 's/^Unit name: *//p' -e 's/^Name: *//p' \
+              | tr 'A-Z' 'a-z' | sort > "$a.units"
+            if ! diff -u listed.txt "$a.units"; then
+              echo "FAIL: $a does not match the Files lists"; exit 1
+            fi
+            echo "OK $a: $(wc -l < "$a.units") modules"
+          done
+          test -f cutil/liblmcutil.a || { echo "FAIL: cutil/liblmcutil.a was not built"; exit 1; }

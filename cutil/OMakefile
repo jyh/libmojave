@@ -22,6 +22,8 @@ if $(DETECT_FS_CASE_SENSITIVE)
 #
 # LibMojave C files
 #
+# Not built: lm_dll (its rewrite for OCaml 5's roots API waits for a test
+# that pins its behaviour). The source is kept.
 CFILES[] =
     lm_heap
     lm_abstract
@@ -47,7 +49,6 @@ CFILES[] =
     fam_inotify
     lm_notify
     lm_termsize
-    lm_dll
     lm_fs_case_sensitive
 
 if $(SNPRINTF_AVAILABLE)

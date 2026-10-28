@@ -189,11 +189,11 @@ value caml_read_history(value name) {
     int result;
     result = read_history( String_val(name) );
     if (result == ENOENT) {
-        raise_not_found();
+        caml_raise_not_found();
     }
     else if (result != 0) {
         CAMLlocal1(error);
-        error = copy_string(strerror( result ));
+        error = caml_copy_string(strerror( result ));
         raise_sys_error( error );
     }
     CAMLreturn(Val_unit);
@@ -207,7 +207,7 @@ value caml_write_history(value name) {
     result = write_history( String_val(name) );
     if (result != 0) {
         CAMLlocal1(error);
-        error = copy_string(strerror( result ));
+        error = caml_copy_string(strerror( result ));
         raise_sys_error( error );
     }
     CAMLreturn(Val_unit);
@@ -221,7 +221,7 @@ value caml_history_truncate_file(value name, value nlines) {
     result = history_truncate_file( String_val(name), Long_val(nlines) );
     if (result != 0) {
         CAMLlocal1(error);
-        error = copy_string(strerror( result ));
+        error = caml_copy_string(strerror( result ));
         raise_sys_error( error );
     }
     CAMLreturn(Val_unit);
@@ -332,10 +332,10 @@ value caml_readline(value prompt_arg) {
 #endif /* READLINE enabled? */
 
    /* Copy the line */
-   v = copy_string(line);
+   v = caml_copy_string(line);
 
    /* Some v */
-   b = alloc(1, 0);
+   b = caml_alloc(1, 0);
    Field(b, 0) = v;
 
    /* Free the buffer */

@@ -37,6 +37,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include <caml/custom.h>
+#include <caml/version.h>
 
 #if defined(WIN32) || defined(_WIN32)
 /* Disable some of the warnings */
@@ -49,6 +50,13 @@ static char *null = 0;
 
 #undef abort
 #define abort()    (*null = 0)
+
+/*
+ * The heap walker reads OCaml 4's single minor heap and the page table.
+ * OCaml 5 has neither (one minor heap per domain, no page table), so on
+ * OCaml 5 the primitive fails loudly instead of checking nothing.
+ */
+#if OCAML_VERSION_MAJOR < 5
 
 static void search_pointer(char **pointers, char *name, unsigned bound, char *p, char *v, unsigned index)
 {
@@ -222,3 +230,13 @@ value lm_heap_check(value v_name)
     lm_heap_check_aux2(String_val(v_name));
     return Val_unit;
 }
+
+#else /* OCAML_VERSION_MAJOR >= 5 */
+
+value lm_heap_check(value v_name)
+{
+    caml_failwith("lm_heap_check: not supported on OCaml 5");
+    return Val_unit;
+}
+
+#endif

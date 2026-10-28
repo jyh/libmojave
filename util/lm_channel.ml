@@ -1196,7 +1196,7 @@ struct
           * Otherwise grow it.
           *)
          else
-            let new_buffer = Bytes.create (Pervasives.max (len * 2) 32) in
+            let new_buffer = Bytes.create (Stdlib.max (len * 2) 32) in
                Bytes.blit buffer 0 new_buffer 0 max;
                channel.in_buffer <- new_buffer;
                lex_fill channel

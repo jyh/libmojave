@@ -26,7 +26,7 @@
 #include <ncurses.h>
 
 
-#define  ml_of_window(win)    (copy_nativeint((long)(win)))
+#define  ml_of_window(win)    (caml_copy_nativeint((long)(win)))
 #define  window_of_ml(win)    ((WINDOW *)Nativeint_val(win))
 
 
@@ -75,7 +75,7 @@ static int translate_attr(int attr) {
       case 8:  return(A_INVIS);
       case 9:  return(A_ALTCHARSET);
       case 10: return(A_CHARTEXT);
-      default: failwith("translate_attr: bad attr constant constructor");
+      default: caml_failwith("translate_attr: bad attr constant constructor");
    }
 
 }
@@ -131,7 +131,7 @@ value caml_curses_newwin(value nlines, value ncols, value beginy, value beginx) 
    /* Create and initialise the new window */
    window = newwin(Int_val(nlines), Int_val(ncols), Int_val(beginy), Int_val(beginx));
    if(window == NULL) {
-      failwith("caml_curses_newwin: newwin call failed");
+      caml_failwith("caml_curses_newwin: newwin call failed");
    }
    setwinopts(window, TRUE);
 
@@ -247,14 +247,14 @@ value caml_curses_wgetstr(value mlwindow) {
    /* Allocate a buffer to store the results in. */
    buffer = malloc(len + 1);
    if(buffer == NULL) {
-      CAMLreturn(copy_string(""));
+      CAMLreturn(caml_copy_string(""));
    }
    
    /* Get the line input */
    wgetnstr(window, buffer, len);
    
    /* Return the character read */
-   result = copy_string(buffer);
+   result = caml_copy_string(buffer);
    free(buffer);
    CAMLreturn(result);
 
@@ -377,7 +377,7 @@ value caml_curses_getyx(value mlwindow) {
    getyx(window, y, x);
    
    /* Construct a tuple to store the results in. */
-   result = alloc_tuple(2);
+   result = caml_alloc_tuple(2);
    Field(result, 0) = Val_int(y);
    Field(result, 1) = Val_int(x);
    CAMLreturn(result);
@@ -396,7 +396,7 @@ value caml_curses_getmaxyx(value mlwindow) {
    getmaxyx(window, y, x);
    
    /* Construct a tuple to store the results in. */
-   result = alloc_tuple(2);
+   result = caml_alloc_tuple(2);
    Field(result, 0) = Val_int(y);
    Field(result, 1) = Val_int(x);
    CAMLreturn(result);
@@ -475,7 +475,7 @@ value caml_curses_enabled(value unit) {
 value caml_curses_initscr(value unit) {
 
    CAMLparam1(unit);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -484,7 +484,7 @@ value caml_curses_initscr(value unit) {
 value caml_curses_endwin(value unit) {
 
    CAMLparam1(unit);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -493,7 +493,7 @@ value caml_curses_endwin(value unit) {
 value caml_curses_newwin(value nlines, value ncols, value beginy, value beginx) {
 
    CAMLparam4(nlines, ncols, beginy, beginx);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -502,7 +502,7 @@ value caml_curses_newwin(value nlines, value ncols, value beginy, value beginx) 
 value caml_curses_delwin(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -511,7 +511,7 @@ value caml_curses_delwin(value mlwindow) {
 value caml_curses_waddch(value mlwindow, value ch) {
 
    CAMLparam2(mlwindow, ch);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -520,7 +520,7 @@ value caml_curses_waddch(value mlwindow, value ch) {
 value caml_curses_waddstr(value mlwindow, value str) {
 
    CAMLparam2(mlwindow, str);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -529,7 +529,7 @@ value caml_curses_waddstr(value mlwindow, value str) {
 value caml_curses_wattron(value mlwindow, value mlattr) {
 
    CAMLparam2(mlwindow, mlattr);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -538,7 +538,7 @@ value caml_curses_wattron(value mlwindow, value mlattr) {
 value caml_curses_wattroff(value mlwindow, value mlattr) {
 
    CAMLparam2(mlwindow, mlattr);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -547,7 +547,7 @@ value caml_curses_wattroff(value mlwindow, value mlattr) {
 value caml_curses_wgetch(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -556,7 +556,7 @@ value caml_curses_wgetch(value mlwindow) {
 value caml_curses_wgetstr(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -565,7 +565,7 @@ value caml_curses_wgetstr(value mlwindow) {
 value caml_curses_wrefresh(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -574,7 +574,7 @@ value caml_curses_wrefresh(value mlwindow) {
 value caml_curses_wnoutrefresh(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -583,7 +583,7 @@ value caml_curses_wnoutrefresh(value mlwindow) {
 value caml_curses_doupdate(value unit) {
 
    CAMLparam1(unit);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -592,7 +592,7 @@ value caml_curses_doupdate(value unit) {
 value caml_curses_refreshscreen(value unit) {
 
    CAMLparam1(unit);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -601,7 +601,7 @@ value caml_curses_refreshscreen(value unit) {
 value caml_curses_werase(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -610,7 +610,7 @@ value caml_curses_werase(value mlwindow) {
 value caml_curses_wclrtoeol(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -619,7 +619,7 @@ value caml_curses_wclrtoeol(value mlwindow) {
 value caml_curses_wclrtobot(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -628,7 +628,7 @@ value caml_curses_wclrtobot(value mlwindow) {
 value caml_curses_wmove(value mlwindow, value y, value x) {
 
    CAMLparam3(mlwindow, y, x);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -637,7 +637,7 @@ value caml_curses_wmove(value mlwindow, value y, value x) {
 value caml_curses_getyx(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -646,7 +646,7 @@ value caml_curses_getyx(value mlwindow) {
 value caml_curses_getmaxyx(value mlwindow) {
 
    CAMLparam1(mlwindow);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -655,7 +655,7 @@ value caml_curses_getmaxyx(value mlwindow) {
 value caml_curses_scrollok(value mlwindow, value scrollable) {
 
    CAMLparam2(mlwindow, scrollable);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -664,7 +664,7 @@ value caml_curses_scrollok(value mlwindow, value scrollable) {
 value caml_curses_echook(value ok) {
 
    CAMLparam1(ok);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }
@@ -673,7 +673,7 @@ value caml_curses_echook(value ok) {
 value caml_curses_wscrl(value mlwindow, value lines) {
 
    CAMLparam2(mlwindow, lines);
-   failwith("No ncurses support enabled");
+   caml_failwith("No ncurses support enabled");
    CAMLreturn(Val_unit);
 
 }

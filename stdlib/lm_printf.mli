@@ -159,7 +159,7 @@ val get_ellipsis_text : unit -> string
 (*
  * Redirecting formatter output.
  *)
-val set_formatter_out_channel      : Pervasives.out_channel -> unit
+val set_formatter_out_channel      : Stdlib.out_channel -> unit
 val set_formatter_output_functions : (string -> int -> int -> unit) -> (unit -> unit) -> unit
 val get_formatter_output_functions : unit -> (string -> int -> int -> unit) * (unit -> unit)
 
@@ -182,7 +182,7 @@ val get_all_formatter_output_functions :
  *)
 type formatter = out_channel
 
-val formatter_of_out_channel     : Pervasives.out_channel -> formatter
+val formatter_of_out_channel     : Stdlib.out_channel -> formatter
 val std_formatter                : formatter
 val err_formatter                : formatter
 val str_formatter                : formatter
@@ -199,7 +199,7 @@ val make_formatter               : (string -> int -> int -> unit) -> (unit -> un
  * [|PID1: string1|][|PID2: string2|]...
  * (with consequetive non-NL strings from the same PID merged together).
  *)
-val extra_formatting             : string -> Pervasives.out_channel -> formatter -> unit
+val extra_formatting             : string -> Stdlib.out_channel -> formatter -> unit
 
 val pp_open_hbox                 : formatter -> unit -> unit
 val pp_open_vbox                 : formatter -> int -> unit
@@ -234,7 +234,7 @@ val pp_get_max_boxes             : formatter -> unit -> int
 val pp_over_max_boxes            : formatter -> unit -> bool
 val pp_set_ellipsis_text         : formatter -> string -> unit
 val pp_get_ellipsis_text         : formatter -> unit -> string
-val pp_set_formatter_out_channel : formatter -> Pervasives.out_channel -> unit
+val pp_set_formatter_out_channel : formatter -> Stdlib.out_channel -> unit
 
 val pp_set_formatter_output_functions :
    formatter -> (string -> int -> int -> unit) -> (unit -> unit) -> unit

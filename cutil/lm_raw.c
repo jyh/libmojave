@@ -57,12 +57,12 @@ value load_int8(value v_string, value v_off)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
 
     /* Check bounds */
     if(off < 0 || off > len - 1)
-        failwith("load_int8");
+        caml_failwith("load_int8");
 
     /* Get the number */
     CAMLreturn(Val_int(str[off]));
@@ -76,12 +76,12 @@ value load_int16(value v_string, value v_off)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
 
     /* Check bounds */
     if(off < 0 || off > len - 2 || off & 1)
-        failwith("load_int16");
+        caml_failwith("load_int16");
 
     /* Get the number */
     CAMLreturn(Val_int(*(int16_t *)(str + off)));
@@ -97,16 +97,16 @@ value load_int32(value v_string, value v_off)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
 
     /* Check bounds */
     if(off < 0 || off > len - 4 || off & 3)
-        failwith("load_int32");
+        caml_failwith("load_int32");
 
     /* Get the number */
     i = *(int32_t *)(str + off);
-    result = copy_int32(i);
+    result = caml_copy_int32(i);
     CAMLreturn(result);
 }
 
@@ -120,16 +120,16 @@ value load_int64(value v_string, value v_off)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
 
     /* Check bounds */
     if(off < 0 || off > len - 8 || off & 3)
-        failwith("load_int64");
+        caml_failwith("load_int64");
 
     /* Get the number */
     i = *(int64_t *)(str + off);
-    result = copy_int64(i);
+    result = caml_copy_int64(i);
     CAMLreturn(result);
 }
 
@@ -143,16 +143,16 @@ value load_float(value v_string, value v_off)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
 
     /* Check bounds */
     if(off < 0 || off > len - 8 || off & 7)
-        failwith("load_float");
+        caml_failwith("load_float");
 
     /* Get the number */
     x = *(double *)(str + off);
-    result = copy_double(x);
+    result = caml_copy_double(x);
     CAMLreturn(result);
 }
 
@@ -167,13 +167,13 @@ value store_int8(value v_string, value v_off, value v_val)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
     i = Int_val(v_val);
 
     /* Check bounds */
     if(off < 0 || off > len - 1)
-        failwith("store_int8");
+        caml_failwith("store_int8");
 
     /* Get the number */
     str[off] = i;
@@ -188,13 +188,13 @@ value store_int16(value v_string, value v_off, value v_val)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
     i = Int_val(v_val);
 
     /* Check bounds */
     if(off < 0 || off > len - 2 || off & 1)
-        failwith("store_int16");
+        caml_failwith("store_int16");
 
     /* Get the number */
     *(int16_t *)(str + off) = i;
@@ -211,13 +211,13 @@ value store_int32(value v_string, value v_off, value v_val)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
     i = Int32_val(v_val);
 
     /* Check bounds */
     if(off < 0 || off > len - 4 || off & 3)
-        failwith("store_int32");
+        caml_failwith("store_int32");
 
     /* Get the number */
     *(int32_t *)(str + off) = i;
@@ -234,13 +234,13 @@ value store_int64(value v_string, value v_off, value v_val)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
     i = Int64_val(v_val);
 
     /* Check bounds */
     if(off < 0 || off > len - 8 || off & 3)
-        failwith("store_int64");
+        caml_failwith("store_int64");
 
     /* Get the number */
     *(int64_t *)(str + off) = i;
@@ -257,13 +257,13 @@ value store_float(value v_string, value v_off, value v_val)
 
     /* Get arguments */
     str = String_val(v_string);
-    len = string_length(v_string);
+    len = caml_string_length(v_string);
     off = Int_val(v_off);
     x = Double_val(v_val);
 
     /* Check bounds */
     if(off < 0 || off > len - 8 || off & 7)
-        failwith("store_float");
+        caml_failwith("store_float");
 
     /* Get the number */
     *(double *)(str + off) = x;

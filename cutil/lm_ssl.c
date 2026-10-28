@@ -59,12 +59,16 @@ typedef int SOCKET;
 
 #define Nothing ((value) 0)
 
+#include <caml/version.h>
+#if OCAML_VERSION_MAJOR >= 5
+#define uerror caml_uerror
+#endif
 extern void uerror (char * cmdname, value arg) Noreturn;
 
 #define uerr(cmd) uerror(cmd, Nothing)
 
-void enter_blocking_section(void);
-void leave_blocking_section(void);
+void caml_enter_blocking_section(void);
+void caml_leave_blocking_section(void);
 
 /*
  * Inet addresses are strings.
@@ -72,7 +76,7 @@ void leave_blocking_section(void);
 static value alloc_inet_addr(uint32_t addr)
 {
     value a;
-    a = alloc_string(sizeof(uint32_t));
+    a = caml_alloc_string(sizeof(uint32_t));
     *(uint32_t *)a = addr;
     return a;
 }
@@ -134,21 +138,21 @@ static SSL_CTX *lm_ssl_ctx_new(const char *keyfile)
     context = SSL_CTX_new(SSLv23_method());
     if(context == 0) {
         print_errors();
-        failwith("lm_ssl_ctx_new: can't allocate context");
+        caml_failwith("lm_ssl_ctx_new: can't allocate context");
     }
 
     /* Load our certificate */
     if(SSL_CTX_use_certificate_chain_file(context, keyfile) == 0) {
         fprintf(stderr, "keyfile: %s\n", keyfile);
         print_errors();
-        failwith("lm_ssl_ctx_new: can't assign certificate");
+        caml_failwith("lm_ssl_ctx_new: can't assign certificate");
     }
 
     /* Password */
     if(SSL_CTX_use_PrivateKey_file(context, keyfile, SSL_FILETYPE_PEM) == 0) {
         fprintf(stderr, "keyfile: %s\n", keyfile);
         print_errors();
-        failwith("lm_ssl_ctx_new: can't set private key");
+        caml_failwith("lm_ssl_ctx_new: can't set private key");
     }
 
     return context;
@@ -166,7 +170,7 @@ static void lm_ssl_ctx_dhfile(SSL_CTX *context, const char *dhfile)
     bio = BIO_new_file(dhfile, "r");
     if(bio == 0) {
         print_errors();
-        failwith("lm_ssl_ctx_new: can't open DH file");
+        caml_failwith("lm_ssl_ctx_new: can't open DH file");
     }
 
     /* Read the file */
@@ -174,7 +178,7 @@ static void lm_ssl_ctx_dhfile(SSL_CTX *context, const char *dhfile)
     BIO_free(bio);
     if(SSL_CTX_set_tmp_dh(context, ret) < 0) {
         print_errors();
-        failwith("lm_ssl_ctx_new: can't set DH params");
+        caml_failwith("lm_ssl_ctx_new: can't set DH params");
     }
 }
 
@@ -230,7 +234,7 @@ static struct custom_operations win_handle_ops = {
 
 static value ssl_info_new(SslInfoKind kind, SOCKET fd, SSL_CTX *context, SSL *ssl)
 {
-    value v = alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
+    value v = caml_alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
     SslInfo *info = SslInfo_val(v);
     info->kind = kind;
     info->fd = fd;
@@ -277,7 +281,7 @@ value lm_ssl_socket(value v_keyfile)
     s = socket(PF_INET, SOCK_STREAM, 0);
     if(s < 0) {
         SSL_CTX_free(context);
-        failwith("lm_ssl_socket: socket call failed");
+        caml_failwith("lm_ssl_socket: socket call failed");
     }
 
     /* Allow the address to be reused */
@@ -367,7 +371,7 @@ value lm_ssl_get_addr(value v_info)
     /* Allocate the address */
     a = alloc_inet_addr(sin.sin_addr.s_addr);
     Begin_root(a);
-    addr = alloc_small(2, 0);
+    addr = caml_alloc_small(2, 0);
     Field(addr, 0) = a;
     Field(addr, 1) = Val_int(ntohs(sin.sin_port));
     End_roots();
@@ -398,9 +402,9 @@ value lm_ssl_accept(value v_info)
 
     /* Listen on the server socket */
     info = SslInfo_val(v_info);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     fd = accept(info->fd, (struct sockaddr *) 0, 0);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if(fd < 0) {
         uerr("lm_ssl_accept");
     }
@@ -415,7 +419,7 @@ value lm_ssl_accept(value v_info)
     if(ssl == 0) {
         closesocket(fd);
         print_errors();
-        failwith("lm_ssl_accept");
+        caml_failwith("lm_ssl_accept");
     }
 
     /* Set the descriptor */
@@ -424,7 +428,7 @@ value lm_ssl_accept(value v_info)
         closesocket(fd);
         SSL_free(ssl);
         print_errors();
-        failwith("lm_ssl_accept: set_fd failed");
+        caml_failwith("lm_ssl_accept: set_fd failed");
     }
 
     /* Negotiate */
@@ -433,7 +437,7 @@ value lm_ssl_accept(value v_info)
         closesocket(fd);
         SSL_free(ssl);
         print_errors();
-        failwith("lm_ssl_accept: negotiation failed");
+        caml_failwith("lm_ssl_accept: negotiation failed");
     }
 
     /* Allocate a new struct */
@@ -453,7 +457,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     /* Check to make sure not connected */
     info = SslInfo_val(v_info);
     if(info->ssl)
-        failwith("lm_ssl_connect: already connected");
+        caml_failwith("lm_ssl_connect: already connected");
 
     /* Get the address */
     sin.sin_family = AF_INET;
@@ -461,9 +465,9 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     sin.sin_port = htons((short) Int_val(v_port));
 
     /* Make the connection */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if(code < 0) {
         uerr("lm_ssl_connect");
     }
@@ -472,7 +476,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     ssl = SSL_new(info->context);
     if(ssl == 0) {
         print_errors();
-        failwith("lm_ssl_connect");
+        caml_failwith("lm_ssl_connect");
     }
 
     /* Set the descriptor */
@@ -480,7 +484,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     if(code <= 0) {
         SSL_free(ssl);
         print_errors();
-        failwith("lm_ssl_connect: set_fd failed");
+        caml_failwith("lm_ssl_connect: set_fd failed");
     }
 
     /* Negotiate */
@@ -488,7 +492,7 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
     if(code <= 0) {
         SSL_free(ssl);
         print_errors();
-        failwith("lm_ssl_connect: negotiation failed");
+        caml_failwith("lm_ssl_connect: negotiation failed");
     }
 
     info->ssl = ssl;
@@ -508,9 +512,9 @@ value lm_ssl_read(value v_info, value v_string, value v_off, value v_len)
     buf = String_val(v_string);
     off = Int_val(v_off);
     len = Int_val(v_len);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     amount = SSL_read(info->ssl, buf + off, len);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     return Val_int(amount);
 }
 
@@ -527,9 +531,9 @@ value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
     buf = String_val(v_string);
     off = Int_val(v_off);
     len = Int_val(v_len);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     amount = SSL_write(info->ssl, buf + off, len);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     return Val_int(amount);
 }
 
@@ -542,7 +546,7 @@ value lm_ssl_flush(value v_info)
     BIO *bio;
 
     info = SslInfo_val(v_info);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     bio = SSL_get_wbio(info->ssl);
     if(bio)
         /* XXX: BUG!
@@ -552,7 +556,7 @@ value lm_ssl_flush(value v_info)
          * taken is the call fails.
          */
         BIO_flush(bio);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     return Val_unit;
 }
 
@@ -645,7 +649,7 @@ static struct custom_operations win_handle_ops = {
 
 static value ssl_info_new(SOCKET fd)
 {
-    value v = alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
+    value v = caml_alloc_custom(&win_handle_ops, sizeof(SslInfo), 0, 1);
     SslInfo *info = SslInfo_val(v);
     info->fd = fd;
     return v;
@@ -677,7 +681,7 @@ value lm_ssl_socket(value v_keyfile)
     /* Open the socket */
     s = socket(PF_INET, SOCK_STREAM, 0);
     if(s < 0)
-        failwith("lm_ssl_socket: socket call failed");
+        caml_failwith("lm_ssl_socket: socket call failed");
 
     return ssl_info_new(s);
 }
@@ -742,7 +746,7 @@ value lm_ssl_get_addr(value v_info)
     /* Allocate the address */
     a = alloc_inet_addr(sin.sin_addr.s_addr);
     Begin_root(a);
-    addr = alloc_small(2, 0);
+    addr = caml_alloc_small(2, 0);
     Field(addr, 0) = a;
     Field(addr, 1) = Val_int(ntohs(sin.sin_port));
     End_roots();
@@ -772,10 +776,10 @@ value lm_ssl_accept(value v_info)
 
     /* Listen on the server socket */
     info = SslInfo_val(v_info);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     fd = accept(info->fd, (struct sockaddr *) 0, 0);
     fflush(stderr);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if(fd < 0) {
         uerr("lm_ssl_accept");
     }
@@ -801,9 +805,9 @@ value lm_ssl_connect(value v_info, value v_addr, value v_port)
 
     /* Make the connection */
     info = SslInfo_val(v_info);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     code = connect(info->fd, (struct sockaddr *) &sin, sizeof(sin));
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if(code < 0) {
         uerr("lm_ssl_connect");
     }
@@ -824,9 +828,9 @@ value lm_ssl_read(value v_info, value v_string, value v_off, value v_len)
     buf = String_val(v_string);
     off = Int_val(v_off);
     len = Int_val(v_len);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     amount = recv(info->fd, buf + off, len, 0);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     return Val_int(amount);
 }
 
@@ -843,9 +847,9 @@ value lm_ssl_write(value v_info, value v_string, value v_off, value v_len)
     buf = String_val(v_string);
     off = Int_val(v_off);
     len = Int_val(v_len);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     amount = send(info->fd, buf + off, len, 0);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     return Val_int(amount);
 }
 

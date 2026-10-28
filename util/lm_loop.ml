@@ -51,7 +51,7 @@ type node_dfnum = int
 module IntCompare =
 struct
    type t = int
-   let compare = Pervasives.compare
+   let compare = Stdlib.compare
 end
 
 module NodeIdSet = Lm_set.LmMake (IntCompare)

@@ -52,7 +52,7 @@ end
 module StringCompare =
 struct
    type t = string
-   let compare = Pervasives.compare
+   let compare = Stdlib.compare
 end
 
 module IntTable = Lm_map.LmMake (IntCompare)

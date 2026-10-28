@@ -109,10 +109,12 @@ let extra_formatting file chan formatter =
          out s 0 i;
    in
    let functions =
-      { out_string = out;
+      { (pp_get_formatter_out_functions formatter ()) with
+        out_string = out;
         out_flush = flush;
         out_newline = newline;
-        out_spaces = spaces
+        out_spaces = spaces;
+        out_indent = spaces
       }
    in
       pp_set_formatter_out_functions formatter functions
@@ -185,27 +187,44 @@ let printf  = printf
 let eprintf = eprintf
 let sprintf = sprintf
 let fprintf = fprintf
-let bprintf = bprintf
+(* Format.bprintf was removed in OCaml 5; this is its 4.14 definition:
+   print to a formatter on the buffer, then flush that formatter. *)
+let bprintf buf fmt =
+   let ppf = formatter_of_buffer buf in
+      kfprintf (fun ppf -> pp_print_flush ppf ()) ppf fmt
 
 (*
  * Formatting functions.
  *)
 let set_all_formatter_output_functions out flush newline spaces =
    let functions =
-      { out_string = out;
+      { (get_formatter_out_functions ()) with
+        out_string = out;
         out_flush = flush;
         out_newline = newline;
-        out_spaces = spaces
+        out_spaces = spaces;
+        out_indent = spaces
       }
    in
       set_formatter_out_functions functions
 
+(* get_all_formatter_output_functions and its pp_ form were removed in
+   OCaml 5; these are their 4.14 definitions over the record accessors. *)
+let pp_get_all_formatter_output_functions buf () =
+   let f = pp_get_formatter_out_functions buf () in
+      f.out_string, f.out_flush, f.out_newline, f.out_spaces
+
+let get_all_formatter_output_functions () =
+   pp_get_all_formatter_output_functions std_formatter ()
+
 let pp_set_all_formatter_output_functions buf out flush newline spaces =
    let functions =
-      { out_string = out;
+      { (pp_get_formatter_out_functions buf ()) with
+        out_string = out;
         out_flush = flush;
         out_newline = newline;
-        out_spaces = spaces
+        out_spaces = spaces;
+        out_indent = spaces
       }
    in
       pp_set_formatter_out_functions buf functions

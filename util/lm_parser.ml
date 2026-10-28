@@ -316,7 +316,7 @@ struct
                         if cmp = 0 then
                            let cmp = ivar_list_compare right1 right2 in
                               if cmp = 0 then
-                                 Pervasives.compare prec1 prec2
+                                 Stdlib.compare prec1 prec2
                               else
                                  cmp
                         else
