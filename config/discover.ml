@@ -35,6 +35,9 @@ let () =
   C.main ~name:"libmojave" (fun c ->
       let win32 = C.ocaml_config_var c "os_type" = Some "Win32" in
       let cflags = ref [ "-DHAVE_SNPRINTF" ] and libs = ref [] in
+      (* OMake defines WIN32 on Windows (build/C.om, OS_CFLAGS); the sources
+         test WIN32, which MinGW predefines and MSVC does not. *)
+      if win32 then cflags := "-DWIN32" :: !cflags;
       if (not win32) && C.c_test c ~link_flags:[] getattrlist_test then
         cflags := "-DDETECT_FS_CASE_SENSITIVE_GETATTRLIST" :: !cflags;
       if not win32 then begin
