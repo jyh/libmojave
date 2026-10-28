@@ -484,7 +484,7 @@ def repo_slug() -> str:
     """This repo's name from its origin URL. EXACT match, never a substring --
     two of the three repos this file ships to differ by a suffix."""
     out = subprocess.run(["git", "config", "--get", "remote.origin.url"],
-                         capture_output=True, text=True, encoding="utf-8")
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     url = out.stdout.strip()
     if not url:
         return ""
@@ -585,7 +585,7 @@ def audit_pins(exempt):
             # published -- naming the object the answer is about.
             local_only.append(e)
         blob = subprocess.run(["git", "show", f'{found_ref}:{e["file"]}'],
-                              capture_output=True, text=True, encoding="utf-8")
+                              capture_output=True, text=True, encoding="utf-8", errors="replace")
         if blob.returncode != 0:
             drifted.append(e)               # ref IS here and the FILE is gone
             continue
@@ -635,7 +635,7 @@ def commit_messages(rev_range: str) -> list[tuple[str, str]]:
     sep = "@@PATHCOMMIT@@"
     out = subprocess.run(
         ["git", "log", f"--format=%H%x1f%B{sep}", rev_range],
-        capture_output=True, text=True, encoding="utf-8", check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout
     rows = []
     for chunk in out.split(sep):
@@ -676,7 +676,7 @@ def added_lines(rev_range: str) -> list[tuple[str, str]]:
     """
     out = subprocess.run(
         ["git", "diff", "--unified=0", "--no-color", rev_range],
-        capture_output=True, text=True, encoding="utf-8", check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout
     rows: list[tuple[str, str]] = []
     path = "?"
@@ -708,7 +708,7 @@ def _is_empty_scan_fatal(rows) -> bool:
 
 def is_shallow() -> bool:
     out = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
-                         capture_output=True, text=True, encoding="utf-8")
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     return out.stdout.strip() == "true"
 
 
@@ -976,7 +976,7 @@ def self_test() -> int:
 
         def g(*a):
             return subprocess.run(["git", "-C", repo, *a], capture_output=True,
-                                  text=True, encoding="utf-8")
+                                  text=True, encoding="utf-8", errors="replace")
 
         g("config", "user.email", "selftest@example.invalid")
         g("config", "user.name", "selftest")
@@ -1057,7 +1057,7 @@ def self_test() -> int:
 
             def d(*a):
                 return subprocess.run(["git", "-C", div, *a], capture_output=True,
-                                      text=True, encoding="utf-8")
+                                      text=True, encoding="utf-8", errors="replace")
 
             d("config", "user.email", "selftest@example.invalid")
             d("config", "user.name", "selftest")
@@ -1218,7 +1218,7 @@ def self_test() -> int:
 
         def h(*a):
             return subprocess.run(["git", "-C", hrepo, *a], capture_output=True,
-                                  text=True, encoding="utf-8")
+                                  text=True, encoding="utf-8", errors="replace")
 
         h("config", "user.email", "selftest@example.invalid")
         h("config", "user.name", "selftest")
@@ -1849,7 +1849,7 @@ def empty_tree_sha() -> str:
     constant is the SHA-1 value and would silently be wrong in a SHA-256
     repository -- a hard-coded hash is a bet on an object format."""
     return subprocess.run(["git", "hash-object", "-t", "tree", os.devnull],
-                          capture_output=True, text=True, encoding="utf-8",
+                          capture_output=True, text=True, encoding="utf-8", errors="replace",
                           check=True).stdout.strip()
 
 
@@ -1867,7 +1867,7 @@ def _parse_added(diff_text: str) -> list[tuple[str, str]]:
 
 def _added_rows_between(base: str, sha: str) -> list[tuple[str, str]]:
     out = subprocess.run(["git", "diff", "--unified=0", "--no-color", base, sha],
-                         capture_output=True, text=True, encoding="utf-8",
+                         capture_output=True, text=True, encoding="utf-8", errors="replace",
                          check=True).stdout
     return _parse_added(out)
 
@@ -1897,7 +1897,7 @@ def history_findings() -> list[tuple[str, str, str, str]]:
     """(sha, file, what, line) for every commit reachable from HEAD."""
     empty = empty_tree_sha()
     out = subprocess.run(["git", "log", "--format=%H %P", "HEAD"],
-                         capture_output=True, text=True, encoding="utf-8",
+                         capture_output=True, text=True, encoding="utf-8", errors="replace",
                          check=True).stdout
     found: list[tuple[str, str, str, str]] = []
     for entry in out.splitlines():
