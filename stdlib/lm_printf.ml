@@ -115,7 +115,7 @@ let extra_formatting file chan formatter =
         out_newline = newline;
         out_spaces = spaces;
         out_indent = spaces
-      }
+      } [@warning "-23"] (* all the fields on OCaml versions without out_width *)
    in
       pp_set_formatter_out_functions formatter functions
 
@@ -204,7 +204,7 @@ let set_all_formatter_output_functions out flush newline spaces =
         out_newline = newline;
         out_spaces = spaces;
         out_indent = spaces
-      }
+      } [@warning "-23"] (* all the fields on OCaml versions without out_width *)
    in
       set_formatter_out_functions functions
 
@@ -225,7 +225,7 @@ let pp_set_all_formatter_output_functions buf out flush newline spaces =
         out_newline = newline;
         out_spaces = spaces;
         out_indent = spaces
-      }
+      } [@warning "-23"] (* all the fields on OCaml versions without out_width *)
    in
       pp_set_formatter_out_functions buf functions
 
