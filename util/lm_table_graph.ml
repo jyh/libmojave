@@ -135,7 +135,7 @@ struct
    module NodeCompare =
    struct
       type t = node
-      let compare = Pervasives.compare
+      let compare = Stdlib.compare
    end
 
    module Set = Lm_set.LmMake (NodeCompare)
@@ -359,7 +359,7 @@ struct
    module NodeCompare =
    struct
       type t = node
-      let compare = Pervasives.compare
+      let compare = Stdlib.compare
    end
 
    module Set = Lm_set.LmMake (NodeCompare)

@@ -303,7 +303,7 @@ struct
                   loop searched t
                else
                   let edges = select entries.(node) in
-                     loop (node :: searched) (List.merge Pervasives.compare edges t)
+                     loop (node :: searched) (List.merge Stdlib.compare edges t)
           | [] ->
                false
       in

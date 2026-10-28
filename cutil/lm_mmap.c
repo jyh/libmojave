@@ -53,6 +53,7 @@
 #  include <fcntl.h>
 #endif /* _WIN32 */
 
+#include <caml/version.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -108,7 +109,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
                     flags, FILE_ATTRIBUTE_NORMAL,
                     0);
     if(fd == INVALID_HANDLE_VALUE)
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
 
     /*
      * Create a map, but do not allocate storage.
@@ -126,7 +127,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     map = CreateFileMapping(fd, 0, prot, 0, size, 0);
     if(map == 0) {
         CloseHandle(fd);
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     }
 
     /*
@@ -140,7 +141,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     if(data == 0) {
         CloseHandle(map);
         CloseHandle(fd);
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     }
 
     /*
@@ -151,7 +152,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
         UnmapViewOfFile(data);
         CloseHandle(map);
         CloseHandle(fd);
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     }
     memset(infop, 0, sizeof(infop));
     infop->fd = fd;
@@ -165,10 +166,10 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     /* Open the file and get the existing size */
     int fd = open(name, perm, mode);
     if(fd < 0)
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     if(fstat(fd, &buf) < 0) {
         close(fd);
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     }
 
     /* Figure out read/write */
@@ -188,7 +189,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     infop = (Mmap *) malloc(sizeof(Mmap));
     if(infop == 0) {
         close(fd);
-        failwith("mmap_open");
+        caml_failwith("mmap_open");
     }
     infop->fd = fd;
     infop->size = MAX_SIZE;
@@ -196,7 +197,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     if(infop->data == (char *) -1) {
         close(fd);
         free(infop);
-        failwith("mmap");
+        caml_failwith("mmap");
     }
 #endif /* _WIN32 */
 
@@ -318,7 +319,13 @@ value ml_string_of_mmap(value mmap_val)
     mmap = (Mmap *) mmap_val;
     data = (value) ((header_t *) mmap->data + 1);
     words = (mmap->size >> 2) - 1;
+#if OCAML_VERSION_MAJOR >= 5
+    /* The block lives outside the OCaml heap: OCaml 5 requires such a
+       header to carry the NOT_MARKABLE color so the GC never marks it. */
+    *(header_t *) Hp_val(data) = Caml_out_of_heap_header(words, String_tag);
+#else
     Hd_val(data) = (words << 10) | String_tag;
+#endif
     return data;
 }
 

@@ -46,7 +46,7 @@
 value ml_write_block(value obj, value buf, value v_start)
 {
     int start = Int_val(v_start);
-    int buf_len = string_length(buf);
+    int buf_len = caml_string_length(buf);
     int obj_len = Bosize_val(obj);
     char *bufp = String_val(buf);
 
@@ -54,7 +54,7 @@ value ml_write_block(value obj, value buf, value v_start)
      * Check all the bounds.
      */
     if(start < 0 || start + obj_len > buf_len)
-        invalid_argument("unsafe_write_block");
+        caml_invalid_argument("unsafe_write_block");
 
     /*
      * Copy the data as a byte stream.

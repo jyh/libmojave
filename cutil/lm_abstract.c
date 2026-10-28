@@ -48,5 +48,5 @@
  */
 value new_abstract()
 {
-    return (value) alloc(1, Abstract_tag);
+    return (value) caml_alloc(1, Abstract_tag);
 }

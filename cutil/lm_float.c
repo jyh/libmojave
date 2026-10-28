@@ -71,7 +71,7 @@ static INLINE value copy_float80(long double val) {
    value block;
    
    /* Allocate a string block to store the value */
-   block = alloc_string(sizeof(long double));
+   block = caml_alloc_string(sizeof(long double));
    store_float80(block, val);
    return(block);
 
@@ -99,7 +99,7 @@ value string_of_float80(value f) {
 #endif
    
    /* Allocate a new string block to contain result */
-   block = copy_string(buffer);
+   block = caml_copy_string(buffer);
    CAMLreturn(block);
 
 }
@@ -114,7 +114,7 @@ value float_of_float80(value f) {
    
    /* Load the value and create a new (standard double) block for it */
    val = load_float80(f);
-   block = copy_double(val);
+   block = caml_copy_double(val);
    CAMLreturn(block);
 
 }
@@ -199,7 +199,7 @@ value float80_format(value fmt, value f) {
 #endif
    
    /* Allocate a new string block to contain result */
-   block = copy_string(buffer);
+   block = caml_copy_string(buffer);
    CAMLreturn(block);
 
 }

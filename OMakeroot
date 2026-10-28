@@ -17,10 +17,14 @@ open configure/Configure
 #
 LM_STANDALONE = true
 
+# Build both bytecode and native code, as omake 0.9.x did by default.
+BYTE_ENABLED = true
+NATIVE_ENABLED = $(OCAMLOPT_EXISTS)
+
 #
 # Options
 #
-OCAMLFLAGS += -warn-error Aez-3-37-44-50 -w Aez-37-44-50 -safe-string
+OCAMLFLAGS += -w +a-4-27-37-44-50-70 -warn-error +a-3-4-27-37-44-50-67-69-70 -safe-string
 
 #
 # Include the OMakefile
