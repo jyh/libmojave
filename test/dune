@@ -7,9 +7,11 @@
 
 (tests
  (names test_string_util test_symbol test_num test_channel
-  test_set_map test_printf test_lexer test_parser test_hash test_fmarshal)
+  test_set_map test_printf test_lexer test_parser test_hash test_fmarshal
+  test_ctype)
  (modules test_string_util test_symbol test_num test_channel
-  test_set_map test_printf test_lexer test_parser test_hash test_fmarshal)
+  test_set_map test_printf test_lexer test_parser test_hash test_fmarshal
+  test_ctype)
  (libraries libmojave pin unix))
 
 (test
