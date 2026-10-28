@@ -43,10 +43,11 @@ removed, except `Lm_dll` (see below).
 
 ### Tests
 
-- Pinning tests in `test/` (#5, #6, #7, #9, #11) for `Lm_string_util`,
-  `Lm_filename_util`, `Lm_glob`, `Lm_symbol`, `Lm_set`, `Lm_map`,
-  `Lm_printf`, `Lm_lexer`, `Lm_parser`, `Lm_num`, `Lm_channel` and
-  `Lm_thread`.
+- Pinning tests in `test/` (#5, #6, #7, #9, #11, #16) for
+  `Lm_string_util`, `Lm_filename_util`, `Lm_glob`, `Lm_symbol`, `Lm_set`,
+  `Lm_map`, `Lm_printf`, `Lm_lexer`, `Lm_parser`, `Lm_num`, `Lm_channel`,
+  `Lm_thread`, `Lm_hash` and `Lm_fmarshal`.
+  `Lm_marshal_buf` and `Lm_marshal_shared` (C stubs) are not pinned.
   - Each test records a function's output on chosen inputs, as generated from
     the code at the time; the tests do not specify what the output should be.
   - Each test was shown to fail when the code it covers was changed.
@@ -76,6 +77,10 @@ None of these was changed. A fix will show up as a change to an expected file.
   end-of-input token itself.
 - `Lm_ctype` declares C primitives (`is_alnum` and five others) that
   libmojave does not define.
+- `Lm_fmarshal` writes an `Int` as 32 bits, so `Int (-1)` reads back as
+  `Int 4294967295` and `Int max_int` is truncated.
+- `Lm_hash.HashCode` gives `add_int (-1)` and `add_int max_int` the same
+  code.
 
 ### Repository
 
