@@ -6,9 +6,9 @@
  (modules pin))
 
 (tests
- (names test_string_util test_symbol
+ (names test_string_util test_symbol test_num test_channel
   test_set_map test_printf test_lexer test_parser)
- (modules test_string_util test_symbol
+ (modules test_string_util test_symbol test_num test_channel
   test_set_map test_printf test_lexer test_parser)
  (libraries libmojave pin unix))
 
