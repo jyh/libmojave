@@ -1,6 +1,8 @@
 # Changes
 
-## Unreleased (2026 refresh)
+## 1.0.0 (2026-10-28)
+
+The first release. It is the 2017 library, refreshed for current OCaml.
 
 libmojave builds again, on a current OCaml. Nothing in the public API was
 removed, except `Lm_dll` (see below).
