@@ -3,8 +3,8 @@ name: Build
 # Builds libmojave with OMake and with dune, and checks that the bytecode and
 # native archives of each build contain exactly the modules the Files lists
 # name -- so the two builds also agree with each other.
-# It does not run any tests (there are none yet), and it builds the Unix code
-# paths only: the Win32 branches are not compiled anywhere in CI.
+# It runs the pinning tests in test/. It builds the Unix code paths only: the
+# Win32 branches are not compiled anywhere in CI.
 on:
   push:
   pull_request:
@@ -31,6 +31,8 @@ jobs:
       # the source tree, and dune would then see two rules for each.
       - name: build with dune
         run: opam exec -- dune build
+      - name: pinning tests (test/*.expected is the output as of when each was written)
+        run: opam exec -- dune runtest
       - name: build with OMake
         run: opam exec -- omake -j4
       - name: the archives hold exactly the listed modules
