@@ -1,7 +1,8 @@
 name: Build
 
-# Builds libmojave with OMake on a current OCaml and checks that the bytecode
-# and native archives each contain exactly the modules the Files lists name.
+# Builds libmojave with OMake and with dune, and checks that the bytecode and
+# native archives of each build contain exactly the modules the Files lists
+# name -- so the two builds also agree with each other.
 # It does not run any tests (there are none yet), and it builds the Unix code
 # paths only: the Win32 branches are not compiled anywhere in CI.
 on:
@@ -14,19 +15,23 @@ permissions:
 
 jobs:
   omake:
-    name: build with OMake (OCaml ${{ matrix.ocaml }})
+    name: build with OMake and dune (OCaml ${{ matrix.ocaml }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ocaml: ["5.4"]
+        ocaml: ["4.14", "5.4"]
     steps:
       - uses: actions/checkout@v4
       - uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
-      - run: opam install -y omake ocamlfind
-      - name: build
+      - run: opam install -y omake ocamlfind dune dune-configurator
+      # dune first: an OMake build writes stdlib/lm_thread_{core,pool}.ml into
+      # the source tree, and dune would then see two rules for each.
+      - name: build with dune
+        run: opam exec -- dune build
+      - name: build with OMake
         run: opam exec -- omake -j4
       - name: the archives hold exactly the listed modules
         run: |
@@ -34,13 +39,18 @@ jobs:
             sed -n 's/^ *\(lm_[a-z0-9_]*\) *$/\1/p' "$d/Files"
           done | sort > listed.txt
           test -s listed.txt || { echo "FAIL: no modules listed"; exit 1; }
-          for a in lm.cma lm.cmxa; do
+          for a in lm.cma lm.cmxa _build/default/lib/lm.cma _build/default/lib/lm.cmxa; do
             test -f "$a" || { echo "FAIL: $a was not built"; exit 1; }
             opam exec -- ocamlobjinfo "$a" | sed -n -e 's/^Unit name: *//p' -e 's/^Name: *//p' \
-              | tr 'A-Z' 'a-z' | sort > "$a.units"
-            if ! diff -u listed.txt "$a.units"; then
+              | tr 'A-Z' 'a-z' | sort > units.txt
+            if ! diff -u listed.txt units.txt; then
               echo "FAIL: $a does not match the Files lists"; exit 1
             fi
-            echo "OK $a: $(wc -l < "$a.units") modules"
+            echo "OK $a: $(wc -l < units.txt) modules"
           done
           test -f cutil/liblmcutil.a || { echo "FAIL: cutil/liblmcutil.a was not built"; exit 1; }
+          syms() { nm -g "$1" | awk '$2=="T"{print $3}' | sort; }
+          if ! diff -u <(syms cutil/liblmcutil.a) <(syms _build/default/lib/liblm_stubs.a); then
+            echo "FAIL: the OMake and dune C stub libraries export different symbols"; exit 1
+          fi
+          echo "OK C stubs: $(syms cutil/liblmcutil.a | wc -l) exported symbols, identical in both builds"
