@@ -1,0 +1,9 @@
+input_line* "line one\nline two\n\nlast" = ["line one"; "line two"; ""; "last"; "END End_of_file"]
+input_char "abcdef" = 'a'
+input_char again  = 'b'
+tell on a string channel  = EXN Unix.Unix_error(Unix.EINVAL, "descr", "")
+read 3 on a string channel  = 3 "cde"
+input_buffer 3 on a fresh string channel "abcdef" = abc
+create_string + output_string  = "hello, world"
+seek 4 SET then input_char "0123456789" = EXN Unix.Unix_error(Unix.EINVAL, "descr", "")
+input_char at eof "" = EXN End_of_file
