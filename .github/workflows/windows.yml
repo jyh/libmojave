@@ -32,6 +32,8 @@ jobs:
         run: opam exec -- dune build
       - name: build (system threads)
         run: opam exec -- dune build --profile threads
+      - name: pinning tests (measurement run)
+        run: opam exec -- dune runtest
       - name: the dune archives hold exactly the listed modules
         shell: bash
         run: |
