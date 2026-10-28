@@ -28,6 +28,7 @@ let () =
   done;
   Printf.printf "ascii: %d mismatches over 128 characters x 5 classes\n" !bad;
   List.iter (fun s -> Printf.printf "quote %S = %s\n" s (Lm_ctype.quote s))
-    [ "abc"; "a b"; ""; "x\"y"; "tab\there"; "caf\xc3\xa9" ];
+    [ "abc"; "a b"; ""; "x\"y"; "tab\there" ];
+  (* No bytes above 127 here: whether they print depends on the locale. *)
   Printf.printf "is_capitalized %b %b\n"
     (Lm_ctype.is_capitalized "Abc") (Lm_ctype.is_capitalized "abc")
