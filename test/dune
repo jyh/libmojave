@@ -6,9 +6,9 @@
  (modules pin))
 
 (tests
- (names test_string_util test_filename_util test_glob test_symbol
+ (names test_string_util test_symbol
   test_set_map test_printf test_lexer test_parser)
- (modules test_string_util test_filename_util test_glob test_symbol
+ (modules test_string_util test_symbol
   test_set_map test_printf test_lexer test_parser)
  (libraries libmojave pin unix))
 
@@ -17,3 +17,36 @@
  (modules test_thread)
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin))
+
+; Filenames and globbing are platform-dependent by design (separators,
+; drives), so these two compare against a per-platform expected file.
+(executables
+ (names test_filename_util test_glob)
+ (modules test_filename_util test_glob)
+ (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_filename_util.output (run ./test_filename_util.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_filename_util.expected test_filename_util.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_filename_util.win32.expected test_filename_util.output)))
+
+(rule
+ (with-stdout-to test_glob.output (run ./test_glob.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_glob.expected test_glob.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_glob.win32.expected test_glob.output)))
