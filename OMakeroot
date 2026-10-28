@@ -24,7 +24,7 @@ NATIVE_ENABLED = $(OCAMLOPT_EXISTS)
 #
 # Options
 #
-OCAMLFLAGS += -w +a-4-27-37-44-50-70 -warn-error +a-3-4-27-37-44-50-67-69-70 -safe-string
+OCAMLFLAGS += -w +a-4-27-37-44-50-70 -warn-error +a-3-4-27-37-44-50-67-68-69-70 -safe-string
 
 #
 # Include the OMakefile

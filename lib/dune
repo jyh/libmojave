@@ -17,7 +17,7 @@
  ; OMake's flags, not dune's :standard (whose -strict-sequence changes
  ; type inference in lm_hash_set).
  (flags
-  (-w +a-4-27-37-44-50-70 -warn-error +a-3-4-27-37-44-50-67-69-70 -g))
+  (-w +a-4-27-37-44-50-70 -warn-error +a-3-4-27-37-44-50-67-68-69-70 -g))
  (foreign_stubs
   (language c)
   (names
