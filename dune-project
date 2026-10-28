@@ -6,7 +6,7 @@
 (source (github jyh/libmojave))
 (license "LGPL-2.1-only") ; plus the linking exception in LICENSE.libmojave
 (authors "The Mojave Group, Caltech" "Jason Hickey")
-(maintainers "Jason Hickey")
+(maintainers "https://github.com/jyh/libmojave/issues")
 
 (package
  (name libmojave)
