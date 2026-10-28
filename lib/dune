@@ -13,7 +13,7 @@
  (wrapped false)
  (modules
   Lm_debug Lm_nocompare Lm_big_int Lm_num Lm_rformat Lm_rformat_raw Lm_rformat_text Lm_rformat_html Lm_rformat_tex Lm_make_printf Lm_format Lm_rprintf Lm_printf Lm_printf_rbuffer Lm_heap Lm_array_util Lm_string_util Lm_list_util Lm_file_util Lm_int_util Lm_hashtbl_util Lm_ref_util Lm_array_sig Lm_large_array Lm_large_array_weak Lm_dag_sig Lm_cycle_dag Lm_imp_dag Lm_set_sig Lm_map_sig Lm_linear_set_sig Lm_set Lm_map Lm_table_util Lm_small_set Lm_hash_set Lm_splay_set Lm_splay_table Lm_string_set Lm_int_set Lm_thread_sig Lm_thread_core Lm_thread Lm_thread_util Lm_thread_event Lm_thread_shell Lm_array_linear_set Lm_splay_linear_set Lm_index Lm_serial_map Lm_splay Lm_thread_pool Lm_marshal_sig Lm_marshal_buf Lm_marshal_shared Lm_ctype Lm_symbol Lm_symbol_hash Lm_flags Lm_interval_set Lm_rawint Lm_graph Lm_digraph Lm_dlist Lm_trace Lm_loop Lm_bitmatrix Lm_symbol_matrix Lm_listbuf Lm_float80 Lm_rawfloat Lm_fmarshal Lm_profile Lm_clock Lm_field_table Lm_location Lm_position Lm_attribute Lm_parse_id Lm_readline Lm_terminfo Lm_ncurses Lm_ncurses_display Lm_format_util Lm_command_util Lm_termsize Lm_arg Lm_ssl Lm_config Lm_channel Lm_hash_sig Lm_hash Lm_string_hash Lm_lexer Lm_parser Lm_filename_util Lm_glob Lm_db Lm_print_util Lm_fs_case_sensitive Lm_mmap Lm_mmap_pipe Lm_rusage Lm_id Lm_inet Lm_uname Lm_unix_util Lm_notify )
- (libraries unix)
+ (libraries unix threads.posix)
  ; OMake's flags, not dune's :standard (whose -strict-sequence changes
  ; type inference in lm_hash_set).
  (flags
@@ -37,12 +37,32 @@
  (action
   (run ../config/discover.exe)))
 
-; OMake picks the thread implementation with THREADS_ENABLED, which is off
-; by default; the null variants are what it builds. The system variants do
-; not yet compile on OCaml 5. An OMake build leaves its own copies of these
-; two files in stdlib/; remove them (or run omake clean) before dune build.
+; The thread implementation. OMake picks it with THREADS_ENABLED, which is off
+; by default, so the default here is the null variants too; the "threads"
+; profile (dune build --profile threads) selects the system variants, which
+; is what metaprl builds with. Both are built and tested in CI. An OMake build
+; leaves its own copies of these two files in stdlib/; remove them (or run
+; omake clean) before dune build.
 (rule
- (copy lm_thread_core_null.ml lm_thread_core.ml))
+ (targets lm_thread_core.ml)
+ (deps lm_thread_core_null.ml)
+ (enabled_if (<> %{profile} threads))
+ (action (copy %{deps} %{targets})))
 
 (rule
- (copy lm_thread_pool_null.ml lm_thread_pool.ml))
+ (targets lm_thread_pool.ml)
+ (deps lm_thread_pool_null.ml)
+ (enabled_if (<> %{profile} threads))
+ (action (copy %{deps} %{targets})))
+
+(rule
+ (targets lm_thread_core.ml)
+ (deps lm_thread_core_system.ml)
+ (enabled_if (= %{profile} threads))
+ (action (copy %{deps} %{targets})))
+
+(rule
+ (targets lm_thread_pool.ml)
+ (deps lm_thread_pool_system.ml)
+ (enabled_if (= %{profile} threads))
+ (action (copy %{deps} %{targets})))
