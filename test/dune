@@ -2,6 +2,8 @@
 ; and the .expected file is that output as generated from the code at the
 ; time the test was written. A change in behaviour shows as a diff.
 (tests
- (names test_string_util test_filename_util test_glob test_symbol)
- (modules pin test_string_util test_filename_util test_glob test_symbol)
+ (names test_string_util test_filename_util test_glob test_symbol
+  test_set_map test_printf test_lexer test_parser)
+ (modules pin test_string_util test_filename_util test_glob test_symbol
+  test_set_map test_printf test_lexer test_parser)
  (libraries libmojave unix))

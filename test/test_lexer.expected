@@ -1,0 +1,9 @@
+lex "x1 + 23*(y)" = id:"x1" ws:" " op:"+" ws:" " num:"23" op:"*" lp:"(" id:"y" rp:")" EOF
+lex "let x = \"a b\"" = id:"let" ws:" " id:"x" ws:" " op:"=" ws:" " str:"\"a b\"" EOF
+lex "letter" = id:"letter" EOF
+lex "let" = id:"let" EOF
+lex "12ab" = num:"12" id:"ab" EOF
+lex "" = EOF
+lex "  " = ws:"  " EOF
+lex "a$b" = id:"a" END Failure("Lm_lexer: lex: no clause matched")
+lex "\"open" = END Failure("Lm_lexer: lex: no clause matched")

@@ -1,0 +1,8 @@
+bprintf %d|%s|%5.2f|%x = "42|s| 3.14|ff"
+bprintf appends  = "42|s| 3.14|ff+more"
+sprintf @[<hv 2>a@ b@] = "a b"
+box breaks at margin 20  = "alpha beta gamma\n    delta epsilon"
+vertical box  = "x\n   y\n   z"
+nested boxes  = "top\n  a b\n  inner\n      deep"
+set_all output functions trace  = "S(head)NW3S(body1)NW3S(body2)NF"
+get_all returns the functions set  = "S(b)FNW2"
