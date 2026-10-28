@@ -32,3 +32,19 @@ jobs:
         run: opam exec -- dune build
       - name: build (system threads)
         run: opam exec -- dune build --profile threads
+      - name: the dune archives hold exactly the listed modules
+        shell: bash
+        run: |
+          for d in stdlib system util unix; do
+            sed -n 's/^ *\(lm_[a-z0-9_]*\) *$/\1/p' "$d/Files" | tr -d '\r'
+          done | sort > listed.txt
+          test -s listed.txt || { echo "FAIL: no modules listed"; exit 1; }
+          for a in _build/default/lib/lm.cma _build/default/lib/lm.cmxa; do
+            test -f "$a" || { echo "FAIL: $a was not built"; exit 1; }
+            opam exec -- ocamlobjinfo "$a" | tr -d '\r' | sed -n -e 's/^Unit name: *//p' -e 's/^Name: *//p' \
+              | tr 'A-Z' 'a-z' | sort > units.txt
+            if ! diff -u listed.txt units.txt; then
+              echo "FAIL: $a does not match the Files lists"; exit 1
+            fi
+            echo "OK $a: $(wc -l < units.txt) modules"
+          done
