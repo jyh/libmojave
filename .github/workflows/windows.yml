@@ -34,6 +34,12 @@ jobs:
         run: opam exec -- dune build --profile threads
       - name: pinning tests (measurement run)
         run: opam exec -- dune runtest
+      - name: keep the test outputs (measurement run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-outputs
+          path: _build/default/test/*.output
       - name: the dune archives hold exactly the listed modules
         shell: bash
         run: |
