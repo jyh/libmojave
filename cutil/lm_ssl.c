@@ -44,7 +44,7 @@
 #  define SHUT_RD 0
 #  define SHUT_WR 1
 
-typedef long socklen_t;
+typedef int socklen_t; /* Winsock takes an int * */
 #else /* !WIN32 */
 #  include <unistd.h>
 #  include <sys/types.h>
@@ -195,9 +195,9 @@ static int ssl_info_compare(value v1, value v2)
     return info1->fd == info2->fd ? 0 : info1->fd < info2->fd ? -1 : 1;
 }
 
-static long ssl_info_hash(value v)
+static intnat ssl_info_hash(value v)
 {
-    return (long) SslInfo_val(v);
+    return (intnat) SslInfo_val(v);
 }
 
 static void ssl_finalize(value v_info)
@@ -619,9 +619,9 @@ static int ssl_info_compare(value v1, value v2)
     return info1->fd == info2->fd ? 0 : info1->fd < info2->fd ? -1 : 1;
 }
 
-static long ssl_info_hash(value v)
+static intnat ssl_info_hash(value v)
 {
-    return (long) SslInfo_val(v);
+    return (intnat) SslInfo_val(v);
 }
 
 static void ssl_finalize(value v_info)

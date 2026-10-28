@@ -40,25 +40,25 @@
 #include <caml/custom.h>
 #include <caml/fail.h>
 
-static void lm_nocompare_serialize(value v, unsigned long * wsize_32, unsigned long * wsize_64)
+static void lm_nocompare_serialize(value v, uintnat * wsize_32, uintnat * wsize_64)
 {
     *wsize_32 = 0;
     *wsize_64 = 0;
 }
 
-static unsigned long lm_nocompare_deserialize(void * dst)
+static uintnat lm_nocompare_deserialize(void * dst)
 {
     return 0;
 }
 
-static void lm_nomarshal_serialize(value v, unsigned long * wsize_32, unsigned long * wsize_64)
+static void lm_nomarshal_serialize(value v, uintnat * wsize_32, uintnat * wsize_64)
 {
     caml_invalid_argument("Lm_nocompare: some code attempted to marshal a value\n   on a data structure that specifically prohibits this");
     *wsize_32 = 0;
     *wsize_64 = 0;
 }
 
-static unsigned long lm_nomarshal_deserialize(void * dst)
+static uintnat lm_nomarshal_deserialize(void * dst)
 {
     caml_invalid_argument("Lm_nocompare: some code attempted to marshal a value\n   on a data structure that specifically prohibits this");
     return 0;
