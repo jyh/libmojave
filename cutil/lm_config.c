@@ -45,11 +45,11 @@
 /* Return a code */
 value lm_byte_detect(value x)
 {
-    return Int_val(0);
+    return Val_int(0);
 }
 
 value lm_native_detect(value x)
 {
-    return Int_val(1);
+    return Val_int(1);
 }
 

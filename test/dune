@@ -50,3 +50,26 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_glob.win32.expected test_glob.output)))
+
+; Lm_config.code has one C stub per mode, so this test runs as bytecode
+; (byte_complete: the C stubs linked in) and as native code. The expected
+; files differ only in the backend's name.
+(executables
+ (names test_config)
+ (modules test_config)
+ (modes byte_complete exe)
+ (libraries libmojave))
+
+(rule
+ (with-stdout-to test_config.byte.output (run ./test_config.bc.exe)))
+
+(rule
+ (with-stdout-to test_config.native.output (run ./test_config.exe)))
+
+(rule
+ (alias runtest)
+ (action (diff test_config.byte.expected test_config.byte.output)))
+
+(rule
+ (alias runtest)
+ (action (diff test_config.native.expected test_config.native.output)))
