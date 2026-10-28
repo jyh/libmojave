@@ -1,9 +1,19 @@
 ; Pinning tests: each prints a library function's answers on chosen inputs,
 ; and the .expected file is that output as generated from the code at the
 ; time the test was written. A change in behaviour shows as a diff.
+(library
+ (name pin)
+ (modules pin))
+
 (tests
  (names test_string_util test_filename_util test_glob test_symbol
   test_set_map test_printf test_lexer test_parser)
- (modules pin test_string_util test_filename_util test_glob test_symbol
+ (modules test_string_util test_filename_util test_glob test_symbol
   test_set_map test_printf test_lexer test_parser)
- (libraries libmojave unix))
+ (libraries libmojave pin unix))
+
+(test
+ (name test_thread)
+ (modules test_thread)
+ (enabled_if (= %{profile} threads))
+ (libraries libmojave pin))

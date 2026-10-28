@@ -1,0 +1,5 @@
+Thread.enabled  = true
+Mutex.try_lock while held  = false
+Mutex.try_lock when free  = true
+4 threads x 1000 locked increments  = 4000
+distinct thread ids  = 4
