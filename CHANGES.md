@@ -27,6 +27,8 @@ removed, except `Lm_dll` (see below).
   custom-block callbacks used `long`, which is 32 bits on Win64, where OCaml's
   `intnat` is 64. `ssl_info_hash` truncated the pointer it hashed, and the
   Win32 `socklen_t` did not match Winsock.
+- Builds on Windows with MSVC too (#13). `WIN32` is now defined on Windows, as
+  OMake does, so MSVC compiles the Win32 branches.
 - Warning flags in numeric form. Warnings added in OCaml 4.13 and later (67,
   68, 69, 70) are not errors.
 
