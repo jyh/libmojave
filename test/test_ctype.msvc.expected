@@ -1,0 +1,8 @@
+MISMATCH is_print 9: C says true
+ascii: 1 mismatches over 128 characters x 5 classes
+quote "abc" = abc
+quote "a b" = "a b"
+quote "" = ""
+quote "x\"y" = "x\"y"
+quote "tab\there" = "tab\there"
+is_capitalized true false

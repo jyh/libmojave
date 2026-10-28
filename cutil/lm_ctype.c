@@ -31,6 +31,7 @@
  */
 #include <memory.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -97,4 +98,42 @@ value omake_punct(value v_unit)
 value omake_space(value v_unit)
 {
     return get_chars(isspace);
+}
+
+/*
+ * The primitives Lm_ctype declares. Added 2026, written from the C
+ * standard's descriptions of <ctype.h> and setlocale. Each takes an OCaml
+ * char and returns an OCaml bool; the char is passed as unsigned char,
+ * as <ctype.h> requires.
+ */
+value set_locale(value v_unit)
+{
+    /* Character classes follow the locale named by the environment. */
+    setlocale(LC_CTYPE, "");
+    return Val_unit;
+}
+
+value is_print(value v_char)
+{
+    return Val_bool(isprint((unsigned char) Int_val(v_char)));
+}
+
+value is_digit(value v_char)
+{
+    return Val_bool(isdigit((unsigned char) Int_val(v_char)));
+}
+
+value is_alnum(value v_char)
+{
+    return Val_bool(isalnum((unsigned char) Int_val(v_char)));
+}
+
+value is_upper(value v_char)
+{
+    return Val_bool(isupper((unsigned char) Int_val(v_char)));
+}
+
+value is_graph(value v_char)
+{
+    return Val_bool(isgraph((unsigned char) Int_val(v_char)));
 }

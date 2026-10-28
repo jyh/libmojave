@@ -73,3 +73,24 @@
 (rule
  (alias runtest)
  (action (diff test_config.native.expected test_config.native.output)))
+
+; Lm_ctype's primitives follow the C library's locale tables. Under MSVC's
+; C runtime, after setlocale(LC_CTYPE, ""), isprint('\t') is true; MinGW,
+; Linux and macOS say false. So MSVC compares against its own file.
+(executable
+ (name test_ctype)
+ (modules test_ctype)
+ (libraries libmojave))
+
+(rule
+ (with-stdout-to test_ctype.output (run ./test_ctype.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{ocaml-config:ccomp_type} msvc))
+ (action (diff test_ctype.expected test_ctype.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{ocaml-config:ccomp_type} msvc))
+ (action (diff test_ctype.msvc.expected test_ctype.output)))

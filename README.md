@@ -40,9 +40,6 @@ Known gaps:
 - `Lm_dll` (the dynamic-loading foreign-function runtime) is not built. Its
   C side relies on redirecting `caml_local_roots`, which no longer works on
   OCaml 5.
-- `Lm_ctype` declares six C primitives (`is_alnum`, `is_digit`, `is_graph`,
-  `is_print`, `is_upper`, `set_locale`) that libmojave does not define; its
-  host program has to supply them.
 - `Lm_parser` accepts only when the start production consumes the end-of-input
   token itself (for example `prog -> e $eof`).
 

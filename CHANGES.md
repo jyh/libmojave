@@ -43,6 +43,15 @@ removed, except `Lm_dll` (see below).
   the value was never equal to either constructor. `test/test_config.ml`
   checks it as bytecode and as native code.
 
+- `Lm_ctype`'s six C primitives (`is_alnum`, `is_digit`, `is_graph`,
+  `is_print`, `is_upper`, `set_locale`) were declared but defined nowhere in
+  libmojave, so a program linking `Lm_ctype` failed to link. They are now in
+  `cutil/lm_ctype.c`, newly written from the C standard's `<ctype.h>` and
+  `setlocale`; `test_ctype` checks every ASCII character. They follow the C
+  library's locale tables, so platforms can differ: under MSVC's C runtime
+  `is_print '\t'` is true (MinGW, Linux and macOS say false), and the MSVC
+  build compares against its own expected file.
+
 ### Tests
 
 - Pinning tests in `test/` (#5, #6, #7, #9, #11, #16) for
@@ -77,8 +86,6 @@ None of these was changed. A fix will show up as a change to an expected file.
   channel.
 - `Lm_parser` accepts only when the start production consumes the
   end-of-input token itself.
-- `Lm_ctype` declares C primitives (`is_alnum` and five others) that
-  libmojave does not define.
 - `Lm_fmarshal` writes an `Int` as 32 bits, so `Int (-1)` reads back as
   `Int 4294967295` and `Int max_int` is truncated.
 - `Lm_hash.HashCode` gives `add_int (-1)` and `add_int max_int` the same
