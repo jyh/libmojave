@@ -1,0 +1,3 @@
+# infra_names_history_baseline.tsv -- ACCEPTED historical commits whose ADDED LINES carry an infrastructure name (check_infra_names.py --history).
+# sha<TAB>file<TAB>count. NEVER the line and NEVER the name: an excerpt would put the name into the tree, where the tree arm correctly reds on it.
+# This list does not shrink without a force-push, which is a Captain-level call on a public repo. A GROWTH is a reviewed diff.
