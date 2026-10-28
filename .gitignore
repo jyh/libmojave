@@ -6,3 +6,5 @@
 *.cmxa
 *.o
 *.omc
+__pycache__/
+*.pyc
