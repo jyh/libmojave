@@ -1,6 +1,6 @@
 name: Windows
 
-# Builds libmojave on Windows (MinGW, via setup-ocaml) with dune, in both
+# Builds libmojave on Windows (MinGW and MSVC, via setup-ocaml) with dune, in both
 # thread profiles. This is the only place the Win32 branches of cutil/ and
 # the OCaml sources are compiled. It runs the pinning tests: six share their
 # expected output with Unix, and the filename and glob tests, whose output is
@@ -15,18 +15,20 @@ permissions:
 
 jobs:
   dune:
-    name: build on Windows (OCaml ${{ matrix.ocaml }})
+    name: build on Windows (OCaml ${{ matrix.ocaml }}, ${{ matrix.compiler }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         ocaml: ["5.4"]
+        compiler: [mingw, msvc]
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
+          windows-compiler: ${{ matrix.compiler }}
       - run: opam install -y dune dune-configurator
       - name: build (null threads)
         run: opam exec -- dune build
