@@ -2,9 +2,9 @@ name: Windows
 
 # Builds libmojave on Windows (MinGW, via setup-ocaml) with dune, in both
 # thread profiles. This is the only place the Win32 branches of cutil/ and
-# the OCaml sources are compiled. It does not run the pinning tests: their
-# expected files were generated on Unix, and several (filenames, glob) record
-# separator-dependent output that differs on Windows by design.
+# the OCaml sources are compiled. It runs the pinning tests: six share their
+# expected output with Unix, and the filename and glob tests, whose output is
+# separator- and drive-dependent by design, compare against *.win32.expected.
 on:
   push:
   pull_request:
@@ -32,14 +32,8 @@ jobs:
         run: opam exec -- dune build
       - name: build (system threads)
         run: opam exec -- dune build --profile threads
-      - name: pinning tests (measurement run)
+      - name: pinning tests (filename and glob use test/*.win32.expected)
         run: opam exec -- dune runtest
-      - name: keep the test outputs (measurement run)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-test-outputs
-          path: _build/default/test/*.output
       - name: the dune archives hold exactly the listed modules
         shell: bash
         run: |
