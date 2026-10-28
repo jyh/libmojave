@@ -47,7 +47,10 @@ removed, except `Lm_dll` (see below).
   `is_print`, `is_upper`, `set_locale`) were declared but defined nowhere in
   libmojave, so a program linking `Lm_ctype` failed to link. They are now in
   `cutil/lm_ctype.c`, newly written from the C standard's `<ctype.h>` and
-  `setlocale`; `test_ctype` checks every ASCII character.
+  `setlocale`; `test_ctype` checks every ASCII character. They follow the C
+  library's locale tables, so platforms can differ: under MSVC's C runtime
+  `is_print '\t'` is true (MinGW, Linux and macOS say false), and the MSVC
+  build compares against its own expected file.
 
 ### Tests
 
