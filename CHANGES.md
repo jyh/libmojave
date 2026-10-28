@@ -30,6 +30,17 @@ removed, except `Lm_dll` (see below).
 - Warning flags in numeric form. Warnings added in OCaml 4.13 and later (67,
   68, 69, 70) are not errors.
 
+### Fixed
+
+- `Lm_config.code` was a NULL pointer instead of `ByteCode` or `NativeCode`:
+  its C stubs returned `Int_val(0)` and `Int_val(1)` where `Val_int` was
+  meant, and both are a raw 0. OCaml 4 ignored a pointer outside its heap;
+  OCaml 5's garbage collector follows it and crashes the first full
+  collection in any program that links `Lm_config` (all of libmojave is
+  linked with `-linkall`, as MetaPRL's camlp5 drivers do). Before the fix,
+  the value was never equal to either constructor. `test/test_config.ml`
+  checks it as bytecode and as native code.
+
 ### Tests
 
 - Pinning tests in `test/` (#5, #6, #7, #9, #11) for `Lm_string_util`,

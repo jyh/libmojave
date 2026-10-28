@@ -1,0 +1,4 @@
+immediate: true
+survived a full GC
+matches backend: true
+expected: ByteCode
