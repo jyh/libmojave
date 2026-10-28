@@ -8,3 +8,4 @@
 *.omc
 __pycache__/
 *.pyc
+_build/
