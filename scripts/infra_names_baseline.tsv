@@ -1,0 +1,3 @@
+# infra_names_baseline.tsv -- ACCEPTED residue for the tree ratchet (check_infra_names.py --tree).
+# file<TAB>line-sha16<TAB>what. NEVER the line and NEVER the name. Shrink it after a repair with
+# --tree --write-baseline; a growth is a reviewed diff (council 2026-10-07 ruling 3: ratchet only).
