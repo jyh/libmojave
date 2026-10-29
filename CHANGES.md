@@ -168,6 +168,9 @@
 - The `MinimalSetSig` implementations are checked against a model
   (`test/test_min_sets.ml`, #49): `Lm_set`, `Lm_splay_set` (in two orders),
   `Lm_hash_set` and `Lm_small_set` over two bases.
+- `Lm_dlist` is checked against a model (`test/test_dlist.ml`, #50): 30,000
+  random inserts and deletes over 8 handles, the list read four ways after
+  each step.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a

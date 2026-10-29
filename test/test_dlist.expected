@@ -1,0 +1,4 @@
+steps that disagree with the model 1000 runs x 30 steps = 0 of 30000
+hd of an empty list  = EXN Invalid_argument("Dlist.hd")
+tl of a last handle  = EXN Invalid_argument("Dlist.tl")
+insert a handle that is already in a list  = EXN Assert_failure
