@@ -13,5 +13,5 @@ node_rel a b, b a, a c, c a, a e, b d  = < > < > none none
 equate c e: node_rel c e, e c, a e  = = = <
   roots, sort  = [a] [d; e; c; b; a]
 delete b: roots  = [a; c; e]
-  sort  = [e; c; a]
-  edges of each node in sort order  = e: out=[] in=[] | c: out=[] in=[] | a: out=[c] in=[]
+  sort  = [e; c; d; a]
+  edges of each node in sort order  = e: out=[] in=[] | c: out=[] in=[] | d: out=[] in=[a] | a: out=[d] in=[]

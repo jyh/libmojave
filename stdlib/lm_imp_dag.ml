@@ -167,7 +167,8 @@ struct
       in
          Array.blit entries 0 newentries 0 node;
          Array.blit entries (node + 1) newentries node (length - node - 1);
-         Array.iter delete entries;
+         Array.iter delete newentries;
+         dag.entries <- newentries;
          dag.version <- version + 1
 
    (*
