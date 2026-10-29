@@ -205,6 +205,16 @@
   binding with `Hashtbl.iter`, which presents a key's bindings newest
   first, removing and re-adding each. It now copies each key's current
   value. Nothing in libmojave, metaprl or omake calls it.
+- `Lm_loop` (#70): an edge into the root made `create` raise
+  `Invalid_argument "index out of bounds"`, and a listed node that the
+  root does not reach gave wrong immediate dominators (with `0 > 1`,
+  `1 > 3` and an unreachable `2 > 3`, the idom of `3` was `0`, not `1`),
+  and on some graphs overflowed the stack. The depth-first walk took
+  `sdno = 0` to mean "not visited", which the root and every unreached
+  node also have. It now keeps its own visited marks, the vertex array
+  holds only the nodes it reached, and predecessors it did not reach are
+  ignored. A brute-force model over 1,500 random graphs agrees, with
+  edges into the root and unreachable nodes listed.
 
 ### Tests
 
@@ -326,6 +336,8 @@
   #68), on tables with shadowed bindings.
 - `Lm_arg` is pinned (`test/test_arg.ml`, #69): 25 argument vectors under
   both option modes, with every effect of the spec and every exception.
+- `Lm_loop`'s dominators are checked against a brute-force model
+  (`test/test_loop.ml`, #70), and the loop nest of one graph is pinned.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
