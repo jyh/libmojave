@@ -2568,16 +2568,21 @@ struct
            dfa_channel     = channel
          }
       in
-      let rec loop dfa_state c =
-         match dfa_delta dfa dfa_info dfa_state c with
-            Some dfa_state ->
-               loop dfa_state (Input.lex_next channel)
-          | None ->
-               ()
+      let rec loop eof_states dfa_state c =
+         if c = Input.eof && List.memq dfa_state eof_states then
+            (* The end marker never runs out: a second visit is a cycle *)
+            ()
+         else
+            let eof_states = if c = Input.eof then dfa_state :: eof_states else eof_states in
+               match dfa_delta dfa dfa_info dfa_state c with
+                  Some dfa_state ->
+                     loop eof_states dfa_state (Input.lex_next channel)
+                | None ->
+                     ()
       in
       let dfa_state = dfa.dfa_states.(0) in
       let c = Input.lex_start channel in
-      let () = loop dfa_state c in
+      let () = loop [] dfa_state c in
 
       (* Now figure out what happened *)
       let clause = dfa_info.dfa_stop_clause in
@@ -2622,12 +2627,17 @@ struct
     * the first one: ">>" in ">>>" was found at offset 1.)
     *)
    let search_anchored dfa channel =
-      let rec loop dfa_info dfa_state c =
-         match dfa_delta dfa dfa_info dfa_state c with
-            Some dfa_state ->
-               loop dfa_info dfa_state (Input.lex_next channel)
-          | None ->
-               ()
+      let rec loop eof_states dfa_info dfa_state c =
+         if c = Input.eof && List.memq dfa_state eof_states then
+            (* The end marker never runs out: a second visit is a cycle *)
+            ()
+         else
+            let eof_states = if c = Input.eof then dfa_state :: eof_states else eof_states in
+               match dfa_delta dfa dfa_info dfa_state c with
+                  Some dfa_state ->
+                     loop eof_states dfa_info dfa_state (Input.lex_next channel)
+                | None ->
+                     ()
       in
       let rec attempt off prev =
          let dfa_info =
@@ -2639,7 +2649,7 @@ struct
               dfa_channel     = channel
             }
          in
-            loop dfa_info dfa.dfa_states.(0) prev;
+            loop [] dfa_info dfa.dfa_states.(0) prev;
             if dfa_info.dfa_stop_clause >= 0 then
                Some (dfa_info, off), off
             else begin

@@ -268,6 +268,11 @@
   modifier OCaml uses for it, and prints `u x X o` from the int's bits
   masked to its width, as `Printf` does (`%x` of `-1` is
   `7fffffffffffffff`). metaprl calls `Lm_rprintf` in 11 files.
+- `Lm_lexer` looped forever on a `$` or `\'` that can repeat (`a$*`,
+  `a\'*`, `a($)+`) at the end of input (#88): the end marker never runs
+  out and the machine kept a transition on it. A scan now stops when it
+  would read the end marker again from a state it already read it from.
+  metaprl's lexer clauses use `$` only inside brackets, as a character.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -457,6 +462,9 @@
 - `Lm_rprintf` and `Lm_format` are checked against `Printf`
   (`test/test_printf_model.ml`, #87): 6,000 random conversions, limited
   to specs whose meaning OCaml and C agree on.
+- `Lm_lexer`'s `$` and `\'` are checked against a model
+  (`test/test_lexer_eof.ml`, #88): matching the end marker consumes no
+  text and counts as one more unit of length.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
