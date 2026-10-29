@@ -1,0 +1,4 @@
+to_list: tables where it is not each key's current value 2000 tables = 0
+add_list: tables where a key's value is not the last added  = 0
+add_hashtbl: pairs where dst is wrong  = 0
+src binds 1 to old, then new; add_hashtbl: dst's 1  = "new"

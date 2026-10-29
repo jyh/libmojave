@@ -200,6 +200,11 @@
   twice. Now the new name is added to the table, `insert` checks every
   child before changing anything, and `equate x x` lists `x` once. Nothing
   in metaprl or omake uses `Lm_cycle_dag`.
+- `Lm_hashtbl_util.add_hashtbl dst src` gave `dst` src's oldest value for a
+  key with shadowed bindings, not its current one (#68): it walked every
+  binding with `Hashtbl.iter`, which presents a key's bindings newest
+  first, removing and re-adding each. It now copies each key's current
+  value. Nothing in libmojave, metaprl or omake calls it.
 
 ### Tests
 
@@ -317,6 +322,8 @@
 - `Lm_cycle_dag` is checked against a model (`test/test_cycle_dag.ml`, #67):
   4,800 random insert and equate steps, with the cycle refusals, `find` and
   the order `sort` gives.
+- `Lm_hashtbl_util` is checked against a model (`test/test_hashtbl_util.ml`,
+  #68), on tables with shadowed bindings.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after

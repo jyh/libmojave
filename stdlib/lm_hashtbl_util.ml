@@ -50,12 +50,13 @@ let add_list tbl l =
  * Add all the entries from the second table.
  * The original entries are removed.
  *)
+(*
+ * Each of src's keys gets src's current value in dst. Hashtbl.iter also
+ * visits shadowed bindings, newest first, so take the value by find.
+ *)
 let add_hashtbl dst src =
-   Hashtbl.iter (fun key value ->
-         (try Hashtbl.remove dst key with
-             Not_found ->
-                ());
-         Hashtbl.add dst key value) src
+   Hashtbl.iter (fun key _ ->
+         Hashtbl.replace dst key (Hashtbl.find src key)) src
 
 (*
  * -*-
