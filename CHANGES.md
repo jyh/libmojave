@@ -378,13 +378,6 @@
 
 ### Behaviour that the tests record and that may be a bug
 
-- The printf engine behind `Lm_rprintf` and `Lm_format` (`Lm_make_printf`, an
-  untyped interpreter of the format string) disagrees with `Printf`:
-  - `%S`, `%C` and `%B` raise `Invalid_argument "parse_spec"`;
-  - `%a` drops the user printer's output: `sprintf "pair=%a"` gives
-    `"pair="`, and `bprintf b "[%a]"` writes nothing, not even the brackets.
-  None of metaprl's `Lm_rprintf` or `Lm_format` users uses these conversions
-  (counted on single-line `printf` calls, with a positive control).
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
