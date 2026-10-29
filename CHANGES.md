@@ -43,6 +43,16 @@
   metaprl's refiner uses for term tables: every operation of `TableSig` on
   several insertion orders and repeated keys, `union`, and a 200-key table
   after insertions and removals.
+- The `Lm_rformat` HTML and TeX backends are pinned
+  (`test/test_rformat_backends.ml`, #29): documents with special characters,
+  breaks, indentation, tags and invisible zones, rendered as HTML (with and
+  without a tagger) and as TeX at two widths, and `Lm_rformat_html.escape`.
+
+### Behaviour that the tests record and that may be a bug
+
+- `Lm_rformat_tex` does not escape `~`, which TeX reads as a non-breaking
+  space, so a literal tilde disappears from the output. Its other specials
+  (`\ { } $ _ ^ & # %`) are escaped.
 
 ## 1.0.0 (2026-10-28)
 

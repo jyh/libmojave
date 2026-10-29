@@ -8,10 +8,10 @@
 (tests
  (names test_string_util test_symbol test_num test_channel
   test_set_map test_printf test_lexer test_parser test_hash test_fmarshal
-  test_list_util test_rformat test_array_util test_location test_splay_table)
+  test_list_util test_rformat test_array_util test_location test_splay_table test_rformat_backends)
  (modules test_string_util test_symbol test_num test_channel
   test_set_map test_printf test_lexer test_parser test_hash test_fmarshal
-  test_list_util test_rformat test_array_util test_location test_splay_table)
+  test_list_util test_rformat test_array_util test_location test_splay_table test_rformat_backends)
  (libraries libmojave pin unix))
 
 (test
