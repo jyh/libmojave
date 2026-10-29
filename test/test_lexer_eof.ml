@@ -200,3 +200,16 @@ let () =
       line op (string_of_int (Hashtbl.find steps op) ^ " checks")
         (if k = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" k (Hashtbl.find first op)))
     (List.rev !order)
+
+(* A $ or \' that can repeat, at the end of input. Before the fix each
+   of these looped forever, reading the end marker again and again;
+   they are added with the fix because a test cannot pin a loop. *)
+let () =
+  let run re inputs =
+    let l = snd (L.add_clause (snd (L.add_clause L.empty "c" re)) "eof" "\\'") in
+    List.iter (fun s -> line ("lex all " ^ re) (str s) (String.concat " " (lex_all l s))) inputs in
+  run "a$*" [ "a"; "a\n"; "a\n\n" ];
+  run "a\\'*" [ "a" ];
+  run "a($)+" [ "a"; "a\r\n" ];
+  run "($|a)*" [ "a"; "a\na" ];
+  run "a$$*" [ "a" ]

@@ -1,3 +1,12 @@
 tokenizations skipped (an empty match before the end): 49523
 lex first 109200 checks = 0 disagree
 lex all 59677 checks = 0 disagree
+lex all a$* "a" = c:a EOF
+lex all a$* "a\n" = c:a\n EOF
+lex all a$* "a\n\n" = c:a\n\n EOF
+lex all a\'* "a" = c:a EOF
+lex all a($)+ "a" = c:a EOF
+lex all a($)+ "a\r\n" = c:a\r\n EOF
+lex all ($|a)* "a" = c:a c: c: c: c: c: c: c: ...
+lex all ($|a)* "a\na" = c:a\na c: c: c: c: c: c: c: ...
+lex all a$$* "a" = c:a EOF
