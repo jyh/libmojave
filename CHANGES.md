@@ -324,6 +324,8 @@
   the order `sort` gives.
 - `Lm_hashtbl_util` is checked against a model (`test/test_hashtbl_util.ml`,
   #68), on tables with shadowed bindings.
+- `Lm_arg` is pinned (`test/test_arg.ml`, #69): 25 argument vectors under
+  both option modes, with every effect of the spec and every exception.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
@@ -353,6 +355,12 @@
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
   later entry (#61).
+- `Lm_arg` (#69): an option argument that is not a number (`-n x` for an
+  `Int` option) escapes as `Failure "int_of_string"` (or
+  `"float_of_string"`), not as `BogusArg`, so a caller that catches
+  `BogusArg` to print its usage gets an uncaught exception instead. A lone
+  `-`, often a name for standard input, is refused as an ambiguous option.
+  `Lm_arg`'s user is omake, which carries its own copy.
 
 ## 1.0.0 (2026-10-28)
 
