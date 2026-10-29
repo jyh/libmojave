@@ -22,25 +22,18 @@ let spawn f =
   let t = T.Thread.create (fun () -> r := guard f) () in
   fun () -> T.Thread.join t; !r
 
-(* Count the lines [f] writes to stderr. *)
+(* Count the lines [f] prints on Lm_printf's stderr formatter. Captured
+   through the formatter, not a file descriptor: on the MSVC runner the
+   test process has no valid stderr to dup. *)
 let stderr_lines f =
-  let file = Filename.temp_file "test_thread_event" ".err" in
-  let fd = Unix.openfile file [ Unix.O_WRONLY; Unix.O_TRUNC ] 0o600 in
-  let saved = Unix.dup Unix.stderr in
-  flush stderr;
-  Unix.dup2 fd Unix.stderr;
+  let ppf = Lm_printf.err_formatter in
+  let out, flush = Lm_printf.pp_get_formatter_output_functions ppf () in
+  let buf = Buffer.create 64 in
+  Lm_printf.pp_set_formatter_output_functions ppf (Buffer.add_substring buf) ignore;
   f ();
-  Lm_printf.flush Lm_printf.stderr;
-  flush stderr;
-  Unix.dup2 saved Unix.stderr;
-  Unix.close saved;
-  Unix.close fd;
-  let ic = open_in file in
-  let rec count n = match input_line ic with _ -> count (n + 1) | exception End_of_file -> n in
-  let n = count 0 in
-  close_in ic;
-  Sys.remove file;
-  n
+  Lm_printf.pp_print_flush ppf ();
+  Lm_printf.pp_set_formatter_output_functions ppf out flush;
+  String.fold_left (fun n c -> if c = '\n' then n + 1 else n) 0 (Buffer.contents buf)
 
 let () =
   let c : int E.channel = E.new_channel () in
