@@ -23,6 +23,8 @@
   unions a reduction's symbols from the last one down, so every reduction's
   location ran backwards: for `1+2` the `add` action received columns 2-1. It
   now receives 0-3 (`test/test_parser.ml` records each action's location).
+- `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
+  space, so a literal tilde disappeared; it is now written `\char126` (#30).
 
 ### Tests
 
@@ -47,12 +49,6 @@
   (`test/test_rformat_backends.ml`, #29): documents with special characters,
   breaks, indentation, tags and invisible zones, rendered as HTML (with and
   without a tagger) and as TeX at two widths, and `Lm_rformat_html.escape`.
-
-### Behaviour that the tests record and that may be a bug
-
-- `Lm_rformat_tex` does not escape `~`, which TeX reads as a non-breaking
-  space, so a literal tilde disappears from the output. Its other specials
-  (`\ { } $ _ ^ & # %`) are escaped.
 
 ## 1.0.0 (2026-10-28)
 
