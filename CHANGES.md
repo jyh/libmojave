@@ -67,6 +67,10 @@
   duplicates while the set was a list (`add 25, 25, 9` had cardinal 3).
   Found by checking every `MinimalSetSig` implementation against a model;
   nothing in metaprl uses these three modules.
+- `Lm_index` (#52): `mem_list` raised `Not_found` when an intermediate key was
+  missing; it now answers `false`. `is_empty` was `false` for an index whose
+  every key had been removed; it now checks the table. Nothing in metaprl
+  uses `Lm_index` or the symbol indexes built on it.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -173,6 +177,8 @@
   each step.
 - `Lm_bitmatrix` is checked against a model (`test/test_bitmatrix.ml`, #51):
   30,000 random adds, removes and queries on matrices of random size.
+- `Lm_index` is pinned (`test/test_index.ml`, #52): chains, lookups at one
+  and several levels, removal, `filter_add` and persistence.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a

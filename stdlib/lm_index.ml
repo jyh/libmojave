@@ -157,8 +157,8 @@ struct
    let is_empty = function
       Leaf ->
          true
-    | Index _ ->
-         false
+    | Index table ->
+         EltTable.is_empty table
 
    (*
     * Test membership of a key in an index.
@@ -204,8 +204,11 @@ struct
        | key :: [] ->
             mem index key
        | key :: keys ->
-            let index = find_index index key in
-               mem_list index keys
+            match find_index index key with
+               index ->
+                  mem_list index keys
+             | exception Not_found ->
+                  false
 
    (*
     * Lookup a key sequence in an index.
