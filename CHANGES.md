@@ -420,6 +420,12 @@
   `test_lexer_model.ml` on every string of up to 5 characters, one call
   and `searchto` repeated to the end, and quotation-like delimiters under
   `choose = max`.
+- `Lm_parser`'s precedence and associativity are checked against a model
+  (`test/test_parser_prec.ml`, #81): 300 random tables of 1-4 levels
+  (left, right or nonassoc) over six binary operators, 40 random token
+  strings each, the parse tree against a precedence-climbing parser,
+  where two operators of one nonassoc level side by side are a syntax
+  error. No defect.
 
 ### Behaviour that the tests record and that may be a bug
 
