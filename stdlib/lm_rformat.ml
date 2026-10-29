@@ -610,7 +610,7 @@ let format_cbreak buf str str' =
          push_command buf (CBreak (get_soft_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            format_raw_string buf " "
+            format_raw_string buf str'
 
 let format_sbreak buf str str' =
    let l = String.length str in
@@ -619,7 +619,7 @@ let format_sbreak buf str str' =
          push_command buf (Break (get_soft_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            format_raw_string buf " "
+            format_raw_string buf str'
 
 let format_hbreak buf str str' =
    let l = String.length str in
@@ -628,7 +628,7 @@ let format_hbreak buf str str' =
          push_command buf (Break (get_hard_binder buf, l, l', str, str'))
       with
          NoBinder ->
-            format_raw_string buf " "
+            format_raw_string buf str'
 
 let format_newline buf =
    push_command buf HBreak
