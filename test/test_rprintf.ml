@@ -29,6 +29,16 @@ let () =
   line "sprintf %a" "" (guard (fun () -> str (R.sprintf "pair=%a" (fun () (a, b) -> Printf.sprintf "<%d,%s>" a b) (1, "x"))));
   line "bprintf %a" "" (guard (fun () ->
       let b = Buffer.create 8 in R.bprintf b "[%a]" pp_pair (2, "y"); str (Buffer.contents b)));
+  line "bprintf, no %a" "" (guard (fun () ->
+      let b = Buffer.create 8 in R.bprintf b "plain %d" 1; str (Buffer.contents b)));
+  line "sprintf %t" "" (guard (fun () -> str (R.sprintf "x%ty" (fun () -> "T"))));
+  (* sprintf shares str_formatter, so the inner call flushes the outer
+     call's pending "a" into its own result; printing that result puts it
+     back. Until #33 the result was dropped and this gave "b". *)
+  line "sprintf %a, printer calls sprintf" "" (guard (fun () ->
+      str (R.sprintf "a%ab" (fun () n -> R.sprintf "<%d>" n) 1)));
+  line "sprintf %8S|%-7B|%C" "" (guard (fun () -> str (R.sprintf "%8S|%-7B|%C" "q" false 'c')));
+  line "Printf.sprintf (reference) %8S|%-7B|%C" "" (str (Printf.sprintf "%8S|%-7B|%C" "q" false 'c'));
   (* the string channel *)
   R.fprintf R.stdstr "one %d" 1;
   R.output_string R.stdstr " two";

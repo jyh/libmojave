@@ -14,9 +14,11 @@
  *    f: print a float in decimal
  *    e,E: print a float in exponent notation
  *    g,G: print a float in best notation
- *    b: print a Boolean
- *    a: user-defined printer
- *    t: user-defined printer
+ *    b, B: print a Boolean
+ *    S: print a string as an OCaml literal, quoted and escaped
+ *    C: print a character as an OCaml literal, quoted and escaped
+ *    a: user-defined printer; the value it returns is printed
+ *    t: user-defined printer; the value it returns is printed
  *    %: print the '%' char
  *
  * From the printf man page, each format specifier has
@@ -105,6 +107,17 @@ sig
 end
 
 (*
+ * The arguments for a printf whose %a and %t printers return a value
+ * that is part of the output (sprintf: the printers return strings).
+ *)
+module type PrintfArgsResultSig =
+sig
+   include PrintfArgsSig
+
+   val print_result : t -> result -> unit
+end
+
+(*
  * What this module provides.
  *)
 module type PrintfSig =
@@ -120,7 +133,7 @@ end
 (*
  * Here's the actual printf module.
  *)
-module MakePrintf (Args : PrintfArgsSig) =
+module MakePrintfResult (Args : PrintfArgsResultSig) =
 struct
    (************************************************************************
     * TYPES
@@ -240,16 +253,35 @@ struct
       in
          Obj.magic print
 
+   and print_ocaml_string buf i len s fmt info =
+      let fmt = String.sub fmt 0 (String.length fmt - 1) ^ "s" in
+      let print str =
+         let str = "\"" ^ String.escaped str ^ "\"" in
+         let str = ext_print_string2 (max_width info) fmt str in
+            Args.print_string buf str;
+            print_loop buf i len s
+      in
+         Obj.magic print
+
+   and print_ocaml_char buf i len s fmt _info =
+      let fmt = String.sub fmt 0 (String.length fmt - 1) ^ "s" in
+      let print c =
+         let str = ext_print_string fmt ("'" ^ Char.escaped c ^ "'") in
+            Args.print_string buf str;
+            print_loop buf i len s
+      in
+         Obj.magic print
+
    and print_user1 buf i len s _fmt _info =
       let print f =
-         f buf;
+         Args.print_result buf (f buf);
          print_loop buf i len s
       in
          Obj.magic print
 
    and print_user2 buf i len s _fmt _info =
       let print f x =
-         f buf x;
+         Args.print_result buf (f buf x);
          print_loop buf i len s
       in
          Obj.magic print
@@ -349,7 +381,9 @@ struct
                 | 'f'       -> print_float   buf i len s fmt info FloatNormal
                 | 'e' | 'E' -> print_float   buf i len s fmt info FloatExp
                 | 'g' | 'G' -> print_float   buf i len s fmt info FloatBest
-                | 'b'       -> print_bool    buf i len s fmt info
+                | 'b' | 'B' -> print_bool    buf i len s fmt info
+                | 'S'       -> print_ocaml_string buf i len s fmt info
+                | 'C'       -> print_ocaml_char buf i len s fmt info
                 | 'a'       -> print_user2   buf i len s fmt info
                 | 't'       -> print_user1   buf i len s fmt info
                 | '%'       -> print_percent buf i len s fmt info
@@ -491,6 +525,17 @@ struct
       in
          Obj.magic print
 end
+
+(*
+ * The original functor: the value a %a or %t printer returns is
+ * discarded, which is right when Args.result is unit.
+ *)
+module MakePrintf (Args : PrintfArgsSig) =
+   MakePrintfResult (struct
+      include Args
+
+      let print_result _ _ = ()
+   end)
 
 (*!
  * @docoff
