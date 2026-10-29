@@ -70,3 +70,34 @@ let () =
     [ "1+2*3"; "2*3+4"; "(1+2)*3"; "8-3-2"; "2^3^2"; "2*3^2"; "((7))"; "7"; "1+"; "+1"; "1 2"; "(1"; "" ];
   List.iter (fun s -> line "parse s (s -> e, no eof in the production)" (str s) (parse "s" s)) [ "7"; "1+2" ];
   List.iter (fun s -> line "parse e (recursive start symbol)" (str s) (parse "e" s)) [ "7"; "1+2" ]
+
+(* Locations: token k of the input sits at its column c, as 1:c-1:c+1, and
+   each semantic action records the location the parser passes it. A
+   reduction should span its symbols, from the first one's start to the
+   last one's end. *)
+let parse_locs s =
+  let trace = Buffer.create 64 in
+  let file = Lm_symbol.add "t" in
+  let toks =
+    List.filter_map (fun (c, ch) -> match ch with
+      | '0' .. '9' -> Some ("num", c, Char.code ch - 48)
+      | ' ' -> None
+      | ch -> Some (String.make 1 ch, c, 0))
+      (List.mapi (fun c ch -> (c, ch)) (List.init (String.length s) (String.get s))) in
+  let lexer toks = match toks with
+    | [] -> (Arg.eof, Lm_location.create_loc file 1 (String.length s) 1 (String.length s), [], 0)
+    | (sym, c, v) :: rest -> (sym, Lm_location.create_loc file 1 c 1 (c + 1), rest, v) in
+  let show l = let _, _, a, _, b = Lm_location.dest_loc l in Printf.sprintf "%d-%d" a b in
+  let eval toks action loc args =
+    Buffer.add_string trace (action ^ "@" ^ show loc ^ " ");
+    let v = match action, args with
+      | "num", [ n ] -> n
+      | ("add" | "sub" | "mul" | "pow"), [ a; _; b ] -> a + b
+      | "paren", [ _; e; _ ] -> e
+      | "prog", [ e; _ ] -> e
+      | _ -> 0 in
+    (toks, v) in
+  guard (fun () -> let _ = P.parse (grammar "prog") "prog" lexer eval toks in Buffer.contents trace)
+
+let () =
+  List.iter (fun s -> line "parse locations" (str s) (parse_locs s)) [ "7"; "1+2"; "1+2*3"; "(4)"; "2 * 3" ]
