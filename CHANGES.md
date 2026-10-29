@@ -674,6 +674,13 @@
   `out_channel_of_formatter`, `pp_print_any_list`, `eflush` and the
   global output functions. The rest of `Lm_printf` is OCaml's `Format`.
 
+- `Lm_symbol_hash` is checked by property (`test/test_symbol_hash_model.ml`,
+  #104): `add` inverts `string_of_symbol`; `compare` is a total order
+  agreeing with `eq`, and `eq` symbols hash alike; `compare_pair`,
+  `compare_triple` and `compare_lists` are lexicographic; fresh symbols,
+  `new_name_gen`, and `reintern` keeps the symbol. No defect (a mutant
+  `reintern` that drops the number fails 2,029 of 3,000).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
