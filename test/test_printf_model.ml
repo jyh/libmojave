@@ -15,16 +15,23 @@ let rnd n = seed := (!seed * 1103515245 + 12345) land 0x3fffffff; (!seed lsr 4) 
    underscores in an int); no precision on s or c (OCaml ignores it, C
    truncates); only - among the flags of s and c (0 is undefined in C);
    no width on c (OCaml's compiler refuses it); no precision 0 on an int
-   (C prints no digit for 0, OCaml prints "0"). *)
+   (C prints no digit for 0, OCaml prints "0"); no width on e E g G
+   (their exponent width differs between C runtimes, normalised below,
+   which is only sound before padding). *)
 let spec conv =
   let flags = String.concat "" (List.filter (fun f -> rnd 4 = 0 && not ((conv = "s" || conv = "c") && f <> "-")) [ "-"; "0"; "+"; " " ]) in
-  let width = if rnd 3 = 0 || conv = "c" then "" else string_of_int (rnd 9) in
+  let has_exp = String.contains "eEgG" conv.[0] in
+  let width = if rnd 3 = 0 || conv = "c" || has_exp then "" else string_of_int (rnd 9) in
   let is_int = String.contains "diuxXo" conv.[0] in
   let prec = if rnd 2 = 0 || conv = "s" || conv = "c" then "" else "." ^ string_of_int ((if is_int then 1 else 0) + rnd 7) in
   "%" ^ flags ^ width ^ prec ^ conv
 
 let ints = [| 0; 1; -1; 7; -42; 255; 65535; -65536; max_int; min_int; 123456789 |]
-let floats = [| 0.0; -0.0; 1.0; -1.5; 3.14159; 1e-7; 2.5e10; 123456.789; -0.000123; 1e300 |]
+(* No 1e300: its %f expansion differs between C runtimes (MSVCRT, glibc,
+   macOS). No exact rounding ties (2.5e10 at precision 0): MSVCRT rounds
+   half away from zero, C99 half to even. Either would test the
+   platform, not the library. *)
+let floats = [| 0.0; -0.0; 1.0; -1.5; 3.14159; 1e-7; 2.4e10; 123456.789; -0.000123; 1e15 |]
 let strings = [| ""; "a"; "hello"; "two words"; "tab\there" |]
 
 let bad = Hashtbl.create 8 and first = Hashtbl.create 8 and count = Hashtbl.create 8 and order = ref []
@@ -42,7 +49,21 @@ let () =
   for _ = 1 to 6000 do
     let conv = [| "d"; "i"; "u"; "x"; "X"; "o"; "f"; "e"; "E"; "g"; "G"; "s"; "c" |].(rnd 13) in
     let s = spec conv in
+    (* A float exponent has at least two digits; MSVCRT (OCaml's Printf
+       on MinGW) writes three, so the width is normalised on both sides *)
+    let norm x =
+      let b = Buffer.create (String.length x) and n = String.length x in
+      let digit i = i < n && x.[i] >= '0' && x.[i] <= '9' in
+      let i = ref 0 in
+      while !i < n do
+        if (x.[!i] = 'e' || x.[!i] = 'E') && !i + 4 < n + 1 && !i + 1 < n && (x.[!i + 1] = '+' || x.[!i + 1] = '-')
+           && !i + 2 < n && x.[!i + 2] = '0' && digit (!i + 3) && digit (!i + 4) && not (digit (!i + 5)) then begin
+          Buffer.add_char b x.[!i]; Buffer.add_char b x.[!i + 1]; i := !i + 3
+        end else begin Buffer.add_char b x.[!i]; incr i end
+      done;
+      Buffer.contents b in
     let compare_with name want lm_r lm_f =
+      let want = norm want and lm_r = norm lm_r and lm_f = norm lm_f in
       check (name ^ " Lm_rprintf") (want = lm_r) (fun () -> Printf.sprintf "%s: Printf %S, Lm_rprintf %S" s want lm_r);
       check (name ^ " Lm_format") (want = lm_f) (fun () -> Printf.sprintf "%s: Printf %S, Lm_format %S" s want lm_f) in
     match conv with

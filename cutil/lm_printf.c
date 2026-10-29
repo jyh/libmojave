@@ -93,8 +93,20 @@ value ml_print_int(value v_fmt, value v_int)
     if(len < 2 || len - 1 + sizeof(ARCH_INTNAT_PRINTF_FORMAT) + 1 > sizeof(fmt))
         caml_failwith("ml_print_int");
     conv = spec[len - 1];
-    memcpy(fmt, spec, len - 1);
-    strcpy(fmt + len - 1, ARCH_INTNAT_PRINTF_FORMAT);
+    if(conv == 'u' || conv == 'x' || conv == 'X' || conv == 'o') {
+        /* + and space apply only to signed conversions; MinGW's snprintf
+           honours the space for %u anyway, so drop both here */
+        size_t i, j = 0;
+        for(i = 0; i < len - 1; i++)
+            if(spec[i] != '+' && spec[i] != ' ')
+                fmt[j++] = spec[i];
+        fmt[j] = 0;
+    }
+    else {
+        memcpy(fmt, spec, len - 1);
+        fmt[len - 1] = 0;
+    }
+    strcat(fmt, ARCH_INTNAT_PRINTF_FORMAT);
     len = strlen(fmt);
     fmt[len] = conv;
     fmt[len + 1] = 0;
