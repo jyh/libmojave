@@ -130,6 +130,10 @@
   sort, the sweeps, `node_rel` and `delete`. `node_rel` caches a derived
   relation as an edge in its first node's lists, so a query changes what
   `node_out_edges`, `node_in_edges` and the sweeps return; pinned as it stands.
+- `Lm_symbol_matrix` is pinned (`test/test_symbol_matrix.ml`, #43): the pair
+  set and the symmetric and asymmetric pair tables, including `copy`,
+  `filter_add`, `filter_remove`, `map` and `fold`. `create 0` makes a table
+  whose first `add` raises `Division_by_zero`; pinned as it stands.
 
 ### Behaviour that the tests record and that may be a bug
 
