@@ -1,0 +1,12 @@
+collision pairs found among 4-letter words  = 8
+steps where intern disagrees with the model 3000 strings = 0 of 3000
+steps where get disagrees with the model 3000 strings = 0 of 3000
+steps where equal disagrees with the model 3000 strings = 0 of 3000
+steps where compare disagrees with the model 3000 strings = 0 of 3000
+steps where set disagrees with the model 3000 strings = 0 of 3000
+steps where table disagrees with the model 3000 strings = 0 of 3000
+steps where order disagrees with the model 3000 strings = 0 of 3000
+a collision pair: same hash, equal, compare = 0  = true false false
+  after marshalling one  = false false
+  create returns the same item twice  = true
+  reintern of a marshalled item returns the interned one  = true
