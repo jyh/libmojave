@@ -21,7 +21,7 @@ Lm_splay_set add/to_list: 0 of 1500 disagree
 Lm_splay_set cardinal: 0 of 1500 disagree
 Lm_splay_set elements: 0 of 1500 disagree
 Lm_splay_set fst_mem_filt: 0 of 1500 disagree
-Lm_splay_set intersectp: 214 of 1500 disagree (first: [15;14;8;0;21;28;29] [26;16;16;3;1;19;10;26])
+Lm_splay_set intersectp: 0 of 1500 disagree
 Lm_splay_set is_empty: 0 of 1500 disagree
 Lm_splay_set iter: 0 of 1500 disagree
 Lm_splay_set mem: 0 of 1500 disagree
@@ -55,49 +55,49 @@ Lm_hash_set remove then mem: 0 of 1500 disagree
 Lm_hash_set singleton: 0 of 1500 disagree
 Lm_hash_set to_list order: 0 of 1500 disagree
 Lm_hash_set union: 0 of 1500 disagree
-Lm_small_set(Lm_set) add/to_list: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_set) cardinal: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_set) elements: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_set) add/to_list: 0 of 1500 disagree
+Lm_small_set(Lm_set) cardinal: 0 of 1500 disagree
+Lm_small_set(Lm_set) elements: 0 of 1500 disagree
 Lm_small_set(Lm_set) fst_mem_filt: 0 of 1500 disagree
 Lm_small_set(Lm_set) intersectp: 0 of 1500 disagree
 Lm_small_set(Lm_set) is_empty: 0 of 1500 disagree
-Lm_small_set(Lm_set) iter: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_set) iter: 0 of 1500 disagree
 Lm_small_set(Lm_set) mem: 0 of 1500 disagree
 Lm_small_set(Lm_set) mem_filt: 0 of 1500 disagree
 Lm_small_set(Lm_set) not_mem_filt: 0 of 1500 disagree
-Lm_small_set(Lm_set) of_list: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_set) of_list: 0 of 1500 disagree
 Lm_small_set(Lm_set) of_sorted_list: 0 of 1500 disagree
-Lm_small_set(Lm_set) persistence (add does not change the original): 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_set) remove: 433 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1] x=17)
+Lm_small_set(Lm_set) persistence (add does not change the original): 0 of 1500 disagree
+Lm_small_set(Lm_set) remove: 0 of 1500 disagree
 Lm_small_set(Lm_set) remove all: 0 of 1500 disagree
 Lm_small_set(Lm_set) remove then mem: 0 of 1500 disagree
 Lm_small_set(Lm_set) singleton: 0 of 1500 disagree
 Lm_small_set(Lm_set) to_list order: 0 of 1500 disagree
-Lm_small_set(Lm_set) union: 274 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_splay_set) add/to_list: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_splay_set) cardinal: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_splay_set) elements: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_set) union: 0 of 1500 disagree
+Lm_small_set(Lm_splay_set) add/to_list: 0 of 1500 disagree
+Lm_small_set(Lm_splay_set) cardinal: 0 of 1500 disagree
+Lm_small_set(Lm_splay_set) elements: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) fst_mem_filt: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) intersectp: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) is_empty: 0 of 1500 disagree
-Lm_small_set(Lm_splay_set) iter: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_splay_set) iter: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) mem: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) mem_filt: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) not_mem_filt: 0 of 1500 disagree
-Lm_small_set(Lm_splay_set) of_list: 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_splay_set) of_list: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) of_sorted_list: 0 of 1500 disagree
-Lm_small_set(Lm_splay_set) persistence (add does not change the original): 443 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
-Lm_small_set(Lm_splay_set) remove: 433 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1] x=17)
+Lm_small_set(Lm_splay_set) persistence (add does not change the original): 0 of 1500 disagree
+Lm_small_set(Lm_splay_set) remove: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) remove all: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) remove then mem: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) singleton: 0 of 1500 disagree
 Lm_small_set(Lm_splay_set) to_list order: 0 of 1500 disagree
-Lm_small_set(Lm_splay_set) union: 274 of 1500 disagree (first: [25;25;9;24;7;16] [13;11;5;26;24;24;1])
+Lm_small_set(Lm_splay_set) union: 0 of 1500 disagree
 Lm_splay_set (reversed order) add/to_list: 0 of 1500 disagree
 Lm_splay_set (reversed order) cardinal: 0 of 1500 disagree
 Lm_splay_set (reversed order) elements: 0 of 1500 disagree
 Lm_splay_set (reversed order) fst_mem_filt: 0 of 1500 disagree
-Lm_splay_set (reversed order) intersectp: 310 of 1500 disagree (first: [16;13] [20;26;10;8;8;9;19;9;2;14;15])
+Lm_splay_set (reversed order) intersectp: 0 of 1500 disagree
 Lm_splay_set (reversed order) is_empty: 0 of 1500 disagree
 Lm_splay_set (reversed order) iter: 0 of 1500 disagree
 Lm_splay_set (reversed order) mem: 0 of 1500 disagree
@@ -111,4 +111,4 @@ Lm_splay_set (reversed order) remove all: 0 of 1500 disagree
 Lm_splay_set (reversed order) remove then mem: 0 of 1500 disagree
 Lm_splay_set (reversed order) singleton: 0 of 1500 disagree
 Lm_splay_set (reversed order) to_list order: 0 of 1500 disagree
-Lm_splay_set (reversed order) union: 582 of 1500 disagree (first: [2;11;22;7;16;0] [16;23;11;11;22;10;9;7])
+Lm_splay_set (reversed order) union: 0 of 1500 disagree

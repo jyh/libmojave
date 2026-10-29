@@ -100,7 +100,9 @@ struct
    let add set x =
       match set with
          List l ->
-            if List.length l = max_size then
+            if List.mem x l then
+               set
+            else if List.length l = max_size then
                set_of_list (x :: l)
             else
                List (x :: l)
@@ -160,11 +162,9 @@ struct
       else
          Set (BigSet.of_sorted_list l)
 
+   (* add drops duplicates and switches to a BigSet past max_size *)
    let of_list l =
-      if List.length l <= max_size then
-         List l
-      else
-         Set (List.fold_left (fun set item -> BigSet.add set item) BigSet.empty l)
+      List.fold_left add empty l
 
    let iter f = function
       List l ->
