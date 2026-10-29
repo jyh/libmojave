@@ -1,0 +1,2 @@
+word_size  = 4
+create, to_static, to_read, free  = ok
