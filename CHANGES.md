@@ -10,6 +10,12 @@
   carriage return, a tab and a double quote. metaprl's display forms use it
   for variable and operator names (`refiner/reflib/dform.ml`,
   `simple_print.ml`).
+- `Lm_list_util.remove_suffix` returned `[]` where the prefix is expected
+  (`remove_suffix [1; 2; 3] [3]` was `[]`); it now returns `[1; 2]` (#25).
+- `Lm_list_util.splitup n` made chunks of n+1 elements, last chunk first. It
+  now makes chunks of at most n elements, in order (`splitup 2 [1; 2; 3]` is
+  `[[1; 2]; [3]]`), and raises `Invalid_argument` for n <= 0 (#25). Nothing
+  in libmojave or metaprl calls either function.
 
 ### Tests
 
@@ -24,14 +30,6 @@
 - `Lm_array_util` is pinned (`test/test_array_util.ml`, #24): searching,
   `replace`, appends, `sub_map`, `collect` and `distinct`, including their
   exceptions on empty arrays and out-of-range indexes.
-
-### Behaviour that the tests record and that may be a bug
-
-- `Lm_list_util.remove_suffix` returns `[]` where the prefix is expected:
-  `remove_suffix [1; 2; 3] [3]` is `[]`. It can only return `[]` or raise.
-- `Lm_list_util.splitup n` makes chunks of n+1 elements, last chunk first
-  (`splitup 2 [1; ...; 7]` is `[[7]; [4; 5; 6]; [1; 2; 3]]`), although its
-  interface says "size no more than n".
 
 ## 1.0.0 (2026-10-28)
 

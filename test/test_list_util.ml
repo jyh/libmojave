@@ -91,9 +91,8 @@ let () =
   each2 "unionq" (fun a c -> il (L.unionq a c));
   each2 "subset" (fun a c -> b (L.subset a c));
   each2 "remove_suffix" (fun a c -> il (L.remove_suffix a c));
-  (* Pinned as they stand, both against their own documentation (CHANGES):
-     remove_suffix returns [] where the prefix is expected, and splitup's
-     chunks hold n+1 elements, last chunk first. *)
+  (* Until #25 remove_suffix returned [] where the prefix is expected, and
+     splitup's chunks held n+1 elements, last chunk first. *)
   List.iter (fun (l, sfx) -> line "remove_suffix (explicit)" (il l ^ " " ^ il sfx) (guard (fun () -> il (L.remove_suffix l sfx))))
     [ ([ 1; 2; 3 ], [ 3 ]); ([ 1; 2; 3 ], [ 2; 3 ]); ([ 1; 2; 3 ], []); ([ 1; 2; 3 ], [ 1 ]) ];
   List.iter (fun n -> line "splitup (explicit)" (i n ^ " [1; 2; 3; 4; 5; 6; 7]")

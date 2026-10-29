@@ -345,21 +345,24 @@ let rec split i l =
  * Split into fragments.
  *)
 let splitup n l =
+   (* i counts the elements the current chunk can still take *)
    let rec split i vll vl1 vl2 =
       match vl2 with
          v :: vl2 ->
             if i = 0 then
-               split n (List.rev vl1 :: vll) [v] vl2
+               split (n - 1) (List.rev vl1 :: vll) [v] vl2
             else
                split (pred i) vll (v :: vl1) vl2
        | [] ->
-            List.rev vl1 :: vll
+            List.rev (List.rev vl1 :: vll)
    in
+      if n <= 0 then
+         raise (Invalid_argument "Lm_list_util.splitup");
       match l with
          [] ->
             []
        | h :: t ->
-            split n [] [h] t
+            split (n - 1) [] [h] t
 
 (*
  * Get the last element.
@@ -712,8 +715,8 @@ let rec remove_suffix_aux suffix = function
          []
       else
          raise (Failure "Lm_list_util.remove_suffix")
- | (i, _::t) ->
-      remove_suffix_aux suffix (i - 1, t)
+ | (i, h::t) ->
+      h :: remove_suffix_aux suffix (i - 1, t)
  | _ ->
       (* This will never happen *)
       raise (Failure "Lm_list_util.remove_suffix")
