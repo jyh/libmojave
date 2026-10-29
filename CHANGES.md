@@ -119,6 +119,13 @@
   creates `(id, i)` (#35). metaprl restores saved shell sessions with it
   (`support/shell/shell_current.ml`), so a saved session's number changed
   on restart.
+- `Lm_digraph.coalesce_nodes n m` lost a self-loop on `m` and left the
+  deleted `m` in `n`'s predecessors, so `in_degree n` counted it and `pred n`
+  returned it (#57). `delete_node` removes the loop from `m`'s successor list
+  but not its predecessor list, and coalesce read both after the deletion. It
+  now reads them first and maps `m` to `n`: a loop on `m`, like an edge
+  between the two, becomes a loop on `n`. Nothing in metaprl or omake uses
+  `Lm_digraph`.
 
 ### Tests
 
@@ -218,6 +225,10 @@
   (`test/test_interval_set.ml`, #45): both functors, every set operation,
   12,000 generated cases; the test prints the number of disagreements per
   operation.
+- `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
+  8,000 random steps, coalescing and multi-edges included, with degrees,
+  successors, predecessors, queries, paths and the depth-first orders after
+  each.
 
 ### Behaviour that the tests record and that may be a bug
 
