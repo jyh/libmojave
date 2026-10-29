@@ -72,15 +72,22 @@ let pos_int8_mask  = Int64.lognot neg_int8_mask
 let pos_int16_mask = Int64.lognot neg_int16_mask
 let pos_int32_mask = Int64.lognot neg_int32_mask
 
+(*
+ * A value of a precision is its low bits: sign-extended from the top one
+ * when signed, zero-extended when not (C's conversion).
+ *)
+let sign_extend bits i =
+   Int64.shift_right (Int64.shift_left i (64 - bits)) (64 - bits)
+
 let cast pre signed i =
-   if signed && compare i Int64.zero < 0 then
+   if signed then
       match pre with
          Int8 ->
-            Int64.logor i neg_int8_mask
+            sign_extend 8 i
        | Int16 ->
-            Int64.logor i neg_int16_mask
+            sign_extend 16 i
        | Int32 ->
-            Int64.logor i neg_int32_mask
+            sign_extend 32 i
        | Int64 ->
             i
    else
@@ -162,7 +169,7 @@ let of_nativeint pre signed i =
    pre, signed, cast pre signed (Int64.of_nativeint i)
 
 let of_string pre signed s =
-   pre, signed, Int64.of_string s
+   pre, signed, cast pre signed (Int64.of_string s)
 
 let to_byte (_, signed, i) =
    Int64.to_int (cast Int8 signed i)
@@ -215,7 +222,11 @@ let neg    = unop Int64.neg
 let uminus = neg
 let succ   = unop Int64.succ
 let pred   = unop Int64.pred
-let abs    = unop Int64.abs
+let abs ((_, signed, _) as i) =
+   if signed then
+      unop Int64.abs i
+   else
+      i
 let lognot = unop Int64.lognot
 
 (*
@@ -231,8 +242,15 @@ let binop op (pre1, signed1, i1) (pre2, signed2, i2) =
 let add = binop Int64.add
 let sub = binop Int64.sub
 let mul = binop Int64.mul
-let div = binop Int64.div
-let rem = binop Int64.rem
+(*
+ * Unsigned division is unsigned: it matters for Int64, whose unsigned
+ * values from 2^63 up are stored negative.
+ *)
+let div_op sop uop ((_, signed1, _) as i1) ((_, signed2, _) as i2) =
+   binop (if max_signed signed1 signed2 then sop else uop) i1 i2
+
+let div = div_op Int64.div Int64.unsigned_div
+let rem = div_op Int64.rem Int64.unsigned_rem
 
 (*
  * Bitwise operations.
@@ -269,20 +287,32 @@ let shift_right (pre, signed, i) (_, _, j) =
 (*
  * bit fields.
  *)
+(*
+ * A field is bits off .. off+len-1 (1 <= len <= 64), read as a len-bit
+ * number: sign-extended when the value is signed.
+ *)
+let field_mask len =
+   if len >= 64 then
+      Int64.minus_one
+   else
+      Int64.pred (Int64.shift_left Int64.one len)
+
 let field (pre, signed, i) off len =
-   let i = Int64.shift_right i off in
-   let mask = Int64.shift_left (Int64.of_int (-1)) len in
+   let i = Int64.shift_right_logical i off in
+   let i =
       if signed then
-         pre, signed, Int64.logor i mask
+         sign_extend len i
       else
-         pre, signed, Int64.logand i (Int64.lognot mask)
+         Int64.logand i (field_mask len)
+   in
+      pre, signed, cast pre signed i
 
 let set_field (pre, signed, i) off len (_, _, j) =
-   let mask1 = Int64.lognot (Int64.shift_left (Int64.of_int (-1)) len) in
+   let mask1 = field_mask len in
    let mask2 = Int64.lognot (Int64.shift_left mask1 off) in
    let i = Int64.logand i mask2 in
    let i = Int64.logor i (Int64.shift_left (Int64.logand j mask1) off) in
-      pre, signed, i
+      pre, signed, cast pre signed i
 
 (*
  * Comparison.
@@ -293,19 +323,9 @@ let compare (pre1, signed1, i1) (pre2, signed2, i2) =
    let i1 = cast pre signed i1 in
    let i2 = cast pre signed i2 in
       if signed then
-         compare i1 i2
+         Int64.compare i1 i2
       else
-         let neg1 = Int64.to_int (Int64.shift_right_logical i1 63) = 1 in
-         let neg2 = Int64.to_int (Int64.shift_right_logical i2 63) = 1 in
-            if neg1 then
-               if neg2 then
-                  compare i2 i1
-               else
-                  1
-            else if neg2 then
-               -1
-            else
-               compare i1 i2
+         Int64.unsigned_compare i1 i2
 
 let min i1 i2 =
    if compare i1 i2 < 0 then
