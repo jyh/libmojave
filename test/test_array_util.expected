@@ -1,0 +1,128 @@
+mem 1 [] = false
+mem 1 [1] = true
+mem 1 [1; 2; 3] = true
+mem 1 [3; 1; 2; 1] = true
+index 1 [] = EXN Not_found
+index 1 [1] = 0
+index 1 [1; 2; 3] = 0
+index 1 [3; 1; 2; 1] = 1
+find_index even [] = EXN Not_found
+find_index even [1] = EXN Not_found
+find_index even [1; 2; 3] = 1
+find_index even [3; 1; 2; 1] = 2
+for_all even [] = true
+for_all even [1] = false
+for_all even [1; 2; 3] = false
+for_all even [3; 1; 2; 1] = false
+exists even [] = false
+exists even [1] = false
+exists even [1; 2; 3] = true
+exists even [3; 1; 2; 1] = true
+all_true [] = true
+all_true [true] = true
+all_true [true; false] = false
+all_true [false; false] = false
+exists_true [] = false
+exists_true [true] = true
+exists_true [true; false] = true
+exists_true [false; false] = false
+for_all2 (<=) [] [] = true
+for_all2 (<=) [] [1] = false
+for_all2 (<=) [] [1; 2; 3] = false
+for_all2 (<=) [] [3; 1; 2; 1] = false
+for_all2 (<=) [1] [] = false
+for_all2 (<=) [1] [1] = true
+for_all2 (<=) [1] [1; 2; 3] = false
+for_all2 (<=) [1] [3; 1; 2; 1] = false
+for_all2 (<=) [1; 2; 3] [] = false
+for_all2 (<=) [1; 2; 3] [1] = false
+for_all2 (<=) [1; 2; 3] [1; 2; 3] = true
+for_all2 (<=) [1; 2; 3] [3; 1; 2; 1] = false
+for_all2 (<=) [3; 1; 2; 1] [] = false
+for_all2 (<=) [3; 1; 2; 1] [1] = false
+for_all2 (<=) [3; 1; 2; 1] [1; 2; 3] = false
+for_all2 (<=) [3; 1; 2; 1] [3; 1; 2; 1] = true
+iter2 [] [] = []
+iter2 [] [1] = EXN Failure("Array.iter2")
+iter2 [] [1; 2; 3] = EXN Failure("Array.iter2")
+iter2 [] [3; 1; 2; 1] = EXN Failure("Array.iter2")
+iter2 [1] [] = EXN Failure("Array.iter2")
+iter2 [1] [1] = [2]
+iter2 [1] [1; 2; 3] = EXN Failure("Array.iter2")
+iter2 [1] [3; 1; 2; 1] = EXN Failure("Array.iter2")
+iter2 [1; 2; 3] [] = EXN Failure("Array.iter2")
+iter2 [1; 2; 3] [1] = EXN Failure("Array.iter2")
+iter2 [1; 2; 3] [1; 2; 3] = [2; 4; 6]
+iter2 [1; 2; 3] [3; 1; 2; 1] = EXN Failure("Array.iter2")
+iter2 [3; 1; 2; 1] [] = EXN Failure("Array.iter2")
+iter2 [3; 1; 2; 1] [1] = EXN Failure("Array.iter2")
+iter2 [3; 1; 2; 1] [1; 2; 3] = EXN Failure("Array.iter2")
+iter2 [3; 1; 2; 1] [3; 1; 2; 1] = [6; 2; 4; 2]
+replace [] 0 0 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [] 0 1 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [] 1 2 [] = EXN Invalid_argument("Array.sub")
+replace [] 1 1 [8; 9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [] 2 5 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [] -1 1 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1] 0 0 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1] 0 1 [9] = [9]
+replace [1] 1 2 [] = EXN Invalid_argument("Array.sub")
+replace [1] 1 1 [8; 9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1] 2 5 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1] -1 1 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1; 2; 3] 0 0 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1; 2; 3] 0 1 [9] = [9; 2; 3]
+replace [1; 2; 3] 1 2 [] = [1]
+replace [1; 2; 3] 1 1 [8; 9] = [1; 8; 9; 3]
+replace [1; 2; 3] 2 5 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [1; 2; 3] -1 1 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [3; 1; 2; 1] 0 0 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [3; 1; 2; 1] 0 1 [9] = [9; 1; 2; 1]
+replace [3; 1; 2; 1] 1 2 [] = [3; 1]
+replace [3; 1; 2; 1] 1 1 [8; 9] = [3; 8; 9; 2; 1]
+replace [3; 1; 2; 1] 2 5 [9] = EXN Invalid_argument("Lm_array_util.replace")
+replace [3; 1; 2; 1] -1 1 [9] = EXN Invalid_argument("Lm_array_util.replace")
+append_list [7; 8] [] = [7; 8]
+append_list [7; 8] [1] = [1; 7; 8]
+append_list [7; 8] [1; 2; 3] = [1; 2; 3; 7; 8]
+append_list [7; 8] [3; 1; 2; 1] = [3; 1; 2; 1; 7; 8]
+append_list [] [] = []
+append_list [] [1] = [1]
+append_list [] [1; 2; 3] = [1; 2; 3]
+append_list [] [3; 1; 2; 1] = [3; 1; 2; 1]
+append_list_array [7] [|5; 6|] [] = [7; 5; 6]
+append_list_array [7] [|5; 6|] [1] = [1; 7; 5; 6]
+append_list_array [7] [|5; 6|] [1; 2; 3] = [1; 2; 3; 7; 5; 6]
+append_list_array [7] [|5; 6|] [3; 1; 2; 1] = [3; 1; 2; 1; 7; 5; 6]
+sub_map (*10) [] 0 0 = []
+sub_map (*10) [] 0 2 = EXN Invalid_argument("sub_map")
+sub_map (*10) [] 1 2 = EXN Invalid_argument("sub_map")
+sub_map (*10) [] 2 5 = EXN Invalid_argument("sub_map")
+sub_map (*10) [] -1 1 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1] 0 0 = []
+sub_map (*10) [1] 0 2 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1] 1 2 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1] 2 5 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1] -1 1 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1; 2; 3] 0 0 = []
+sub_map (*10) [1; 2; 3] 0 2 = [10; 20]
+sub_map (*10) [1; 2; 3] 1 2 = [20; 30]
+sub_map (*10) [1; 2; 3] 2 5 = EXN Invalid_argument("sub_map")
+sub_map (*10) [1; 2; 3] -1 1 = EXN Invalid_argument("sub_map")
+sub_map (*10) [3; 1; 2; 1] 0 0 = []
+sub_map (*10) [3; 1; 2; 1] 0 2 = [30; 10]
+sub_map (*10) [3; 1; 2; 1] 1 2 = [10; 20]
+sub_map (*10) [3; 1; 2; 1] 2 5 = EXN Invalid_argument("sub_map")
+sub_map (*10) [3; 1; 2; 1] -1 1 = EXN Invalid_argument("sub_map")
+collect [] = []
+collect [E 1] = [1]
+collect [A src 1 2] = [20; 30]
+collect [E 1; A src 0 4; E 2] = [1; 10; 20; 30; 40; 2]
+collect [A src 3 0; E 5] = [5]
+collect [A src 3 2] = EXN Invalid_argument("Array.blit")
+distinct compare [] = 0 []
+distinct compare [1] = 1 [1]
+distinct compare [1; 2; 3] = 3 [1; 2; 3]
+distinct compare [3; 1; 2; 1] = 3 [1; 2; 3; 3]
+distinct compare [2; 2; 2] = 1 [2; 2; 2]
+distinct compare [5; 1; 5; 3; 1] = 3 [1; 3; 5; 5; 5]
