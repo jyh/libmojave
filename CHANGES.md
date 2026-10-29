@@ -39,6 +39,10 @@
   exceptions on empty arrays and out-of-range indexes.
 - `Lm_location` is pinned (`test/test_location.ml`, #26): creation, `dest_loc`,
   `bogus_loc`, printing (one line and several), `compare` and `union_loc`.
+- `Lm_splay_table` is pinned (`test/test_splay_table.ml`, #28), the table
+  metaprl's refiner uses for term tables: every operation of `TableSig` on
+  several insertion orders and repeated keys, `union`, and a 200-key table
+  after insertions and removals.
 
 ## 1.0.0 (2026-10-28)
 
