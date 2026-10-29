@@ -1,0 +1,10 @@
+pp_print_paragraph at margin 12  = "the quick\nbrown fox\njumps over\nthe lazy\ndog"
+pp_print_paragraph_bare at margin 12  = "the quick\nbrown fox\njumps over\nthe lazy\ndog"
+pp_print_paragraph of ""  = ""
+y_formatter: both buffers  = "hello 42\n" "hello 42\n"
+tabstop  = 2
+sep_list: a, b, c
+sep_list_no_space: a,b,c
+sep_list_box: a, b, c
+sep_list of []: 
+print_fst_symbol: x

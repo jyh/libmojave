@@ -360,6 +360,8 @@
   `dest_up` cache their results.
 - `Lm_parse_id` is pinned (`test/test_parse_id.ml`, #74): a CVS `$Id$`
   string with a doubled space is malformed, as is a short one.
+- `Lm_format_util` and `Lm_print_util` are pinned (`test/test_print_utils.ml`,
+  #76): paragraphs at a narrow margin, the y formatter, and separated lists.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
