@@ -1,0 +1,5 @@
+IntSet.elements with min_int and max_int = [-4611686018427387904; -4611686018427387903; -1; 0; 3; 4611686018427387903]
+IntSet.mem min_int, max_int, 7  = true true false
+IntTable.keys  = [-4611686018427387904; -4611686018427387903; -1; 0; 3; 4611686018427387903]
+IntTable.find min_int  = false
+IntMTable keys, find_all max_int  = [-4611686018427387904; 4611686018427387903] ["c"; "a"]
