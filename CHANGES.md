@@ -21,6 +21,9 @@
   each zone and break kind, rendered as text at widths 80, 20, 10 and 4, the
   calls a backend printer receives (including tags and invisible text),
   buffer cloning and clearing, zone depth, and a marshal round trip.
+- `Lm_array_util` is pinned (`test/test_array_util.ml`, #24): searching,
+  `replace`, appends, `sub_map`, `collect` and `distinct`, including their
+  exceptions on empty arrays and out-of-range indexes.
 
 ### Behaviour that the tests record and that may be a bug
 
