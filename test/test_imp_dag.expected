@@ -1,0 +1,17 @@
+values  = [a; b; c; d; e]
+roots  = [a; e]
+sort  = [e; d; c; b; a]
+edges of a, b, c  = out=[b; d] in=[] | out=[c] in=[a] | out=[] in=[b]
+sweep_up  = [a(b(c()),d()); e()]
+sweep_down  = [c(b(a())); d(a()); e()]
+sweep_up_all  = [a(b(c()),d()); b(c()); c(); d(); e()]
+sweep_down_all  = [a(); b(a()); c(b(a())); d(a()); e()]
+node_rel a b, b a, a c, c a, a e, b d  = < > < > none none
+  edges of a, c after those queries  = out=[b; c; d] in=[] | out=[] in=[a; b]
+  node_rel c a again  = >
+  sweep_up after those queries  = [a(b(c()),c(),d()); e()]
+equate c e: node_rel c e, e c, a e  = = = <
+  roots, sort  = [a] [d; e; c; b; a]
+delete b: roots  = [a; c; e]
+  sort  = [e; c; a]
+  edges of each node in sort order  = e: out=[] in=[] | c: out=[] in=[] | a: out=[c] in=[]
