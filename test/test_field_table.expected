@@ -1,0 +1,19 @@
+FieldTable: steps where cardinal disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where mem disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where find disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where to_list disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where iter/fold disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where fold_index disagrees with the model 4500 steps = 0 of 4500
+FieldTable: steps where fold_map disagrees with the model 4500 steps = 0 of 4500
+FieldTable: rebuilt with add_index, to_list  = [f1=10; f3=31; f5=50]
+  then add, find_index of the new field  = 4
+find absent  = EXN Not_found
+FieldMTable: steps where find_ext (newest first) disagrees with the model 4500 steps = 0 of 4500
+FieldMTable: steps where find_int disagrees with the model 4500 steps = 0 of 4500
+FieldMTable: steps where to_list disagrees with the model 4500 steps = 0 of 4500
+FieldMTable: steps where fold disagrees with the model 4500 steps = 0 of 4500
+FieldMTable: steps where replace_ext disagrees with the model 4500 steps = 0 of 4500
+FieldMTable: two entries with one internal name, to_list  = EXN Failure("FieldMTable.to_list: some fields are missing")
+  find_int  = f1 2
+replace_ext on an absent external name  = EXN Not_found
+find_ext absent  = EXN Not_found
