@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed
+
+- `Lm_rformat.format_quoted_string` printed only the first character of a
+  string that needs quoting (`"two words"` was shown as `"t"`), and escaped a
+  tab as `\r` (#23). It now prints the whole string, escaping a newline, a
+  carriage return, a tab and a double quote. metaprl's display forms use it
+  for variable and operator names (`refiner/reflib/dform.ml`,
+  `simple_print.ml`).
+
 ### Tests
 
 - `Lm_list_util` is pinned (`test/test_list_util.ml`, #21): slicing,
@@ -20,11 +29,6 @@
 - `Lm_list_util.splitup n` makes chunks of n+1 elements, last chunk first
   (`splitup 2 [1; ...; 7]` is `[[7]; [4; 5; 6]; [1; 2; 3]]`), although its
   interface says "size no more than n".
-- `Lm_rformat.format_quoted_string` prints only the first character of a
-  string that needs quoting: `"two words"` is shown as `"t"`. Its loop
-  handles index 0 and does not recurse. It also escapes a tab as `\r` (read
-  from the code; the pin cannot show it). metaprl's display forms call it for
-  variable and operator names (`refiner/reflib/dform.ml`, `simple_print.ml`).
 
 ## 1.0.0 (2026-10-28)
 

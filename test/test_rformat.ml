@@ -103,8 +103,8 @@ let () =
         widths)
     docs;
   List.iter (fun (name, f) -> line "printer" (name ^ " w=20") (guard (fun () -> record (build f) 20))) docs;
-  (* Pinned as it stands (CHANGES): when a string needs quoting, only its
-     first character is printed, and a tab is escaped as \r. *)
+  (* Until #23 only the first character of a string that needed quoting was
+     printed, and a tab was escaped as \r. *)
   List.iter (fun s -> line "format_quoted_string" (str s)
       (guard (fun () -> str (T.print_text_string 80 (build (fun b -> F.format_quoted_string b s))))))
     [ "plain"; ""; "two words"; "tab\there"; "line\nbreak"; "q\"uote"; "'prime" ];

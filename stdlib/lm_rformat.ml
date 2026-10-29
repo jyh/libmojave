@@ -682,15 +682,17 @@ let format_quoted_string buf str =
       else
          false
    in
-   let format_string' i =
+   let rec format_string' i =
       if i < length then
-         let c = str.[i] in
-            match c with
-               '\n' -> format_string buf "\\n"
-             | '\r' -> format_string buf "\\r"
-             | '\t' -> format_string buf "\\r"
-             | '\034' -> format_string buf "\\\034"
-             | _ -> format_char buf c
+         begin
+            (match str.[i] with
+                '\n' -> format_string buf "\\n"
+              | '\r' -> format_string buf "\\r"
+              | '\t' -> format_string buf "\\t"
+              | '\034' -> format_string buf "\\\034"
+              | c -> format_char buf c);
+            format_string' (i + 1)
+         end
    in
    let quote_flag = (length = 0) || (quotep 0) || (str.[0] = '\'') in
       if quote_flag then
