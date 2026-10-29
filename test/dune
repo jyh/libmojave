@@ -20,6 +20,12 @@
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin))
 
+(test
+ (name test_thread_event)
+ (modules test_thread_event)
+ (enabled_if (= %{profile} threads))
+ (libraries libmojave pin unix))
+
 ; Filenames and globbing are platform-dependent by design (separators,
 ; drives), so these two compare against a per-platform expected file.
 (executables
