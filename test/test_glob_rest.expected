@@ -1,9 +1,9 @@
-regex_of_shell_pattern against a shell matcher: pairs that differ 4000 pairs = 104 (first: "[!ab]*??" on ".!a": false, want true)
+regex_of_shell_pattern against a shell matcher: pairs that differ 4000 pairs = 0
 glob_argv [grx/b.ml; grx/a*; plain; grx/*.mli]  = ["grx/b.ml"; "grx/a.ml"; "plain"; "grx/c.mli"]
 list_dirs . [grx]  = ["grx/sub"] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
 list_dirs_rec . [grx]  = ["grx"; "grx/sub"; "grx/sub/deep"] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"; "grx/sub/d.ml"; "grx/sub/deep/e.ml"]
 subdirs_of_dirs . [grx]  = ["grx"; "grx/sub"; "grx/sub/deep"]
-glob grx/[!a]*.ml (every .ml but a.ml)  = [] ["grx/a.ml"]
+glob grx/[!a]*.ml (every .ml but a.ml)  = [] ["grx/b.ml"]
 glob with GlobDot "grx/*" = ["grx/.hid"; "grx/sub"] ["grx/.h.ml"; "grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
 glob with GlobOnlyFiles "grx/*" = [] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
 glob with GlobOnlyDirs "grx/*" = ["grx/sub"] []

@@ -384,6 +384,10 @@ let add_shell_pattern options buf s =
              | '?' ->
                   Buffer.add_string buf ".";
                   collect (succ i)
+             | '[' when i < len - 1 && s.[i + 1] = '!' ->
+                  (* The shell negates a class with !, the regex with ^ *)
+                  Buffer.add_string buf "[^";
+                  collect (i + 2)
              | '.'
              | '+'
              | '^'
