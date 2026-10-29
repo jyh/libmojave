@@ -273,6 +273,12 @@
   out and the machine kept a transition on it. A scan now stops when it
   would read the end marker again from a state it already read it from.
   metaprl's lexer clauses use `$` only inside brackets, as a character.
+- `Lm_num` at the int edges (#89). An `Int` holding `min_int` (from
+  `num_of_int`, or arithmetic that lands on it) overflowed: `neg_num`,
+  `abs_num` and `div_num min_int (-1)` returned `min_int`; they now
+  return the bignum. `power_num` with a negative exponent counted the
+  exponent down and never reached zero (it looped, allocating); it now
+  raises `Invalid_argument`. metaprl's integer arithmetic uses `Lm_num`.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -465,6 +471,8 @@
 - `Lm_lexer`'s `$` and `\'` are checked against a model
   (`test/test_lexer_eof.ml`, #88): matching the end marker consumes no
   text and counts as one more unit of length.
+- `Lm_num` is checked against a separate bignum (`test/test_num_model.ml`,
+  #89), itself checked against native ints first.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one

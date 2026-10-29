@@ -148,6 +148,9 @@ let div_num i j =
    match i, j with
       _ , Int 0 ->
          raise (Invalid_argument "Lm_num.div_num: division by zero")
+    | Int i, Int (-1) when i = Stdlib.min_int ->
+         (* -min_int is not an int (Stdlib's: this file's min_int is 1 - 2^30) *)
+         Big_int (neg_big_int (big_int_of_int i))
     | Int i, Int j ->
          Int (i / j)
     | Int i, Big_int j ->
@@ -178,7 +181,10 @@ let rem_num = mod_num
  * forever.
  *)
 let power_aux i j =
-   if j = 0 then
+   if j < 0 then
+      (* collect counts j down to zero, and would not stop *)
+      raise (Invalid_argument "Lm_num.power_num: negative exponent")
+   else if j = 0 then
       Int 1
    else
       let rec collect total j =
@@ -203,13 +209,17 @@ let power_num i j =
  * Absolute value.
  *)
 let abs_num = function
-   Int i ->
+   Int i when i = Stdlib.min_int ->
+      Big_int (abs_big_int (big_int_of_int i))
+ | Int i ->
       Int (abs i)
  | Big_int i ->
       Big_int (abs_big_int i)
 
 let neg_num = function
-   Int i ->
+   Int i when i = Stdlib.min_int ->
+      Big_int (neg_big_int (big_int_of_int i))
+ | Int i ->
       Int (-i)
  | Big_int i ->
       Big_int (neg_big_int i)
