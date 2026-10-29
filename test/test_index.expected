@@ -1,0 +1,14 @@
+add_list [a;b;c] [1;2;3]; add z 26; add_entry [a;x] 24  = 
+  find_data a, z  = 1 26
+  find_list_data [a;b;c], [a;x]  = 3 24
+  mem a, b (b is not top level)  = true false
+  mem_list [a;b], [a;q], []  = true false false
+  mem_list [q;r] (q missing)  = false
+  mem_list [a;q;r] (q missing)  = false
+  find_data_opt q, find_index_opt q  = None true
+  find_list_data [q]  = EXN Not_found
+remove_entry [a;b]: mem_list [a;b], [a;x], mem a  = false true true
+remove a: mem a, mem z, is_empty  = false true false
+is_empty (remove z of that)  = true
+filter_add z (+1), n (new 0)  = 27 0
+original after filter_add (persistent)  = 26 false
