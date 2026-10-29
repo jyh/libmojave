@@ -1,0 +1,11 @@
+steps where a find disagrees with the model 600 steps = 0
+steps where the file holds other than one entry per live tag  = 0
+first disagreement  = none
+find_entry tag 5 with A=2  = second
+find_entry tag 5 (first match)  = first
+find_entry tag 7  = EXN Not_found
+remove_entry tag 5 with A=1, then find_entry tag 5  = second
+  then find_entry tag 6  = third
+remove_entry of nothing, then find_entry tag 6  = third
+after a remove: find_entry tag 5 with A=2  = second
+new file: append_entry, then remove of another tag: entries before, after  = true true
