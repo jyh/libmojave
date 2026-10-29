@@ -23,6 +23,11 @@
   unions a reduction's symbols from the last one down, so every reduction's
   location ran backwards: for `1+2` the `add` action received columns 2-1. It
   now receives 0-3 (`test/test_parser.ml` records each action's location).
+- `%b` in `Lm_rprintf`/`Lm_format` (`Lm_make_printf`) passed the format
+  `"%b"` and the string `"true"` or `"false"` to C's `snprintf`: glibc read
+  `%b` as a binary unsigned int and printed the pointer's bits (undefined
+  behaviour), macOS printed a literal `b`. The conversion is now formatted as
+  `%s`, keeping flags and width: `"%7b|"` gives `"   true|"` (#32).
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 
@@ -57,10 +62,6 @@
 
 - The printf engine behind `Lm_rprintf` and `Lm_format` (`Lm_make_printf`, an
   untyped interpreter of the format string) disagrees with `Printf`:
-  - `%b` passes the format `"%b"` and the string `"true"` or `"false"` to C's
-    `snprintf`. glibc reads `%b` as a binary unsigned int and prints the
-    pointer's bits (undefined behaviour, a different number on each run);
-    macOS prints a literal `b`. The pin cannot record it;
   - `%S`, `%C` and `%B` raise `Invalid_argument "parse_spec"`;
   - `%a` drops the user printer's output: `sprintf "pair=%a"` gives
     `"pair="`, and `bprintf b "[%a]"` writes nothing, not even the brackets.

@@ -13,10 +13,11 @@ let () =
   line "Lm_ref_util pop" "" (guard (fun () -> string_of_int (Lm_ref_util.pop r)));
   line "Lm_ref_util pop (empty)" "" (guard (fun () -> string_of_int (Lm_ref_util.pop r)));
   (* formatted output to strings and buffers *)
-  (* No %b here: Lm_make_printf hands "%b" and the string "true"/"false" to
-     C's snprintf, where glibc reads %b as a binary unsigned int (undefined
-     behaviour, a different number each run) and macOS prints a literal b. *)
   line "sprintf %d %s %c" "" (guard (fun () -> str (R.sprintf "%d %s %c" (-3) "x y" 'z')));
+  (* Until #32 Lm_make_printf handed "%b" to C's snprintf with a string:
+     glibc printed the pointer in binary, macOS a literal b. *)
+  line "sprintf %b" "" (guard (fun () -> str (R.sprintf "%b|%b" true false)));
+  line "sprintf %7b|%-7b|" "" (guard (fun () -> str (R.sprintf "%7b|%-7b|" true false)));
   line "sprintf %5d|%-5d|%05d" "" (guard (fun () -> str (R.sprintf "%5d|%-5d|%05d" 42 42 42)));
   line "sprintf %x %o %X" "" (guard (fun () -> str (R.sprintf "%x %o %X" 255 8 255)));
   line "sprintf %S" "" (guard (fun () -> str (R.sprintf "%S" "a\"b\n")));

@@ -198,6 +198,9 @@ struct
     * Next arg should be an int.
     *)
    let rec print_bool buf i len s fmt _info =
+      (* The C side formats a string, so the spec's final 'b' becomes 's':
+         C's own %b is a binary unsigned int (glibc) and reads a pointer. *)
+      let fmt = String.sub fmt 0 (String.length fmt - 1) ^ "s" in
       let print b =
          let str = ext_print_string fmt (if b then "true" else "false") in
             Args.print_string buf str;
