@@ -323,6 +323,19 @@
   not-taken text, as `Lm_rformat` already did when printing a linear
   zone. metaprl's display forms go through `Lm_rformat`; the existing
   `Lm_rformat` pins are unchanged.
+- `Lm_fs_case_sensitive.case_sensitive` on macOS (#102) read the volume's
+  capabilities 4 bytes off — its result header was an `unsigned long`
+  where `getattrlist` writes a 4-byte length — and so answered wrongly:
+  "case-sensitive" for this machine's case-insensitive volume. It also
+  kept a pointer into the OCaml string while the runtime lock was
+  released. The header is now 4 bytes and packed, the path is copied
+  first, and `ATTR_VOL_INFO` is set as `getattrlist` requires. macOS is
+  the only platform where it is available, and CI does not run there:
+  the test's check is local.
+- `Lm_unix_util.copy_file` raised `Unix.fchmod not implemented` on
+  Windows, so it never copied a file there (#102, found by the new test's
+  Windows jobs). It now sets the mode with `Unix.chmod` after closing the
+  file on Windows, and with `Unix.fchmod` elsewhere as before.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -653,6 +666,9 @@
   prints, breaks, newlines and extra closes, the same text (white space
   aside) at margins 1000, 30 and 10, and no exception; exact output where
   no break is taken; the setters, getters and output functions by pin.
+
+- `Lm_nocompare`, `Lm_id`, `Lm_fs_case_sensitive` and the portable part of
+  `Lm_unix_util` are checked by property (`test/test_os_small.ml`, #102).
 
 ### Behaviour that the tests record and that may be a bug
 
