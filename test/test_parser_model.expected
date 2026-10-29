@@ -1,8 +1,8 @@
-grammars: 145 built, 155 refused with a conflict; 5609 accepted of the accept inputs
-accept 52780 checks = 5199 disagree (first: S->a, S->, A->c b A, A->c a, A->b S, B-> on "aa": model false, parser accept)
-accept tree 5609 checks = 5324 disagree (first: S->a, S->, A->c b A, A->c a, A->b S, B-> on "a")
-remove_production 52780 checks = 4002 disagree (first: S->a, S->, A->c b A, A->c a, B-> on "aa": model false, parser accept)
-remove_production tree 4245 checks = 4084 disagree (first: S->a, S->, A->c b A, A->c a, B-> on "a")
-union 18928 checks = 3015 disagree (first: S->a, S->, A->c b A, A->c a, A->b S, B->, S->b A B, S-> on "aa": model false, parser accept)
-union tree 3272 checks = 3088 disagree (first: S->a, S->, A->c b A, A->c a, A->b S, B->, S->b A B, S-> on "a")
+grammars: 145 built, 155 refused with a conflict; 410 accepted of the accept inputs
+accept 52780 checks = 0 disagree
+accept tree 410 checks = 0 disagree
+remove_production 52780 checks = 0 disagree
+remove_production tree 243 checks = 0 disagree
+union 18928 checks = 0 disagree
+union tree 257 checks = 0 disagree
 precedence 2000 checks = 0 disagree

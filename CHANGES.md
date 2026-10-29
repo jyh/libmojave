@@ -230,6 +230,14 @@
   alone, discarding them. `append_entry` now writes the header first on an
   empty file. omake, the user, calls only `add` and `find`, which were
   right.
+- `Lm_parser` ended a parse early (#77). A state holding one complete item
+  whose lookahead is only end-of-input is reduced without reading a token,
+  and the parse returned that reduction's value. That is right for the
+  start production `prog -> S $eof`, but with `S -> a` the parser accepted
+  `aa` and `ab` as `S(a)`, reading one token and never reducing `prog`; and
+  with `prog -> a prog | b $eof` it returned the inner `prog` for `ab`. The
+  parse now ends only when the start symbol is reduced onto an empty stack.
+  metaprl's `filter_grammar` runs theory grammars through `Parser.parse`.
 
 ### Tests
 
@@ -377,6 +385,12 @@
   against a model (`test/test_string_hash.ml`, #60): 3,000 random strings,
   some marshalled before use, and 8 pairs of distinct strings with the same
   `Hashtbl.hash`, with intern, equal, compare, sets and tables after each.
+- `Lm_parser` is checked against an Earley recognizer
+  (`test/test_parser_model.ml`, #77): 300 random grammars (145 build, the
+  rest are refused with a conflict), every string of up to 5 tokens,
+  acceptance and the derivation the actions build, the same after
+  `remove_production` and `union`, and 2,000 random expressions against a
+  precedence-climbing evaluator.
 
 ### Behaviour that the tests record and that may be a bug
 
