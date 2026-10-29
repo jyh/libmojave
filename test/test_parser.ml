@@ -119,3 +119,33 @@ let () =
   List.iter (fun s ->
       line "remove_production: b -> x removed" (str s) (run_g removed s);
       line "remove_production: b -> x never added" (str s) (run_g base s)) [ "x"; "b"; "x+1" ]
+
+(* Acceptance. A state holding one complete item whose lookahead is only
+   $eof is reduced without reading a token, and the parse ends there
+   (ReduceAccept). That is right for "prog -> S $eof", whose reduction
+   leaves the stack empty; it is the parse's result. It also holds for
+   "S -> a" when S is followed only by $eof, and for a start symbol that
+   is reduced inside itself. Each line prints the tree the actions built,
+   or the error. *)
+type tree = Leaf of string | Node of string * tree list
+let rec show_tree = function
+  | Leaf x -> x
+  | Node (a, ks) -> a ^ "(" ^ String.concat "," (List.map show_tree ks) ^ ")"
+
+let run_tree prods s =
+  let g = P.add_start P.empty "prog" in
+  let g = List.fold_left (fun g (a, l, r) -> P.add_production g a l r None) g prods in
+  let input = Array.init (String.length s) (fun i -> String.make 1 s.[i]) in
+  let lexer i =
+    if i < Array.length input then (input.(i), loc, i + 1, Leaf input.(i))
+    else (Arg.eof, loc, i, Leaf Arg.eof) in
+  let eval i action _ args = (i, Node (action, args)) in
+  guard (fun () -> show_tree (snd (P.parse g "prog" lexer eval 0)))
+
+let () =
+  let sa = [ ("top", "prog", [ "S"; Arg.eof ]); ("sa", "S", [ "a" ]) ] in
+  List.iter (fun s -> line "accept: prog -> S $eof, S -> a" (str s) (run_tree sa s)) [ "a"; "aa"; "aaa"; "ab"; "" ];
+  let sab = [ ("top", "prog", [ "S"; Arg.eof ]); ("sab", "S", [ "a"; "b" ]) ] in
+  List.iter (fun s -> line "accept: prog -> S $eof, S -> a b" (str s) (run_tree sab s)) [ "ab"; "abab"; "abc" ];
+  let rec_start = [ ("pa", "prog", [ "a"; "prog" ]); ("pb", "prog", [ "b"; Arg.eof ]) ] in
+  List.iter (fun s -> line "accept: prog -> a prog | b $eof" (str s) (run_tree rec_start s)) [ "b"; "ab"; "aab"; "abb" ]
