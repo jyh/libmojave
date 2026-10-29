@@ -1,0 +1,37 @@
+debug_pos=false loc_of_pos loc_exp_pos = File a.ml: line 1, characters 0-9
+debug_pos=false pp_print_pos loc_exp_pos = "File a.ml: line 1, characters 0-9"
+debug_pos=false loc_of_pos base_pos 7 = File v.ml: line 7, characters 0-1
+debug_pos=false pp_print_pos base_pos 7 = "File v.ml: line 7, characters 0-1"
+debug_pos=false loc_of_pos int_pos 3 (base_pos 7) = File v.ml: line 7, characters 0-1
+debug_pos=false pp_print_pos int_pos 3 (base_pos 7) = "File v.ml: line 7, characters 0-1"
+debug_pos=false loc_of_pos string_pos s (cons_pos 2 (loc_exp_pos a:1)) = File a.ml: line 1, characters 0-9
+debug_pos=false pp_print_pos string_pos s (cons_pos 2 (loc_exp_pos a:1)) = "File a.ml: line 1, characters 0-9"
+debug_pos=false loc_of_pos symbol_pos x (base_pos 4) = File v.ml: line 4, characters 0-1
+debug_pos=false pp_print_pos symbol_pos x (base_pos 4) = "File v.ml: line 4, characters 0-1"
+debug_pos=false loc_of_pos loc_pos b:2 (base_pos 7) = File b.ml: line 2, characters 0-9
+debug_pos=false pp_print_pos loc_pos b:2 (base_pos 7) = "File b.ml: line 2, characters 0-9"
+debug_pos=false loc_of_pos pos_pos (base_pos 1) (base_pos 2) = File v.ml: line 2, characters 0-1
+debug_pos=false pp_print_pos pos_pos (base_pos 1) (base_pos 2) = "File v.ml: line 2, characters 0-1"
+debug_pos=false loc_of_pos del_pos f a:3 = File a.ml: line 3, characters 0-9
+debug_pos=false pp_print_pos del_pos f a:3 = "File a.ml: line 3, characters 0-9"
+debug_pos=false loc_of_pos del_exp_pos f (base_pos 5) = File v.ml: line 5, characters 0-1
+debug_pos=false pp_print_pos del_exp_pos f (base_pos 5) = "File v.ml: line 5, characters 0-1"
+debug_pos=true loc_of_pos loc_exp_pos = File a.ml: line 1, characters 0-9
+debug_pos=true pp_print_pos loc_exp_pos = "File a.ml: line 1, characters 0-9"
+debug_pos=true loc_of_pos base_pos 7 = File v.ml: line 7, characters 0-1
+debug_pos=true pp_print_pos base_pos 7 = "File v.ml: line 7, characters 0-1\n   Test.v7"
+debug_pos=true loc_of_pos int_pos 3 (base_pos 7) = File v.ml: line 7, characters 0-1
+debug_pos=true pp_print_pos int_pos 3 (base_pos 7) = "File v.ml: line 7, characters 0-1\n   Test.v7\n   Test.3"
+debug_pos=true loc_of_pos string_pos s (cons_pos 2 (loc_exp_pos a:1)) = File a.ml: line 1, characters 0-9
+debug_pos=true pp_print_pos string_pos s (cons_pos 2 (loc_exp_pos a:1)) = "File a.ml: line 1, characters 0-9\n   /Test.v2\n   /Test.s"
+debug_pos=true loc_of_pos symbol_pos x (base_pos 4) = File v.ml: line 4, characters 0-1
+debug_pos=true pp_print_pos symbol_pos x (base_pos 4) = "File v.ml: line 4, characters 0-1\n   Test.v4\n   Test.x"
+debug_pos=true loc_of_pos loc_pos b:2 (base_pos 7) = File b.ml: line 2, characters 0-9
+debug_pos=true pp_print_pos loc_pos b:2 (base_pos 7) = "File b.ml: line 2, characters 0-9\n   Test.v7"
+debug_pos=true loc_of_pos pos_pos (base_pos 1) (base_pos 2) = File v.ml: line 2, characters 0-1
+debug_pos=true pp_print_pos pos_pos (base_pos 1) (base_pos 2) = "File v.ml: line 2, characters 0-1\n   Called from: Test\n      Test.v1\n   Test.v2"
+debug_pos=true loc_of_pos del_pos f a:3 = File a.ml: line 3, characters 0-9
+debug_pos=true pp_print_pos del_pos f a:3 = "File a.ml: line 3, characters 0-9\n   delayed"
+debug_pos=true loc_of_pos del_exp_pos f (base_pos 5) = File v.ml: line 5, characters 0-1
+debug_pos=true pp_print_pos del_exp_pos f (base_pos 5) = "File v.ml: line 5, characters 0-1\n   Test.v5\n   delayed"
+loc_of_pos, debug_pos off vs on 2000 random chains = 0 disagree

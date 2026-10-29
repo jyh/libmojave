@@ -403,6 +403,10 @@
   call and a whole tokenization, the same after `remove_clause` and
   `union`. At the end of the input `\'` wins over an empty match by any
   clause; the model does the same.
+- `Lm_position` is pinned (`test/test_position.ml`, #79): each
+  constructor's location and printed form with `debug_pos` off and on, and
+  2,000 random chains whose `loc_of_pos` is the same either way. No
+  defect.
 
 ### Behaviour that the tests record and that may be a bug
 
