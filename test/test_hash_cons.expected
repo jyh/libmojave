@@ -1,0 +1,13 @@
+MakeHashCons: steps where index disagrees with the model 3000 steps = 0 of 3000
+MakeHashCons: steps where get disagrees with the model 3000 steps = 0 of 3000
+MakeHashCons: steps where length/fold disagrees with the model 3000 steps = 0 of 3000
+MakeHashCons: steps where map_array disagrees with the model 3000 steps = 0 of 3000
+MakeHashMarshalEq: steps where intern disagrees with the model 2000 steps = 0 of 2000
+MakeHashMarshalEq: steps where get disagrees with the model 2000 steps = 0 of 2000
+MakeHashMarshalEq: steps where equal (coarse) disagrees with the model 2000 steps = 0 of 2000
+MakeHashMarshalEq: steps where fine_equal disagrees with the model 2000 steps = 0 of 2000
+MakeHashMarshalEq: steps where hash (coarse) disagrees with the model 2000 steps = 0 of 2000
+MakeHashMarshalEq: steps where create returns the interned item disagrees with the model 2000 steps = 0 of 2000
+compare_int_list: pairs that disagree with compare 2000 pairs = 0
+hash_int_list: equal lists with different codes  = 0
+hash_int_list: [1; 2] and [2; 1] differ  = true
