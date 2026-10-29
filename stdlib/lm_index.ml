@@ -298,12 +298,12 @@ struct
          Leaf ->
             Leaf
        | Index table ->
-            let i_entry = f (find index key) in
-               match i_entry with
-                  Some _ ->
-                     Index (EltTable.remove table key)
-                | None ->
-                     index
+            (* As Lm_map.filter_remove: None removes, Some keeps the new entry *)
+            match f (find index key) with
+               None ->
+                  Index (EltTable.remove table key)
+             | Some i_entry ->
+                  Index (EltTable.add table key i_entry)
 
    (*
     * Filter remove a key from an index using its data.
@@ -423,7 +423,7 @@ struct
     * Remove a key from an index.
     *)
    let remove index key =
-      filter_remove index key (fun data -> Some data)
+      filter_remove index key (fun _ -> None)
 
    (*
     * Add a chain of (key, data) pairs to an index.
@@ -455,7 +455,7 @@ struct
     * Remove an entry at the end of a chain in the index.
     *)
    let remove_entry index keys =
-      filter_remove_entry index keys (fun data -> Some data)
+      filter_remove_entry index keys (fun _ -> None)
 
    (*
     * Iterate over the top level entries.
