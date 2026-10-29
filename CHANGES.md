@@ -244,6 +244,14 @@
   uses, a lexer adding `[a-z]+` and then `let` lexed `let` as the keyword
   alone and as the identifier after a union. The second lexer's clauses
   now keep their order.
+- `Lm_lexer.search` and `searchto` did not find the first occurrence of a
+  match, as the interface says (#80). Among the matches that started
+  before the first one ended, they took the one that ended last: `>>` in
+  `>>>` was found at offset 1, `ab|bcd` in `abcd` gave `bcd`, and `<<` in
+  `<<<x>>>` at offset 1. They now try a match at each offset from the
+  start and take the first offset where one is found, the longest match
+  there. metaprl's `filter_grammar` uses `searchto` to find the end of a
+  quotation.
 
 ### Tests
 
@@ -407,6 +415,11 @@
   constructor's location and printed form with `debug_pos` off and on, and
   2,000 random chains whose `loc_of_pos` is the same either way. No
   defect.
+- `Lm_lexer.search`, `searchto` and `matches` are checked against a model
+  (`test/test_lexer_search.ml`, #80): the random lexers of
+  `test_lexer_model.ml` on every string of up to 5 characters, one call
+  and `searchto` repeated to the end, and quotation-like delimiters under
+  `choose = max`.
 
 ### Behaviour that the tests record and that may be a bug
 

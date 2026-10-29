@@ -2444,125 +2444,91 @@ struct
     * Return the input followed by a regular expression
     * terminator.
     *)
-   let search dfa channel =
-      let dfa_info =
-         { dfa_stop_clause = -1;
-           dfa_stop_pos    = 0;
-           dfa_stop_args   = ArgTable.empty;
-           dfa_start_pos   = 0;
-           dfa_args        = NfaStateTable.empty;
-           dfa_channel     = channel
-         }
-      in
-      let rec loop dfa_state c =
+   (*
+    * Search for the leftmost match: try an anchored match (the lex
+    * machine) at offset 0, 1, 2, ... from the start, each with the
+    * true previous character, and take the first offset where some
+    * clause matches; the lex machine then gives the longest match
+    * there, and Action.choose breaks a tie.  The channel is not
+    * advanced.  Returns Some (dfa_info, offset), or None and the
+    * length of the remaining input.
+    *
+    * (The search machine (dfa_states.(1)) scanned for a match in one
+    * pass, but a match that began later and ended later could replace
+    * the first one: ">>" in ">>>" was found at offset 1.)
+    *)
+   let search_anchored dfa channel =
+      let rec loop dfa_info dfa_state c =
          match dfa_delta dfa dfa_info dfa_state c with
             Some dfa_state ->
-               loop dfa_state (Input.lex_next channel)
+               loop dfa_info dfa_state (Input.lex_next channel)
           | None ->
                ()
       in
-      let dfa_state = dfa.dfa_states.(1) in
-      let c = Input.lex_start channel in
-      let () = loop dfa_state c in
+      let rec attempt off prev =
+         let dfa_info =
+            { dfa_stop_clause = -1;
+              dfa_stop_pos    = 0;
+              dfa_stop_args   = ArgTable.empty;
+              dfa_start_pos   = off;
+              dfa_args        = NfaStateTable.empty;
+              dfa_channel     = channel
+            }
+         in
+            loop dfa_info dfa.dfa_states.(0) prev;
+            if dfa_info.dfa_stop_clause >= 0 then
+               Some (dfa_info, off), off
+            else begin
+               Input.lex_restart channel off;
+               let c = Input.lex_next channel in
+                  if c = Input.eof then
+                     None, off
+                  else
+                     attempt (succ off) c
+            end
+      in
+         attempt 0 (Input.lex_start channel)
 
-      (* Now figure out what happened *)
+   (*
+    * The match found at offset off: (action, loc, skipped, lexeme, args).
+    * The location and the consumed text cover the skipped text too.
+    *)
+   let search_result dfa channel dfa_info off =
       let clause = dfa_info.dfa_stop_clause in
       let stop = dfa_info.dfa_stop_pos in
-         (*
-          * If we did not get a match, return the channel to
-          * the starting position, and raise an exception.
-          *)
-         if clause < 0 then begin
+      let loc = Input.lex_loc channel stop in
+      let text = Input.lex_string channel stop in
+      let _, args = dfa_args dfa_info text in
+      let skipped = String.sub text 0 off in
+      let lexeme = String.sub text off (stop - off) in
+         Input.lex_stop channel stop;
+         IntTable.find dfa.dfa_action_table clause, loc, skipped, lexeme, args
+
+   let search dfa channel =
+      match search_anchored dfa channel with
+         Some (dfa_info, off), _ ->
+            Some (search_result dfa channel dfa_info off)
+       | None, _ ->
             Input.lex_stop channel 0;
             None
-         end
-         else
-            (*
-             * We have the clause:
-             *   1. Set the channel to the final position
-             *   2. Get the entire string.
-             *   3. Get the arguments.
-             *)
-            let loc = Input.lex_loc channel stop in
-            let lexeme = Input.lex_string channel stop in
-            let start, args = dfa_args dfa_info lexeme in
-            let skipped, lexeme =
-               match start with
-                  Some pos ->
-                     String.sub lexeme 0 pos, String.sub lexeme pos (stop - pos)
-                | None ->
-                     "", lexeme
-            in
-               Input.lex_stop channel stop;
-               Some (IntTable.find dfa.dfa_action_table clause, loc, skipped, lexeme, args)
 
    (*
     * This is a slightly different version of searching,
     * where we skip to the EOF if there is no match.
-    *
-    * The reason for separating this is because it is a
-    * hassle to deal with the 3 different return values
-    * in the normal search function.
     *)
    let searchto dfa channel =
-      let dfa_info =
-         { dfa_stop_clause = -1;
-           dfa_stop_pos    = 0;
-           dfa_stop_args   = ArgTable.empty;
-           dfa_start_pos   = 0;
-           dfa_args        = NfaStateTable.empty;
-           dfa_channel     = channel
-         }
-      in
-      let rec loop dfa_state c =
-         match dfa_delta dfa dfa_info dfa_state c with
-            Some dfa_state ->
-               loop dfa_state (Input.lex_next channel)
-          | None ->
-               ()
-      in
-      let dfa_state = dfa.dfa_states.(1) in
-      let c = Input.lex_start channel in
-      let () = loop dfa_state c in
-
-      (* Now figure out what happened *)
-      let clause = dfa_info.dfa_stop_clause in
-      let stop = dfa_info.dfa_stop_pos in
-         (*
-          * If we did not get a match, return all the text to
-          * the end of the channel.
-          *)
-         if clause < 0 then begin
-            let stop = Input.lex_pos channel in
-               if stop = 0 then begin
-                  Input.lex_stop channel stop;
-                  LexEOF
-               end
-               else
-                  let loc = Input.lex_loc channel stop in
-                  let lexeme = Input.lex_string channel stop in
-                     Input.lex_stop channel stop;
-                     LexSkipped (loc, lexeme)
-         end
-         else
-            (*
-             * We have the clause:
-             *   1. Set the channel to the final position
-             *   2. Get the entire string.
-             *   3. Get the arguments.
-             *)
-            let loc = Input.lex_loc channel stop in
-            let lexeme = Input.lex_string channel stop in
-            let start, args = dfa_args dfa_info lexeme in
-            let skipped, lexeme =
-               match start with
-                  Some pos ->
-                     String.sub lexeme 0 pos, String.sub lexeme pos (stop - pos)
-                | None ->
-                     "", lexeme
-            in
-               Input.lex_stop channel stop;
-               LexMatched (IntTable.find dfa.dfa_action_table clause, loc, skipped, lexeme, args)
+      match search_anchored dfa channel with
+         Some (dfa_info, off), _ ->
+            let action, loc, skipped, lexeme, args = search_result dfa channel dfa_info off in
+               LexMatched (action, loc, skipped, lexeme, args)
+       | None, 0 ->
+            Input.lex_stop channel 0;
+            LexEOF
+       | None, len ->
+            let loc = Input.lex_loc channel len in
+            let skipped = Input.lex_string channel len in
+               Input.lex_stop channel len;
+               LexSkipped (loc, skipped)
 
    (*
     * Just check for a string match.

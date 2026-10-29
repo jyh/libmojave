@@ -1,0 +1,13 @@
+repeated searches skipped (the model takes an empty match before the end): 47320
+search 109200 checks = 0 disagree
+matches 109200 checks = 0 disagree
+searchto 109200 checks = 0 disagree
+searchto all 61880 checks = 0 disagree
+searchto >> "x >> y >>" = end["x "|">>"] end[" y "|">>"] LexEOF
+searchto >> ">>>" = end[""|">>"] LexSkipped ">" LexEOF
+searchto >> "a>>>>b" = end["a"|">>"] end[""|">>"] LexSkipped "b" LexEOF
+searchto << and >> "a << b >> c >>" = open["a "|"<<"] close[" b "|">>"] close[" c "|">>"] LexEOF
+searchto << and >> "<<<x>>>" = open[""|"<<"] close["<x"|">>"] LexSkipped ">" LexEOF
+searchto a{2,3} "aaaa" = c[""|"aaa"] LexSkipped "a" LexEOF
+searchto a{2,3} "baaab" = c["b"|"aaa"] LexSkipped "b" LexEOF
+searchto ab|bcd "abcd" = c[""|"ab"] LexSkipped "cd" LexEOF
