@@ -71,19 +71,49 @@ value ml_print_char(value v_fmt, value v_char)
 
 /*
  * Print an int.
+ *
+ * The value is an OCaml int (intnat), not a C int: the length modifier
+ * for intnat (ARCH_INTNAT_PRINTF_FORMAT) goes before the conversion,
+ * and an unsigned conversion (u x X o) prints the int's bits as
+ * Stdlib.Printf does, masked to the width of an OCaml int (%x of -1 is
+ * 7fffffffffffffff on a 64-bit machine).  Until 2026 the value was read
+ * as an int, so anything outside 32 bits printed wrong.
  */
 value ml_print_int(value v_fmt, value v_int)
 {
     char buffer[BUFSIZE];
-    char *fmt = String_val(v_fmt);
-    int i = Int_val(v_int);
+    char fmt[64];
+    const char *spec = String_val(v_fmt);
+    size_t len = caml_string_length(v_fmt);
+    intnat i = Long_val(v_int);
+    uintnat mask = (((uintnat) 1) << (8 * sizeof(value) - 1)) - 1;
+    char conv;
+    int code;
+
+    if(len < 2 || len - 1 + sizeof(ARCH_INTNAT_PRINTF_FORMAT) + 1 > sizeof(fmt))
+        caml_failwith("ml_print_int");
+    conv = spec[len - 1];
+    memcpy(fmt, spec, len - 1);
+    strcpy(fmt + len - 1, ARCH_INTNAT_PRINTF_FORMAT);
+    len = strlen(fmt);
+    fmt[len] = conv;
+    fmt[len + 1] = 0;
+    if(conv == 'u' || conv == 'x' || conv == 'X' || conv == 'o') {
 #ifdef HAVE_SNPRINTF
-    if(snprintf(buffer, sizeof(buffer), fmt, i) < 0)
-        caml_failwith("ml_print_int");
+        code = snprintf(buffer, sizeof(buffer), fmt, ((uintnat) i) & mask);
 #else
-    if(sprintf(buffer, fmt, i) < 0)
-        caml_failwith("ml_print_int");
+        code = sprintf(buffer, fmt, ((uintnat) i) & mask);
 #endif
+    }
+    else {
+#ifdef HAVE_SNPRINTF
+        code = snprintf(buffer, sizeof(buffer), fmt, i);
+#else
+        code = sprintf(buffer, fmt, i);
+#endif
+    }
+    if(code < 0)
+        caml_failwith("ml_print_int");
     return caml_copy_string(buffer);
 }
 

@@ -261,6 +261,13 @@
   is not a terminal; it sets them first. And on Unix `ml_getrusage`
   printed `User: ... System: ...` to stderr on every call; it no longer
   does.
+- `Lm_rprintf` and `Lm_format` printed ints through a C `int` (#87), so
+  any value outside 32 bits came out wrong: `%d` of `min_int` with
+  `%00.3d` gave `000`, `%i` of `max_int` gave `-1`, `%x` of `-1` gave
+  `ffffffff`. `ml_print_int` now reads an `intnat`, adds the length
+  modifier OCaml uses for it, and prints `u x X o` from the int's bits
+  masked to its width, as `Printf` does (`%x` of `-1` is
+  `7fffffffffffffff`). metaprl calls `Lm_rprintf` in 11 files.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -447,6 +454,9 @@
   (`test/test_cstubs.ml`, #84); the hazards above depend on evaluation
   order and on where a collection falls, so the test guards the results
   and does not show the hazards.
+- `Lm_rprintf` and `Lm_format` are checked against `Printf`
+  (`test/test_printf_model.ml`, #87): 6,000 random conversions, limited
+  to specs whose meaning OCaml and C agree on.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
