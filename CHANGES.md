@@ -332,6 +332,10 @@
   first, and `ATTR_VOL_INFO` is set as `getattrlist` requires. macOS is
   the only platform where it is available, and CI does not run there:
   the test's check is local.
+- `Lm_unix_util.copy_file` raised `Unix.fchmod not implemented` on
+  Windows, so it never copied a file there (#102, found by the new test's
+  Windows jobs). It now sets the mode with `Unix.chmod` after closing the
+  file on Windows, and with `Unix.fchmod` elsewhere as before.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
