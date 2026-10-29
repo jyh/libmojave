@@ -151,6 +151,13 @@
   `itt_omega.ml`, `term_eq_table.ml`) are not affected: supinf's keys are
   non-negative integers ordered as `compare` orders them, and its `append`
   adds the two coefficients.
+- `Lm_parser.remove_production`, removing a name's last production, left
+  the name bound to no productions, so the grammar went on treating it as a
+  nonterminal: a syntax-error message no longer listed it among the
+  possible tokens (#63). The name is now unbound again, and the grammar
+  equals the one that never had the production. `Lm_map`'s `mapi_all`,
+  which keeps an emptied binding, is unchanged. Nothing in metaprl calls
+  `remove_production`.
 
 ### Tests
 

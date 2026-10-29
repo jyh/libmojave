@@ -810,6 +810,14 @@ struct
          VarMTable.mapi_all (fun _ prods ->
                List.filter (fun prod -> prod.prod_action <> action) prods) gram.gram_prod
       in
+      (* A name left with no productions is unbound again, as if it had
+         never had one: the analysis reads any bound name as a nonterminal. *)
+      let table =
+         VarMTable.fold_all (fun table v prods ->
+               match prods with
+                  [] -> VarMTable.remove table v
+                | _ :: _ -> table) table table
+      in
          { gram with gram_prod = table }
 
    (*
