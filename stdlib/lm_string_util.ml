@@ -92,7 +92,7 @@ let rec equal_substring_aux s1 s2 len2 i1 i2 =
 let equal_substring s1 off s2 =
    let len1 = String.length s1 in
    let len2 = String.length s2 in
-      len1 - off >= len2 && equal_substring_aux s1 s2 len2 off 0
+      off >= 0 && len1 - off >= len2 && equal_substring_aux s1 s2 len2 off 0
 
 (*
  * Check all chars in the string.
