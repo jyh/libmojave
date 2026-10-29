@@ -623,89 +623,74 @@ let dtree_children dtree id =
          NodeIdSet.empty
 
 (*
- * Perform a DFS on the dominator tree,
- * looking for backedges.  When we find one, classify all
- * the nodes along the path.
+ * Classify the nodes into natural loops. A back edge is t -> h where h
+ * dominates t (h = t is a self-loop). The body of a header h is h and
+ * every node that reaches one of h's latches without passing through h.
+ * Natural loops are nested or disjoint, so each node other than the root
+ * belongs to the smallest body that contains it, other than its own.
+ * The result maps each such node to (header, 0); the second component is
+ * kept for the shape of the table and is not read.
  *)
-let classify_nodes state dtree =
-   (*
-    * Find the best back-edge, given a table that gives the
-    * depth-first depth of the parents.
-    *)
-   let rec find_best_backedge parents best succ =
-      match succ with
-         id1 :: succ ->
-            let best =
-               try
-                  let depth1 = NodeIdTable.find parents id1 in
-                     match best with
-                        Some (depth2, _)
-                        when depth2 > depth1 ->
-                           best
-                      | _ ->
-                           Some (depth1, id1)
-               with
-                  Not_found ->
-                     best
-            in
-               find_best_backedge parents best succ
-       | [] ->
-            best
+let classify_nodes state _dtree =
+   let vertex = state.state_vertex in
+
+   (* d dominates n: walk n's immediate dominators up to the root *)
+   let rec dominates d n =
+      n = d || (n <> 0 && dominates d (node_of_id state n).node_idom)
    in
 
-   (*
-    * Reclassify all the nodes along the path up to the
-    * parent.
-    *)
-   let rec reclassify classes parent_id depth1 id1 =
-      if id1 = parent_id then
-         classes
-      else
-         let parent2, depth2 =
-            try NodeIdTable.find classes id1 with
-               Not_found ->
-                  0, 0
-         in
-            if depth2 > depth1 then
-               (* We found a nested loop, so skip through it *)
-               reclassify classes parent_id depth1 parent2
-            else
-               (* This node belongs to the current loop *)
-               let classes = NodeIdTable.add classes id1 (parent_id, depth1) in
-               let { node_idom = idom; _ } = node_of_id state id1 in
-                  reclassify classes parent_id depth1 idom
+   (* The back edges, by header *)
+   let latches = Hashtbl.create 17 in
+   let () =
+      Array.iter (fun { node_id = t; node_succ = succ; _ } ->
+            List.iter (fun h ->
+                  if h <> 0 && dominates h t then
+                     Hashtbl.replace latches h (t :: (try Hashtbl.find latches h with Not_found -> []))) succ) vertex
    in
 
-   (*
-    * Perform a DFS, looking for backedges.
-    *)
-   let rec search loops classes parents depth id =
-      (* Catch self-edges *)
-      let { node_succ = succ_edges; _ } = node_of_id state id in
-      let loops =
-         if List.mem id succ_edges then
-            NodeIdTable.add loops id []
-         else
-            loops
+   (* The body of each header, by a reverse search from its latches *)
+   let body h =
+      let seen = Hashtbl.create 17 in
+      let rec search id =
+         if not (Hashtbl.mem seen id) then
+            begin
+               Hashtbl.add seen id ();
+               List.iter (fun v -> search v.node_id) (reached_pred state (node_of_id state id))
+            end
       in
+         Hashtbl.add seen h ();
+         List.iter search (Hashtbl.find latches h);
+         seen
+   in
+   let bodies = Hashtbl.fold (fun h _ l -> (h, body h) :: l) latches [] in
 
-      (* Reclassify nodes with backedges *)
-      let classes =
-         match find_best_backedge parents None succ_edges with
-            Some (depth, parent) ->
-               reclassify classes parent depth id
-          | None ->
+   (* Each node's innermost loop *)
+   let classes =
+      Array.fold_left (fun classes { node_id = id; _ } ->
+            if id = 0 then
                classes
-      in
-
-      (* Search the rest *)
-      let depth = succ depth in
-      let parents = NodeIdTable.add parents id depth in
-      let children = dtree_children dtree id in
-         NodeIdSet.fold (fun (loops, classes) id ->
-               search loops classes parents depth id) (loops, classes) children
+            else
+               let best =
+                  List.fold_left (fun best (h, b) ->
+                        if h <> id && Hashtbl.mem b id then
+                           match best with
+                              Some (_, b') when Hashtbl.length b' <= Hashtbl.length b ->
+                                 best
+                            | _ ->
+                                 Some (h, b)
+                        else
+                           best) None bodies
+               in
+                  match best with
+                     Some (h, _) -> NodeIdTable.add classes id (h, 0)
+                   | None -> classes) NodeIdTable.empty vertex
    in
-      search NodeIdTable.empty NodeIdTable.empty NodeIdTable.empty 0 0
+
+   (* A header whose loop has no other node still heads a loop *)
+   let loops =
+      List.fold_left (fun loops (h, _) -> NodeIdTable.add loops h []) NodeIdTable.empty bodies
+   in
+      loops, classes
 
 (*
  * Perform a second DFS, building the loop contents.
@@ -753,8 +738,9 @@ let build_trace state loops =
       match collect 0 with
          Lm_trace (root, l) ->
             Elem root :: l
-       | Elem _ ->
-            raise (Invalid_argument "build_trace")
+       | Elem root ->
+            (* nothing hangs under the root *)
+            [Elem root]
    in
       Lm_trace.map (fun id -> (node_of_id state id).node_data) trace
 

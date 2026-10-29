@@ -215,6 +215,15 @@
   holds only the nodes it reached, and predecessors it did not reach are
   ignored. A brute-force model over 1,500 random graphs agrees, with
   edges into the root and unreachable nodes listed.
+- `Lm_loop.loop_nest` (#73) raised `Invalid_argument "build_trace"` when
+  no node hung under the root (a root with no successors), kept only
+  each node's innermost back edge (so a node closing two loops left the
+  outer one out), and built a loop's body along the latch's
+  immediate-dominator chain (so the nodes on a branch inside a loop were
+  put outside it). It now computes natural loops: the body of a header is
+  the header and every node that reaches one of its latches without
+  passing it, and each node sits in the innermost body containing it. A
+  model of natural loops over 1,500 random graphs agrees.
 
 ### Tests
 
