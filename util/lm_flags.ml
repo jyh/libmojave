@@ -80,10 +80,16 @@ let flags_empty =
    }
 
 let flags_set flags name value =
-   if StringTable.mem flags.flag_defaults name then
-      { flags with flag_values = StringTable.add flags.flag_values name value }
-   else
-      raise (Failure ("flags_set: flag " ^ name ^ " not defined"))
+   match StringTable.find flags.flag_defaults name, value with
+      FlagBool _, FlagBool _
+    | FlagInt _, FlagInt _ ->
+         { flags with flag_values = StringTable.add flags.flag_values name value }
+    | FlagBool _, FlagInt _ ->
+         raise (Failure ("flags_set: flag " ^ name ^ " is a Boolean flag"))
+    | FlagInt _, FlagBool _ ->
+         raise (Failure ("flags_set: flag " ^ name ^ " is an integer flag"))
+    | exception Not_found ->
+         raise (Failure ("flags_set: flag " ^ name ^ " not defined"))
 
 (* unused
 let flags_is_set flags name =
@@ -256,12 +262,10 @@ let flags_set_expr flags exprs =
              | "f" | "false" | "n" | "no" ->
                   flags_set_bool flags variable false
              | _ ->
-                  try
-                     let value = int_of_string value in
+                  match int_of_string_opt value with
+                     Some value ->
                         flags_set_int flags variable value
-                  with
-                     Invalid_argument _
-                   | Failure _ ->
+                   | None ->
                         raise (Failure ("flags_set_expr: invalid value specified for flag " ^ variable))
       with
          Not_found ->

@@ -6,10 +6,10 @@ get_int on a bool flag  = EXN Failure("flags_get_int: invalid value type for fla
 set_expr "debug=no,level=12,fast=YES"  = false 12 true
 set_expr "level=x"  = EXN Failure("flags_set_expr: invalid value specified for flag level")
 set_expr "level" (no =)  = EXN Failure("flags_set_expr: no equals sign found in expression level")
-set_expr "nope=3" (undefined flag)  = EXN Failure("flags_set_expr: invalid value specified for flag nope")
+set_expr "nope=3" (undefined flag)  = EXN Failure("flags_set: flag nope not defined")
 set_expr "nope=true" (undefined flag)  = EXN Failure("flags_set: flag nope not defined")
-set_int on a bool flag  = set
-  then get_bool fast  = EXN Failure("flags_get_bool: invalid value type for flag fast")
-  then get_int fast  = 5
+set_int on a bool flag  = EXN Failure("flags_set: flag fast is a Boolean flag")
+  then get_bool fast  = true
+  then get_int fast  = EXN Failure("flags_get_int: invalid value type for flag fast")
 flags_empty: get_bool x  = EXN Failure("flags_get_bool: flag x not defined")
 flags_empty: set_bool x  = EXN Failure("flags_set: flag x not defined")

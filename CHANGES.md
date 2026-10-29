@@ -50,6 +50,11 @@
   `lazy_sub_map f t i len` dropped element `i`; and the right part of
   `split` could not be indexed (`get` raised) because its offset had the
   wrong sign, while `fold` reported the indices of such a part unshifted.
+- `Lm_flags`: setting a flag did not check its type, so an integer could be
+  stored on a Boolean flag, which then failed every `get_bool`; it now
+  raises `Failure` naming the flag's type. `flags_set_expr "nope=3"` on an
+  undefined flag reported an invalid value; it now reports that the flag is
+  not defined, as `"nope=true"` already did (#47).
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -142,6 +147,8 @@
 - `Lm_array_linear_set` and `Lm_splay_linear_set` are checked against a list
   model (`test/test_linear_set.ml`, #46): every operation, and indexing the
   results of `split`, `concat`, `append_list` and `lazy_sub_map`.
+- `Lm_flags` is pinned (`test/test_flags.ml`, #47): registering, getting and
+  setting flags, and `name=value` expressions with their errors.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
