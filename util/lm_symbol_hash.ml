@@ -246,7 +246,6 @@ let rec output_symbol_list out vl =
 exception Has;;
 
 let string_of_ext_symbol v =
-   let i, s = SymbolHash.get v in
    let has_special_char s =
       try
          for i = 0 to String.length s - 1 do
@@ -262,12 +261,8 @@ let string_of_ext_symbol v =
          Has ->
             true
    in
-   let s =
-      if i = 0 then
-         s
-      else
-         sprintf "%s%d" s i
-   in
+   (* string_of_symbol's form, so that different symbols print differently *)
+   let s = string_of_symbol v in
       if has_special_char s then
          sprintf "`\"%s\"" s
       else

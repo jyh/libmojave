@@ -1,5 +1,5 @@
 add (string_of_symbol v) = v: cases that differ 3000 cases = 0
-add (string_of_ext_symbol v) = v (when not quoted): cases that differ 3000 cases = 1054 (first: (66, "9") -> "966" -> (0, "966"))
+add (string_of_ext_symbol v) = v (when not quoted): cases that differ 3000 cases = 0
 compare_pair, compare_triple: lexicographic compare: cases that differ 3000 cases = 0
 new_symbol, new_symbol_string, new_symbol_pre: fresh number, same name: cases that differ 3000 cases = 0
 new_name_gen: the first make v i that f accepts: cases that differ 1000 cases = 0
@@ -7,12 +7,12 @@ reintern = add of the name; is_interned = number 0: cases that differ 3000 cases
 make "010" 0: string_of_symbol, then add  = "010" -> (10, "0")
 string_of_symbol / string_of_ext_symbol (0, "x") = "x" / "x"
 string_of_symbol / string_of_ext_symbol (3, "x") = "x3" / "x3"
-string_of_symbol / string_of_ext_symbol (2, "x1") = "x1_2" / "x12"
+string_of_symbol / string_of_ext_symbol (2, "x1") = "x1_2" / "x1_2"
 string_of_symbol / string_of_ext_symbol (0, "a b") = "a b" / "`\"a b\""
 string_of_symbol / string_of_ext_symbol (4, "a b") = "a b4" / "`\"a b4\""
 pp_print_symbol_list | [] | pp_print_symbol_set | pp_print_ext_symbol  = "x, x3, x1_2, a b, a b4||x, a b, x1_2, x3, a b4|`\"a b4\""
 output_symbol | output_symbol_list | output_symbol_set  = "x3|x, x3, x1_2, a b, a b4|x, a b, x1_2, x3, a b4"
-Lm_symbol_hash: string_of_symbol / string_of_ext_symbol (2, "x1") = "x1_2" / "x12"
+Lm_symbol_hash: string_of_symbol / string_of_ext_symbol (2, "x1") = "x1_2" / "x1_2"
 Lm_symbol_hash: string_of_symbol / string_of_ext_symbol (12, "x") = "x12" / "x12"
-Lm_symbol_hash: string_of_symbol / string_of_ext_symbol (66, "9") = "9_66" / "966"
+Lm_symbol_hash: string_of_symbol / string_of_ext_symbol (66, "9") = "9_66" / "9_66"
 new_number () increases  = true
