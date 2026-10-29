@@ -144,25 +144,21 @@ let rec check_cycle_vert mark node1 vert =
                ()
       end
 
-let check_cycle_node mark table node1 node2 =
-   try
-      let vert2 = Hashtbl.find table node2 in
-         check_cycle_vert mark node1 vert2;
-         vert2
-   with
-      Not_found ->
-         insert_leaf table node2
-
+(*
+ * Check every child that already exists before changing anything, so an
+ * insert that raises Cycle leaves the DAG as it was; then make leaves for
+ * the new children (one per name, even if it is listed twice).
+ *)
 let check_cycle dag node1 nodes2 =
    let { dag_mark = mark; dag_table = table } = dag in
    let mark = succ mark in
       dag.dag_mark <- mark;
-      List.map (check_cycle_node mark table node1) nodes2
+      List.iter (fun node2 ->
+            match Hashtbl.find_opt table node2 with
+               Some vert2 -> check_cycle_vert mark node1 vert2
+             | None -> ()) nodes2;
+      List.map (find_or_insert table) nodes2
 
-(*
- * Leaf two nodes.  One of the two nodes should not
- * already be in the DAG.
- *)
 let equate dag node1 node2 =
    let dag = dag.dag_table in
       try
@@ -170,22 +166,27 @@ let equate dag node1 node2 =
             if Hashtbl.mem dag node2 then
                raise Cycle
             else
-               vert1.vert_nodes <- node2 :: vert1.vert_nodes
+               begin
+                  vert1.vert_nodes <- node2 :: vert1.vert_nodes;
+                  Hashtbl.add dag node2 vert1
+               end
       with
          Not_found ->
             try
                let vert2 = Hashtbl.find dag node2 in
-                  vert2.vert_nodes <- node1 :: vert2.vert_nodes
+                  vert2.vert_nodes <- node1 :: vert2.vert_nodes;
+                  Hashtbl.add dag node1 vert2
             with
                Not_found ->
                   let vert =
                      { vert_mark = 0;
-                       vert_nodes = [node1; node2];
+                       vert_nodes = if node1 = node2 then [node1] else [node1; node2];
                        vert_data = Leaf
                      }
                   in
                      Hashtbl.add dag node1 vert;
-                     Hashtbl.add dag node2 vert
+                     if node1 <> node2 then
+                        Hashtbl.add dag node2 vert
 
 (*
  * Insert an edge between node1 and node2.
