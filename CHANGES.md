@@ -179,6 +179,8 @@
   30,000 random adds, removes and queries on matrices of random size.
 - `Lm_index` is pinned (`test/test_index.ml`, #52): chains, lookups at one
   and several levels, removal, `filter_add` and persistence.
+- `Lm_listbuf` is checked against a list model (`test/test_listbuf.ml`, #53):
+  5,000 random histories of every operation.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
