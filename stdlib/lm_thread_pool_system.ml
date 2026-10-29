@@ -177,10 +177,11 @@ let thread_main_loop () =
                     | exn ->
                          eprintf "Lm_thread_pool_system: thread raised exception: %s: %d@." (Printexc.to_string exn) job.job_id);
                   pool.pool_running <- IntTable.remove pool.pool_running job.job_id;
-                  if job.job_visible then begin
+                  if job.job_visible then
                      pool.pool_finished <- job :: pool.pool_finished;
-                     Condition.signal pool.pool_finished_wait
-                  end;
+                  (* Wake the main thread for every job: waitpid waits for
+                   * invisible jobs too *)
+                  Condition.signal pool.pool_finished_wait;
                   if pool.pool_break then
                      Mutex.unlock pool.pool_lock
                   else
@@ -266,8 +267,12 @@ let wait () =
  * Wait until a specific pid disappears.
  *)
 let waitpid id =
-   (* Wait until a thread finishes *)
-   while IntTable.mem pool.pool_running id && not pool.pool_break do
+   (* Wait until the job finishes: it may still be waiting to start *)
+   let pending () =
+      IntTable.mem pool.pool_running id
+      || List.exists (fun job -> job.job_id = id) pool.pool_ready
+   in
+   while pending () && not pool.pool_break do
       if !debug_thread then
          eprintf "Main: waiting: %d+%d@." pool.pool_ready_length (IntTable.cardinal pool.pool_running);
       Condition.wait pool.pool_finished_wait pool.pool_lock;
