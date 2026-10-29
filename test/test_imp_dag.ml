@@ -32,7 +32,7 @@ let () =
   line "sweep_down_all" "" (show ImpDag.sweep_down_all);
   let r i j = rel (ImpDag.node_rel g n.(i) n.(j)) in
   line "node_rel a b, b a, a c, c a, a e, b d" "" (String.concat " " [ r 0 1; r 1 0; r 0 2; r 2 0; r 0 4; r 1 3 ]);
-  (* node_rel caches a derived relation in node1's edge lists only *)
+  (* node_rel's cache of derived relations must not change the edges or sweeps *)
   line "  edges of a, c after those queries" "" (edges g n.(0) ^ " | " ^ edges g n.(2));
   line "  node_rel c a again" "" (r 2 0);
   line "  sweep_up after those queries" "" (show ImpDag.sweep_up);
@@ -46,3 +46,13 @@ let () =
   line "delete b: roots" "" (guard (fun () -> names g3 (ImpDag.roots g3)));
   line "  sort" "" (guard (fun () -> names g3 (ImpDag.sort g3)));
   line "  edges of each node in sort order" "" (guard (fun () -> String.concat " | " (List.map (fun x -> ImpDag.node_value g3 x ^ ": " ^ edges g3 x) (ImpDag.sort g3))))
+
+(* A relation found by a query through b must not outlive b: after
+   delete b, a and c are unrelated. *)
+let () =
+  let g, n = build () in
+  let before = rel (ImpDag.node_rel g n.(0) n.(2)) in
+  ImpDag.delete g n.(1);
+  (* delete renumbers: c now has b's old index, n.(1) *)
+  line "node_rel a c, then delete b, then node_rel a c" "" (before ^ " " ^ ImpDag.node_value g n.(1) ^ " " ^ rel (ImpDag.node_rel g n.(0) n.(1)));
+  line "  roots, sort" "" (names g (ImpDag.roots g) ^ " " ^ names g (ImpDag.sort g))

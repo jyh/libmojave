@@ -75,6 +75,10 @@ struct
         mutable entry_in_edges : int list;
         mutable entry_out_edges : int list;
         mutable entry_no_relation : int list;
+        (* relations node_rel found by search, kept apart from the edges
+           and cleared with entry_no_relation when the version changes *)
+        mutable entry_rel_less : int list;
+        mutable entry_rel_greater : int list;
         mutable entry_version : int
       }
 
@@ -146,6 +150,8 @@ struct
            entry_in_edges = [];
            entry_out_edges = [];
            entry_no_relation = [];
+           entry_rel_less = [];
+           entry_rel_greater = [];
            entry_version = version;
          }
       in
@@ -325,16 +331,20 @@ struct
 	    _
           } = entry1
       in
-      let no_relation =
+      let no_relation, rel_less, rel_greater =
          if version' = version then
-            no_relation
+            no_relation, entry1.entry_rel_less, entry1.entry_rel_greater
          else
             begin
                entry1.entry_no_relation <- [];
+               entry1.entry_rel_less <- [];
+               entry1.entry_rel_greater <- [];
                entry1.entry_version <- version;
-               []
+               [], [], []
             end
       in
+      let out_edges = List.merge Stdlib.compare out_edges rel_less in
+      let in_edges = List.merge Stdlib.compare in_edges rel_greater in
          (* First check for cached edges *)
          if List.mem node2 no_relation then
             NoRelation
@@ -350,18 +360,18 @@ struct
          else if search out_edges_f entries node1 node2 then
             if search in_edges_f entries node1 node2 then
                begin
-                  entry1.entry_out_edges <- list_insert node2 out_edges;
-                  entry1.entry_in_edges <- list_insert node2 in_edges;
+                  entry1.entry_rel_less <- list_insert node2 rel_less;
+                  entry1.entry_rel_greater <- list_insert node2 rel_greater;
                   Equal
                end
             else
                begin
-                  entry1.entry_out_edges <- list_insert node2 out_edges;
+                  entry1.entry_rel_less <- list_insert node2 rel_less;
                   LessThan
                end
          else if search in_edges_f entries node1 node2 then
             begin
-               entry1.entry_in_edges <- list_insert node2 in_edges;
+               entry1.entry_rel_greater <- list_insert node2 rel_greater;
                GreaterThan
             end
          else
