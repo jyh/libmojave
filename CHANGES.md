@@ -186,6 +186,9 @@
 - `Lm_serial_map` is checked against a model (`test/test_serial_map.ml`, #54):
   15,000 random adds and removes against an association list in insertion
   order.
+- `Lm_graph` is checked against a model (`test/test_graph.ml`, #55): 10,000
+  random node and edge additions and deletions, with degrees, neighbours,
+  queries and depth-first reachability after each.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a

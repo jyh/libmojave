@@ -1,0 +1,4 @@
+steps that disagree with the model 400 graphs x 25 steps = 0 of 10000
+self-loop: degree, neighbors, query  = 2 2 true
+  after delete_edge: degree, neighbors  = 0 0
+choose on an empty graph  = EXN Failure("choose")
