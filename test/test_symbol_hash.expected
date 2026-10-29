@@ -1,0 +1,13 @@
+names where to_string (add s) disagrees 3000 names = 0
+names where string_of_symbol (add s) disagrees 3000 names = 0
+names where string_of_symbol (make s i) disagrees 3000 names = 0
+names where is_numeric_symbol (make s i) disagrees 3000 names = 0
+names where to_int (make s i) disagrees 3000 names = 0
+names where eq (add s) (add s2) disagrees 3000 names = 0
+names where compare = 0 exactly when eq disagrees 3000 names = 0
+names where new_name avoiding s, s_1, s_2 disagrees 3000 names = 0
+names where marshalled, then reintern: eq, same name disagrees 3000 names = 0
+to_string empty_var  = "" ""
+Lm_int_util.log2: values (2^k - 1, 2^k, 2^k + 1, k = 1..60; 2^61 - 1) that differ from floor log2  = 0
+Lm_int_util.log2 0, 1, -5  = -1 0 -1
+Lm_int_util.log2 (1 lsl (int_size - 2)), max_int, against floor log2  = true true true

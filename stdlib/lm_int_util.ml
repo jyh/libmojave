@@ -40,8 +40,10 @@
  * Rounds down.
  *)
 let log2 =
+   (* 1 lsl (Sys.int_size - 1) is min_int, so stop below it: every i
+      that reaches that j is at least 1 lsl (Sys.int_size - 2) *)
    let rec search j i =
-      if 1 lsl j > i then
+      if j = Sys.int_size - 1 || 1 lsl j > i then
          pred j
       else
          search (succ j) i
