@@ -704,6 +704,11 @@
   `is_integer_num`, `is_integer_big_int`, `neg_big_int`, `of_string`,
   `quo_big_int`/`rem_big_int`.
 
+- `Lm_graph`'s traversals are checked (`test/test_graph_dfs.ml`, #107): on
+  300 random graphs, `dfs_list` is a preorder from its start, `dfs_iter`
+  and `dfs_fold` follow it, and `iter`/`fold` visit each node of `list`
+  once. No defect (a postorder `dfs_iter` fails 211 graphs).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
