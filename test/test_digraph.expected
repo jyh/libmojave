@@ -1,0 +1,23 @@
+steps where degrees disagrees with the model 400 graphs x 20 steps = 532 of 8000 (first: after n0 n1 n2 d1 e0>2 d2 n3 n4 e0>4 n5 e5>5 e4>4 e3>4 n6 c3=4 )
+steps where succ/pred disagrees with the model 400 graphs x 20 steps = 532 of 8000 (first: after n0 n1 n2 d1 e0>2 d2 n3 n4 e0>4 n5 e5>5 e4>4 e3>4 n6 c3=4 )
+steps where query disagrees with the model 400 graphs x 20 steps = 236 of 8000 (first: after n0 n1 e1>0 x0>0 n2 n3 d1 e2>0 d3 n4 e4>2 n5 e5>5 e4>4 e2>4 n6 c5=2 e5>0 n7 c0=4 )
+steps where list disagrees with the model 400 graphs x 20 steps = 0 of 8000
+steps where is_path disagrees with the model 400 graphs x 20 steps = 0 of 8000
+steps where rev_postorder disagrees with the model 400 graphs x 20 steps = 0 of 8000
+steps where postorder disagrees with the model 400 graphs x 20 steps = 0 of 8000
+steps where full_rev_postorder disagrees with the model 400 graphs x 20 steps = 0 of 8000
+steps where untouched disagrees with the model 400 graphs x 20 steps = 0 of 8000
+add_edge twice: out_degree  = 1
+then add_multi_edge: out_degree, in_degree  = 2 2
+then delete_edge once: out_degree, query  = 1 true
+delete_edge of an absent edge: out_degree b  = 0
+is_path n n with no edges  = true
+choose on an empty graph  = EXN Failure("choose")
+find with no match  = EXN Not_found
+fold (sum of infos)  = 1
+filter (info > 0)  = [1]
+coalesce a b where a>b: self-loop on a  = info 9 query true out 1
+delete_node twice  = EXN Invalid_argument("list_remove in digraph.ml")
+  then list  = [0]
+coalesce a b where b>b: a's succ, pred  = [] [1]
+  pred holds the deleted node  = true
