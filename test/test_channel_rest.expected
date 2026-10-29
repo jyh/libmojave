@@ -1,0 +1,11 @@
+of_substring s off len reads String.sub s off len: cases that differ 2000 cases = 0
+input_entire_line until End_of_file: the lines, newlines kept: cases that differ 2000 cases = 0
+of_fun: reads what the reader gives, however it is cut: cases that differ 2000 cases = 0
+of_loc_string "f.ml" 10 5 "ab\ncd": loc after 0, 2, 4 chars  = File f.ml: line 10, characters 5-5 | File f.ml: line 10, characters 7-7 | File f.ml: line 11, characters 1-1
+of_string "ab\ncd": loc after 4 chars  = File .string: line 2, characters 1-1
+of_string then set_line "g.ml" 20, then 4 chars  = File g.ml: line 21, characters 2-2
+create_loc_string "h.ml" 3 1: write "x\ny", loc; contents  = File h.ml: line 4, characters 1-1 "x\ny"
+lex_buffer after lex_start and two lex_next  = "hello world", then input_char End_of_file
+descr of a string channel  = Unix_error Invalid argument descr
+set_io_functions: a string channel read through a new reader  = EXN Invalid_argument("String.blit / Bytes.blit_string")
+text mode, \r at byte 4,096: the bytes come back  = true
