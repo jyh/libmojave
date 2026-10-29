@@ -51,6 +51,12 @@
 - `Lm_thread_event.sync` and `poll` wrote two debugging lines to stderr
   (`Lm_thread_event.lock`, `Lm_thread_event.unlock`) on every call; they no
   longer do (#34).
+- `Lm_thread_shell.create_or_find id i`, when `(id, i)` did not exist,
+  created `(id, n)` with `n` the first free number, so it never found what it
+  created (`create_or_find "c" 5` twice gave `(c,1)` and `(c,2)`). It now
+  creates `(id, i)` (#35). metaprl restores saved shell sessions with it
+  (`support/shell/shell_current.ml`), so a saved session's number changed
+  on restart.
 
 ### Tests
 
@@ -84,6 +90,9 @@
   (`test/test_thread_event.ml`, #34): channels, `poll`, `sync`, `wrap`,
   `choose`, `select`, `sequence` and `sequence_final`, including a blocked
   `choose` completed by a sender and by a receiver, with each arm order.
+- `Lm_thread_shell` is pinned (`test/test_thread_shell.ml`, #35): job
+  creation, hidden and visible jobs, `get_pids`, `make_pid`, `with_pid`,
+  `with_current`, `set_pid` and `create_or_find`, in both thread profiles.
 
 ### Behaviour that the tests record and that may be a bug
 
