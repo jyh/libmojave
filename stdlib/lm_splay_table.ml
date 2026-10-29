@@ -357,8 +357,22 @@ let create
    in
 
 	let replace t key data =
-      match splay key [] !t with
-         SplayFound tree ->
+      (* An empty list removes the key: no node holds an empty list. *)
+      match splay key [] !t, data with
+         SplayFound tree, [] ->
+            begin
+               match tree with
+                  Node (_, _, Leaf, right, _) ->
+                     ref right
+                | Node (_, _, left, Leaf, _) ->
+                     ref left
+                | Node (_, _, left, right, _) ->
+                     let key, data, left_left = lift_right left in
+                        ref (new_node key data left_left right)
+                | Leaf ->
+                     raise (Invalid_argument "Splay_table.replace: Leaf reached")
+            end
+       | SplayFound tree, _ ->
             begin
                match tree with
                   Node (key, _, left, right, size) ->
@@ -366,7 +380,10 @@ let create
                 | Leaf ->
                      raise (Invalid_argument "Splay_table.replace: Leaf reached")
             end
-       | SplayNotFound tree ->
+       | SplayNotFound tree, [] ->
+            t := tree;
+            ref tree
+       | SplayNotFound tree, _ ->
 				ref (add_list_aux key data tree)
 	in
 
@@ -384,7 +401,14 @@ let create
          Node (key2, data2, left2, right2, size2) ->
             if size1 >= size2 then
                if size2 = 1 then
-                  add_list s1 key2 data2
+                  (* s1's data first, as in every other case *)
+                  match splay key2 [] s1 with
+                     SplayFound (Node (key, data1, left, right, size)) ->
+                        Node (key, ord_append data1 data2, left, right, size)
+                   | SplayFound Leaf ->
+                        raise (Invalid_argument "Splay_table.union")
+                   | SplayNotFound tree ->
+                        add_list_aux key2 data2 tree
                else
                   match splay key1 [] s2 with
                      SplayFound (Node (_, data2, left2, right2, _)) ->
@@ -392,7 +416,7 @@ let create
                         let right3 = union_aux right1 right2 in
                            new_node key1 (ord_append data1 data2) left3 right3
                    | SplayNotFound (Node (key2, data2, left2, right2, _)) ->
-                        if compare key1 key2 < 0 then
+                        if ord_compare key1 key2 < 0 then
                            let left3 = union_aux left1 left2 in
                            let right3 = union_aux right1 (new_node key2 data2 empty right2) in
                               new_node key1 data1 left3 right3
@@ -411,7 +435,7 @@ let create
                      let right3 = union_aux right1 right2 in
                         new_node key2 (ord_append data1 data2) left3 right3
                 | SplayNotFound (Node (key1, data1, left1, right1, _)) ->
-                     if compare key2 key1 < 0 then
+                     if ord_compare key2 key1 < 0 then
                         let left3 = union_aux left1 left2 in
                         let right3 = union_aux (new_node key1 data1 empty right1) right2 in
                            new_node key2 data2 left3 right3

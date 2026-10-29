@@ -138,6 +138,19 @@
   level, used only for arrays longer than `Sys.max_array_length`; its bucket
   count `(i + max_length - 1) lsr max_shift` has the same boundary at an
   `i` that is a multiple of `max_length`.
+- `Lm_splay_table` (#59): `union` put the second table's data for a shared
+  key first when the second table had one node, and the first table's data
+  first in every other case, so `find` and `find_all` on a union depended
+  on the tables' shapes. The first table's data now always comes first.
+  `union` also compared keys with polymorphic `compare` at two sites, not
+  the table's own order: under a descending order 170 of 500 random unions
+  lost or misordered keys. And `replace t k []` left a node with no data,
+  so the table's next lookup or add raised `Invalid_argument
+  "Splay_table.new_node : empty data"`; it now removes `k`, as `remove`
+  does when a key's list empties. metaprl's users (`supinf.ml`,
+  `itt_omega.ml`, `term_eq_table.ml`) are not affected: supinf's keys are
+  non-negative integers ordered as `compare` orders them, and its `append`
+  adds the two coefficients.
 
 ### Tests
 
@@ -244,6 +257,10 @@
 - `Lm_large_array` and `Lm_large_array_weak` are checked against a model
   (`test/test_large_array.ml`, #58): 3,000 random sets each, with indices at
   the sizes where the arrays grow.
+- `Lm_splay_table.MakeTable` (through `Lm_table_util.MakeTable`) is checked
+  against a model (`test/test_table_compose.ml`, #59): 6,000 random steps
+  over a pool of tables, older versions re-checked after later steps, and
+  500 unions under a descending order.
 
 ### Behaviour that the tests record and that may be a bug
 
