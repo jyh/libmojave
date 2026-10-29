@@ -96,6 +96,11 @@
 - `Lm_debug` is pinned (`test/test_debug.ml`, #36): creating, loading,
   setting and listing named flags, a flag set before it is created
   (`set_possible_debug`), `debug_level`, `set_debug_flags` and `timing_wrap`.
+- `Lm_string_set` is pinned (`test/test_string_set.ml`, #37): both string
+  orders (length first, and `Stdlib.compare`), and the multi-value tables
+  (`Lm_map.LmMakeList`), which no test exercised before. `mapi_all` can leave
+  a key bound to an empty list, where `mem` is true and `find` raises
+  `Not_found`; it is pinned as it stands.
 
 ### Behaviour that the tests record and that may be a bug
 
