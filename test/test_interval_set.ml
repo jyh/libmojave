@@ -75,7 +75,23 @@ module Check (X : M) = struct
       let p = lo + rnd n in
       check "add_point" (to_model (S.add_point a p) = Array.mapi (fun i x -> x || lo + i = p) ma) (fun () -> d2 () ^ " p=" ^ string_of_int p);
       check "subtract_point" (to_model (S.subtract_point a p) = Array.mapi (fun i x -> x && lo + i <> p) ma) (fun () -> d2 () ^ " p=" ^ string_of_int p);
-      check "of_point" (to_model (S.of_point p) = Array.init n (fun i -> lo + i = p)) (fun () -> "p=" ^ string_of_int p)
+      check "of_point" (to_model (S.of_point p) = Array.init n (fun i -> lo + i = p)) (fun () -> "p=" ^ string_of_int p);
+      (* the singleton, total and enumeration tests, from the library's own equal (no rnd calls) *)
+      let pts = List.filter (fun i -> ma.(i)) (List.init n (fun i -> i)) in
+      let single = match pts with [ i ] -> S.equal a (S.of_point (lo + i)) | _ -> false in
+      check "is_singleton, dest_singleton" (S.is_singleton a = single
+                                            && (not single || S.dest_singleton a = lo + List.hd pts)) d2;
+      check "is_total, max_set" (S.is_total a = S.equal a S.max_set && Array.for_all (fun x -> x) (to_model S.max_set)
+                                 && S.is_total S.max_set) d2;
+      if name = "countable" then begin
+        (* an enumeration from lo is the one interval [lo, k]; to_enum is k + 1 *)
+        let enum = match pts with
+          | i :: _ when i = 0 -> let k = lo + List.length pts - 1 in
+              if S.equal a (S.of_interval (Closed lo) (Closed k)) then Some (k + 1) else None
+          | _ -> None in
+        check "is_enum lo, to_enum (countable)" (S.is_enum a lo = (enum <> None)
+                                                 && (match enum with Some m -> S.to_enum a = m | None -> true)) d2
+      end
     done;
     let ops = List.sort compare (Hashtbl.fold (fun k _ acc -> k :: acc) fails []) in
     List.iter (fun op ->

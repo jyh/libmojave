@@ -709,6 +709,11 @@
   and `dfs_fold` follow it, and `iter`/`fold` visit each node of `list`
   once. No defect (a postorder `dfs_iter` fails 211 graphs).
 
+- `Lm_interval_set`'s `is_singleton`, `dest_singleton`, `is_total`,
+  `max_set`, `is_enum` and `to_enum` join its model test
+  (`test/test_interval_set.ml`, #108). No defect (mutants making each
+  predicate false fail 14 to 3,000 cases).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
