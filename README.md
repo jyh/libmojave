@@ -85,6 +85,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_listbuf.ml` | model | `Lm_listbuf` |
 | `test_location.ml` | pin | `Lm_location`, `Lm_printf`, `Lm_symbol` |
 | `test_loop.ml` | model | `Lm_loop`, `Lm_printf`, `Lm_symbol`, `Lm_trace` |
+| `test_marshal_buf.ml` | pin | `Lm_marshal_buf`, `Lm_marshal_sig` |
 | `test_min_sets.ml` | model | `Lm_hash_set`, `Lm_set`, `Lm_set_sig`, `Lm_small_set`, `Lm_splay_set` |
 | `test_num.ml` | pin | `Lm_num` |
 | `test_num_model.ml` | model | `Lm_num` |
@@ -120,7 +121,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-76 test files: 31 model checks, 45 pins.
+77 test files: 31 model checks, 46 pins.
 <!-- end test table -->
 
 Known gaps:
