@@ -344,6 +344,13 @@
   `waitpid` on an invisible job (`create false`) that was running never
   woke; every job's end now wakes it. Nothing in libmojave or metaprl
   calls it.
+- `Lm_big_int.big_int_of_string` (#106): a decimal string with a leading
+  zero lost the digit after it (`"0123"` was 23, `"-0123"` -23): the test
+  for a `0b`/`0o`/`0x` prefix skipped two characters whatever followed.
+  And `"-0"` made a negative zero, which printed `0` and was zero by
+  `is_zero_big_int` but was not `eq_big_int` to 0 and compared below it.
+  Both fixed. `Lm_num.num_of_string`, which metaprl uses, already
+  normalized `"-0"`.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -691,6 +698,11 @@
 
 - `Lm_thread_pool` is tested in both profiles (`test/test_thread_pool.ml`,
   `test/test_thread_pool_null.ml`, #105).
+
+- The rest of `Lm_num` and `Lm_big_int` is checked by property
+  (`test/test_num_rest.ml`, #106): comparisons, `is_zero`, `integer_num`,
+  `is_integer_num`, `is_integer_big_int`, `neg_big_int`, `of_string`,
+  `quo_big_int`/`rem_big_int`.
 
 ### Behaviour that the tests record and that may be a bug
 
