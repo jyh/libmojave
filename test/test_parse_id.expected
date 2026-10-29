@@ -1,0 +1,10 @@
+parse_id "$Id: lm_list_util.ml,v 1.12 2003/01/15 18:32:01 jyh Exp $" = lm_list_util.ml,v | 1.12 | 2003/01/15 | 18:32:01 | jyh | Exp
+parse_id_revision "$Id: lm_list_util.ml,v 1.12 2003/01/15 18:32:01 jyh Exp $" = "1.12"
+parse_id "$Id: f.ml,v 1.1  2003/01/15 18:32:01 jyh Exp $" = EXN Failure("parse_id:  Malformed ID string")
+parse_id_revision "$Id: f.ml,v 1.1  2003/01/15 18:32:01 jyh Exp $" = "unknown"
+parse_id "$Id: f.ml,v 1.1 2003/01/15 $" = EXN Failure("parse_id:  Malformed ID string")
+parse_id_revision "$Id: f.ml,v 1.1 2003/01/15 $" = "unknown"
+parse_id "$Id$" = EXN Failure("parse_id:  Malformed ID string")
+parse_id_revision "$Id$" = "unknown"
+parse_id "" = EXN Failure("parse_id:  Malformed ID string")
+parse_id_revision "" = "unknown"
