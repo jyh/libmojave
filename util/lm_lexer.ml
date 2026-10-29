@@ -98,6 +98,9 @@ struct
       let counter, counters' = incr counters i in
          if counter < min then
             [start, counters']
+         else if max >= min && counter = max then
+            (* No further iteration can finish: do not enter the body again *)
+            [final, counters']
          else if counter = min then
             [final, counters'; start, counters']
          else if max >= min && counter > max then
@@ -637,6 +640,7 @@ struct
     *)
    type pre_action =
       { pre_action_final          : int option;                 (* clause id *)
+        pre_action_final_late     : int option;                 (* clause id, final before the symbol *)
         pre_action_args           : dfa_action_arg list
       }
 
@@ -1368,10 +1372,87 @@ struct
             regex_arg_count (succ count) e
 
    (*
+    * A delimiter that looks at the previous character (^, \<, \>, \y,
+    * \B, \`) cannot follow one that looks at the next character with
+    * no character between: the machine has no previous character there
+    * (it raised Invalid_argument "close_next" when lexing).  Both test
+    * the same boundary, so the look at the previous character can always
+    * be written first: \>\> is \>, and \>\< never matches.
+    *
+    * For a regex: can it match without a symbol; can it reach a look at
+    * the previous character before any symbol; can it end with a look at
+    * the next character and no symbol since; does it contain the
+    * forbidden order.
+    *)
+   type lookaround =
+      { la_nullable : bool;
+        la_first_prev : bool;
+        la_last_next : bool;
+        la_bad : bool
+      }
+
+   let la_empty = { la_nullable = true; la_first_prev = false; la_last_next = false; la_bad = false }
+   let la_symbol = { la_nullable = false; la_first_prev = false; la_last_next = false; la_bad = false }
+
+   let la_seq a b =
+      { la_nullable = a.la_nullable && b.la_nullable;
+        la_first_prev = a.la_first_prev || (a.la_nullable && b.la_first_prev);
+        la_last_next = b.la_last_next || (b.la_nullable && a.la_last_next);
+        la_bad = a.la_bad || b.la_bad || (a.la_last_next && b.la_first_prev)
+      }
+
+   let la_repeat nullable a =
+      { a with la_nullable = nullable;
+               la_bad = a.la_bad || (a.la_last_next && a.la_first_prev)
+      }
+
+   let rec regex_lookaround regex =
+      match regex with
+         RegexAnySymbol
+       | RegexSymbol _
+       | RegexExceptSymbol _ ->
+            la_symbol
+       | RegexLimitPrev _ ->
+            { la_empty with la_first_prev = true }
+       | RegexLimitNext _ ->
+            { la_empty with la_last_next = true }
+       | RegexArg e ->
+            regex_lookaround e
+       | RegexChoice [] ->
+            { la_symbol with la_nullable = false }
+       | RegexChoice el ->
+            List.fold_left (fun a e ->
+                  let b = regex_lookaround e in
+                     { la_nullable = a.la_nullable || b.la_nullable;
+                       la_first_prev = a.la_first_prev || b.la_first_prev;
+                       la_last_next = a.la_last_next || b.la_last_next;
+                       la_bad = a.la_bad || b.la_bad
+                     }) { la_symbol with la_nullable = false } el
+       | RegexSequence el ->
+            List.fold_left (fun a e -> la_seq a (regex_lookaround e)) la_empty el
+       | RegexStar e ->
+            la_repeat true (regex_lookaround e)
+       | RegexPlus e ->
+            let a = regex_lookaround e in
+               la_repeat a.la_nullable a
+       | RegexInterval (e, min, max) ->
+            let a = regex_lookaround e in
+               if min = 0 && max = 0 then
+                  la_empty
+               else if max = 1 then
+                  { a with la_nullable = a.la_nullable || min = 0 }
+               else
+                  la_repeat (a.la_nullable || min = 0) a
+
+   (*
     * Add a clause to the pre-NFA.
     *)
    let add_clause_exp exp action s =
       let regex = regex_of_string s in
+      let () =
+         if (regex_lookaround regex).la_bad then
+            raise (Failure ("Lm_lexer: regex: a delimiter that looks at the previous character follows one that looks at the next with no character between (write it first): " ^ s))
+      in
       let arity = regex_arg_count 0 regex in
       let clauses = exp.exp_clauses in
       let id = exp.exp_id in
@@ -1589,7 +1670,13 @@ struct
                nfa_state accum (NfaActionIncrCounter (counter, min, final.nfa_state_index, max, start1.nfa_state_index))
             in
             let start =
-               let states = [start1.nfa_state_index] in
+               let states =
+                  if min = 0 && max = 0 then
+                     (* r{0}: the body is never entered *)
+                     []
+                  else
+                     [start1.nfa_state_index]
+               in
                let states =
                   if min = 0 then
                      final.nfa_state_index :: states
@@ -1874,6 +1961,7 @@ struct
     *)
    let pre_action_empty =
      { pre_action_final          = None;
+       pre_action_final_late     = None;
        pre_action_args           = []
      }
 
@@ -1883,6 +1971,13 @@ struct
             { action with pre_action_final = Some (Action.choose clause clause') }
        | None ->
             { action with pre_action_final = Some clause }
+
+   let pre_action_add_late_stop action clause =
+      match action.pre_action_final_late with
+         Some clause' ->
+            { action with pre_action_final_late = Some (Action.choose clause clause') }
+       | None ->
+            { action with pre_action_final_late = Some clause }
 
    let pre_action_add_arg actions arg =
       { actions with pre_action_args = arg :: actions.pre_action_args }
@@ -1922,7 +2017,7 @@ struct
           | DfaActionArgSearch ->
                ArgTable.add args ArgSearch pos
 
-   let dfa_eval_action dfa info action =
+   let dfa_eval_action dfa info action c =
       let channel = info.dfa_channel in
       let args_table = info.dfa_args in
       let final = action.dfa_action_final in
@@ -1953,8 +2048,28 @@ struct
          info.dfa_args <- args_table;
 
          (* Get final state *)
+         let _ = c in
          match final with
-            Some (clause_id, nid) ->
+            Some (late_id, nid) when late_id < 0 ->
+               (*
+                * A late final (close_state): reached after a look-ahead on
+                * c, so the match ends before c.  It is as long as a final
+                * recorded at that position, so Action.choose breaks the tie.
+                *)
+               let k = - late_id - 1 in
+               let clause_id = k / 2 in
+               let stop = if k land 1 = 1 then pos else pred pos in
+               let take =
+                  info.dfa_stop_clause < 0
+                  || stop > info.dfa_stop_pos
+                  || (stop = info.dfa_stop_pos && Action.choose info.dfa_stop_clause clause_id = clause_id)
+               in
+                  if take then begin
+                     info.dfa_stop_clause <- clause_id;
+                     info.dfa_stop_pos    <- stop;
+                     info.dfa_stop_args   <- NfaStateTable.find args_table nid
+                  end
+          | Some (clause_id, nid) ->
                info.dfa_stop_clause <- clause_id;
                info.dfa_stop_pos    <- pos;
                info.dfa_stop_args   <- NfaStateTable.find args_table nid
@@ -2049,7 +2164,7 @@ struct
     *    find a transition on character c.
     * committed: the actions that we will take no matter what.
     *)
-   let rec close_next nfa_hash table nid c closure frontier actions =
+   let rec close_next late nfa_hash table nid c closure frontier actions =
       if DfaStateCore.mem closure nid then
          frontier
       else
@@ -2080,39 +2195,47 @@ struct
 
              | NfaActionLimitNext (syms, nid) when IntSet.mem syms c ->
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier actions
+                     close_next true nfa_hash table state c closure frontier actions
 
                (* Standard epsilon transitions *)
              | NfaActionEpsilon nids ->
                   let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
-                     close_next_list nfa_hash table nids c closure frontier actions
+                     close_next_list late nfa_hash table nids c closure frontier actions
 
                (* Arguments *)
              | NfaActionArgStart (id, nid) ->
                   let actions = pre_action_add_arg_start actions (-1) id in
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier actions
+                     close_next late nfa_hash table state c closure frontier actions
 
              | NfaActionArgStop (id, nid) ->
                   let actions = pre_action_add_arg_stop actions (-1) id in
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier actions
+                     close_next late nfa_hash table state c closure frontier actions
 
              | NfaActionArgSearch nid ->
                   let actions = pre_action_add_arg_search actions (-1) in
                   let state = NfaState.create nfa_hash (nid, counters) in
-                     close_next nfa_hash table state c closure frontier actions
+                     close_next late nfa_hash table state c closure frontier actions
 
                (* Counter operations *)
              | NfaActionResetCounter (i, nids) ->
                   let counters = NfaStateCore.reset_counter counters i in
                   let nids = List.map (fun index -> NfaState.create nfa_hash (index, counters)) nids in
-                     close_next_list nfa_hash table nids c closure frontier actions
+                     close_next_list late nfa_hash table nids c closure frontier actions
 
              | NfaActionIncrCounter (i, min, final, max, start) ->
                   let nids = NfaStateCore.incr_counter counters i min final max start in
                   let nids = List.map (NfaState.create nfa_hash) nids in
-                     close_next_list nfa_hash table nids c closure frontier actions
+                     close_next_list late nfa_hash table nids c closure frontier actions
+
+               (*
+                * A final state reached after a look-ahead on c: the match
+                * ends before c.  Keep the state in the frontier so the
+                * final is reported (it is a dead end at the next symbol).
+                *)
+             | NfaActionStop id when late ->
+                  NfaStateTable.add frontier nid (pre_action_add_late_stop actions id)
 
                (* Dead-ends *)
              | NfaActionNone
@@ -2128,9 +2251,9 @@ struct
                   eprintf "Illegal action: %a@." pp_print_nfa_action action;
                   raise (Invalid_argument "close_next")
 
-   and close_next_list nfa_hash table nids c closure frontier actions =
+   and close_next_list late nfa_hash table nids c closure frontier actions =
       List.fold_left (fun frontier nid ->
-            close_next nfa_hash table nid c closure frontier actions) frontier nids
+            close_next late nfa_hash table nid c closure frontier actions) frontier nids
 
    (*
     * Compute the action table for each of the components of
@@ -2139,15 +2262,32 @@ struct
    let close_state dfa table nids c =
       let search_states = dfa.dfa_search_states in
       let nfa_hash = dfa.dfa_nfa_hash in
+      let pick final' final id =
+         match final', final with
+            Some (clause_id', _nid'), Some clause_id ->
+               let clause_id'' = Action.choose clause_id' clause_id in
+                  if clause_id'' = clause_id' then
+                     final'
+                  else
+                     Some (clause_id, id)
+          | Some _, None ->
+               final'
+          | None, Some clause_id ->
+               Some (clause_id, id)
+          | None, None ->
+               None
+      in
+      let final_late = ref None in
       let final, actions =
          List.fold_left (fun final_actions nid ->
                let frontier =
-                  close_next nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty
+                  close_next false nfa_hash table nid c DfaStateCore.empty NfaStateTable.empty pre_action_empty
                in
                   if !debug_lexgen then
                      eprintf "@[<v 3>Frontier:@ %a@]@." (pp_print_frontier nfa_hash) frontier;
                   NfaStateTable.fold (fun (final', actions) id action ->
                         let final = action.pre_action_final in
+                        let () = final_late := pick !final_late action.pre_action_final_late id in
                         let args = action.pre_action_args in
                         let final =
                            match final', final with
@@ -2188,6 +2328,24 @@ struct
                                        action)
                         in
                            final, actions) final_actions frontier) (None, NfaStateTable.empty) nids
+      in
+
+      (*
+       * Combine a late final (reached after a look-ahead on c, so the
+       * match ends before c, or at c when c is eof, which is not read)
+       * into the one final slot, keeping the marshalled type.  An
+       * ordinary final in the same step wins (it is longer, or at eof it
+       * is recorded after, as before).  A late one alone is stored as
+       * -(2 * id + e) - 1, e = 1 at eof, which dfa_eval_action decodes.
+       *)
+      let final =
+         match final, !final_late with
+            Some _, _ ->
+               final
+          | None, Some (id, nid) ->
+               Some (- (2 * id + (if c = eof then 1 else 0)) - 1, nid)
+          | None, None ->
+               None
       in
       let () =
          if !debug_lexgen then
@@ -2377,7 +2535,7 @@ struct
                   dfa_state.dfa_state_index
                   (pp_print_dfa_set dfa.dfa_nfa_hash) (DfaState.get dfa.dfa_dfa_hash dfa_state.dfa_state_set)
                   pp_print_char c dfa_id;
-            dfa_eval_action dfa dfa_info actions;
+            dfa_eval_action dfa dfa_info actions c;
             Some (dfa.dfa_states.(dfa_id))
        | DfaNoTransition ->
             if !debug_lex then

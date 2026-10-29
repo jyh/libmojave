@@ -208,23 +208,65 @@ let compare_all tag lexer clauses =
               Printf.sprintf "%s on %s: model %s, lexer %s" (show_clauses clauses) (str s)
                 (String.concat " " want) (String.concat " " got))) all_strings
 
+(* The model's rule for the clauses the lexer refuses: a look at the
+   previous character (^, \`, and the first half of \< \> \B) reached
+   after a look at the next character (the second half of \< \> \B)
+   with no character between. Fields: matches without a symbol; reaches
+   a look back before any symbol; ends with a look ahead and no symbol
+   since; contains the forbidden order. *)
+type la = { nul : bool; fp : bool; ln : bool; bad : bool }
+let la_seq a b = { nul = a.nul && b.nul; fp = a.fp || (a.nul && b.fp); ln = b.ln || (b.nul && a.ln); bad = a.bad || b.bad || (a.ln && b.fp) }
+let la_alt a b = { nul = a.nul || b.nul; fp = a.fp || b.fp; ln = a.ln || b.ln; bad = a.bad || b.bad }
+let la_eps = { nul = true; fp = false; ln = false; bad = false }
+let la_sym = { nul = false; fp = false; ln = false; bad = false }
+let la_back = { la_eps with fp = true }
+let la_ahead = { la_eps with ln = true }
+let rec la r =
+  match r with
+  | Delim ("^" | "\\`") -> la_back
+  | Delim "\\y" -> la_alt (la_seq la_back la_ahead) (la_seq la_back la_ahead)
+  | Delim _ -> la_seq la_back la_ahead
+  | Chr _ | Any | Set _ | NotSet _ -> la_sym
+  | Seq l -> List.fold_left (fun a r -> la_seq a (la r)) la_eps l
+  | Alt l -> List.fold_left (fun a r -> la_alt a (la r)) { la_sym with nul = false } l
+  | Star r -> let a = la r in { a with nul = true; bad = a.bad || (a.ln && a.fp) }
+  | Plus r -> let a = la r in { a with bad = a.bad || (a.ln && a.fp) }
+  | Opt r -> let a = la r in { a with nul = true }
+  | Rep (r, m, n) ->
+      let a = la r in
+      if m = 0 && n = 0 then la_eps
+      else if n = 1 then { a with nul = a.nul || m = 0 }
+      else { a with nul = a.nul || m = 0; bad = a.bad || (a.ln && a.fp) }
+
+let model_refuses clauses = List.exists (fun (_, r) -> match r with Some r -> (la r).bad | None -> false) clauses
+
+let try_build clauses = match build clauses with l -> Some l | exception Failure _ -> None
+
+let refused = ref 0
+
 let () =
   for _ = 1 to 300 do
     let clauses = List.init (1 + rnd 4) (fun k -> (Printf.sprintf "c%d" k, Some (gen (rnd 3)))) @ [ eof_clause ] in
-    let lexer = build clauses in
-    compare_all "lex" lexer clauses;
-    (* remove one non-eof clause *)
     let victim = fst (List.nth clauses (rnd (List.length clauses - 1))) in
     let rest = List.filter (fun (a, _) -> a <> victim) clauses in
-    compare_all "remove_clause" (L.remove_clause lexer victim) rest;
-    (* union with clauses that have new names, added after *)
     let extra = List.init (1 + rnd 2) (fun k -> (Printf.sprintf "d%d" k, Some (gen (rnd 3)))) in
-    let lexer2 = build extra in
-    compare_all "union" (L.union lexer lexer2) (clauses @ extra)
+    let built = try_build clauses and built2 = try_build extra in
+    List.iter (fun (cl, b) ->
+        if b = None then incr refused;
+        check "add_clause refuses" ((b = None) = model_refuses cl) (fun () ->
+            Printf.sprintf "%s: model %s, lexer %s" (show_clauses cl)
+              (if model_refuses cl then "refuses" else "accepts") (if b = None then "refuses" else "accepts")))
+      [ (clauses, built); (extra, built2) ];
+    match built, built2 with
+    | Some lexer, Some lexer2 ->
+        compare_all "lex" lexer clauses;
+        compare_all "remove_clause" (L.remove_clause lexer victim) rest;
+        compare_all "union" (L.union lexer lexer2) (clauses @ extra)
+    | _ -> ()
   done
 
 let () =
-  Printf.printf "tokenizations skipped (the model takes an empty match before the end): %d\n" !skipped;
+  Printf.printf "tokenizations skipped (the model takes an empty match before the end): %d; clause lists refused: %d\n" !skipped !refused;
   List.iter (fun op ->
       let k = try Hashtbl.find bad op with Not_found -> 0 in
       line op (string_of_int (Hashtbl.find steps op) ^ " checks")
@@ -238,7 +280,9 @@ let () =
    \>\<). *)
 let () =
   let run re inputs =
-    let l = snd (L.add_clause L.empty "c" re) in
+    match L.add_clause L.empty "c" re with
+    | exception e -> line ("add_clause " ^ re) "" ("EXN " ^ Printexc.to_string e)
+    | _, l ->
     List.iter (fun s ->
         line ("lex " ^ re) (str s)
           (match quiet (fun () -> L.lex l (Lm_channel.of_string s)) with

@@ -238,6 +238,20 @@
   with `prog -> a prog | b $eof` it returned the inner `prog` for `ab`. The
   parse now ends only when the start symbol is reduced onto an empty stack.
   metaprl's `filter_grammar` runs theory grammars through `Parser.parse`.
+- `Lm_lexer`'s delimiters that look at the next character (`\>`, `\y`,
+  `\B`) never matched at the end of a clause (#83): `a\>` matched
+  neither `a` nor `a b`. The clause's final state is reached only after
+  the next character is read, and was dropped there; it is now recorded
+  as a match that ends before that character. The marshalled types are
+  unchanged (metaprl's magic check hashes them).
+- `Lm_lexer`: a delimiter that looks at the previous character right
+  after one that looks at the next, with no character between (`a\>*`,
+  `a\>\<`, `\<{1}`), raised `Invalid_argument "close_next"` when lexed
+  (#83). `add_clause` now refuses such a clause with a `Failure` that
+  says to write the look back first (both test one boundary: `\>\>` is
+  `\>`, and `\>\<` never matches). An interval no longer re-enters its
+  body once its count reaches the maximum, and `r{0}` never enters it;
+  neither path could finish a match.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -417,8 +431,9 @@
 - `Lm_lexer`'s zero-width delimiters are checked against a model
   (`test/test_lexer_anchors.ml`, #83): `^ \< \> \y \B \``` over `a`,
   space and newline in the random lexers of `test_lexer_model.ml`. With
-  only `^` and `` \` `` the model agrees on every check; the delimiters that
-  look at the next character disagree, as below.
+  only `^` and `` \` `` the model agreed on every check; the delimiters
+  that look at the next character did not, fixed above. Clauses that
+  `add_clause` refuses are checked against the model's own rule.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
