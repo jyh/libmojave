@@ -250,6 +250,10 @@
   (`test/test_interval_set.ml`, #45): both functors, every set operation,
   12,000 generated cases; the test prints the number of disagreements per
   operation.
+- `Lm_field_table` is checked against models (`test/test_field_table.ml`,
+  #61): 4,500 random steps for each of `FieldTable` and `FieldMTable`, with
+  lookups, the index order of `to_list`, the iterators, `replace_ext` and
+  `map` after each.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
@@ -275,6 +279,10 @@
     `"pair="`, and `bprintf b "[%a]"` writes nothing, not even the brackets.
   None of metaprl's `Lm_rprintf` or `Lm_format` users uses these conversions
   (counted on single-line `printf` calls, with a positive control).
+- `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
+  entries with one internal name make `to_list` raise `Failure
+  "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
+  later entry (#61).
 
 ## 1.0.0 (2026-10-28)
 
