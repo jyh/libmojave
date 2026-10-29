@@ -94,7 +94,8 @@ val last : 'a list -> 'a
 val split : int -> 'a list -> 'a list * 'a list
 
 (*
- * Split up into smaller lists of size no more than n.
+ * Split up into smaller lists of size no more than n, in order.
+ * Raises Invalid_argument if n <= 0.
  *)
 val splitup : int -> 'a list -> 'a list list
 
