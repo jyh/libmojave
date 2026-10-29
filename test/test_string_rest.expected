@@ -1,9 +1,9 @@
-parse_args (concat_argv l) = l: cases that differ 3000 cases = 54 (first: ["\t\""; "\"\"\195"] -> "\"\t\\\"\" \"\"\195" -> ["\t\""; ""; "\195"])
-parse_args (string_argv [s]) = [s]: cases that differ 3000 cases = 22 (first: ["' b'b%"] -> "' b'b%" -> ["'"; "b'b%"])
-parse_args (quote_string s) = [s]: cases that differ 3000 cases = 3 (first: ["'b '"] -> "'b '" -> ["'b"; "'"])
+parse_args (concat_argv l) = l: cases that differ 3000 cases = 0
+parse_args (string_argv [s]) = [s]: cases that differ 3000 cases = 0
+parse_args (quote_string s) = [s]: cases that differ 3000 cases = 0
 decode_hex_name (encode_hex_name s) = s: cases that differ 3000 cases = 0
 hexify_sub s off len = hexify (String.sub s off len): cases that differ 3000 cases = 0
-strpat buf start len pat against a naive search: cases that differ 3000 cases = 106 (first: "\169\t\ta\tba\169 bZ" 3 3 "\t": None, want Some 1)
+strpat buf start len pat against a naive search: cases that differ 3000 cases = 0
 concat_argv ["a\\b"; "c d\\"]; parse_args of it  = "a\\b \"c d\\\"" -> EXN Invalid_argument("Lm_string_util.parse_args: a\\b \"c d\\\"")
 string_argv ["a"; "b c"]; quote_argv ["a"; "b"]  = "\"a b c\"" "\"a b\""
 parse_args ""; concat_argv [""; "a"]; quote_argv [""]  = [] "\"\" a" "\"\""
@@ -30,7 +30,7 @@ mysql_escaped / html_pre_escaped / html_escaped_nonwhite "<a href=\"x\">&amp;</a
 mysql_escaped / html_pre_escaped / html_escaped_nonwhite " two  spaces\tand\nnewline " = " two  spaces\\tand\\nnewline " / " two  spaces\tand\nnewline " / " two  spaces\tand<br>\nnewline "
 mysql_escaped / html_pre_escaped / html_escaped_nonwhite "nul\000byte" = "nul\\0byte" / "nul&#0;byte" / "nul&#0;byte"
 split_mime_string "ABC" (the interface's example)  = ["fooAB."; "bar"]
-split_mime_string "B" "no delimiter"  = EXN Invalid_argument("index out of bounds")
+split_mime_string "B" "no delimiter"  = []
 trim_std "  a  b  " = "a b"
 trim_std "a \" x  y \" b" = "a \" x  y \" b"
 trim_std "\t\n" = ""
