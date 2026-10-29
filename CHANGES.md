@@ -59,6 +59,14 @@
   `parse_path ["usr"; "lib"] "x"` was `["lib"; "usr"; "x"]`, and `..` removed
   the first directory instead of the last. It now keeps `dir` in order (#48).
   Nothing in libmojave, metaprl or omake passes a `dir`.
+- `Lm_splay_set` (#49): `intersectp` answered `true` for any two sets of
+  more than one element when the first was the smaller (it searched the
+  first set for its own root), and `union` and `intersectp` compared keys
+  with the polymorphic `compare` instead of `Ord.compare`, so under any other
+  order they went wrong. `Lm_small_set` (#49): `add` and `of_list` kept
+  duplicates while the set was a list (`add 25, 25, 9` had cardinal 3).
+  Found by checking every `MinimalSetSig` implementation against a model;
+  nothing in metaprl uses these three modules.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -157,6 +165,9 @@
   building, and reading, writing and finding files. A path list cannot
   express an absolute path, so `path_dir "/usr/lib/x"` is `"usr/lib"`; pinned
   as it stands.
+- The `MinimalSetSig` implementations are checked against a model
+  (`test/test_min_sets.ml`, #49): `Lm_set`, `Lm_splay_set` (in two orders),
+  `Lm_hash_set` and `Lm_small_set` over two bases.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a

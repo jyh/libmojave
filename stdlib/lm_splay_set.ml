@@ -296,7 +296,7 @@ struct
                         let right3 = union_aux right1 right2 in
                            new_node key1 left3 right3
                    | SplayNotFound (Node (key2, left2, right2, _)) ->
-                        if compare key1 key2 < 0 then
+                        if Ord.compare key1 key2 < 0 then
                            let left3 = union_aux left1 left2 in
                            let right3 = union_aux right1 (new_node key2 Leaf right2) in
                               new_node key1 left3 right3
@@ -315,7 +315,7 @@ struct
                      let right3 = union_aux right1 right2 in
                         new_node key2 left3 right3
                 | SplayNotFound (Node (key1, left1, right1, _)) ->
-                     if compare key2 key1 < 0 then
+                     if Ord.compare key2 key1 < 0 then
                         let left3 = union_aux left1 left2 in
                         let right3 = union_aux (new_node key1 Leaf right1) right2 in
                            new_node key2 left3 right3
@@ -347,7 +347,7 @@ struct
                      SplayFound _ ->
                         true
                    | SplayNotFound (Node (key2, left2, right2, _)) ->
-                        if compare key1 key2 < 0 then
+                        if Ord.compare key1 key2 < 0 then
                            (intersects left1 left2)
                            || (intersects right1 (new_node key2 Leaf right2))
                         else
@@ -358,11 +358,11 @@ struct
             else if size1 = 1 then
                search key1 s2
             else
-               match splay key1 [] s1 with
+               match splay key2 [] s1 with
                   SplayFound _ ->
                      true
                 | SplayNotFound (Node (key1, left1, right1, _)) ->
-                     if compare key2 key1 < 0 then
+                     if Ord.compare key2 key1 < 0 then
                         (intersects left1 left2)
                         || (intersects (new_node key1 Leaf right1) right2)
                      else
