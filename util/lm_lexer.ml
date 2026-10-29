@@ -1413,7 +1413,11 @@ struct
           | [] ->
                id, clauses1
       in
-      let id, clauses1 = collect id1 clauses1 clauses2 in
+      (*
+       * Clauses are kept newest first.  Number exp2's oldest first,
+       * so its clauses keep their order relative to each other.
+       *)
+      let id, clauses1 = collect id1 clauses1 (List.rev clauses2) in
          if id = id1 then
             false, exp1
          else

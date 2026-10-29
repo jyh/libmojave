@@ -238,6 +238,12 @@
   with `prog -> a prog | b $eof` it returned the inner `prog` for `ab`. The
   parse now ends only when the start symbol is reduced onto an empty stack.
   metaprl's `filter_grammar` runs theory grammars through `Parser.parse`.
+- `Lm_lexer.union` numbered the second lexer's clauses in reverse order
+  (#78), so between two of its own clauses that match the same text the
+  other one won. With `choose = max`, which metaprl's `filter_grammar`
+  uses, a lexer adding `[a-z]+` and then `let` lexed `let` as the keyword
+  alone and as the identifier after a union. The second lexer's clauses
+  now keep their order.
 
 ### Tests
 
@@ -391,6 +397,12 @@
   acceptance and the derivation the actions build, the same after
   `remove_production` and `union`, and 2,000 random expressions against a
   precedence-climbing evaluator.
+- `Lm_lexer` is checked against a brute-force matcher
+  (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
+  regular expressions and `\'`, every string of up to 5 characters, one
+  call and a whole tokenization, the same after `remove_clause` and
+  `union`. At the end of the input `\'` wins over an empty match by any
+  clause; the model does the same.
 
 ### Behaviour that the tests record and that may be a bug
 

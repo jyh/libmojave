@@ -27,3 +27,24 @@ let lex_all input =
 let () =
   List.iter (fun s -> line "lex" (str s) (String.concat " " (lex_all s)))
     [ "x1 + 23*(y)"; "let x = \"a b\""; "letter"; "let"; "12ab"; ""; "  "; "a$b"; "\"open" ]
+
+(* union: the second lexer's clauses join after the first's. Between two
+   of its own clauses that match the same text, the one that wins should
+   be the one that wins in that lexer alone: the first added under
+   choose = min, the last added under choose = max (metaprl's
+   filter_grammar uses max). *)
+module ActionMax = struct include Action let choose = max end
+module LMax = Lm_lexer.MakeLexer (Lm_channel.LexerInput) (ActionMax)
+
+let () =
+  let mk add empty l = List.fold_left (fun lx (a, re) -> snd (add lx a re)) empty l in
+  let base = [ ("num", "[0-9]+"); ("eof", "\\'") ] in
+  let second = [ ("id", "[a-z]+"); ("kw_let", "let") ] in
+  let first_min lx = match L.lex lx (Lm_channel.of_string "let") with (a, _, _, _) -> a | exception e -> Printexc.to_string e in
+  let first_max lx = match LMax.lex lx (Lm_channel.of_string "let") with (a, _, _, _) -> a | exception e -> Printexc.to_string e in
+  let m1 = mk L.add_clause L.empty base and m2 = mk L.add_clause L.empty second in
+  line "union, choose = min: second alone" (str "let") (first_min m2);
+  line "union, choose = min: union first second" (str "let") (first_min (L.union m1 m2));
+  let x1 = mk LMax.add_clause LMax.empty base and x2 = mk LMax.add_clause LMax.empty second in
+  line "union, choose = max: second alone" (str "let") (first_max x2);
+  line "union, choose = max: union first second" (str "let") (first_max (LMax.union x1 x2))
