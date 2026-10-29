@@ -1,0 +1,21 @@
+debug_enabled  = true
+debuggers (ours, at start)  = [load: Print file names as they load: false]
+create t_a false, t_b true; debug a, debug b  = false true
+create t_a again, same description: same ref  = true
+  and its value  = false
+create t_a again, other description  = EXN Failure("Lm_debug.create_debug: variable 't_a' is already created with a different description")
+load_debug t_b == b  = true
+load_debug t_none  = EXN Failure("Lm_debug.load_debug: variable 't_none' has not been created")
+set_debug t_a true; !a  = true
+set_debug t_none  = EXN Failure("set_debug")
+get_debug t_b  = t_b: flag b: true
+get_debug t_none  = EXN Failure("get_debug")
+set_possible_debug t_c true; get_debug t_c  = t_c: Unitialized debug flag: true
+then create t_c false: value  = true
+  get_debug t_c  = t_c: flag c: true
+set_possible_debug t_b false (exists): !b  = false
+debug_level (ref 2) 1, 2, 3  = true true false
+set_debug_flags "t_a::t_c:"  = a=true b=false c=true
+debuggers (ours, at end)  = [t_c: flag c: true; t_b: flag b: false; t_a: flag a: true; load: Print file names as they load: false]
+timing_wrap t succ 41  = 42
+timing_wrap t raises  = EXN Failure("boom")
