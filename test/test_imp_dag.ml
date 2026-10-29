@@ -46,3 +46,13 @@ let () =
   line "delete b: roots" "" (guard (fun () -> names g3 (ImpDag.roots g3)));
   line "  sort" "" (guard (fun () -> names g3 (ImpDag.sort g3)));
   line "  edges of each node in sort order" "" (guard (fun () -> String.concat " | " (List.map (fun x -> ImpDag.node_value g3 x ^ ": " ^ edges g3 x) (ImpDag.sort g3))))
+
+(* A relation found by a query through b must not outlive b: after
+   delete b, a and c are unrelated. *)
+let () =
+  let g, n = build () in
+  let before = rel (ImpDag.node_rel g n.(0) n.(2)) in
+  ImpDag.delete g n.(1);
+  (* delete renumbers: c now has b's old index, n.(1) *)
+  line "node_rel a c, then delete b, then node_rel a c" "" (before ^ " " ^ ImpDag.node_value g n.(1) ^ " " ^ rel (ImpDag.node_rel g n.(0) n.(1)));
+  line "  roots, sort" "" (names g (ImpDag.roots g) ^ " " ^ names g (ImpDag.sort g))
