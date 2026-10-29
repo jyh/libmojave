@@ -1,0 +1,12 @@
+SymbolMatrix add (a,b) (b,a) (c,c): query (b,a) (a,c) (c,c)  = true false true
+  iter  = [a,b; c,c]
+SymbolMatrix.create 0; add  = EXN Division_by_zero
+Sym add (a,b)=1 (b,a)=2 (a,c)=3: find (a,b) (c,a)  = 2 3
+  find (b,c)  = EXN Not_found
+Asym add (a,b)=1 (b,a)=2: find (a,b) (b,a), query (a,a)  = 1 2 false
+  copy, then add (a,b)=10 to the original: copy's (a,b)  = 1
+  filter_add (a,b) (+1), (c,c) (new 0)  = 11 0
+  filter_remove (c,c) to None, (a,b) doubled  = false 22
+  remove (b,a); query (b,a) (a,b)  = false true
+  map (+100), iter  = [a,b=122]
+  fold (sum) of the original  = 22
