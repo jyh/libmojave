@@ -8,6 +8,6 @@ lex "  " = ws:"  " EOF
 lex "a$b" = id:"a" END Failure("Lm_lexer: lex: no clause matched")
 lex "\"open" = END Failure("Lm_lexer: lex: no clause matched")
 union, choose = min: second alone "let" = id
-union, choose = min: union first second "let" = kw_let
+union, choose = min: union first second "let" = id
 union, choose = max: second alone "let" = kw_let
-union, choose = max: union first second "let" = id
+union, choose = max: union first second "let" = kw_let
