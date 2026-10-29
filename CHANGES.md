@@ -101,6 +101,9 @@
   (`Lm_map.LmMakeList`), which no test exercised before. `mapi_all` can leave
   a key bound to an empty list, where `mem` is true and `find` raises
   `Not_found`; it is pinned as it stands.
+- `Lm_trace` is pinned (`test/test_trace.ml`, #38): conversions, the maps,
+  folds and iterations with and without depth, `fold_map`, `header_nodes`,
+  `special_nodes` and `pp_print`, on one tree of three levels.
 
 ### Behaviour that the tests record and that may be a bug
 

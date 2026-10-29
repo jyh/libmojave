@@ -1,0 +1,14 @@
+the tree  = [a; h1:[b; h2:[c]; d]; e; h3:[f]]
+to_list  = ["a"; "h1"; "b"; "h2"; "c"; "d"; "e"; "h3"; "f"]
+of_list [x; y]  = [x; y]
+to_list []  = []
+map uppercase  = [A; H1:[B; H2:[C]; D]; E; H3:[F]]
+map_depth  = [a0; h11:[b1; h22:[c2]; d1]; e0; h31:[f1]]
+iter order  = ["a"; "h1"; "b"; "h2"; "c"; "d"; "e"; "h3"; "f"]
+iter_depth  = ["a@0"; "h1@1"; "b@1"; "h2@2"; "c@2"; "d@1"; "e@0"; "h3@1"; "f@1"]
+fold (concat)  = "ah1bh2cdeh3f"
+fold_map (number nodes)  = 9 [0a; 1h1:[2b; 3h2:[4c]; 5d]; 6e; 7h3:[8f]]
+header_nodes  = ["h3"; "h2"; "h1"]
+special_nodes  = ["h3"; "h2"; "d"; "h1"; "e"]
+header_nodes / special_nodes, no sub-traces  = [] []
+pp_print  = "\na\nLm_trace[1]:\n   h1\n   b\n   Lm_trace[2]:\n      h2\n      c\n   d\ne\nLm_trace[1]:\n   h3\n   f\n"
