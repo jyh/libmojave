@@ -1,0 +1,16 @@
+tokenizations skipped (the model takes an empty match before the end): 90598
+lex first 109200 checks = 4974 disagree (first: c0=.? c1=\y{1,2}a{2}^ c2=\> c3=\>* eof=\' on "a": model c0:"a", lexer EXN:"Invalid_argument(\"close_next\")")
+lex all 75237 checks = 4636 disagree (first: c0=\y c1=\B+^\n[^a]^\n c2=[^ ] c3=\>{0}.\y [^ ][\na][\n] eof=\' on "\n\n\naa": model c2:\n c2:\n c2:\n c2:a c2:a EOF, lexer c2:\n c2:\n c2:\n c2:a EXN Invalid_argument("close_next"))
+remove_clause first 109200 checks = 3460 disagree (first: c1=\y{1,2}a{2}^ c2=\> c3=\>* eof=\' on "a": model c3:"", lexer EXN:"Invalid_argument(\"close_next\")")
+remove_clause all 83368 checks = 2766 disagree (first: c1=\B+^\n[^a]^\n c2=[^ ] c3=\>{0}.\y [^ ][\na][\n] eof=\' on "\n\n\naa": model c2:\n c2:\n c2:\n c2:a c2:a EOF, lexer c2:\n c2:\n c2:\n c2:a EXN Invalid_argument("close_next"))
+union first 109200 checks = 6896 disagree (first: c0=.? c1=\y{1,2}a{2}^ c2=\> c3=\>* eof=\' d0=(a?)? on "a": model c0:"a", lexer EXN:"Invalid_argument(\"close_next\")")
+union all 78397 checks = 11052 disagree (first: c0=\y c1=\B+^\n[^a]^\n c2=[^ ] c3=\>{0}.\y [^ ][\na][\n] eof=\' d0=[a]? on "\n\n\naa": model c2:\n c2:\n c2:\n c2:a c2:a EOF, lexer c2:\n c2:\n c2:\n c2:a EXN Invalid_argument("close_next"))
+lex a\> "a" = EXN Failure("Lm_lexer: lex: no clause matched")
+lex a\> "a b" = EXN Failure("Lm_lexer: lex: no clause matched")
+lex a\>  "a b" = "a "
+lex a\y "a b" = EXN Failure("Lm_lexer: lex: no clause matched")
+lex a\B "aa" = EXN Failure("Lm_lexer: lex: no clause matched")
+lex a\Ba "aa" = "aa"
+lex \<a "a" = "a"
+lex a\>* "a b" = EXN Invalid_argument("close_next")
+lex a\>\< b "a b" = EXN Invalid_argument("close_next")

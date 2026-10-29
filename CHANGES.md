@@ -414,6 +414,11 @@
   acceptance and the derivation the actions build, the same after
   `remove_production` and `union`, and 2,000 random expressions against a
   precedence-climbing evaluator.
+- `Lm_lexer`'s zero-width delimiters are checked against a model
+  (`test/test_lexer_anchors.ml`, #83): `^ \< \> \y \B \``` over `a`,
+  space and newline in the random lexers of `test_lexer_model.ml`. With
+  only `^` and `` \` `` the model agrees on every check; the delimiters that
+  look at the next character disagree, as below.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
@@ -442,6 +447,15 @@
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).
+- `Lm_lexer`: a delimiter that looks at the next character (`\>`, `\y`,
+  `\B`) at the end of a clause never matches (#83): `a\>` matches
+  neither `a` nor `a b`, while `a\> ` matches `a ` in `a b`. The lexer
+  reaches the clause's final state only after it has read the next
+  character, and does not count it as a match.
+- `Lm_lexer`: a delimiter that looks at the previous character reached
+  right after one that looks at the next, with no character between
+  (`a\>*`, `a\>\<`), raises `Invalid_argument "close_next"` when it is
+  lexed (#83).
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
