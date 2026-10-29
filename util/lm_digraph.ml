@@ -107,11 +107,14 @@ let delete_edge n m =
 
 (* second node merged into first *)
 let coalesce_nodes n m i =
-  n.n_info <- i;
-  delete_node m;
-  List.iter (add_edge n) m.n_succ;
-  List.iter (fun k -> add_edge k n) m.n_pred;
-  n
+  let succ = m.n_succ in
+  let pred = m.n_pred in
+  let self k = if k == m then n else k in
+    n.n_info <- i;
+    delete_node m;
+    List.iter (fun k -> add_edge n (self k)) succ;
+    List.iter (fun k -> add_edge (self k) n) pred;
+    n
 
 (************************************** structure independent operations *)
 
