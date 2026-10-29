@@ -261,6 +261,10 @@
   against a model (`test/test_table_compose.ml`, #59): 6,000 random steps
   over a pool of tables, older versions re-checked after later steps, and
   500 unions under a descending order.
+- `Lm_string_hash` (`Lm_hash.MakeHashMarshal` over strings) is checked
+  against a model (`test/test_string_hash.ml`, #60): 3,000 random strings,
+  some marshalled before use, and 8 pairs of distinct strings with the same
+  `Hashtbl.hash`, with intern, equal, compare, sets and tables after each.
 
 ### Behaviour that the tests record and that may be a bug
 
