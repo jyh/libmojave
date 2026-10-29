@@ -355,6 +355,9 @@
   (`test/test_loop.ml`, #70), and the loop nest of one graph is pinned.
 - `Lm_db` is checked against a model over a scratch file (`test/test_db.ml`,
   #71), with the predicate API on fixed histories.
+- `Lm_attribute` is pinned (`test/test_attribute.ml`, #72): two downward
+  attributes compose in the order they are applied, and `dest_core` and
+  `dest_up` cache their results.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after

@@ -1,0 +1,8 @@
+label  = L
+apply a, then b: dest_up, then dest_core  = 6 bacore
+  the same as b applied to (a applied to the core)  = true
+  dest_up after dest_core (cached)  = 6
+t1 is not changed by applying b to it: dest_core t1  = acore
+the original term: dest_core, dest_up  = core 4
+apply c to t1 after t1's dest_core  = cacore
+simple term: label, core  = S 42
