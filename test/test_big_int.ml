@@ -89,9 +89,8 @@ let () =
   line "big: a / b, a mod b" "" (s (B.div_big_int big1 big2) ^ " " ^ s (B.mod_big_int big1 big2));
   line "div10 / mult10 of 1234567" "" (let d, q = B.div10 (b 1234567) in Printf.sprintf "%d %s %s" d (s q) (s (B.mult10 (b 1234567))));
   line "to_int32 (of_int32 x) for 0, 1, -1, max_int" "" (String.concat " " (List.map (fun x -> Int32.to_string (B.to_int32 (B.of_int32 x))) [ 0l; 1l; -1l; Int32.max_int ]))
-  (* of_int32 Int32.min_int does not terminate: Int32.neg min_int is
-     min_int, and an arithmetic shift of it never reaches 0. Not run here,
-     since it would hang the test. *)
+;
+  line "to_int32 (of_int32 x) for min_int" "" (Int32.to_string (B.to_int32 (B.of_int32 Int32.min_int)))
 ;;
 (* Lm_num computes small operands with native / and mod and hands big ones
    to Lm_big_int, so the two paths should agree. *)

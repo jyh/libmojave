@@ -293,8 +293,12 @@ and shift_mag val1 =
 (*
  * Bigint multiplication.
  *)
+(* A zero result is +0: compare and eq read the sign first. *)
+let norm_big_int ((_, mag) as i) =
+   if zeros mag then zero_big_int else i
+
 let mult_big_int (sign1, val1) (sign2, val2) =
-   (sign1 = sign2, mult_mag [] val1 val2)
+   norm_big_int (sign1 = sign2, mult_mag [] val1 val2)
 
 (************************************************************************
  * DIVISION                                                             *
@@ -330,15 +334,17 @@ let rec div_mag min max num den =
 
 let div_big_int (sign1, val1) (sign2, val2) =
    if zeros val2 then raise (Invalid_argument "Lm_big_int.div_big_int: division by zero");
-   sign1 = sign2, div_mag [] val1 val1 val2
+   (* the quotient is below num + 1 (it equals num when den is 1) *)
+   norm_big_int (sign1 = sign2, div_mag [] (add_mag false val1 [1]) val1 val2)
 
 let mod_mag num den =
-   let quo = div_mag [] num num den in
+   let quo = div_mag [] (add_mag false num [1]) num den in
       sub_mag false num (mult_mag [] den quo)
 
-let mod_big_int (sign1, val1) (sign2, val2) =
+let mod_big_int (sign1, val1) (_, val2) =
    if zeros val2 then raise (Invalid_argument "Lm_big_int.mod_big_int: division by zero");
-   sign1 = sign2, mod_mag val1 val2
+   (* truncated, like div_big_int: the remainder has the dividend's sign *)
+   norm_big_int (sign1, mod_mag val1 val2)
 
 let quo_big_int = div_big_int
 let rem_big_int = mod_big_int
@@ -518,7 +524,7 @@ let of_string = big_int_of_string
 let to_int32 = function
    _, [] ->
       Int32.zero
- | _, digits ->
+ | sign, digits ->
       let rec collect shift i digits =
          match digits with
             digit :: digits when shift < 32 ->
@@ -527,14 +533,16 @@ let to_int32 = function
           | _ ->
                i
       in
-         collect 0 Int32.zero digits
+         let i = collect 0 Int32.zero digits in
+            if sign then i else Int32.neg i
 
 let of_int32 i =
+   (* a logical shift: Int32.neg Int32.min_int is min_int itself *)
    let rec make_mag i =
       if i = Int32.zero then
          []
       else
-         (Int32.to_int i) land max_int :: make_mag (Int32.shift_right i shift_int)
+         (Int32.to_int i) land max_int :: make_mag (Int32.shift_right_logical i shift_int)
    in
       if i < Int32.zero then
          false, make_mag (Int32.neg i)

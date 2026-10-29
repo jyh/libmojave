@@ -1,23 +1,24 @@
 add: cases that differ from native ints 4000 pairs = 0
 sub: cases that differ from native ints 4000 pairs = 0
 mult: cases that differ from native ints 3792 pairs = 0
-div (truncated): cases that differ from native ints 3912 pairs = 74 (first: -32565696657, -1: 32565696656, native 32565696657)
-mod (truncated): cases that differ from native ints 3912 pairs = 1864 (first: -34063, -8: 7, native -7)
-a = b * div a b + mod a b, |mod| < |b| 3912 pairs = 1864 (first: -34063, -8: q 4257 r 7)
+div (truncated): cases that differ from native ints 3912 pairs = 0
+mod (truncated): cases that differ from native ints 3912 pairs = 0
+a = b * div a b + mod a b, |mod| < |b| 3912 pairs = 0
 compare_big_int / eq_big_int: cases that differ  = 0
 big_int_of_string (string_of_int x): cases that differ  = 0
 integer_big_int: cases that differ (or raise below 2^30)  = 0
 integer_big_int 2^30, 2^40  = EXN Invalid_argument("Lm_big_int.integer_big_int: overflow") EXN Invalid_argument("Lm_big_int.integer_big_int: overflow")
 zero from -3 - -3, -3 + 3, -5 * 0  = 0 0 0
-  equal to zero, compare with zero  = true/0 true/0 false/-1
+  equal to zero, compare with zero  = true/0 true/0 true/0
 div and mod by zero  = EXN Invalid_argument("Lm_big_int.div_big_int: division by zero") EXN Invalid_argument("Lm_big_int.mod_big_int: division by zero")
 big: string round trip  = 123456789012345678901234567890123 -98765432109876543210987
 big: (a + b) - b = a, (a * b) / b = a, a * b mod b = 0  = true true true
 big: a * b  = -12193263113702179522618422493004797134336296860222381401
-big: a / b, a mod b  = -1249999988 -60185185206019336421967
+big: a / b, a mod b  = -1249999988 60185185206019336421967
 div10 / mult10 of 1234567  = 7 123456 12345670
-to_int32 (of_int32 x) for 0, 1, -1, max_int  = 0 1 1 2147483647
+to_int32 (of_int32 x) for 0, 1, -1, max_int  = 0 1 -1 2147483647
+to_int32 (of_int32 x) for min_int  = -2147483648
 Lm_num: (-17) mod (-10), small path  = -7
-Lm_num: (-100000000000000000000017) mod (-10), big path  = 7
-Lm_num: (40000 * 3) mod (-7), a product past 2^15 is big  = -6 (native 6)
-Lm_num: (-100000000000000000000) * 0, equal to 0  = false
+Lm_num: (-100000000000000000000017) mod (-10), big path  = -7
+Lm_num: (40000 * 3) mod (-7), a product past 2^15 is big  = 6 (native 6)
+Lm_num: (-100000000000000000000) * 0, equal to 0  = true

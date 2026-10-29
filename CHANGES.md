@@ -166,6 +166,26 @@
   has its own fields, cleared whenever an edge is added or a node deleted.
   `node_rel`'s answers are unchanged otherwise; metaprl's callers
   (`mllib/precedence.ml`, `auto_tactic.ml`) use only `node_rel`.
+- `Lm_big_int`, the bignum under `Lm_num` (#65):
+  - `div_big_int` was one too small in magnitude when the divisor was 1 or
+    -1 (`-32565696657 / -1` gave `32565696656`): its binary search ran
+    below the dividend, which is the quotient for those divisors.
+  - `mod_big_int` gave the remainder the sign of the quotient, so
+    `a = b * (a / b) + a mod b` failed whenever the divisor was negative
+    (`-34063 mod -8` was `7`). The remainder now has the dividend's sign,
+    as OCaml's `mod` does and as `div_big_int` truncates.
+  - A zero result could be negative (`-5 * 0`, and zero quotients and
+    remainders), which prints `0` but is not equal to zero and compares
+    below it. Zero results are now `+0`.
+  - `to_int32` dropped the sign, and `of_int32 Int32.min_int` did not
+    terminate.
+  `Lm_num` computes small operands with OCaml's `/` and `mod` and hands
+  the rest to `Lm_big_int`, and it makes any product with an operand of
+  2^15 or more a `Lm_big_int`. So before this it disagreed with itself at
+  small sizes: `(-17) mod (-10)` was `-7`, while `(40000 * 3) mod (-7)` was
+  `-6` where OCaml's `mod` gives `6`, and a large value times `0` was not
+  equal to `0`. Both paths now agree. Not changed: `integer_big_int` raises for magnitudes of 2^30
+  and above, on any word size.
 
 ### Tests
 
@@ -273,6 +293,9 @@
   #62): `MakeHashCons` (dense indices, `get`, `fold`, `map_array`),
   `MakeHashMarshalEq` with a fine and a coarse equality (items marshalled
   before use included), `compare_int_list` and `hash_int_list`.
+- `Lm_big_int` is checked against native ints (`test/test_big_int.ml`,
+  #65): 4,000 random pairs for each operation, the division identity,
+  identities beyond native ints, and `Lm_num`'s two paths.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
