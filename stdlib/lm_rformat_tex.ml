@@ -83,6 +83,7 @@ let tex_escape_string _linebreaks s =
           | ']'
           | '\\'
           | '$'
+          | '~'
           | '%' as c->
                collect_escape_space i j (Printf.sprintf "\\char%i" (Char.code c))
           | _ ->
