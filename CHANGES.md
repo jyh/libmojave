@@ -1,5 +1,22 @@
 # Changes
 
+## Unreleased
+
+### Tests
+
+- `Lm_list_util` is pinned (`test/test_list_util.ml`, #21): slicing,
+  searching, maps and folds, two- and three-list operations, set-like
+  operations and association lists, including their exceptions on empty
+  lists, out-of-range indexes and mismatched lengths.
+
+### Behaviour that the tests record and that may be a bug
+
+- `Lm_list_util.remove_suffix` returns `[]` where the prefix is expected:
+  `remove_suffix [1; 2; 3] [3]` is `[]`. It can only return `[]` or raise.
+- `Lm_list_util.splitup n` makes chunks of n+1 elements, last chunk first
+  (`splitup 2 [1; ...; 7]` is `[[7]; [4; 5; 6]; [1; 2; 3]]`), although its
+  interface says "size no more than n".
+
 ## 1.0.0 (2026-10-28)
 
 The first release. It is the 2017 library, refreshed for current OCaml.
