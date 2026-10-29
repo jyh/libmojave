@@ -128,10 +128,12 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_thread.ml` | pin | `Lm_thread` |
 | `test_thread_event.ml` | pin | `Lm_printf`, `Lm_thread`, `Lm_thread_event` |
 | `test_thread_event_null.ml` | pin | `Lm_thread`, `Lm_thread_event` |
+| `test_thread_pool.ml` | pin | `Lm_thread_pool` |
+| `test_thread_pool_null.ml` | pin | `Lm_thread_pool` |
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-87 test files: 32 model checks, 55 pins.
+89 test files: 32 model checks, 57 pins.
 <!-- end test table -->
 
 Known gaps:

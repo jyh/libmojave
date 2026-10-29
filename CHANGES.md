@@ -336,6 +336,14 @@
   Windows, so it never copied a file there (#102, found by the new test's
   Windows jobs). It now sets the mode with `Unix.chmod` after closing the
   file on Windows, and with `Unix.fchmod` elsewhere as before.
+- `Lm_thread_pool` (threads profile, #105): `waitpid id` waited only while
+  the job was running, so on a job still queued (any job just created:
+  the workers cannot take one until the main thread waits) it returned
+  before the job had run. It now waits while the job is queued or running.
+  A worker woke the main thread only when a visible job finished, so
+  `waitpid` on an invisible job (`create false`) that was running never
+  woke; every job's end now wakes it. Nothing in libmojave or metaprl
+  calls it.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -680,6 +688,9 @@
   `compare_triple` and `compare_lists` are lexicographic; fresh symbols,
   `new_name_gen`, and `reintern` keeps the symbol. No defect (a mutant
   `reintern` that drops the number fails 2,029 of 3,000).
+
+- `Lm_thread_pool` is tested in both profiles (`test/test_thread_pool.ml`,
+  `test/test_thread_pool_null.ml`, #105).
 
 ### Behaviour that the tests record and that may be a bug
 

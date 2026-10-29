@@ -108,3 +108,15 @@
  (alias runtest)
  (enabled_if (= %{ocaml-config:ccomp_type} msvc))
  (action (diff test_ctype.msvc.expected test_ctype.output)))
+
+(test
+ (name test_thread_pool_null)
+ (modules test_thread_pool_null)
+ (enabled_if (<> %{profile} threads))
+ (libraries libmojave pin))
+
+(test
+ (name test_thread_pool)
+ (modules test_thread_pool)
+ (enabled_if (= %{profile} threads))
+ (libraries libmojave pin threads.posix))

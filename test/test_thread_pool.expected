@@ -1,0 +1,7 @@
+enabled  = true
+create a job, wait: wait's ids = [id]; the job ran  = true 1
+5 jobs, wait until all: each id once; all ran  = true 6
+waitpid on a job just created: it has run when waitpid returns  = true
+blocking_section (fun x -> x + 1) 41  = 42
+blocking_section raising Exit  = EXN Stdlib.Exit
+blocking_section then resume_inner_section inside it  = 42
