@@ -279,6 +279,11 @@
   return the bignum. `power_num` with a negative exponent counted the
   exponent down and never reached zero (it looped, allocating); it now
   raises `Invalid_argument`. metaprl's integer arithmetic uses `Lm_num`.
+- `Lm_string_util.equal_substring s1 off s2` with a negative `off` passed
+  its range check and read `s1` at `off` with `String.unsafe_get`,
+  outside the string; with an empty `s2` it answered true (#90). It is
+  now false for a negative offset. Nothing in libmojave or metaprl calls
+  it.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -473,6 +478,8 @@
   text and counts as one more unit of length.
 - `Lm_num` is checked against a separate bignum (`test/test_num_model.ml`,
   #89), itself checked against native ints first.
+- `Lm_string_util` is checked against references
+  (`test/test_string_model.ml`, #90).
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
@@ -520,6 +527,10 @@
   connection held outside the OCaml heap. Nothing in libmojave or metaprl
   calls `Lm_notify` (omake has its own copy). `lm_ssl.c`'s real code is
   compiled by neither build and was not read for the collector's rules.
+- `Lm_string_util.c_escaped` writes C escapes (octal `\042` for a double
+  quote, `\b` for backspace) and `unescape` reads OCaml's (decimal
+  `\ddd`, no `\b`), so the two do not round-trip (#90). metaprl's display
+  forms use `c_escaped`.
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
