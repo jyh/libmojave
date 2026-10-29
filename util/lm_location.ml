@@ -88,10 +88,13 @@ let dest_loc (name, start_line, start_char, end_line, end_char) =
  * Union of locations.
  *)
 let union_loc loc1 loc2 =
-   let file1, start_line1, start_char1, _, _ = loc1 in
-   let file2, _, _, end_line2, end_char2 = loc2 in
+   let file1, sl1, sc1, el1, ec1 = loc1 in
+   let file2, sl2, sc2, el2, ec2 = loc2 in
       if file1 = file2 then
-         (file1, start_line1, start_char1, end_line2, end_char2)
+         (* The earlier start and the later end, by (line, char) *)
+         let sl, sc = if Stdlib.compare (sl1, sc1) (sl2, sc2) <= 0 then sl1, sc1 else sl2, sc2 in
+         let el, ec = if Stdlib.compare (el1, ec1) (el2, ec2) >= 0 then el1, ec1 else el2, ec2 in
+            (file1, sl, sc, el, ec)
       else
          loc1
 

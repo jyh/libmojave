@@ -16,6 +16,13 @@
   now makes chunks of at most n elements, in order (`splitup 2 [1; 2; 3]` is
   `[[1; 2]; [3]]`), and raises `Invalid_argument` for n <= 0 (#25). Nothing
   in libmojave or metaprl calls either function.
+- `Lm_location.union_loc l1 l2` took `l1`'s start and `l2`'s end whatever
+  their order, so the result need not cover both: `union_loc (2:4-2:9)
+  (1:0-1:5)` was the backwards span `2:4-1:5`. It now takes the earlier start
+  and the later end (#27). Its caller, `Lm_parser`'s semantic actions,
+  unions a reduction's symbols from the last one down, so every reduction's
+  location ran backwards: for `1+2` the `add` action received columns 2-1. It
+  now receives 0-3 (`test/test_parser.ml` records each action's location).
 
 ### Tests
 
@@ -32,15 +39,6 @@
   exceptions on empty arrays and out-of-range indexes.
 - `Lm_location` is pinned (`test/test_location.ml`, #26): creation, `dest_loc`,
   `bogus_loc`, printing (one line and several), `compare` and `union_loc`.
-
-### Behaviour that the tests record and that may be a bug
-
-- `Lm_location.union_loc l1 l2` takes the start of `l1` and the end of `l2`,
-  whatever their order, although its interface says the span "covers both":
-  `union_loc (1:0-3:2) (1:0-1:5)` is `1:0-1:5`, and `union_loc (2:4-2:9)
-  (1:0-1:5)` is the backwards span `2:4-1:5`. Its one caller, `Lm_parser`'s
-  semantic actions, passes the later symbol first, so a reduction's location
-  may come out backwards (read from the code, not yet measured).
 
 ## 1.0.0 (2026-10-28)
 
