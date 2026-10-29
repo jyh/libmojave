@@ -1,0 +1,17 @@
+margin 1000: the same text, white space aside, and no exception: sequences that differ 2000 sequences = 1339 (first: ['y' newline true space 'x' "x" close break(1,2) 'x' "c" open3(2) break(1,0) close]: Lm_format "EXN Invalid_argument(\"Lm_rformat.format_ezone (AKA format_popm): unbalanced buffer (use debug_dform_depth to debug)\")", Format "y\ntrue xx\n  xc ")
+margin 30: the same text, white space aside, and no exception: sequences that differ 2000 sequences = 1339 (first: ['y' newline true space 'x' "x" close break(1,2) 'x' "c" open3(2) break(1,0) close]: Lm_format "EXN Invalid_argument(\"Lm_rformat.format_ezone (AKA format_popm): unbalanced buffer (use debug_dform_depth to debug)\")", Format "y\ntrue xx\n  xc ")
+margin 10: the same text, white space aside, and no exception: sequences that differ 2000 sequences = 1339 (first: ['y' newline true space 'x' "x" close break(1,2) 'x' "c" open3(2) break(1,0) close]: Lm_format "EXN Invalid_argument(\"Lm_rformat.format_ezone (AKA format_popm): unbalanced buffer (use debug_dform_depth to debug)\")", Format "y\ntrue xx\n  xc ")
+margin 1000, hbox [a; cut; b]  = "a b" (Format "ab")
+margin 1000, hbox [a; break 3 1; b]  = "a b" (Format "a   b")
+margin 1000, hovbox [a; break 3 1; b]  = "a b" (Format "a   b")
+margin 1000, [a; break 2 5; b] (no box)  = "a     b" (Format "a\n     b")
+margin 1000, hovbox [a; newline; b] then close  = "EXN Invalid_argument(\"Lm_rformat.flush_formatting: unbalanced buffer (use debug_dform_depth to debug)\")" (Format "a\nb")
+margin 1000, [a; close; b] (no box open)  = "EXN Invalid_argument(\"Lm_rformat.format_ezone (AKA format_popm): unbalanced buffer (use debug_dform_depth to debug)\")" (Format "ab")
+default margin, max_indent, max_boxes, ellipsis  = 80 4611686018427387903 4611686018427387903 "..."
+after setting 40, 20, 2, "%%"  = 40 20 2 "%%"
+over_max_boxes with 0, 1, 2, 3 boxes open (max 2)  = false false true true
+boxes nested past max_boxes 2 print the ellipsis  = "abcd"
+make_formatter: what the output functions receive  = "x=3 y=z\n", 1 flush(es)
+str_formatter, flush_str_formatter twice  = "a-1" ""
+tbox: set_tab, print_tab, print_tbreak  = "abcdef  gh"
+print_as 2 "abcd"; print_float 1.5; print_if_newline  = "abcd1.5!"
