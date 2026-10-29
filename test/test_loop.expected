@@ -6,3 +6,9 @@ reachable nodes whose idom differs from the model, any edges, every node listed 
 fixed graph: idom of n1..n4  = n0 n1 n2 n3
 fixed graph: loop nest  = "*** Lm_loop trace:\n   n0\n   n1\n   Lm_trace[1]:\n      n2\n      n3\n   n4\n"
 0>2 1>7 2>4,6 3> 4> 5> 6>8 7>4 8>1,3 (it overflowed the stack): idom of n1..n8  = n8 n0 n8 n2 n0 n2 n1 n6
+loop_nest: graphs whose nest differs from natural loops 1500 graphs = 508 (first: 0> 1>)
+loop_nest: graphs where it raised  = 500
+loop_nest: 0 alone (1 unreachable)  = EXN Invalid_argument("build_trace")
+loop_nest: 0>1 1>2,3 2>4 3>4 4>1,5 (a loop with a branch)  = n0 n2 n3 n5 [n1: n4]
+loop_nest: 0>1 1>2 2>3 3>2,1,4 (3 closes two loops)  = n0 n1 n4 [n2: n3]
+loop_nest: 0>1 1>1,2 (a self-loop)  = n0 n2 [n1: ]
