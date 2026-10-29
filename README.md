@@ -50,6 +50,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_big_int.ml` | model | `Lm_big_int`, `Lm_num` |
 | `test_bitmatrix.ml` | model | `Lm_bitmatrix` |
 | `test_channel.ml` | pin | `Lm_channel` |
+| `test_channel_rest.ml` | pin | `Lm_channel`, `Lm_location` |
 | `test_config.ml` | pin | `Lm_config` |
 | `test_cstubs.ml` | pin | `Lm_rusage` |
 | `test_ctype.ml` | model | `Lm_ctype` |
@@ -125,7 +126,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-81 test files: 32 model checks, 49 pins.
+82 test files: 32 model checks, 50 pins.
 <!-- end test table -->
 
 Known gaps:

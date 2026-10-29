@@ -7,5 +7,5 @@ of_string then set_line "g.ml" 20, then 4 chars  = File g.ml: line 21, character
 create_loc_string "h.ml" 3 1: write "x\ny", loc; contents  = File h.ml: line 4, characters 1-1 "x\ny"
 lex_buffer after lex_start and two lex_next  = "hello world", then input_char End_of_file
 descr of a string channel  = Unix_error Invalid argument descr
-set_io_functions: a string channel read through a new reader  = EXN Invalid_argument("String.blit / Bytes.blit_string")
+set_io_functions: a string channel read through a new reader  = ""
 text mode, \r at byte 4,096: the bytes come back  = true
