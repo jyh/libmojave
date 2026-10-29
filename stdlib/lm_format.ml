@@ -444,11 +444,25 @@ struct
    let print_flush () = pp_print_flush str_formatter ()
    let print_newline () = pp_print_newline str_formatter ()
 
+   let print_result () = pp_print_string str_formatter
+
    let exit = flush_str_formatter
 end
 
+(*
+ * bprintf prints to a formatter on the buffer, and must flush it at
+ * the end or nothing reaches the buffer.
+ *)
+module BufferArgs =
+struct
+   include Args
+
+   let exit fmt = pp_print_flush fmt ()
+end
+
 module FPrintf = MakePrintf (Args)
-module SPrintf = MakePrintf (StringArgs)
+module SPrintf = MakePrintfResult (StringArgs)
+module BPrintf = MakePrintf (BufferArgs)
 
 let fprintf = FPrintf.fprintf
 
@@ -462,7 +476,7 @@ let eprintf s =
    fprintf err_formatter s
 
 let bprintf buf s =
-   fprintf (formatter_of_buffer buf) s
+   BPrintf.fprintf (formatter_of_buffer buf) s
 
 (*
  * -*-

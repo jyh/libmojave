@@ -30,6 +30,18 @@
   `%s`, keeping flags and width: `"%7b|"` gives `"   true|"` (#32).
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
+- `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
+  to a formatter on the buffer and never flushed it. It now flushes at the
+  end, as `Format.bprintf` did (#33).
+- `Lm_format.sprintf` discarded the string a `%a` or `%t` printer returns
+  (`sprintf "pair=%a" pp x` gave `"pair="`); it now prints it, as
+  `Printf.sprintf` does (#33). A new functor `Lm_make_printf.MakePrintfResult`
+  takes the arguments of `MakePrintf` plus `print_result`; `MakePrintf` is
+  unchanged.
+- `%S`, `%C` and `%B` raised `Invalid_argument "parse_spec"`. They now print
+  as `Printf` does: an OCaml string or character literal, and a Boolean
+  (#33). Nothing in libmojave or metaprl calls these with `%a`, `%t`, `%S`,
+  `%C` or `%B`, and none calls `Lm_format.bprintf`.
 
 ### Tests
 
@@ -57,6 +69,8 @@
 - `Lm_rprintf` and `Lm_ref_util` are pinned (`test/test_rprintf.ml`, #31):
   `sprintf`/`bprintf` on each conversion, compared with `Printf.sprintf`, the
   string channel `stdstr`, the list printers, `output_rbuffer` and boxes.
+  #33 adds `bprintf` without `%a`, `%t`, a `%a` printer that calls `sprintf`,
+  and padded `%S`/`%B`, pinned before the fix.
 
 ### Behaviour that the tests record and that may be a bug
 

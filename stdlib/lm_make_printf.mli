@@ -105,6 +105,17 @@ sig
 end
 
 (*
+ * The arguments for a printf whose %a and %t printers return a value
+ * that is part of the output: print_result prints it.
+ *)
+module type PrintfArgsResultSig =
+sig
+   include PrintfArgsSig
+
+   val print_result : t -> result -> unit
+end
+
+(*
  * What this module provides.
  *)
 module type PrintfSig =
@@ -119,6 +130,15 @@ end
 
 (*
  * Here's the actual printf module.
+ *)
+module MakePrintfResult (Args : PrintfArgsResultSig)
+: PrintfSig
+  with type t = Args.t
+  with type result = Args.result
+
+(*
+ * As MakePrintfResult, discarding what a %a or %t printer returns
+ * (right when result is unit).
  *)
 module MakePrintf (Args : PrintfArgsSig)
 : PrintfSig
