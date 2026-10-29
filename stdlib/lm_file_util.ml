@@ -78,7 +78,8 @@ let parse_path dir name =
       if len <> 0 && name.[0] = '/' then
          []
       else
-         dir
+         (* aux builds the path in reverse *)
+         List.rev dir
    in
       List.rev (aux path 0 0)
 

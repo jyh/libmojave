@@ -55,6 +55,10 @@
   raises `Failure` naming the flag's type. `flags_set_expr "nope=3"` on an
   undefined flag reported an invalid value; it now reports that the flag is
   not defined, as `"nope=true"` already did (#47).
+- `Lm_file_util.parse_path dir name` reversed `dir`:
+  `parse_path ["usr"; "lib"] "x"` was `["lib"; "usr"; "x"]`, and `..` removed
+  the first directory instead of the last. It now keeps `dir` in order (#48).
+  Nothing in libmojave, metaprl or omake passes a `dir`.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -149,6 +153,10 @@
   results of `split`, `concat`, `append_list` and `lazy_sub_map`.
 - `Lm_flags` is pinned (`test/test_flags.ml`, #47): registering, getting and
   setting flags, and `name=value` expressions with their errors.
+- `Lm_file_util` is pinned (`test/test_file_util.ml`, #48): path parsing and
+  building, and reading, writing and finding files. A path list cannot
+  express an absolute path, so `path_dir "/usr/lib/x"` is `"usr/lib"`; pinned
+  as it stands.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
