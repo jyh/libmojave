@@ -1,0 +1,13 @@
+repeated searches skipped (the model takes an empty match before the end): 47320
+search 109200 checks = 16463 disagree (first: c0=[^c]{0}|[c]{2,3} on "a": model c0 skipped "" lexeme "", search c0 skipped "a" lexeme "")
+matches 109200 checks = 0 disagree
+searchto 109200 checks = 16463 disagree (first: c0=[^c]{0}|[c]{2,3} on "a": model c0 skipped "" lexeme "", searchto c0 skipped "a" lexeme "")
+searchto all 61880 checks = 2063 disagree (first: c0=a{2,3} on "aaaa": model c0 skipped "" lexeme "aaa"; LexSkipped "a"; LexEOF, searchto c0 skipped "a" lexeme "aaa"; LexEOF)
+searchto >> "x >> y >>" = end["x "|">>"] end[" y "|">>"] LexEOF
+searchto >> ">>>" = end[">"|">>"] LexEOF
+searchto >> "a>>>>b" = end["a>"|">>"] LexSkipped ">b" LexEOF
+searchto << and >> "a << b >> c >>" = open["a "|"<<"] close[" b "|">>"] close[" c "|">>"] LexEOF
+searchto << and >> "<<<x>>>" = open["<"|"<<"] close["x>"|">>"] LexEOF
+searchto a{2,3} "aaaa" = c["a"|"aaa"] LexEOF
+searchto a{2,3} "baaab" = c["b"|"aaa"] LexSkipped "b" LexEOF
+searchto ab|bcd "abcd" = c["a"|"bcd"] LexEOF
