@@ -44,8 +44,14 @@ value caml_term_size(value arg)
     CAMLparam1(arg);
     CAMLlocal1(buf);
 
-    /* Return a pair of numbers */
+    /*
+     * Return a pair of numbers.  The fields are set at once: the
+     * failure paths below allocate (caml_failwith), and the collector
+     * must not find uninitialised fields in a block it can reach.
+     */
     buf = caml_alloc_small(2, 0);
+    Field(buf, 0) = Val_int(0);
+    Field(buf, 1) = Val_int(0);
 
     /* Get the terminal size, return None on failure */
 #ifdef WIN32
