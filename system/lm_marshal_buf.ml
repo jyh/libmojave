@@ -182,20 +182,25 @@ ELSE (* ENSEMBLE undefined *)
    let create () =
       { wbuf_buf = Bytes.create block_size;
         wbuf_index = 0;
-        wbuf_stop = 0;
+        wbuf_stop = block_size;
         wbuf_buffers = []
       }
 
+   (*
+    * Keep the part of the current block that was written, and start a
+    * new one.
+    *)
    let flush_write info =
-      info.wbuf_buffers <- info.wbuf_buf :: info.wbuf_buffers;
+      info.wbuf_buffers <- Bytes.sub info.wbuf_buf 0 info.wbuf_index :: info.wbuf_buffers;
       info.wbuf_buf <- Bytes.create block_size;
-      info.wbuf_index <- 0
+      info.wbuf_index <- 0;
+      info.wbuf_stop <- block_size
 
    (*
     * Static buffer.
     *)
-   let to_static { wbuf_buf = buf; wbuf_buffers = bufs; _ } =
-      List.rev (buf :: bufs)
+   let to_static { wbuf_buf = buf; wbuf_index = index; wbuf_buffers = bufs; _ } =
+      List.rev (Bytes.sub buf 0 index :: bufs)
 
    (*
     * Convert to a read buffer.
@@ -258,6 +263,7 @@ ENDIF
             begin
                (* Write in multiple fragments *)
                Bytes.blit buf off buf' start amount;
+               info.wbuf_index <- stop;
                flush_write info;
                write info buf (off + amount) (len - amount)
             end
@@ -273,7 +279,7 @@ ENDIF
 	    _
           } = info
       in
-         if start = stop then
+         if start + word_size > stop then
             begin
                flush_write info;
                write_int info i
@@ -291,17 +297,17 @@ ENDIF
     * Write an integer.
     * The LSB is set to 10.
     *)
-   let write_int2 info tag i =
+   let rec write_int2 info tag i =
       let { wbuf_buf = buf;
             wbuf_index = start;
             wbuf_stop = stop;
 	    _
           } = info
       in
-         if start = stop then
+         if start + word_size > stop then
             begin
                flush_write info;
-               write_int info i
+               write_int2 info tag i
             end
          else
             begin
@@ -322,7 +328,7 @@ ENDIF
 	    _
           } = info
       in
-         if start = stop then
+         if start + word_size > stop then
             begin
                flush_write info;
                write_tag info tag i
@@ -388,7 +394,20 @@ ENDIF
    (*
     * Read the int.
     *)
+   (*
+    * A word never straddles two blocks (the writer starts a new block
+    * when one does not fit), so a word read at the end of a block is
+    * at the start of the next.
+    *)
+   let rec next_word info =
+      if info.rbuf_index = info.rbuf_stop then
+         begin
+            flush_read info;
+            next_word info
+         end
+
    let read_int info =
+      next_word info;
       let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf start)) lsl 23) +
@@ -403,9 +422,11 @@ ENDIF
     * Read the int2.
     *)
    let read_int2_tag info =
+      next_word info;
       ((Char.code (Bytes.get info.rbuf_buf (info.rbuf_index + 3))) lsr 2) land 1
 
    let read_int2_value info =
+      next_word info;
       let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf start)) lsl 21) +
@@ -420,10 +441,12 @@ ENDIF
     * Read the tag.
     *)
    let read_value_tag info =
+      next_word info;
       let { rbuf_buf = buf; rbuf_index = start; _ } = info in
          Char.code (Bytes.get buf start)
 
    let read_value_value info =
+      next_word info;
       let { rbuf_buf = buf; rbuf_index = start; _ } = info in
       let i =
          ((Char.code (Bytes.get buf (start + 1))) lsl 14) +

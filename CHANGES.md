@@ -313,6 +313,16 @@
   answered -1 whenever either side was NaN, so it was not an order; NaN
   now equals itself and is below every other value, as in OCaml's
   `compare`.
+- `Lm_marshal_buf.Buf` never terminated on a write (#94): `create` set the
+  block's end to 0 and nothing reset it, so the first `write`,
+  `write_int`, `write_int2` or `write_tag` found no room, started a new
+  64 KB block and retried, forever (one `write_int` reached 34 GB in 5 s).
+  Blocks now end at the block size; `to_static` keeps only the written
+  part of each block; a word that does not fit starts a new block (it
+  could run past the end), and the reader moves to the next block for
+  one; `write_int2` retried as `write_int`, losing its tag. Nothing in
+  libmojave or metaprl calls it (`Lm_marshal_shared.XMarshal`, its client,
+  exports nothing).
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -549,6 +559,11 @@
   the rest. No defect (a mutant of the zig-zag case fails 292 trees).
   The same file checks `Lm_rformat_raw`'s channel printer against its
   buffer printer and takes `Lm_thread_util`'s printer lock twice.
+- `Lm_marshal_buf.Buf` is checked by round trip (`test/test_marshal_buf.ml`,
+  #94): 300 random sequences (53,745 values) of ints, int2s, tagged values
+  and byte strings, some longer than a block, read back in order. Values
+  outside a word's bits lose the bits that do not fit; a tag above 255
+  raises `Invalid_argument`.
 
 ### Behaviour that the tests record and that may be a bug
 

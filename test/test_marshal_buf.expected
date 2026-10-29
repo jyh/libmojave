@@ -1,2 +1,8 @@
 word_size  = 4
 create, to_static, to_read, free  = ok
+round trip: sequences that fail 300 sequences, 53745 values = 0
+write_int -1, write_int 2^31: read back  = 2147483647 0
+write_int2 1 2^29: read back (tag, value)  = 1 0
+write_tag 7 2^22: read back (tag, value)  = 7 0
+write_tag 300 1  = EXN Invalid_argument("Char.chr")
+read_int past the end  = EXN Invalid_argument("read")
