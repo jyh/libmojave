@@ -117,6 +117,8 @@
 - `Lm_trace` is pinned (`test/test_trace.ml`, #38): conversions, the maps,
   folds and iterations with and without depth, `fold_map`, `header_nodes`,
   `special_nodes` and `pp_print`, on one tree of three levels.
+- `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
+  multi-value tables over keys that include `min_int` and `max_int`.
 
 ### Behaviour that the tests record and that may be a bug
 
