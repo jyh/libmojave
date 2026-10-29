@@ -254,6 +254,10 @@
   #61): 4,500 random steps for each of `FieldTable` and `FieldMTable`, with
   lookups, the index order of `to_list`, the iterators, `replace_ext` and
   `map` after each.
+- The rest of `Lm_hash` is checked against models (`test/test_hash_cons.ml`,
+  #62): `MakeHashCons` (dense indices, `get`, `fold`, `map_array`),
+  `MakeHashMarshalEq` with a fine and a coarse equality (items marshalled
+  before use included), `compare_int_list` and `hash_int_list`.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
