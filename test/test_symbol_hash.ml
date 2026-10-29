@@ -50,6 +50,6 @@ let () =
   List.iter (fun i -> if Lm_int_util.log2 i <> flog2 i then begin incr bad; if !first = "" then first := string_of_int i end)
     (List.concat_map (fun k -> let p = 1 lsl k in [ p - 1; p; p + 1 ]) (List.init 60 (fun k -> k + 1)) @ [ (1 lsl 61) - 1 ]);
   line "Lm_int_util.log2: values (2^k - 1, 2^k, 2^k + 1, k = 1..60; 2^61 - 1) that differ from floor log2" "" (Printf.sprintf "%d%s" !bad (if !bad = 0 then "" else " (first: " ^ !first ^ ")"));
-  line "Lm_int_util.log2 0, 1, -5" "" (String.concat " " (List.map (fun i -> guard (fun () -> string_of_int (Lm_int_util.log2 i))) [ 0; 1; -5 ]))
-  (* log2 does not terminate for i >= 2^61: its search tests 1 lsl j > i,
-     and 1 lsl 62 is min_int. Not run here, since it would hang the test. *)
+  line "Lm_int_util.log2 0, 1, -5" "" (String.concat " " (List.map (fun i -> guard (fun () -> string_of_int (Lm_int_util.log2 i))) [ 0; 1; -5 ]));
+  line "Lm_int_util.log2 (1 lsl (int_size - 2)), max_int, against floor log2" ""
+    (String.concat " " (List.map (fun i -> string_of_bool (Lm_int_util.log2 i = flog2 i)) [ 1 lsl (Sys.int_size - 2); (1 lsl (Sys.int_size - 2)) + 1; max_int ]))

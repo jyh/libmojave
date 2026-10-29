@@ -186,6 +186,12 @@
   `-6` where OCaml's `mod` gives `6`, and a large value times `0` was not
   equal to `0`. Both paths now agree. Not changed: `integer_big_int` raises for magnitudes of 2^30
   and above, on any word size.
+- `Lm_int_util.log2` did not terminate for arguments of 2^61 and above (on
+  a 64-bit system): it searched for the first `1 lsl j` above the
+  argument, and `1 lsl 62` is `min_int` (#66). The search now stops at the
+  largest power of two. Its callers are `Lm_large_array` and
+  `Lm_large_array_weak`, with `Sys.max_array_length` and with the index
+  given to `set`, so `set a (1 lsl 61) x` reached it.
 
 ### Tests
 
@@ -296,6 +302,10 @@
 - `Lm_big_int` is checked against native ints (`test/test_big_int.ml`,
   #65): 4,000 random pairs for each operation, the division identity,
   identities beyond native ints, and `Lm_num`'s two paths.
+- `Lm_symbol_hash` is checked against `Lm_symbol` (`test/test_symbol_hash.ml`,
+  #66) on 3,000 random names, marshalled symbols included, and
+  `Lm_int_util.log2` against a floor log2 at every power of two and its
+  neighbours.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
