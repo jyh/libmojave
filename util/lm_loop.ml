@@ -295,33 +295,39 @@ let create_nodes node_name node_succ nodes =
  * Start from the roots.
  *)
 let dfs nodes =
+   (* The root (id 0) is visited from the start: its sdno is 0 too, so the
+      sdno cannot mark visits, and an edge into the root is not followed. *)
+   let visited = Array.make (Array.length nodes) false in
+   let () = visited.(0) <- true in
+
    (* Walk from a root in DFS order *)
    let rec search id1 i id2 =
-      let node2 = nodes.(id2) in
-         if node2.node_sdno = 0 then
-            let node2 =
-               { node2 with node_parent = id1;
-                            node_dfnum = i;
-                            node_sdno = i
-               }
-            in
-               nodes.(id2) <- node2;
-               search_list (succ i) id2 node2.node_succ
-         else
-            i
+      if not visited.(id2) then
+         let node2 =
+            { (nodes.(id2)) with node_parent = id1;
+                                 node_dfnum = i;
+                                 node_sdno = i
+            }
+         in
+            visited.(id2) <- true;
+            nodes.(id2) <- node2;
+            search_list (succ i) id2 node2.node_succ
+      else
+         i
 
    and search_list i id idl =
       List.fold_left (search id) i idl
    in
 
    (* Walk each of the roots *)
-   let _ = search_list 1 0 nodes.(0).node_succ in
+   let count = search_list 1 0 nodes.(0).node_succ in
 
-   (* Now construct the vertex array *)
-   let vertex = Array.copy nodes in
+   (* Now construct the vertex array, of the nodes the walk reached only *)
+   let vertex = Array.make count nodes.(0) in
       for i = 0 to pred (Array.length nodes) do
          let node = nodes.(i) in
-            vertex.(node.node_sdno) <- node
+            if visited.(i) then
+               vertex.(node.node_sdno) <- node
       done;
       vertex
 
@@ -365,6 +371,10 @@ let node_succ state node =
 
 let node_pred state node =
    List.map (node_of_id state) node.node_pred
+
+(* The predecessors the DFS reached: the root, or a node with a dfnum *)
+let reached_pred state node =
+   List.filter (fun v -> v.node_id = 0 || v.node_dfnum <> 0) (node_pred state node)
 
 let node_parent state node =
    node_of_id state node.node_parent
@@ -551,7 +561,7 @@ let dominators state =
                   in
                   let sdno_u = node_sdno u in
                      if sdno_u < node_sdno w then
-                        set_sdno w sdno_u) (node_pred state w);
+                        set_sdno w sdno_u) (reached_pred state w);
 
             add_to_bucket vertex.(node_sdno w) w;
             link state parent_w w;

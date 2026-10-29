@@ -50,6 +50,7 @@ let model name restricted =
 
 let () =
   model "no edge into the root, reachable nodes only" true;
+  model "any edges, every node listed" false;
   (* an edge into the root *)
   line "0 > 1 > 0: idom of n1" "" (guard (fun () -> idoms [| [ 1 ]; [ 0 ] |] [ 1 ]));
   (* an unreachable node listed: 2 > 1 *)
@@ -63,8 +64,6 @@ let () =
   L.pp_print_trace fmt sym (L.loop_nest t sym);
   Lm_printf.pp_print_flush fmt ();
   line "fixed graph: idom of n1..n4" "" (idoms succ [ 1; 2; 3; 4 ]);
-  line "fixed graph: loop nest" "" (str (Buffer.contents b))
-  (* Not run here: with an unreachable node listed or an edge into the
-     root, a random graph can make create overflow the stack or not
-     terminate (0>2 1>7 2>4,6 3> 4> 5> 6>8 7>4 8>1,3 overflows), so a
-     model over such graphs would hang the test. *)
+  line "fixed graph: loop nest" "" (str (Buffer.contents b));
+  line "0>2 1>7 2>4,6 3> 4> 5> 6>8 7>4 8>1,3 (it overflowed the stack): idom of n1..n8" ""
+    (guard (fun () -> idoms [| [ 2 ]; [ 7 ]; [ 4; 6 ]; []; []; []; [ 8 ]; [ 4 ]; [ 1; 3 ] |] [ 1; 2; 3; 4; 5; 6; 7; 8 ]))
