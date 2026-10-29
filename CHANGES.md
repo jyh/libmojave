@@ -292,6 +292,13 @@
   removes, `Some d` keeps the key with `d`; `remove` and `remove_entry`
   are unchanged in effect. The interface now says so. Nothing in
   libmojave or metaprl calls it.
+- `Lm_symbol.string_of_ext_symbol` and `Lm_symbol_hash.string_of_ext_symbol`
+  appended a symbol's number without the underscore `string_of_symbol`
+  puts after a name that ends in a digit, so different symbols printed
+  the same: `("x1", 2)` and `("x", 12)` were both `x12` (#97). They now
+  print `string_of_symbol`'s form (`x1_2`), quoted as before when it has
+  other characters. `Lm_symbol` also had two identical definitions of
+  it. Nothing in libmojave or metaprl calls it.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -590,6 +597,13 @@
   and along a path, plain and `_i`, compared after each step by every
   (path, datum) pair.
 
+- `Lm_symbol` is checked by property (`test/test_symbol_model.ml`, #97):
+  on 3,000 random symbols, `add` inverts `string_of_symbol` (how metaprl
+  prints a variable and reads it back) and `string_of_ext_symbol`;
+  `compare_pair`/`compare_triple` are lexicographic; `new_symbol` and its
+  variants give unused numbers; `new_name_gen`, `reintern` and
+  `is_interned`; and the printers by pin.
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
@@ -612,6 +626,10 @@
   with a backslash does not round-trip; and `parse_args "a\\ b"` (an
   escaped space outside quotes) raises `Invalid_argument`
   (`test/test_string_rest.ml`).
+- `Lm_symbol.make "010" 0` (an all-digit name with a leading zero, number
+  0) prints as `010`, which `add` reads as `("0", 10)`; `add` never makes
+  such a symbol (`test/test_symbol_model.ml`). `Lm_printf` opens a file
+  (`open_out`) but has no `close_out`.
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).
