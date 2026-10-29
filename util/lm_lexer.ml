@@ -1606,11 +1606,17 @@ struct
 
          (* Arguments *)
        | RegexArg regex ->
+            (*
+             * The actions carry the argument's number within its clause,
+             * not its index in the whole expression: the branches of a
+             * choice number their groups from the same start, so the
+             * i'th group of whichever branch matched is argument i.
+             *)
             let argindex = accum.nfa_arg_index in
-            let accum, final1 = nfa_state accum (NfaActionArgStop (argindex, final.nfa_state_index)) in
-            let accum, start1 = nfa_state accum NfaActionNone in
-            let start = set_action start (NfaActionArgStart (argindex, start1.nfa_state_index)) in
             let argnumber = info.nfa_arg_number in
+            let accum, final1 = nfa_state accum (NfaActionArgStop (argnumber, final.nfa_state_index)) in
+            let accum, start1 = nfa_state accum NfaActionNone in
+            let start = set_action start (NfaActionArgStart (argnumber, start1.nfa_state_index)) in
             let accum = { accum with nfa_arg_index = succ argindex } in
             let info = { info with nfa_arg_number  = succ argnumber } in
             let accum, info, start1, states =
@@ -2632,14 +2638,42 @@ struct
                info.lex_dfa <- Some dfa;
                dfa
 
+   (*
+    * A group that did not take part in the match (under * with no
+    * iteration) gives the empty string: pad the arguments to the
+    * clause's arity.
+    *)
+   let pad_args info action args =
+      let arity =
+         List.fold_left (fun arity (action', _, regex) ->
+               if Action.compare action action' = 0 then
+                  regex_arg_count 0 regex
+               else
+                  arity) 0 info.lex_exp.exp_clauses
+      in
+      let len = List.length args in
+         if len >= arity then
+            args
+         else
+            args @ List.init (arity - len) (fun _ -> "")
+
    let lex info channel =
-      lex (dfa_of_info info) channel
+      let action, loc, lexeme, args = lex (dfa_of_info info) channel in
+         action, loc, lexeme, pad_args info action args
 
    let search info channel =
-      search (dfa_of_info info) channel
+      match search (dfa_of_info info) channel with
+         Some (action, loc, skipped, lexeme, args) ->
+            Some (action, loc, skipped, lexeme, pad_args info action args)
+       | None ->
+            None
 
    let searchto info channel =
-      searchto (dfa_of_info info) channel
+      match searchto (dfa_of_info info) channel with
+         LexMatched (action, loc, skipped, lexeme, args) ->
+            LexMatched (action, loc, skipped, lexeme, pad_args info action args)
+       | (LexEOF | LexSkipped _) as result ->
+            result
 
    let matches info channel =
       matches (dfa_of_info info) channel
