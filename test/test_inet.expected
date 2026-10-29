@@ -1,0 +1,6 @@
+serve None: port > 0  = true
+connect 127.0.0.1: the client's peer port is the server's  = true
+accept: the accepted peer port is the client's local port  = true
+client -> server  = "ping"
+server -> client  = "pong!"
+connect to the closed port  = EXN Unix.Unix_error(Unix.ECONNREFUSED, "connect", "")
