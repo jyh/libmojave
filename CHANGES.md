@@ -51,6 +51,16 @@
 - `Lm_thread_event.sync` and `poll` wrote two debugging lines to stderr
   (`Lm_thread_event.lock`, `Lm_thread_event.unlock`) on every call; they no
   longer do (#34).
+- `Lm_thread_event`: a `sync` that failed (it raises `Invalid_argument
+  "Event.sync"`) left its queued send or receive live, so a later peer
+  completed against it: the value of a failed send could still be received,
+  and a later send could hand its value to a receiver that had already given
+  up. A finished `sync` now marks its entries performed (#39).
+- `Lm_thread_event` waited on its condition variable once, so a spurious
+  wakeup (which `Condition` allows) made `sync` raise. Under system threads
+  it now waits until a peer has performed the communication (#39). No test
+  can produce a spurious wakeup, so this half is not pinned; under null
+  threads `sync` still waits once and raises, as pinned.
 - `Lm_thread_shell.create_or_find id i`, when `(id, i)` did not exist,
   created `(id, n)` with `n` the first free number, so it never found what it
   created (`create_or_find "c" 5` twice gave `(c,1)` and `(c,2)`). It now
@@ -93,6 +103,9 @@
 - `Lm_thread_shell` is pinned (`test/test_thread_shell.ml`, #35): job
   creation, hidden and visible jobs, `get_pids`, `make_pid`, `with_pid`,
   `with_current`, `set_pid` and `create_or_find`, in both thread profiles.
+- `Lm_thread_event` is pinned under null threads too
+  (`test/test_thread_event_null.ml`, #39): a blocking `sync` raises, and a
+  failed `sync` leaves nothing for a later peer.
 - `Lm_debug` is pinned (`test/test_debug.ml`, #36): creating, loading,
   setting and listing named flags, a flag set before it is created
   (`set_possible_debug`), `debug_level`, `set_debug_flags` and `timing_wrap`.
