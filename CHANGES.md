@@ -28,6 +28,11 @@
   `%b` as a binary unsigned int and printed the pointer's bits (undefined
   behaviour), macOS printed a literal `b`. The conversion is now formatted as
   `%s`, keeping flags and width: `"%7b|"` gives `"   true|"` (#32).
+- `Lm_imp_dag.ImpDag.delete` never removed the node: it built the shrunk
+  array without storing it, yet renumbered every edge list as if the node
+  were gone, so the graph was corrupted (deleting `b` from `a->b->c, a->d`
+  left `a` pointing at `c` and lost `d` from `sort`). It now removes the node
+  and renumbers the remaining edges (#42). metaprl does not call `delete`.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -121,6 +126,10 @@
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
   document printed at the default width of 80.
+- `Lm_imp_dag` is pinned (`test/test_imp_dag.ml`, #42): building, roots,
+  sort, the sweeps, `node_rel` and `delete`. `node_rel` caches a derived
+  relation as an edge in its first node's lists, so a query changes what
+  `node_out_edges`, `node_in_edges` and the sweeps return; pinned as it stands.
 
 ### Behaviour that the tests record and that may be a bug
 
