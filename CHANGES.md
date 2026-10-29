@@ -126,6 +126,18 @@
   now reads them first and maps `m` to `n`: a loop on `m`, like an edge
   between the two, becomes a loop on `n`. Nothing in metaprl or omake uses
   `Lm_digraph`.
+- `Lm_large_array.LargeArray.set` at an index past the end grew the array
+  and dropped the value, so `set a 5 x` on a new array left `get a 5` the
+  default (#58). In both `LargeArray` and `Lm_large_array_weak`, `set` and
+  `get` at exactly `length a` raised `Invalid_argument "index out of
+  bounds"` (or `"Weak.set"`), because the bound test was `i > length`; so
+  `set a 0 x` raised on every new array. `set` now grows the array when
+  `i >= length` and then stores; `get` past the end raises
+  `Invalid_argument "LargeArray.get"`. The one user is
+  `Lm_marshal_shared` (not in metaprl or omake). Not tested: the second
+  level, used only for arrays longer than `Sys.max_array_length`; its bucket
+  count `(i + max_length - 1) lsr max_shift` has the same boundary at an
+  `i` that is a multiple of `max_length`.
 
 ### Tests
 
@@ -229,6 +241,9 @@
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
   each.
+- `Lm_large_array` and `Lm_large_array_weak` are checked against a model
+  (`test/test_large_array.ml`, #58): 3,000 random sets each, with indices at
+  the sizes where the arrays grow.
 
 ### Behaviour that the tests record and that may be a bug
 

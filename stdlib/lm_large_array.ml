@@ -107,16 +107,15 @@ struct
     * Store a value in the array.
     *)
    let set info i x =
-      if i > info.array_length then
-         expand info i
-      else
-         info.array_buckets.(i lsr info.array_shift).(i land info.array_mask) <- x
+      if i >= info.array_length then
+         expand info i;
+      info.array_buckets.(i lsr info.array_shift).(i land info.array_mask) <- x
 
    (*
     * Get a value in the array.
     *)
    let get info i =
-      if i > info.array_length then
+      if i >= info.array_length then
          raise (Invalid_argument "LargeArray.get");
       info.array_buckets.(i lsr info.array_shift).(i land info.array_mask)
 end
