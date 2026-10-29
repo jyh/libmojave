@@ -307,6 +307,10 @@
   straddled a 4,096-byte boundary raised. The refill now reads into the
   buffer it has and, in text mode, leaves room for that byte, as the
   lexer's refill already did.
+- `Lm_glob`: a negated class `[!...]` was passed to the regex engine as a
+  class containing `!` (#100), so `glob "[!a]*.ml"` returned `a.ml`, the
+  one file it should exclude, and `GlobIgnore`/`GlobAllow` patterns with
+  one misbehaved the same way. It is now translated to `[^...]`.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -625,6 +629,12 @@
   each), and locations under `of_loc_string`, `set_line` and
   `create_loc_string`, `lex_buffer`, `descr`, `set_io_functions` and a
   text-mode read across a buffer boundary by pin.
+
+- The rest of `Lm_glob` is checked (`test/test_glob_rest.ml`, #100):
+  `regex_of_shell_pattern` against a brute-force shell matcher (4,000
+  pairs), and `glob_argv`, `list_dirs`, `list_dirs_rec`,
+  `subdirs_of_dirs`, the glob options, `tilde_collapse` and `gethomedir`
+  by pin, with output the same on every platform.
 
 ### Behaviour that the tests record and that may be a bug
 
