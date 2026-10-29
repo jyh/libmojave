@@ -94,9 +94,13 @@ struct
    let find (_, shadow) key =
       fst (SMapShadow.find shadow key)
 
-   let remove (table, shadow) key =
-      let index = snd (SMapShadow.find shadow key) in
-         SMap.remove table index, SMapShadow.remove shadow key
+   (* Removing an absent key leaves the map unchanged, as Lm_map does. *)
+   let remove ((table, shadow) as map) key =
+      match SMapShadow.find shadow key with
+         (_, index) ->
+            SMap.remove table index, SMapShadow.remove shadow key
+       | exception Not_found ->
+            map
 
    let mem (_, shadow) key =
       SMapShadow.mem shadow key

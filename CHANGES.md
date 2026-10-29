@@ -71,6 +71,8 @@
   missing; it now answers `false`. `is_empty` was `false` for an index whose
   every key had been removed; it now checks the table. Nothing in metaprl
   uses `Lm_index` or the symbol indexes built on it.
+- `Lm_serial_map.remove` of an absent key raised `Not_found`; it now returns
+  the map unchanged, as `Lm_map` does (#54). Nothing uses `Lm_serial_map`.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -181,6 +183,9 @@
   and several levels, removal, `filter_add` and persistence.
 - `Lm_listbuf` is checked against a list model (`test/test_listbuf.ml`, #53):
   5,000 random histories of every operation.
+- `Lm_serial_map` is checked against a model (`test/test_serial_map.ml`, #54):
+  15,000 random adds and removes against an association list in insertion
+  order.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
