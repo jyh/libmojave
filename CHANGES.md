@@ -33,6 +33,16 @@
   were gone, so the graph was corrupted (deleting `b` from `a->b->c, a->d`
   left `a` pointing at `c` and lost `d` from `sort`). It now removes the node
   and renumbers the remaining edges (#42). metaprl does not call `delete`.
+- `Lm_interval_set.DenseIntervalSet` gave wrong answers for most set
+  operations (#45), found by checking it against a brute-force model:
+  `isect` always returned the empty set, `subtract` returned pieces of the
+  second set, `union` kept duplicate and overlapping intervals (its
+  `normalize` had been commented out by an unclosed comment), comparing a
+  closed right bound with an open one returned "equal" for different
+  points, and `of_interval` kept an empty interval such as `[14,6]` as if it
+  had members. It now follows `CountableIntervalSet`, which agreed with the
+  model throughout. Nothing in libmojave or metaprl instantiates either
+  functor.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -137,6 +147,10 @@
 - `Lm_inet` is pinned over loopback (`test/test_inet.ml`, #44): serving on
   an ephemeral port, connecting, accepting, data both ways, the peer and
   local ports, and connecting to a closed port.
+- `Lm_interval_set` is checked against a brute-force model
+  (`test/test_interval_set.ml`, #45): both functors, every set operation,
+  12,000 generated cases; the test prints the number of disagreements per
+  operation.
 
 ### Behaviour that the tests record and that may be a bug
 

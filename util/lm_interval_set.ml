@@ -199,8 +199,6 @@ struct
     | Closed x ->
          RightClosed x
 
-   let of_interval x y =
-      [left_bound x, right_bound y]
 
    (*
     * Compare limits.
@@ -277,7 +275,7 @@ struct
                if eq = 0 then
                   1
                else
-                  0
+                  eq
        | RightClosed x, RightClosed y ->
             compare x y
 
@@ -437,7 +435,19 @@ struct
             [invert_right right2, right1]
 
    (*
+    * An interval whose right bound lies before its left bound is empty.
+    *)
+   let of_interval x y =
+      let left = left_bound x in
+      let right = right_bound y in
+         if lt_right_left right left then
+            []
+         else
+            [left, right]
+
+   (*
     * Join intervals that have common endpoints.
+    *)
    let rec normalize = function
       (left, RightClosed x) :: (LeftClosed y, right) :: set when eq x y ->
          normalize ((left, right) :: set)
@@ -449,7 +459,6 @@ struct
          h :: normalize set
     | [] ->
          []
-    *)
 
    (*
     * Test subset.
@@ -491,7 +500,7 @@ struct
             else if lt_interval_interval interval2 interval1 then
                subtract set1 set2'
             else
-               (subtract_interval_interval interval1 interval2) @ subtract set1' set2
+               subtract ((subtract_interval_interval interval1 interval2) @ set1') set2
 
    let negate set =
       subtract [LeftInfinity, RightInfinity] set
@@ -502,7 +511,7 @@ struct
    (*
     * Set union.
     *)
-   let rec union set1 set2 =
+   let rec union_aux set1 set2 =
       match set1, set2 with
          [], _ ->
             set2
@@ -510,17 +519,20 @@ struct
             set1
        | interval1 :: set1', interval2 :: set2' ->
             if lt_interval_interval interval1 interval2 then
-               interval1 :: union set1' set2
+               interval1 :: union_aux set1' set2
             else if lt_interval_interval interval2 interval1 then
-               interval2 :: union set1 set2'
+               interval2 :: union_aux set1 set2'
             else
                let interval = union_interval_interval interval1 interval2 in
                let _, right1 = interval1 in
                let _, right2 = interval2 in
                   if lt_right_right right1 right2 then
-                     union set1' (interval :: set2)
+                     union_aux set1' (interval :: set2')
                   else
-                     union (interval :: set1) set2'
+                     union_aux (interval :: set1') set2'
+
+   let union s1 s2 =
+      normalize (union_aux s1 s2)
 
    let add_point set x =
       union set (of_point x)
@@ -528,19 +540,27 @@ struct
    (*
     * Intersection.
     *)
-   let rec isect set1 set2 =
+   let rec isect_aux set1 set2 =
       match set1, set2 with
          [], _
        | _, [] ->
             []
        | interval1 :: set1', interval2 :: set2' ->
             if lt_interval_interval interval1 interval2 then
-               isect set1' set2'
+               isect_aux set1' set2
             else if lt_interval_interval interval2 interval1 then
-               isect set1' set2'
+               isect_aux set1 set2'
             else
                let interval = isect_interval_interval interval1 interval2 in
-                  isect (interval :: set1') set2'
+               let _, right1 = interval1 in
+               let _, right2 = interval2 in
+                  if lt_right_right right1 right2 then
+                     interval :: isect_aux set1' set2
+                  else
+                     interval :: isect_aux set1 set2'
+
+   let isect s1 s2 =
+      normalize (isect_aux s1 s2)
 
    (*
     * Mapping.

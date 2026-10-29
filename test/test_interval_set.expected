@@ -10,18 +10,18 @@ countable subset: 0 of 3000 disagree
 countable subtract: 0 of 3000 disagree
 countable subtract_point: 0 of 3000 disagree
 countable union: 0 of 3000 disagree
-dense add_point: 68 of 3000 disagree (first: a={(2,6) [6,6] [8,6]} b={(16,8) [14,20)} p=20)
-dense equal: 220 of 3000 disagree (first: a={[14,6]} b={})
-dense is_empty: 373 of 3000 disagree (first: a={[14,6]} b={})
-dense isect: 1139 of 3000 disagree (first: a={inf,18) [0,18) [0,18)} b={[0,inf (0,inf})
-dense negate: 635 of 3000 disagree (first: a={inf,6) [6,20)} b={(6,14) (14,18]})
+dense add_point: 0 of 3000 disagree
+dense equal: 0 of 3000 disagree
+dense is_empty: 0 of 3000 disagree
+dense isect: 0 of 3000 disagree
+dense negate: 0 of 3000 disagree
 dense of_interval raises: 0 of 3000 disagree
-dense of_interval/union (mem_point): 68 of 3000 disagree (first: a={(2,6) [6,6] [8,6]} got 0000011110000000000000000 want 0000011111111111111111000)
+dense of_interval/union (mem_point): 0 of 3000 disagree
 dense of_point: 0 of 3000 disagree
-dense subset: 309 of 3000 disagree (first: a={[14,6]} b={})
-dense subtract: 509 of 3000 disagree (first: a={inf,18) [0,18) [0,18)} b={[0,inf (0,inf})
-dense subtract_point: 68 of 3000 disagree (first: a={(2,6) [6,6] [8,6]} b={(16,8) [14,20)} p=20)
-dense union: 173 of 3000 disagree (first: a={(2,6) [6,6] [8,6]} b={(16,8) [14,20)})
+dense subset: 0 of 3000 disagree
+dense subtract: 0 of 3000 disagree
+dense subtract_point: 0 of 3000 disagree
+dense union: 0 of 3000 disagree
 countable (non-empty intervals) add_point: 0 of 3000 disagree
 countable (non-empty intervals) equal: 0 of 3000 disagree
 countable (non-empty intervals) is_empty: 0 of 3000 disagree
@@ -34,15 +34,15 @@ countable (non-empty intervals) subset: 0 of 3000 disagree
 countable (non-empty intervals) subtract: 0 of 3000 disagree
 countable (non-empty intervals) subtract_point: 0 of 3000 disagree
 countable (non-empty intervals) union: 0 of 3000 disagree
-dense (non-empty intervals) add_point: 64 of 3000 disagree (first: a={inf,8] inf,8] inf,8]} b={inf,inf inf,inf inf,inf} p=21)
-dense (non-empty intervals) equal: 26 of 3000 disagree (first: a={inf,20] inf,20] (10,20]} b={inf,12)})
+dense (non-empty intervals) add_point: 0 of 3000 disagree
+dense (non-empty intervals) equal: 0 of 3000 disagree
 dense (non-empty intervals) is_empty: 0 of 3000 disagree
-dense (non-empty intervals) isect: 1658 of 3000 disagree (first: a={[2,16]} b={(14,inf})
-dense (non-empty intervals) negate: 469 of 3000 disagree (first: a={inf,0) [6,inf} b={inf,inf inf,inf})
+dense (non-empty intervals) isect: 0 of 3000 disagree
+dense (non-empty intervals) negate: 0 of 3000 disagree
 dense (non-empty intervals) of_interval raises: 0 of 3000 disagree
-dense (non-empty intervals) of_interval/union (mem_point): 65 of 3000 disagree (first: a={inf,8] inf,8] inf,8]} got 1111111111100000000000000 want 1111111111111100000000000)
+dense (non-empty intervals) of_interval/union (mem_point): 0 of 3000 disagree
 dense (non-empty intervals) of_point: 0 of 3000 disagree
-dense (non-empty intervals) subset: 57 of 3000 disagree (first: a={[4,18]} b={inf,14)})
-dense (non-empty intervals) subtract: 658 of 3000 disagree (first: a={[2,16]} b={(14,inf})
-dense (non-empty intervals) subtract_point: 64 of 3000 disagree (first: a={inf,8] inf,8] inf,8]} b={inf,inf inf,inf inf,inf} p=21)
-dense (non-empty intervals) union: 140 of 3000 disagree (first: a={inf,0] inf,0]} b={(4,inf (4,inf})
+dense (non-empty intervals) subset: 0 of 3000 disagree
+dense (non-empty intervals) subtract: 0 of 3000 disagree
+dense (non-empty intervals) subtract_point: 0 of 3000 disagree
+dense (non-empty intervals) union: 0 of 3000 disagree
