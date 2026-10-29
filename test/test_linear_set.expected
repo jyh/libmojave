@@ -1,0 +1,46 @@
+array append: 0 of 2000 disagree
+array append_list: 0 of 2000 disagree
+array collect: 0 of 2000 disagree
+array concat: 0 of 2000 disagree
+array empty/singleton: 0 of 2000 disagree
+array fold: 0 of 2000 disagree
+array for_all/exists: 0 of 2000 disagree
+array get: 0 of 2000 disagree
+array get of append_list: 0 of 2000 disagree
+array get of lazy_apply of concat: 0 of 2000 disagree
+array get of lazy_sub_map: 0 of 2000 disagree
+array get/fold of split parts: 0 of 2000 disagree
+array init/make: 0 of 2000 disagree
+array lazy_apply: 0 of 2000 disagree
+array lazy_apply twice: 0 of 2000 disagree
+array lazy_sub_map: 0 of 2000 disagree
+array length: 0 of 2000 disagree
+array map: 0 of 2000 disagree
+array mapi: 0 of 2000 disagree
+array of_list/to_list: 0 of 2000 disagree
+array split: 0 of 2000 disagree
+array split of append_list: 0 of 2000 disagree
+array split of concat: 0 of 2000 disagree
+splay append: 0 of 2000 disagree
+splay append_list: 1976 of 2000 disagree (first: [] [47;43;49;28;29;28])
+splay collect: 0 of 2000 disagree
+splay concat: 0 of 2000 disagree
+splay empty/singleton: 0 of 2000 disagree
+splay fold: 0 of 2000 disagree
+splay for_all/exists: 0 of 2000 disagree
+splay get: 0 of 2000 disagree
+splay get of append_list: 2000 of 2000 disagree (first: [] [47;43;49;28;29;28])
+splay get of lazy_apply of concat: 0 of 2000 disagree
+splay get of lazy_sub_map: 802 of 2000 disagree (first: [25;25;39;42;2;36] [41;18;6;44;9;30;47] i=4 len=1)
+splay get/fold of split parts: 1156 of 2000 disagree (first: [25;25;39;42;2;36] [41;18;6;44;9;30;47] i=4)
+splay init/make: 0 of 2000 disagree
+splay lazy_apply: 0 of 2000 disagree
+splay lazy_apply twice: 0 of 2000 disagree
+splay lazy_sub_map: 802 of 2000 disagree (first: [25;25;39;42;2;36] [41;18;6;44;9;30;47] i=4 len=1)
+splay length: 0 of 2000 disagree
+splay map: 0 of 2000 disagree
+splay mapi: 0 of 2000 disagree
+splay of_list/to_list: 0 of 2000 disagree
+splay split: 0 of 2000 disagree
+splay split of append_list: 2000 of 2000 disagree (first: [] [47;43;49;28;29;28])
+splay split of concat: 0 of 2000 disagree
