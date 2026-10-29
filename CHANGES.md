@@ -541,6 +541,14 @@
   (`test/test_rawfloat_model.ml`, #92): 3,000 cases per operation,
   arithmetic to within one ulp (long double is 80-bit on x86-64 Linux and
   64-bit on Apple Silicon and MSVC), conversions and comparisons exactly.
+- `Lm_splay` is checked against its stated semantics
+  (`test/test_splay.ml`, #93): on 2,000 random search trees, `splay` at an
+  element, between elements, below all and above all keeps the elements
+  and their order, puts the cut between the two sides, and leaves both
+  sides search trees; `splay_max` and `splay_min` return the extreme and
+  the rest. No defect (a mutant of the zig-zag case fails 292 trees).
+  The same file checks `Lm_rformat_raw`'s channel printer against its
+  buffer printer and takes `Lm_thread_util`'s printer lock twice.
 
 ### Behaviour that the tests record and that may be a bug
 
