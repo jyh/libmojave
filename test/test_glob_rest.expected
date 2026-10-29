@@ -1,0 +1,16 @@
+regex_of_shell_pattern against a shell matcher: pairs that differ 4000 pairs = 104 (first: "[!ab]*??" on ".!a": false, want true)
+glob_argv [grx/b.ml; grx/a*; plain; grx/*.mli]  = ["grx/b.ml"; "grx/a.ml"; "plain"; "grx/c.mli"]
+list_dirs . [grx]  = ["grx/sub"] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
+list_dirs_rec . [grx]  = ["grx"; "grx/sub"; "grx/sub/deep"] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"; "grx/sub/d.ml"; "grx/sub/deep/e.ml"]
+subdirs_of_dirs . [grx]  = ["grx"; "grx/sub"; "grx/sub/deep"]
+glob grx/[!a]*.ml (every .ml but a.ml)  = [] ["grx/a.ml"]
+glob with GlobDot "grx/*" = ["grx/.hid"; "grx/sub"] ["grx/.h.ml"; "grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
+glob with GlobOnlyFiles "grx/*" = [] ["grx/a.ml"; "grx/b.ml"; "grx/c.mli"]
+glob with GlobOnlyDirs "grx/*" = ["grx/sub"] []
+glob with GlobIgnore [*.mli] "grx/*" = ["grx/sub"] ["grx/a.ml"; "grx/b.ml"]
+glob with GlobAllow [a*; c*] "grx/*" = [] ["grx/a.ml"; "grx/c.mli"]
+glob with GlobNoCheck "grx/none*" = [] ["grx/none*"]
+glob with GlobIgnoreCheck "grx/none*" = [] []
+glob with (default) "grx/none*" = EXN Failure("grx/none*: bad match")
+tilde_collapse (home_dir), (home_dir/x/y), "/elsewhere/x"  = "~" "~/x/y" "/elsewhere/x"
+gethomedir of a user that does not exist  = EXN Not_found
