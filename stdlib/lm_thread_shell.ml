@@ -114,24 +114,30 @@ let new_pid info name =
       search 1
 
 (*
+ * Add a job with its own state under the given pid.
+ * Call with info_entry held for writing.
+ *)
+let add_job info pid job_type =
+   let { info_jobs = jobs } = info in
+   let state = State.create () in
+   let job =
+      { job_type  = job_type;
+        job_state = state
+      }
+   in
+      State.with_state state (fun () ->
+            State.write current_entry (fun current ->
+                  current.current_pid <- pid;
+                  current.current_state <- state)) ();
+      info.info_jobs <- PidTable.add jobs pid job;
+      pid
+
+(*
  * Create a new pid with its own state.
  *)
 let create name job_type =
    State.write info_entry (fun info ->
-         let pid = new_pid info name in
-         let { info_jobs = jobs } = info in
-         let state = State.create () in
-         let job =
-            { job_type  = job_type;
-              job_state = state
-            }
-         in
-            State.with_state state (fun () ->
-                  State.write current_entry (fun current ->
-                        current.current_pid <- pid;
-                        current.current_state <- state)) ();
-            info.info_jobs <- PidTable.add jobs pid job;
-            pid)
+         add_job info (new_pid info name) job_type)
 
 (*
  * Get the pid for a string.
@@ -152,9 +158,12 @@ let dest_pid (id, i) =
  * Create a job with an exact id.
  *)
 let create_or_find id i mode =
-   try make_pid id i with
-      Not_found ->
-         create id mode
+   let pid = id, i in
+      State.write info_entry (fun info ->
+            if PidTable.mem info.info_jobs pid then
+               pid
+            else
+               add_job info pid mode)
 
 (*
  * Return the current pid.
