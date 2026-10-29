@@ -252,6 +252,15 @@
   start and take the first offset where one is found, the longest match
   there. metaprl's `filter_grammar` uses `searchto` to find the end of a
   quotation.
+- `Lm_lexer`'s `\( \)` arguments (#82). The branches of an alternation
+  number their groups from the same start (they must have equal counts,
+  and the arity counts the first), but `lex` reported each group by its
+  position in the whole expression: `\(a\)\(b\)|\(c\)\(d\)` (arity 2)
+  gave `["", "", "c", "d"]` on `cd`. And a group that took no part in the
+  match was left out, so `\(a\)*b` (arity 1) gave `[]` on `b`. The i'th
+  group of the branch that matched is now argument i, and the arguments
+  are padded with `""` to the arity, in `lex`, `search` and `searchto`.
+  metaprl's one lexer group (a quoted string) is unchanged.
 
 ### Tests
 
@@ -426,9 +435,13 @@
   strings each, the parse tree against a precedence-climbing parser,
   where two operators of one nonassoc level side by side are a syntax
   error. No defect.
+- `Lm_lexer`'s arguments are pinned (`test/test_lexer_args.ml`, #82).
 
 ### Behaviour that the tests record and that may be a bug
 
+- `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
+  `add_clause` and fails at the first `lex` with "mismatched argument
+  counts": `?` is an alternation with the empty string (#82).
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
