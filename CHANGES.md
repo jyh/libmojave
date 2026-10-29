@@ -714,6 +714,11 @@
   (`test/test_interval_set.ml`, #108). No defect (mutants making each
   predicate false fail 14 to 3,000 cases).
 
+- `Lm_parser.create_prec_lt` is checked (`test/test_parser_prec.ml`, #109):
+  the same random precedence tables built top-down with it parse the same
+  12,000 inputs as the precedence-climbing model. No defect (a mutant that
+  makes it `create_prec_gt` fails 2,087).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded

@@ -46,6 +46,20 @@ let build levels level_of =
   let g = P.add_production g "num" "e" [ "num" ] None in
   P.add_production g "prog" "prog" [ "e"; Arg.eof ] None
 
+(* the same table built top-down: create_prec_lt from prec_max, highest
+   level first *)
+let build_lt levels level_of =
+  let g = P.add_start P.empty "prog" in
+  let g, precs, _ =
+    List.fold_left (fun (g, precs, base) a ->
+        let g, p = P.create_prec_lt g base (match a with L -> Lm_parser.LeftAssoc | R -> Lm_parser.RightAssoc | N -> Lm_parser.NonAssoc) in
+        (g, p :: precs, p)) (g, [], P.prec_max) (List.rev levels) in
+  let g = List.fold_left (fun g op -> P.add_prec g (List.nth precs (level_of op)) op) g ops in
+  let g = List.fold_left (fun g op -> P.add_production g ("bin" ^ op) "e" [ "e"; op; "e" ] None) g ops in
+  let g = P.add_production g "paren" "e" [ "("; "e"; ")" ] None in
+  let g = P.add_production g "num" "e" [ "num" ] None in
+  P.add_production g "prog" "prog" [ "e"; Arg.eof ] None
+
 let parse g toks =
   let arr = Array.of_list toks in
   let lexer i =
@@ -116,6 +130,7 @@ let mutate toks =
 
 let () =
   let bad = ref 0 and first = ref "" and total = ref 0 and errors = ref 0 and refused = ref 0 in
+  let bad_lt = ref 0 and first_lt = ref "" and refused_lt = ref 0 in
   for _ = 1 to 300 do
     let nlev = 1 + rnd 4 in
     let levels = List.init nlev (fun _ -> match rnd 3 with 0 -> L | 1 -> R | _ -> N) in
@@ -128,12 +143,22 @@ let () =
     match build levels level_of with
     | exception e -> incr refused; if !first = "" then first := desc () ^ ": " ^ Printexc.to_string e
     | g ->
+        let g_lt = (try Some (build_lt levels level_of) with _ -> incr refused_lt; None) in
         for _ = 1 to 40 do
           incr total;
           let toks = mutate (gen 4) in
           let want = try climb levels level_of toks with Syntax -> "syntax error" in
           if want = "syntax error" then incr errors;
           let got = parse g toks in
+          (match g_lt with
+           | Some g_lt ->
+               let got_lt = parse g_lt toks in
+               if want <> got_lt then begin
+                 incr bad_lt;
+                 if !first_lt = "" then
+                   first_lt := Printf.sprintf "%s on %s: model %s, parser %s" (desc ()) (String.concat " " toks) want got_lt
+               end
+           | None -> ());
           if want <> got then begin
             incr bad;
             if !first = "" then
@@ -143,4 +168,6 @@ let () =
   done;
   Printf.printf "tables refused: %d; inputs: %d, of which the model rejects %d\n" !refused !total !errors;
   line "precedence" (string_of_int !total ^ " inputs")
-    (if !bad = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad !first)
+    (if !bad = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad !first);
+  line "precedence, tables built with create_prec_lt" (string_of_int !total ^ " inputs, " ^ string_of_int !refused_lt ^ " tables refused")
+    (if !bad_lt = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad_lt !first_lt)
