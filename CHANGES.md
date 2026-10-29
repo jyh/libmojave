@@ -134,6 +134,9 @@
   set and the symmetric and asymmetric pair tables, including `copy`,
   `filter_add`, `filter_remove`, `map` and `fold`. `create 0` makes a table
   whose first `add` raises `Division_by_zero`; pinned as it stands.
+- `Lm_inet` is pinned over loopback (`test/test_inet.ml`, #44): serving on
+  an ephemeral port, connecting, accepting, data both ways, the peer and
+  local ports, and connecting to a closed port.
 
 ### Behaviour that the tests record and that may be a bug
 
