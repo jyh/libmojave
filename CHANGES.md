@@ -300,6 +300,19 @@
   an Int64 model. metaprl's MCC FIR theory
   (`theories/experimental/mcc/fir/type/m_rawint.ml`) reduces rawint
   arithmetic with these functions.
+- `Lm_float80.to_int` (and so `Lm_rawfloat.to_int`) returned
+  `Int_val(val)` where it needed `Val_long`: an untagged machine word, not
+  an OCaml int (7.0 read as 1) (#92). It now returns the truncated value,
+  through `intnat` rather than a 32-bit C `int`. `Lm_rawfloat.of_rawint`
+  of an unsigned 64-bit value at or above 2^63 negated the signed value
+  instead of adding 2^64 (2^64 - 1 gave 1.0). `Lm_float80.to_string`
+  printed `%Lg`, six significant digits, so `of_string (to_string x)` lost
+  `x`; it now prints the fewest digits that read back exactly, and
+  `of_string` reads with `strtold` rather than `strtod`. metaprl's MCC FIR
+  theory stores a rawfloat in a term this way. `Lm_float80.compare`
+  answered -1 whenever either side was NaN, so it was not an order; NaN
+  now equals itself and is below every other value, as in OCaml's
+  `compare`.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -524,9 +537,19 @@
   half of them edge values, against Int64 with C's wrap-around, and an
   `Lm_fmarshal` round trip. Division by zero raises `Division_by_zero`;
   shift counts outside the width are not compared.
+- `Lm_rawfloat` and `Lm_float80` are checked against OCaml's floats
+  (`test/test_rawfloat_model.ml`, #92): 3,000 cases per operation,
+  arithmetic to within one ulp (long double is 80-bit on x86-64 Linux and
+  64-bit on Apple Silicon and MSVC), conversions and comparisons exactly.
 
 ### Behaviour that the tests record and that may be a bug
 
+- `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
+  to single precision, and arithmetic on it is done in long double
+  (`test/test_rawfloat_model.ml`). `rem` raises `Failure "Not supported"`.
+  `Lm_float80.blit_float80` asserts that a long double is at least 10
+  bytes, which aborts where it is 8 (Apple Silicon, MSVC); nothing calls
+  it.
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).

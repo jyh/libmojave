@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <assert.h>
 #include <memory.h>
 #include <string.h>
@@ -41,6 +42,13 @@
 
 
 /***  Low-level calls  ***/
+
+/* Enough significant digits to tell any two long doubles apart */
+#ifdef LDBL_DECIMAL_DIG
+#  define LM_FLOAT80_DIGITS LDBL_DECIMAL_DIG
+#else
+#  define LM_FLOAT80_DIGITS 21
+#endif
 
 
 /* Extract a float out of a block, and vice versa */
@@ -89,14 +97,24 @@ value string_of_float80(value f) {
    char buffer[0x100];
    long double val;
    
-   /* Print the floating-point value to a buffer */
+   /*
+    * Print the floating-point value to a buffer: the fewest significant
+    * digits that read back (strtold) as the same value, so that
+    * float80_of_string inverts it.
+    */
    val = load_float80(f);
+   {
+      int prec;
+      for(prec = 1; prec <= LM_FLOAT80_DIGITS; prec++) {
 #ifdef HAVE_SNPRINTF
-   snprintf(buffer, sizeof(buffer), "%Lg", val);
+         snprintf(buffer, sizeof(buffer), "%.*Lg", prec, val);
 #else
-   sprintf(buffer, "%Lg", val);
-   buffer[sizeof(buffer) - 1] = '\0';
+         sprintf(buffer, "%.*Lg", prec, val);
 #endif
+         if(val != val || strtold(buffer, NULL) == val)
+            break;
+      }
+   }
    
    /* Allocate a new string block to contain result */
    block = caml_copy_string(buffer);
@@ -124,11 +142,11 @@ value float_of_float80(value f) {
 value int_of_float80(value f) {
 
    CAMLparam1(f);
-   int val;
+   intnat val;
    
    /* Coerce the value to an integer and ML-ize it */
-   val = load_float80(f);
-   CAMLreturn(Int_val(val));
+   val = (intnat) load_float80(f);
+   CAMLreturn(Val_long(val));
 
 }
 
@@ -142,12 +160,7 @@ value float80_of_string(value s) {
    
    /* Load the string value. */
    buffer = String_val(s);
-#if 0
-   /* BUG: Looks like strtold does not work: glibc-2.2.2, Aug 31, 2001 --jyh */
    val = strtold(buffer, NULL);
-#else
-   val = strtod(buffer, NULL);
-#endif
    
    /* Create a new float80 block */
    CAMLreturn(copy_float80(val));
@@ -291,7 +304,10 @@ value float80_compare(value f1, value f2) {
    
    val1 = load_float80(f1);
    val2 = load_float80(f2);
-   if(val1 == val2) result = Val_int(0);
+   /* NaN equals itself and is below every other value, as in OCaml's compare */
+   if(val1 != val1) result = Val_int(val2 != val2 ? 0 : -1);
+   else if(val2 != val2) result = Val_int(1);
+   else if(val1 == val2) result = Val_int(0);
    else if(val1 > val2) result = Val_int(1);
    else result = Val_int(-1);
    CAMLreturn(result);

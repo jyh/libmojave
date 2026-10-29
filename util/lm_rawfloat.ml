@@ -72,12 +72,14 @@ let of_rawfloat pre (_, x) =
 let of_rawint pre i =
    let j = Lm_rawint.to_int64 i in
    let signed = Lm_rawint.signed i in
-   let x = Lm_float80.of_int64 j in
    let x =
       if not signed && j < Int64.zero then
-         Lm_float80.neg x
+         (* j + 2^64: halve it unsigned (keeping the low bit so the
+          * rounding is right), convert, double *)
+         let half = Int64.logor (Int64.shift_right_logical j 1) (Int64.logand j Int64.one) in
+            Lm_float80.of_float (2.0 *. Int64.to_float half)
       else
-         x
+         Lm_float80.of_int64 j
    in
       pre, x
 
