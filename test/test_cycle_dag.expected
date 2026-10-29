@@ -1,0 +1,11 @@
+steps where equate raises Cycle exactly when both names are known disagrees with the model 4800 steps = 117 (first: eq 3 6; ins 6 51 []; ins 1 50 []; ins 1 1 [0]; ins 6 27 [5]; ins 3 69 [4,5]; ins 0 33 [3,4]; eq 4 1; eq 6 2; eq 7 3; eq 4 5; eq 1 7; )
+steps where find disagrees with the model 4800 steps = 1862 (first: eq 3 6; ins 6 51 []; ins 1 50 []; ins 1 1 [0]; ins 6 27 [5]; ins 3 69 [4,5]; ins 0 33 [3,4]; eq 4 1; eq 6 2; )
+steps where sort: every class once, with all its names disagrees with the model 4800 steps = 1411 (first: eq 3 6; ins 6 51 []; ins 1 50 []; ins 1 1 [0]; ins 6 27 [5]; ins 3 69 [4,5]; ins 0 33 [3,4]; eq 4 1; eq 6 2; eq 7 3; eq 4 5; eq 1 7; )
+steps where sort: each class before its children disagrees with the model 4800 steps = 380 (first: ins 6 16 [5]; eq 6 3; ins 6 43 []; eq 0 5; eq 7 5; ins 7 93 []; ins 7 68 []; eq 2 3; )
+steps where insert raises Cycle exactly when the model does disagrees with the model 4800 steps = 183 (first: eq 0 6; eq 2 5; ins 3 80 []; ins 3 3 [2]; eq 0 1; ins 7 82 [4,2]; ins 7 85 [2,4]; eq 6 0; ins 4 96 []; ins 7 6 [6]; ins 1 73 [0]; )
+insert 1 -> [2], equate 1 3: find 3  = EXN Not_found
+  then insert 2 -> [3]  = returned
+insert 0 -> [6] (6 a leaf), then insert 6 -> [3; 0] (a cycle)  = EXN Lm_cycle_dag.Cycle
+  then the names sort lists  = [[0]; [3]; [6]]
+equate 0 0 on a new name: sort  = [[0; 0]]
+make, then find  = 5 5 EXN Not_found
