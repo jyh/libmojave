@@ -1,0 +1,7 @@
+splay keeps elements, order, and the cut: cases that fail 2000 trees = 0
+splay_max: the largest, and the rest in order: cases that fail 2000 trees = 0
+splay_min: the smallest, and the rest in order: cases that fail 2000 trees = 0
+splay a 64-node chain at its deepest key: depth before, top, depth after  = 64 128 33
+raw_buffer_printer output  = "hello world   !\n"
+raw_channel_printer writes the same  = true
+lock_printer; unlock_printer, twice  = ok
