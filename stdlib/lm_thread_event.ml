@@ -55,6 +55,10 @@ open Lm_thread
  * The performed flag is a different reference
  * because of the wrap function, which uses a local
  * reference to capture the return value.
+ *
+ * performed is shared by every arm of one sync; write_taken
+ * belongs to one send arm and says that this write was the
+ * communication performed.
  *)
 type lock = Condition.t
 
@@ -67,7 +71,8 @@ type 'a reader =
 type 'a writer =
    { write_lock : lock;
      write_value : 'a;
-     write_performed : bool ref
+     write_performed : bool ref;
+     write_taken : bool ref
    }
 
 type 'a channel =
@@ -124,11 +129,9 @@ let alloc_lock, free_lock =
 let global_lock = Mutex.create "Lm_thread_event"
 
 let sync_lock () =
-   eprintf "Lm_thread_event.lock@.";
    Mutex.lock global_lock
 
 let sync_unlock () =
-   eprintf "Lm_thread_event.unlock@.";
    Mutex.unlock global_lock
 
 let sync_wait lock =
@@ -172,6 +175,7 @@ let rec try_receive chan () =
          else
             let x = writer.write_value in
                writer.write_performed := true;
+               writer.write_taken := true;
                sync_signal writer.write_lock;
                Some x
    with
@@ -190,10 +194,12 @@ let try_wrap f poll () =
  * The `block' argument is the function to perform the suspend.
  *)
 let block_send chan x block cond performed slot =
-   let write = { write_lock = cond; write_value = x; write_performed = performed } in
+   let taken = ref false in
+   let write = { write_lock = cond; write_value = x; write_performed = performed; write_taken = taken } in
       Queue.add write chan.chan_writers;
       block ();
-      slot := Some ()
+      if !taken then
+         slot := Some ()
 
 let block_receive chan block cond performed slot =
    let read = { read_lock = cond; read_value = slot; read_performed = performed } in

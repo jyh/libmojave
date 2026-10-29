@@ -42,6 +42,15 @@
   as `Printf` does: an OCaml string or character literal, and a Boolean
   (#33). Nothing in libmojave or metaprl calls these with `%a`, `%t`, `%S`,
   `%C` or `%B`, and none calls `Lm_format.bprintf`.
+- `Lm_thread_event`: a `choose` that blocked returned the value of its
+  outermost `send` arm even when a different arm completed:
+  `choose [receive c2; send c1 ()]`, completed by a sender on `c2`, returned
+  the send arm's value and lost the received one. A send arm now sets the
+  result only when its own write was taken (#34). metaprl's ensemble code
+  chooses between events (`remote_ensemble.ml`).
+- `Lm_thread_event.sync` and `poll` wrote two debugging lines to stderr
+  (`Lm_thread_event.lock`, `Lm_thread_event.unlock`) on every call; they no
+  longer do (#34).
 
 ### Tests
 
@@ -71,6 +80,10 @@
   string channel `stdstr`, the list printers, `output_rbuffer` and boxes.
   #33 adds `bprintf` without `%a`, `%t`, a `%a` printer that calls `sprintf`,
   and padded `%S`/`%B`, pinned before the fix.
+- `Lm_thread_event` is pinned under the `threads` profile
+  (`test/test_thread_event.ml`, #34): channels, `poll`, `sync`, `wrap`,
+  `choose`, `select`, `sequence` and `sequence_final`, including a blocked
+  `choose` completed by a sender and by a receiver, with each arm order.
 
 ### Behaviour that the tests record and that may be a bug
 
