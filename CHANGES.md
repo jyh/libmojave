@@ -542,6 +542,10 @@
   arithmetic to within one ulp (long double is 80-bit on x86-64 Linux and
   64-bit on Apple Silicon and MSVC), conversions and comparisons exactly.
 
+- `Lm_rformat`'s `format_bound`, `format_azone`, `format_hspace`,
+  `format_depth`, `format_flush` and `format_flush_popm` are pinned
+  (`test/test_rformat_rest.ml`, #110).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
