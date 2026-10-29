@@ -101,3 +101,21 @@ let parse_locs s =
 
 let () =
   List.iter (fun s -> line "parse locations" (str s) (parse_locs s)) [ "7"; "1+2"; "1+2*3"; "(4)"; "2 * 3" ]
+
+(* remove_production: removing a nonterminal's only production should give
+   the grammar that never had it. The error message lists the tokens the
+   parser expects, so it shows whether "b" is still taken for a
+   nonterminal. *)
+let run_g g s =
+  let lexer toks = match toks with
+    | [] -> (Arg.eof, loc, [], 0)
+    | (sym, v) :: rest -> (sym, loc, rest, v) in
+  let eval toks action _ _ = (toks, String.length action) in
+  guard (fun () -> let _, v = P.parse g "prog" lexer eval (tokens s) in string_of_int v)
+
+let () =
+  let base = P.add_production (grammar "prog") "useb" "e" [ "b" ] None in
+  let removed = P.remove_production (P.add_production base "bx" "b" [ "x" ] None) "bx" in
+  List.iter (fun s ->
+      line "remove_production: b -> x removed" (str s) (run_g removed s);
+      line "remove_production: b -> x never added" (str s) (run_g base s)) [ "x"; "b"; "x+1" ]
