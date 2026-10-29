@@ -484,6 +484,16 @@
   right after one that looks at the next, with no character between
   (`a\>*`, `a\>\<`), raises `Invalid_argument "close_next"` when it is
   lexed (#83).
+- C code that no build here compiles, read and not tested (#85). The dune
+  build never defines `SSL_ENABLED` or `FAM_ENABLED`; the OMake build sets
+  `FAM_ENABLED` where inotify exists, and metaprl sets `SSL_ENABLED =
+  false`. `lm_notify.c`'s `om_notify_monitor_directory` passes
+  `String_val(v_name)` and a pointer into the connection's custom block
+  to FAM inside `caml_enter_blocking_section`, where another thread's
+  collection may move either; the name should be copied first and the
+  connection held outside the OCaml heap. Nothing in libmojave or metaprl
+  calls `Lm_notify` (omake has its own copy). `lm_ssl.c`'s real code is
+  compiled by neither build and was not read for the collector's rules.
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the
