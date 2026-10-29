@@ -192,6 +192,14 @@
   largest power of two. Its callers are `Lm_large_array` and
   `Lm_large_array_weak`, with `Sys.max_array_length` and with the index
   given to `set`, so `set a (1 lsl 61) x` reached it.
+- `Lm_cycle_dag` (#67): `equate` with one known name added the other to
+  the class's names but not to its table, so `find` on the new name raised
+  `Not_found`, and a later `insert` could close a cycle through it without
+  raising `Cycle`. An `insert` that raised `Cycle` had already added leaves
+  for some of its children. And `equate x x` on a new name listed `x`
+  twice. Now the new name is added to the table, `insert` checks every
+  child before changing anything, and `equate x x` lists `x` once. Nothing
+  in metaprl or omake uses `Lm_cycle_dag`.
 
 ### Tests
 
@@ -306,6 +314,9 @@
   #66) on 3,000 random names, marshalled symbols included, and
   `Lm_int_util.log2` against a floor log2 at every power of two and its
   neighbours.
+- `Lm_cycle_dag` is checked against a model (`test/test_cycle_dag.ml`, #67):
+  4,800 random insert and equate steps, with the cycle refusals, `find` and
+  the order `sort` gives.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
