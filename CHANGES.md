@@ -93,6 +93,9 @@
 - `Lm_thread_shell` is pinned (`test/test_thread_shell.ml`, #35): job
   creation, hidden and visible jobs, `get_pids`, `make_pid`, `with_pid`,
   `with_current`, `set_pid` and `create_or_find`, in both thread profiles.
+- `Lm_debug` is pinned (`test/test_debug.ml`, #36): creating, loading,
+  setting and listing named flags, a flag set before it is created
+  (`set_possible_debug`), `debug_level`, `set_debug_flags` and `timing_wrap`.
 
 ### Behaviour that the tests record and that may be a bug
 
