@@ -238,6 +238,20 @@
   with `prog -> a prog | b $eof` it returned the inner `prog` for `ab`. The
   parse now ends only when the start symbol is reduced onto an empty stack.
   metaprl's `filter_grammar` runs theory grammars through `Parser.parse`.
+- `Lm_lexer`'s delimiters that look at the next character (`\>`, `\y`,
+  `\B`) never matched at the end of a clause (#83): `a\>` matched
+  neither `a` nor `a b`. The clause's final state is reached only after
+  the next character is read, and was dropped there; it is now recorded
+  as a match that ends before that character. The marshalled types are
+  unchanged (metaprl's magic check hashes them).
+- `Lm_lexer`: a delimiter that looks at the previous character right
+  after one that looks at the next, with no character between (`a\>*`,
+  `a\>\<`, `\<{1}`), raised `Invalid_argument "close_next"` when lexed
+  (#83). `add_clause` now refuses such a clause with a `Failure` that
+  says to write the look back first (both test one boundary: `\>\>` is
+  `\>`, and `\>\<` never matches). An interval no longer re-enters its
+  body once its count reaches the maximum, and `r{0}` never enters it;
+  neither path could finish a match.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -414,6 +428,12 @@
   acceptance and the derivation the actions build, the same after
   `remove_production` and `union`, and 2,000 random expressions against a
   precedence-climbing evaluator.
+- `Lm_lexer`'s zero-width delimiters are checked against a model
+  (`test/test_lexer_anchors.ml`, #83): `^ \< \> \y \B \``` over `a`,
+  space and newline in the random lexers of `test_lexer_model.ml`. With
+  only `^` and `` \` `` the model agreed on every check; the delimiters
+  that look at the next character did not, fixed above. Clauses that
+  `add_clause` refuses are checked against the model's own rule.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one
@@ -442,6 +462,15 @@
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).
+- `Lm_lexer`: a delimiter that looks at the next character (`\>`, `\y`,
+  `\B`) at the end of a clause never matches (#83): `a\>` matches
+  neither `a` nor `a b`, while `a\> ` matches `a ` in `a b`. The lexer
+  reaches the clause's final state only after it has read the next
+  character, and does not count it as a match.
+- `Lm_lexer`: a delimiter that looks at the previous character reached
+  right after one that looks at the next, with no character between
+  (`a\>*`, `a\>\<`), raises `Invalid_argument "close_next"` when it is
+  lexed (#83).
 - `Lm_field_table.FieldMTable` assumes each internal name is added once. Two
   entries with one internal name make `to_list` raise `Failure
   "FieldMTable.to_list: some fields are missing"`, and `find_int` returns the

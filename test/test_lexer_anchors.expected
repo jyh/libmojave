@@ -1,0 +1,17 @@
+tokenizations skipped (the model takes an empty match before the end): 56746; clause lists refused: 85
+add_clause refuses 600 checks = 0 disagree
+lex first 79352 checks = 0 disagree
+lex all 57901 checks = 0 disagree
+remove_clause first 79352 checks = 0 disagree
+remove_clause all 63826 checks = 0 disagree
+union first 79352 checks = 0 disagree
+union all 59583 checks = 0 disagree
+lex a\> "a" = "a"
+lex a\> "a b" = "a"
+lex a\>  "a b" = "a "
+lex a\y "a b" = "a"
+lex a\B "aa" = "a"
+lex a\Ba "aa" = "aa"
+lex \<a "a" = "a"
+add_clause a\>*  = EXN Failure("Lm_lexer: regex: a delimiter that looks at the previous character follows one that looks at the next with no character between (write it first): a\\>*")
+add_clause a\>\< b  = EXN Failure("Lm_lexer: regex: a delimiter that looks at the previous character follows one that looks at the next with no character between (write it first): a\\>\\< b")
