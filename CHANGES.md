@@ -30,6 +30,17 @@
 - `Lm_array_util` is pinned (`test/test_array_util.ml`, #24): searching,
   `replace`, appends, `sub_map`, `collect` and `distinct`, including their
   exceptions on empty arrays and out-of-range indexes.
+- `Lm_location` is pinned (`test/test_location.ml`, #26): creation, `dest_loc`,
+  `bogus_loc`, printing (one line and several), `compare` and `union_loc`.
+
+### Behaviour that the tests record and that may be a bug
+
+- `Lm_location.union_loc l1 l2` takes the start of `l1` and the end of `l2`,
+  whatever their order, although its interface says the span "covers both":
+  `union_loc (1:0-3:2) (1:0-1:5)` is `1:0-1:5`, and `union_loc (2:4-2:9)
+  (1:0-1:5)` is the backwards span `2:4-1:5`. Its one caller, `Lm_parser`'s
+  semantic actions, passes the later symbol first, so a reduction's location
+  may come out backwards (read from the code, not yet measured).
 
 ## 1.0.0 (2026-10-28)
 
