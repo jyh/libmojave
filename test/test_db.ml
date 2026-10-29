@@ -35,12 +35,14 @@ let () =
              Buffer.add_string h (Printf.sprintf "add %d %s %s %d; " tag magic (if digest = d1 then "d1" else "d2") v)
          | 2 -> D.remove fd name (tag, mode) magic; Hashtbl.remove m tag; Buffer.add_string h (Printf.sprintf "remove %d %s; " tag magic)
          | _ -> ());
-        (* find every (tag, magic, digest) *)
+        (* find every (tag, magic, digest); count the step once *)
+        let ok = ref true in
         List.iter (fun tag -> List.iter (fun magic -> List.iter (fun digest ->
             let want = match Hashtbl.find_opt m tag with Some (mg, dg, v) when mg = magic && dg = digest -> Some v | _ -> None in
             let got = try Some (D.find fd name (tag, D.HostIndependent) magic digest : int) with Not_found -> None in
-            if got <> want then begin incr bad_find; if !first = "" then first := Buffer.contents h end)
+            if got <> want then ok := false)
             [ d1; d2 ]) [ "m1"; "m2" ]) [ 0; 1; 2 ];
+        if not !ok then begin incr bad_find; if !first = "" then first := Buffer.contents h end;
         (* the file holds one entry per live tag: count them with find_entry *)
         let count = ref 0 in
         (try ignore (D.find_entry fd name (fun _ _ _ _ -> incr count; false) : int) with Not_found -> ());

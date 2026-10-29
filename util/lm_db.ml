@@ -402,6 +402,10 @@ let add fd filename ((code, _) as tag) magic digest x =
    marshal_entry fd filename code magic digest x
 
 let append_entry fd filename tag strings digest x =
+   (* A new file gets its header first, as remove_entry would write it:
+      without one, find_entry reads nothing and remove_entry truncates. *)
+   if Unix.lseek fd 0 Unix.SEEK_END = 0 then
+      marshal_magic fd;
    let _ = Unix.lseek fd 0 Unix.SEEK_END in
    let outx = Unix.out_channel_of_descr fd in
       marshal_tag outx tag;

@@ -224,6 +224,12 @@
   the header and every node that reaches one of its latches without
   passing it, and each node sits in the innermost body containing it. A
   model of natural loops over 1,500 random graphs agrees.
+- `Lm_db.append_entry` on a new file wrote its entries with no file header
+  (#71). `find_entry` then found none of them, and the next `remove` or
+  `remove_entry`, seeing no header, truncated the file to the header
+  alone, discarding them. `append_entry` now writes the header first on an
+  empty file. omake, the user, calls only `add` and `find`, which were
+  right.
 
 ### Tests
 
@@ -347,6 +353,8 @@
   both option modes, with every effect of the spec and every exception.
 - `Lm_loop`'s dominators are checked against a brute-force model
   (`test/test_loop.ml`, #70), and the loop nest of one graph is pinned.
+- `Lm_db` is checked against a model over a scratch file (`test/test_db.ml`,
+  #71), with the predicate API on fixed histories.
 - `Lm_digraph` is checked against a model (`test/test_digraph.ml`, #57):
   8,000 random steps, coalescing and multi-edges included, with degrees,
   successors, predecessors, queries, paths and the depth-first orders after
