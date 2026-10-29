@@ -1,0 +1,7 @@
+tokenizations skipped (the model takes an empty match before the end): 36645
+lex first 109200 checks = 0 disagree
+lex all 94445 checks = 0 disagree
+remove_clause first 109200 checks = 0 disagree
+remove_clause all 96371 checks = 0 disagree
+union first 109200 checks = 2340 disagree (first: c0=b c1=c* c2=b c3=[a] eof=\' d0=.a d1=.[^b] on "aa": model d0:"aa", lexer d1:"aa")
+union all 100139 checks = 4671 disagree (first: c0=b c1=c* c2=b c3=[a] eof=\' d0=.a d1=.[^b] on "aa": model d0:aa EOF, lexer d1:aa EOF)
