@@ -299,6 +299,14 @@
   print `string_of_symbol`'s form (`x1_2`), quoted as before when it has
   other characters. `Lm_symbol` also had two identical definitions of
   it. Nothing in libmojave or metaprl calls it.
+- `Lm_channel`'s buffer refill (#99) asked the reader for 4,096 bytes
+  whatever the buffer's size, and a string channel's buffer is the string
+  itself, so after `set_io_functions` on a string channel reading raised
+  `Invalid_argument`. On Windows, in text mode, a full read ending in `\r`
+  read one more byte one past the buffer, so a CRLF file whose `\r\n`
+  straddled a 4,096-byte boundary raised. The refill now reads into the
+  buffer it has and, in text mode, leaves room for that byte, as the
+  lexer's refill already did.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -611,6 +619,12 @@
   that passes `SetFold` false fails 75 and 275 vectors). Also the
   anonymous function's "rest" answer, and `fold`/`parse` on the
   program's own argv.
+
+- The rest of `Lm_channel` is checked (`test/test_channel_rest.ml`, #99):
+  `of_substring`, `input_entire_line` and `of_fun` by model (2,000 cases
+  each), and locations under `of_loc_string`, `set_line` and
+  `create_loc_string`, `lex_buffer`, `descr`, `set_io_functions` and a
+  text-mode read across a buffer boundary by pin.
 
 ### Behaviour that the tests record and that may be a bug
 
