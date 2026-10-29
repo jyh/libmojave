@@ -284,6 +284,22 @@
   outside the string; with an empty `s2` it answered true (#90). It is
   now false for a negative offset. Nothing in libmojave or metaprl calls
   it.
+- `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
+  negative instead of sign-extending from the precision's top bit, so a
+  signed 8-, 16- or 32-bit value out of range stayed out of range: every
+  constructor (`of_int Int8 true 200` was 200, not -56) and every
+  overflowing operation (`Int8 127 + 1` was 128, not -128). `of_string`
+  did not cast at all (`Int8` unsigned `"-1"` was -1, not 255). For
+  unsigned 64-bit values, `abs` negated, `div` and `rem` divided signed
+  (`max / 2` was 0) and `compare`, `min` and `max` reversed two values
+  above 2^63. A signed `field` ORed the sign mask in whatever the field's
+  top bit (`field 5 0 4` was -11, not 5); `set_field` did not cast, and a
+  64-bit field shifted by 64. Through the cast, `Lm_fmarshal` read a
+  negative signed 8-, 16- or 32-bit rawint back as positive. All now
+  follow C's conversions; `test/test_rawint_model.ml` checks them against
+  an Int64 model. metaprl's MCC FIR theory
+  (`theories/experimental/mcc/fir/type/m_rawint.ml`) reduces rawint
+  arithmetic with these functions.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -502,6 +518,12 @@
   where two operators of one nonassoc level side by side are a syntax
   error. No defect.
 - `Lm_lexer`'s arguments are pinned (`test/test_lexer_args.ml`, #82).
+
+- `Lm_rawint` is checked against a model (`test/test_rawint_model.ml`,
+  #91): 3,000 cases per operation over every precision and signedness,
+  half of them edge values, against Int64 with C's wrap-around, and an
+  `Lm_fmarshal` round trip. Division by zero raises `Division_by_zero`;
+  shift counts outside the width are not compared.
 
 ### Behaviour that the tests record and that may be a bug
 
