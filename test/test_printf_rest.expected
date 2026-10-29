@@ -1,0 +1,2 @@
+pp_print_any_list [1;2;3] | [] | [only], then eflush  = "1; 2;\n3||only\n"
+set_all_formatter_output_functions: what printf "a@ b@\n" sends  = "a<nl><0>b<nl><0>"

@@ -670,6 +670,10 @@
 - `Lm_nocompare`, `Lm_id`, `Lm_fs_case_sensitive` and the portable part of
   `Lm_unix_util` are checked by property (`test/test_os_small.ml`, #102).
 
+- `Lm_printf`'s own wrappers are pinned (`test/test_printf_rest.ml`, #103):
+  `out_channel_of_formatter`, `pp_print_any_list`, `eflush` and the
+  global output functions. The rest of `Lm_printf` is OCaml's `Format`.
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
