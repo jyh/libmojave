@@ -146,8 +146,8 @@ struct
     | { tree = Lazy (f', tree) } as t ->
          t.tree <- go_down f' tree;
          fold f x t
-    | { tree = Offset (_, t) } ->
-         fold f x t
+    | { tree = Offset (off, t) } ->
+         fold (fun x ind e -> f x (ind + off) e) x t
 
    let rec of_list_aux max start lst =
       match max, lst with
@@ -294,29 +294,29 @@ sition *)
       (* print "split " t; *)
       splay ind [] t;
       match t.tree with
-         Node (i,e,l,r,_) -> l,e,{ tree = Offset(succ i,r) }
+         Node (i,e,l,r,_) -> l,e,{ tree = Offset(- (succ i),r) }
        | _ -> raise (Invalid_argument "Linear_set.split")
 
+   (*
+    * The elements i .. i + len - 1, with f applied lazily: the first
+    * i + len elements (the left part of a split at i + len), then the part
+    * of those after a split at i.
+    *)
    let lazy_sub_map f t i len =
-      if len=0 then empty else
-      let r,lt = if i=0 then t,length t else begin
-         (* printf "\n\nSUB_MAP %d %d\n" i len;
-         print "sub_map " t; *)
-         splay i [] t;
-         match t.tree with
-            Node (_,_,_,r,n) -> r,n
-          | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
-      end in
-      let seg_end = i+len in
-      let c = if seg_end = lt then r else begin
-         (* print "sub_map_ii " r; *)
-         splay seg_end [] r;
-         match r.tree with
-            Node (_,_,c,_,_) -> c
-          | _ -> raise (Invalid_argument "Linear_set.lazy_sub_map")
-      end in
-      let oc = if i=0 then c else { tree = Offset (i,c) } in
-         { tree = Lazy (f,oc) }
+      if len = 0 then
+         empty
+      else if i = 0 && len = length t then
+         { tree = Lazy (f, t) }
+      else
+         let prefix =
+            if i + len = length t then
+               t
+            else
+               let l, _, _ = split t (i + len) in
+                  l
+         in
+         let _, e, r = split prefix i in
+            { tree = Lazy (f, append empty e r) }
 
    let rec join t1 t2 = match t1,t2 with
       { tree = Leaf }, _ -> t2
@@ -344,11 +344,11 @@ sition *)
     | e::tl -> begin
          let l1 = length t1 in
          let ll = List.length tl in
-         match of_list_aux (pred ll) l1 tl with
+         match of_list_aux (pred ll) (succ l1) tl with
             tlt,off,[tle] ->
                let soff = succ off in
                { tree = Node (off,tle,
-                  { tree = Node (succ l1, e, t2, tlt, off) },
+                  { tree = Node (l1, e, t1, tlt, off) },
                   { tree = Offset (soff,t2) },
                   (soff+(length t2))) }
           | _ -> raise (Invalid_argument "Linear_set.append_list")

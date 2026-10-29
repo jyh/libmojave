@@ -43,6 +43,13 @@
   had members. It now follows `CountableIntervalSet`, which agreed with the
   model throughout. Nothing in libmojave or metaprl instantiates either
   functor.
+- `Lm_splay_linear_set` (#46), found by checking it against a list model
+  beside `Lm_array_linear_set`, which agreed throughout:
+  `append_list t1 l t2` used `t2` in place of `t1` and numbered the new
+  elements one too low (`[1;2;3] [10;11] [7;8]` gave `[7;8;10;11;7;8]`);
+  `lazy_sub_map f t i len` dropped element `i`; and the right part of
+  `split` could not be indexed (`get` raised) because its offset had the
+  wrong sign, while `fold` reported the indices of such a part unshifted.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -132,6 +139,9 @@
 - `Lm_trace` is pinned (`test/test_trace.ml`, #38): conversions, the maps,
   folds and iterations with and without depth, `fold_map`, `header_nodes`,
   `special_nodes` and `pp_print`, on one tree of three levels.
+- `Lm_array_linear_set` and `Lm_splay_linear_set` are checked against a list
+  model (`test/test_linear_set.ml`, #46): every operation, and indexing the
+  results of `split`, `concat`, `append_list` and `lazy_sub_map`.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
