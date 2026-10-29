@@ -1,0 +1,24 @@
+Lm_ref_util push 1; push 2  = [2; 1]
+Lm_ref_util pop  = 2
+Lm_ref_util pop  = 1
+Lm_ref_util pop (empty)  = EXN Invalid_argument("pop")
+sprintf %d %s %c  = "-3 x y z"
+sprintf %5d|%-5d|%05d  = "   42|42   |00042"
+sprintf %x %o %X  = "ff 10 FF"
+sprintf %S  = EXN Invalid_argument("parse_spec")
+sprintf %C  = EXN Invalid_argument("parse_spec")
+sprintf %B  = EXN Invalid_argument("parse_spec")
+sprintf %f %.2f %e %g  = "1.500000 3.14 1.234568e+04 0.0001"
+sprintf %%  = "100%"
+Printf.sprintf (reference) %d %s %c %b %S %C  = "-3 x y z true \"a\\\"b\\n\" '\\''"
+sprintf %a  = "pair="
+bprintf %a  = ""
+stdstr, flush_stdstr  = "one 1 two!3"
+flush_stdstr again (emptied)  = ""
+print_string_list [a; b; c] = "a; b; c"
+print_int_list [1; 2; 3] = "1; 2; 3"
+print_any_list pp_pair  = "<1,a>; <2,b>"
+print_int_list [] = ""
+output_rbuffer  = "from rformat"
+hovbox margin 12  = "alpha\n  beta\n  gamma\n  delta\n  "
+pp_get_margin  = 12

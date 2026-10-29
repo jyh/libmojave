@@ -49,6 +49,23 @@
   (`test/test_rformat_backends.ml`, #29): documents with special characters,
   breaks, indentation, tags and invisible zones, rendered as HTML (with and
   without a tagger) and as TeX at two widths, and `Lm_rformat_html.escape`.
+- `Lm_rprintf` and `Lm_ref_util` are pinned (`test/test_rprintf.ml`, #31):
+  `sprintf`/`bprintf` on each conversion, compared with `Printf.sprintf`, the
+  string channel `stdstr`, the list printers, `output_rbuffer` and boxes.
+
+### Behaviour that the tests record and that may be a bug
+
+- The printf engine behind `Lm_rprintf` and `Lm_format` (`Lm_make_printf`, an
+  untyped interpreter of the format string) disagrees with `Printf`:
+  - `%b` passes the format `"%b"` and the string `"true"` or `"false"` to C's
+    `snprintf`. glibc reads `%b` as a binary unsigned int and prints the
+    pointer's bits (undefined behaviour, a different number on each run);
+    macOS prints a literal `b`. The pin cannot record it;
+  - `%S`, `%C` and `%B` raise `Invalid_argument "parse_spec"`;
+  - `%a` drops the user printer's output: `sprintf "pair=%a"` gives
+    `"pair="`, and `bprintf b "[%a]"` writes nothing, not even the brackets.
+  None of metaprl's `Lm_rprintf` or `Lm_format` users uses these conversions
+  (counted on single-line `printf` calls, with a positive control).
 
 ## 1.0.0 (2026-10-28)
 
