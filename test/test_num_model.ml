@@ -154,3 +154,9 @@ let () =
   line "abs_num min_int" "" (guard (fun () -> s (N.abs_num mi)));
   line "mult_num min_int (-1)" "" (guard (fun () -> s (N.mult_num mi (N.num_of_int (-1)))));
   line "pred_num min_int" "" (guard (fun () -> s (N.pred_num mi)))
+
+(* A negative exponent: before the fix power_num looped (it counted the
+   exponent down and never reached zero), so this comes with the fix. *)
+let () =
+  line "power_num 2 (-1)" "" (guard (fun () -> N.string_of_num (N.power_num (N.num_of_int 2) (N.num_of_int (-1)))));
+  line "power_num 2 (-(10^30))" "" (guard (fun () -> N.string_of_num (N.power_num (N.num_of_int 2) (N.num_of_string "-1000000000000000000000000000000"))))
