@@ -119,6 +119,8 @@
   `special_nodes` and `pp_print`, on one tree of three levels.
 - `Lm_int_set` is pinned (`test/test_int_set.ml`, #40): sets, tables and
   multi-value tables over keys that include `min_int` and `max_int`.
+- `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
+  document printed at the default width of 80.
 
 ### Behaviour that the tests record and that may be a bug
 

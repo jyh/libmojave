@@ -1,0 +1,3 @@
+default_width  = 80
+output_rbuffer, 30 words  = "word1\n  word2\n  word3\n  word4\n  word5\n  word6\n  word7\n  word8\n  word9\n  word10\n  word11\n  word12\n  word13\n  word14\n  word15\n  word16\n  word17\n  word18\n  word19\n  word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30"
+  longest line  = 78
