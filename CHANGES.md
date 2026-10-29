@@ -8,6 +8,10 @@
   searching, maps and folds, two- and three-list operations, set-like
   operations and association lists, including their exceptions on empty
   lists, out-of-range indexes and mismatched lengths.
+- `Lm_rformat` is pinned (`test/test_rformat.ml`, #22): documents built from
+  each zone and break kind, rendered as text at widths 80, 20, 10 and 4, the
+  calls a backend printer receives (including tags and invisible text),
+  buffer cloning and clearing, zone depth, and a marshal round trip.
 
 ### Behaviour that the tests record and that may be a bug
 
@@ -16,6 +20,11 @@
 - `Lm_list_util.splitup n` makes chunks of n+1 elements, last chunk first
   (`splitup 2 [1; ...; 7]` is `[[7]; [4; 5; 6]; [1; 2; 3]]`), although its
   interface says "size no more than n".
+- `Lm_rformat.format_quoted_string` prints only the first character of a
+  string that needs quoting: `"two words"` is shown as `"t"`. Its loop
+  handles index 0 and does not recurse. It also escapes a tab as `\r` (read
+  from the code; the pin cannot show it). metaprl's display forms call it for
+  variable and operator names (`refiner/reflib/dform.ml`, `simple_print.ml`).
 
 ## 1.0.0 (2026-10-28)
 
