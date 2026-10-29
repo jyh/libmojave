@@ -323,6 +323,18 @@
   one; `write_int2` retried as `write_int`, losing its tag. Nothing in
   libmojave or metaprl calls it (`Lm_marshal_shared.XMarshal`, its client,
   exports nothing).
+- `Lm_string_util` (#95): `strpat buf start len pat` compared an absolute
+  position with the relative `len`, so a search from `start > 0` stopped
+  `start` characters early. `split_mime_string` tested for `len_b - 2`
+  characters left where a delimiter needs `len_b + 2`, so it read past
+  the end: a body without a final delimiter raised "index out of
+  bounds" (metaprl's HTTP server splits multipart bodies with it); it
+  now returns the parts found. `concat_argv`, `string_argv` and
+  `quote_string` left a string unquoted when its quotes balanced (`a"b
+  c"d`, `'a b'`), but `parse_args` honours only a double quote that opens
+  a word and no single quotes, so the string split in two. They now
+  quote any string with white space or a quote, unless it is wrapped in
+  double quotes, which the interface passes through as already quoted.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -573,6 +585,20 @@
   `Lm_float80.blit_float80` asserts that a long double is at least 10
   bytes, which aborts where it is 8 (Apple Silicon, MSVC); nothing calls
   it.
+- The rest of `Lm_string_util` is checked (`test/test_string_rest.ml`,
+  #95): `parse_args` against `concat_argv`, `string_argv` and
+  `quote_string`, the hex-name round trip, `hexify_sub` and `strpat` by
+  model (3,000 cases each), and the escapes, trims, MIME splitting,
+  tokens, `prepend`, `string_of_file` and the checked `make`/`blit`/`get`
+  by pin.
+
+### Behaviour that the tests record and that may be a bug
+
+- The argv quoting in `Lm_string_util` copies a backslash as an escape
+  already written, which `parse_args` then reads as one, so a string
+  with a backslash does not round-trip; and `parse_args "a\\ b"` (an
+  escaped space outside quotes) raises `Invalid_argument`
+  (`test/test_string_rest.ml`).
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).

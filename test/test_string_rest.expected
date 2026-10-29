@@ -1,0 +1,45 @@
+parse_args (concat_argv l) = l: cases that differ 3000 cases = 0
+parse_args (string_argv [s]) = [s]: cases that differ 3000 cases = 0
+parse_args (quote_string s) = [s]: cases that differ 3000 cases = 0
+decode_hex_name (encode_hex_name s) = s: cases that differ 3000 cases = 0
+hexify_sub s off len = hexify (String.sub s off len): cases that differ 3000 cases = 0
+strpat buf start len pat against a naive search: cases that differ 3000 cases = 0
+concat_argv ["a\\b"; "c d\\"]; parse_args of it  = "a\\b \"c d\\\"" -> EXN Invalid_argument("Lm_string_util.parse_args: a\\b \"c d\\\"")
+string_argv ["a"; "b c"]; quote_argv ["a"; "b"]  = "\"a b c\"" "\"a b\""
+parse_args ""; concat_argv [""; "a"]; quote_argv [""]  = [] "\"\" a" "\"\""
+parse_args "a b" = ["a"; "b"]
+parse_args "  a\t b  " = ["a"; "b"]
+parse_args "\"a b\" c" = ["a b"; "c"]
+parse_args "'a b' c" = ["'a"; "b'"; "c"]
+parse_args "a\\ b" = EXN Invalid_argument("Lm_string_util.parse_args: a\\ b")
+parse_args "\"a\\\"b\"" = ["a\"b"]
+parse_args "a\"b c\"d" = ["a\"b"; "c\"d"]
+parse_args "\"unclosed" = EXN Invalid_argument("Lm_string_util.parse_args: \"unclosed")
+parse_args_list "a b \\\\ c d" = [["a"; "b"]; ["c"; "d"]]
+shell_quotes / quote_string "abc" = "\"abc\"" / "\"abc\""
+shell_quotes / quote_string "a b" = "\"a b\"" / "\"a b\""
+shell_quotes / quote_string "a\"b" = "\"a\\\"b\"" / "\"a\\\"b\""
+shell_quotes / quote_string "a'b" = "\"a'b\"" / "\"a'b\""
+shell_quotes / quote_string "a\\b" = "\"a\\b\"" / "\"a\\b\""
+shell_quotes / quote_string "" = "\"\"" / "\"\""
+unhex '0' '9' 'a' 'f' 'A' 'F'  = 0 9 10 15 10 15
+unhex 'g'  = EXN Failure("unhexify")
+quotes  = "\"'"
+mysql_escaped / html_pre_escaped / html_escaped_nonwhite "a'b\"c\\d" = "a\\'b\\\"c\\\\d" / "a'b&quot;c\\d" / "a'b&quot;c\\d"
+mysql_escaped / html_pre_escaped / html_escaped_nonwhite "<a href=\"x\">&amp;</a>" = "<a href=\\\"x\\\">&amp;</a>" / "&lt;a href=&quot;x&quot;&gt;&amp;amp;&lt;/a&gt;" / "&lt;a href=&quot;x&quot;&gt;&amp;amp;&lt;/a&gt;"
+mysql_escaped / html_pre_escaped / html_escaped_nonwhite " two  spaces\tand\nnewline " = " two  spaces\\tand\\nnewline " / " two  spaces\tand\nnewline " / " two  spaces\tand<br>\nnewline "
+mysql_escaped / html_pre_escaped / html_escaped_nonwhite "nul\000byte" = "nul\\0byte" / "nul&#0;byte" / "nul&#0;byte"
+split_mime_string "ABC" (the interface's example)  = ["fooAB."; "bar"]
+split_mime_string "B" "no delimiter"  = []
+trim_std "  a  b  " = "a b"
+trim_std "a \" x  y \" b" = "a \" x  y \" b"
+trim_std "\t\n" = ""
+trim_std "" = ""
+trim_all "'" " " "  a  'b  c'  d "  = "a 'b  c' d"
+tokens "'" " " "a 'b c' d"  = ["a"; "'b c'"; "d"]
+prepend "-I" ["a"; "b c"]; prepend "x" []  = "-Ia-Ib c" "x"
+string_of_file (a 21-byte file)  = "line 1\nline 2\r\n\000end"
+string_of_file (the file removed)  = Sys_error
+make "t" 3 'x'; make "t" (-1) 'x'  = "xxx" EXN Invalid_argument("Bytes.create")
+get "t" "abc" 1; get "t" "abc" 3  = b EXN Failure("String_util.get")
+blit "t" "abcd" 1 dst 0 2, then out of range  = bc... EXN Invalid_argument("Bytes.blit")
