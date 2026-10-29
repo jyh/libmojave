@@ -604,6 +604,14 @@
   variants give unused numbers; `new_name_gen`, `reintern` and
   `is_interned`; and the printers by pin.
 
+- `Lm_arg`'s folding forms are checked against its plain ones
+  (`test/test_arg_fold.ml`, #98): on 2,000 random argv vectors per spec
+  mode, `fold_argv` with the `*Fold` specs logs the same effects,
+  anonymous arguments and exceptions as `parse_argv`. No defect (a mutant
+  that passes `SetFold` false fails 75 and 275 vectors). Also the
+  anonymous function's "rest" answer, and `fold`/`parse` on the
+  program's own argv.
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded

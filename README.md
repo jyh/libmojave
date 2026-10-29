@@ -44,6 +44,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | test | kind | modules |
 |---|---|---|
 | `test_arg.ml` | pin | `Lm_arg` |
+| `test_arg_fold.ml` | pin | `Lm_arg` |
 | `test_array_util.ml` | pin | `Lm_array_util` |
 | `test_attribute.ml` | pin | `Lm_attribute` |
 | `test_big_int.ml` | model | `Lm_big_int`, `Lm_num` |
@@ -124,7 +125,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-80 test files: 32 model checks, 48 pins.
+81 test files: 32 model checks, 49 pins.
 <!-- end test table -->
 
 Known gaps:
