@@ -1,0 +1,8 @@
+grammars: 145 built, 155 refused with a conflict; 410 accepted of the accept inputs
+accept 52780 checks = 0 disagree
+accept tree 410 checks = 0 disagree
+remove_production 52780 checks = 0 disagree
+remove_production tree 243 checks = 0 disagree
+union 18928 checks = 0 disagree
+union tree 257 checks = 0 disagree
+precedence 2000 checks = 0 disagree

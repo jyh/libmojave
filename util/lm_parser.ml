@@ -2163,7 +2163,7 @@ struct
     *)
    let fst3 (v, _, _) = v
 
-   let pda_loop hash run arg start =
+   let pda_loop hash run arg start_var start =
       let rec pda_lookahead arg stack state tok =
          let delta = run.run_states.(state).pda_delta in
          let v, loc, x = tok in
@@ -2225,11 +2225,21 @@ struct
                   eprintf "State %d: ReduceNow: %a@." state (pp_print_iaction hash) action;
                let state, arg, loc, x, stack = semantic_action hash run.run_eval arg action stack state tokens in
                   pda_goto_no_lookahead arg stack (state, loc, x) name
-          | ReduceAccept (action, _, tokens) ->
+          | ReduceAccept (action, name, tokens) ->
                if !debug_parse then
                   eprintf "State %d: ReduceAccept: %a@." state (pp_print_iaction hash) action;
-               let _, arg, _, x, _ = semantic_action hash run.run_eval arg action stack state tokens in
-                  arg, x
+               let state, arg, loc, x, stack = semantic_action hash run.run_eval arg action stack state tokens in
+                  (*
+                   * The lookahead is only eof, but the parse is done only
+                   * when this reduces the start symbol to an empty stack.
+                   * Otherwise (S -> a when S is followed by eof, or the
+                   * start symbol reduced inside itself) continue as ReduceNow.
+                   *)
+                  (match stack with
+                      [] when IVar.compare name start_var = 0 ->
+                         arg, x
+                    | _ ->
+                         pda_goto_no_lookahead arg stack (state, loc, x) name)
           | ReduceNone ->
                let v, loc, arg, x = run.run_lexer arg in
                let v = IVar.create hash.hash_ivar_state v in
@@ -2273,12 +2283,13 @@ struct
            run_eval          = eval
          }
       in
+      let start_var = start in
       let start =
          try IVarTable.find start_states start with
             Not_found ->
                raise (Failure ("not a start symbol: " ^ string_of_ivar hash start))
       in
-         try pda_loop hash run arg start with
+         try pda_loop hash run arg start_var start with
             Not_found ->
                raise (Failure "syntax error")
 
