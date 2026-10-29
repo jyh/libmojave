@@ -15,6 +15,12 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_thread_event_null)
+ (modules test_thread_event_null)
+ (enabled_if (<> %{profile} threads))
+ (libraries libmojave pin))
+
+(test
  (name test_thread)
  (modules test_thread)
  (enabled_if (= %{profile} threads))

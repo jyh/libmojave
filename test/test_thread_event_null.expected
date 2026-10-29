@@ -1,0 +1,7 @@
+Thread.enabled  = false
+sync (always 1)  = 1
+sync (receive c), no sender  = EXN Invalid_argument("Event.sync")
+sync (send c 1), no receiver  = sent
+poll (receive c) after both  = None
+sync (send d 2), no receiver  = EXN Invalid_argument("Event.sync")
+  then poll (receive d)  = Some 2
