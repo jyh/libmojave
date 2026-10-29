@@ -158,6 +158,14 @@
   equals the one that never had the production. `Lm_map`'s `mapi_all`,
   which keeps an emptied binding, is unchanged. Nothing in metaprl calls
   `remove_production`.
+- `Lm_imp_dag.node_rel` cached a relation it found by search as an edge in
+  its first node's own lists (#64). So a query changed what
+  `node_out_edges`, `node_in_edges`, the sweeps and `sort` return, and the
+  cached edge outlived a `delete`: after `node_rel a c` (a < c through b)
+  and `delete b`, `node_rel a c` still answered `LessThan`. The cache now
+  has its own fields, cleared whenever an edge is added or a node deleted.
+  `node_rel`'s answers are unchanged otherwise; metaprl's callers
+  (`mllib/precedence.ml`, `auto_tactic.ml`) use only `node_rel`.
 
 ### Tests
 
@@ -243,9 +251,9 @@
 - `Lm_printf_rbuffer` is pinned (`test/test_printf_rbuffer.ml`, #41): a
   document printed at the default width of 80.
 - `Lm_imp_dag` is pinned (`test/test_imp_dag.ml`, #42): building, roots,
-  sort, the sweeps, `node_rel` and `delete`. `node_rel` caches a derived
-  relation as an edge in its first node's lists, so a query changes what
-  `node_out_edges`, `node_in_edges` and the sweeps return; pinned as it stands.
+  sort, the sweeps, `node_rel` and `delete`. `node_rel` cached a derived
+  relation as an edge in its first node's lists, so a query changed what
+  `node_out_edges`, `node_in_edges` and the sweeps return; fixed in #64.
 - `Lm_symbol_matrix` is pinned (`test/test_symbol_matrix.ml`, #43): the pair
   set and the symmetric and asymmetric pair tables, including `copy`,
   `filter_add`, `filter_remove`, `map` and `fold`. `create 0` makes a table
