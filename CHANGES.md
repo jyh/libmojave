@@ -252,6 +252,15 @@
   `\>`, and `\>\<` never matches). An interval no longer re-enters its
   body once its count reaches the maximum, and `r{0}` never enters it;
   neither path could finish a match.
+- C stubs and the collector (#84). `lm_uname` (run by `Lm_uname` at
+  start-up) and `ml_getrusage` assigned `Field(v, i) = caml_copy_...(...)`,
+  where the field's address may be taken before the allocation moves `v`;
+  they use `Store_field`. `caml_term_size` (run by `Lm_termsize` at
+  start-up, on stdout and stderr) left `caml_alloc_small`'s fields
+  uninitialised across `caml_failwith`, which allocates whenever stdout
+  is not a terminal; it sets them first. And on Unix `ml_getrusage`
+  printed `User: ... System: ...` to stderr on every call; it no longer
+  does.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -434,6 +443,10 @@
   only `^` and `` \` `` the model agreed on every check; the delimiters
   that look at the next character did not, fixed above. Clauses that
   `add_clause` refuses are checked against the model's own rule.
+- Three C stubs are called many times under a small minor heap
+  (`test/test_cstubs.ml`, #84); the hazards above depend on evaluation
+  order and on where a collection falls, so the test guards the results
+  and does not show the hazards.
 - `Lm_lexer` is checked against a brute-force matcher
   (`test/test_lexer_model.ml`, #78): 300 random lexers of up to 4 random
   regular expressions and `\'`, every string of up to 5 characters, one

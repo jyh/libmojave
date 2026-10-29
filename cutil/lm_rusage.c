@@ -112,8 +112,8 @@ value ml_getrusage(value unit_val)
     rval = caml_alloc_tuple(16);
     for(i = 0; i != 16; i++)
         Field(rval, i) = Val_unit;
-    Field(rval, 0) = caml_copy_double(0.0);
-    Field(rval, 1) = caml_copy_double(0.0);
+    Store_field(rval, 0, caml_copy_double(0.0));
+    Store_field(rval, 1, caml_copy_double(0.0));
     Field(rval, 2) = Val_int(0);
     Field(rval, 3) = Val_int(0);
     Field(rval, 4) = Val_int(0);
@@ -164,11 +164,8 @@ value ml_getrusage(value unit_val)
     rval = caml_alloc_tuple(16);
     for(i = 0; i != 16; i++)
         Field(rval, i) = Val_unit;
-    fprintf(stderr, "User: %f System: %f\n",
-            rsrc.ru_utime.tv_sec + rsrc.ru_utime.tv_usec * 1e-6,
-            rsrc.ru_stime.tv_sec + rsrc.ru_stime.tv_usec * 1e-6);
-    Field(rval, 0) = caml_copy_double(rsrc.ru_utime.tv_sec + rsrc.ru_utime.tv_usec * 1e-6);
-    Field(rval, 1) = caml_copy_double(rsrc.ru_stime.tv_sec + rsrc.ru_stime.tv_usec * 1e-6);
+    Store_field(rval, 0, caml_copy_double(rsrc.ru_utime.tv_sec + rsrc.ru_utime.tv_usec * 1e-6));
+    Store_field(rval, 1, caml_copy_double(rsrc.ru_stime.tv_sec + rsrc.ru_stime.tv_usec * 1e-6));
     Field(rval, 2) = Val_int(rsrc.ru_maxrss);
     Field(rval, 3) = Val_int(rsrc.ru_ixrss);
     Field(rval, 4) = Val_int(rsrc.ru_idrss);

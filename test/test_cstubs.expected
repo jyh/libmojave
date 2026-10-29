@@ -1,0 +1,4 @@
+lm_uname 20000 calls = 20000 equal to the first
+getrusage 200 calls = 200 with non-negative times
+term_size on a pipe 20000 calls = 20000 raised Failure
+after Gc.compact  = alive
