@@ -284,6 +284,14 @@
   outside the string; with an empty `s2` it answered true (#90). It is
   now false for a negative offset. Nothing in libmojave or metaprl calls
   it.
+- `Lm_index.filter_remove` (and `filter_remove_i` and the `_entry` forms)
+  removed the key when the filter returned `Some` and kept it unchanged on
+  `None`, discarding `Some`'s value (#96): the opposite of
+  `Lm_map.filter_remove`, and the only reading under which the type
+  `'a -> 'a option` means nothing. It now follows `Lm_map`: `None`
+  removes, `Some d` keeps the key with `d`; `remove` and `remove_entry`
+  are unchanged in effect. The interface now says so. Nothing in
+  libmojave or metaprl calls it.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -576,6 +584,11 @@
   and byte strings, some longer than a block, read back in order. Values
   outside a word's bits lose the bits that do not fit; a tag above 255
   raises `Invalid_argument`.
+
+- `Lm_index` is checked against a model trie (`test/test_index_model.ml`,
+  #96): 1,200 random sequences of every add and remove form, single level
+  and along a path, plain and `_i`, compared after each step by every
+  (path, datum) pair.
 
 ### Behaviour that the tests record and that may be a bug
 
