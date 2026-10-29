@@ -318,9 +318,18 @@ let block events =
       { event_block = block'; _ } :: events ->
          block' (fun () -> block events) lock performed slot
     | [] ->
-         sync_wait lock
+         (* Condition.wait may wake spuriously, so wait until a peer has
+            performed the communication. Null threads cannot wait (wait
+            returns at once), so they keep the single wait and fail. *)
+         sync_wait lock;
+         while Thread.enabled && not !performed do
+            sync_wait lock
+         done
    in
       block events;
+      (* If nothing was performed, the entries this sync queued must not
+         be completed later by a peer: mark them performed. *)
+      performed := true;
       free_lock lock;
       !slot
 
