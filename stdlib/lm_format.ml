@@ -67,6 +67,16 @@ let output_substring out s off len =
 (*
  * Flush the buffer.
  *)
+(*
+ * End every open box, as Format does at a flush or newline: close each
+ * box's margin and zone in turn.
+ *)
+let close_all buf =
+   while zone_depth buf > 0 do
+      format_flush_popm buf;
+      format_ezone buf
+   done
+
 let flush_form form =
    let { form_buffer      = buf;
          form_out_flush   = flush;
@@ -80,7 +90,7 @@ let flush_form form =
    in
       match divert with
          Some divert ->
-            format_flush buf;
+            close_all buf;
             divert buf;
             form.form_buffer <- new_buffer ()
        | None ->
@@ -92,7 +102,7 @@ let flush_form form =
                }
             in
             let printer = make_text_printer raw_printer in
-               format_flush buf;
+               close_all buf;
                print_to_printer buf margin printer;
                flush ();
                form.form_buffer <- new_buffer ()
@@ -117,9 +127,13 @@ let pp_open_hovbox form tab =
 
 let pp_open_box = pp_open_hovbox
 
+(* As Format, a close with no box open is ignored *)
 let pp_close_box form () =
-   format_flush_popm form.form_buffer;
-   format_ezone form.form_buffer
+   if zone_depth form.form_buffer > 0 then
+      begin
+         format_flush_popm form.form_buffer;
+         format_ezone form.form_buffer
+      end
 
 let pp_print_string form s =
    format_string form.form_buffer s
@@ -153,7 +167,7 @@ let pp_print_bool form x =
    format_string form.form_buffer (if x then "true" else "false")
 
 let pp_print_break form nspaces offset =
-   format_sbreak form.form_buffer (String.make nspaces ' ') (String.make offset ' ')
+   format_sbreak form.form_buffer (String.make offset ' ') (String.make nspaces ' ')
 
 let pp_print_cut form () =
    format_sbreak form.form_buffer "" ""

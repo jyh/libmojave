@@ -311,6 +311,18 @@
   class containing `!` (#100), so `glob "[!a]*.ml"` returned `a.ml`, the
   one file it should exclude, and `GlobIgnore`/`GlobAllow` patterns with
   one misbehaved the same way. It is now translated to `[^...]`.
+- `Lm_format` against `Format` (#101): `pp_print_break n o` handed
+  `Lm_rformat` its two strings in the wrong order, so a break not taken
+  printed `o` spaces instead of `n`. A flush or `print_newline` with a
+  vbox, hvbox or hovbox open raised "unbalanced buffer" (it closed one
+  zone and no margins); it now ends every open box, as `Format` does, and
+  `close_box` with no box open is ignored, as in `Format`. In
+  `Lm_rformat`, a break in a zone that cannot break (a linear zone, which
+  is what `Lm_format`'s hbox is) printed a single space whatever its
+  text, so a cut in an hbox printed a space; it now prints the break's
+  not-taken text, as `Lm_rformat` already did when printing a linear
+  zone. metaprl's display forms go through `Lm_rformat`; the existing
+  `Lm_rformat` pins are unchanged.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -636,6 +648,12 @@
   `subdirs_of_dirs`, the glob options, `tilde_collapse` and `gethomedir`
   by pin, with output the same on every platform.
 
+- `Lm_format` is checked against `Stdlib.Format`
+  (`test/test_format_model.ml`, #101): on 2,000 random sequences of boxes,
+  prints, breaks, newlines and extra closes, the same text (white space
+  aside) at margins 1000, 30 and 10, and no exception; exact output where
+  no break is taken; the setters, getters and output functions by pin.
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
@@ -662,6 +680,12 @@
   0) prints as `010`, which `add` reads as `("0", 10)`; `add` never makes
   such a symbol (`test/test_symbol_model.ml`). `Lm_printf` opens a file
   (`open_out`) but has no `close_out`.
+- `Lm_format` lays lines out with `Lm_rformat`'s zones, not `Format`'s
+  boxes: its vbox, hvbox and hovbox are one kind of zone, so where lines
+  break differs from `Format`. Its tab boxes, `print_tab`, `set_tab` and
+  `print_if_newline` do nothing, and `max_boxes`, the ellipsis and
+  `max_indent` are stored but not applied (`test/test_format_model.ml`).
+  `Lm_rformat.format_flush` closes one zone, though its comment says all.
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).
