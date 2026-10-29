@@ -334,7 +334,8 @@ sition *)
          splay 0 [] t2;
          match t2 with
             { tree = Node (0,e,_,r,n2) } ->
-               { tree = Node (n1,e,t1,{ tree = Offset (succ n1,r) },n1+n2) }
+               (* r is indexed from 1; it follows e, which is placed at n1 *)
+               { tree = Node (n1,e,t1,{ tree = Offset (n1,r) },n1+n2) }
           | _ -> raise (Invalid_argument "Linear_set.join")
       end
 
@@ -407,10 +408,11 @@ sition *)
                (* print "collect_aux_iv " t; *)
                splay l [] t;
                match t with
-                  { tree = Node (_,_,l,_,_) } ->
-                     if start=0 then l else { tree = Offset (start,l) }
+                  { tree = Node (_,_,l,_,_) } -> l
                 | _ -> raise (Invalid_argument "Linear_set.collect")
             end in
+            (* t' is indexed from 0; it is placed at start *)
+            let t' = if start = 0 then t' else { tree = Offset (start, t') } in
                t',start+(length t'),(strip tl)
        | _, ArrayArray (t,k,l)::tl when l>=min ->
             (* print "collect_aux " t; *)
@@ -421,10 +423,11 @@ sition *)
                      (* print "collect_aux_ii " r; *)
                      splay (k+l) [] r;
                      match r with
-                        { tree = Node (_,_,l,_,_) } ->
-                           if k=start then l else { tree = Offset (start-k,l) }
+                        { tree = Node (_,_,l,_,_) } -> l
                       | _ -> raise (Invalid_argument "Linear_set.collect")
                   end in
+                  (* r' is indexed from k; it is placed at start *)
+                  let r' = if k = start then r' else { tree = Offset (start - k, r') } in
                      r',start+(length r'),(strip tl)
              | _ -> raise (Invalid_argument "Linear_set.collect")
             end

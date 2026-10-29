@@ -73,6 +73,13 @@
   uses `Lm_index` or the symbol indexes built on it.
 - `Lm_serial_map.remove` of an absent key raised `Not_found`; it now returns
   the map unchanged, as `Lm_map` does (#54). Nothing uses `Lm_serial_map`.
+- `Lm_splay_linear_set`, after #46 (#56): `collect` placed a part taken from
+  another set without shifting its indices (whole parts, and parts that run
+  to the end of their set), and `append_list` with an empty middle list
+  (`join`) shifted the second set one place too far, so `get`, `split` and
+  `fold` on such sets read the wrong element or raised `Invalid_argument
+  "Linear_set.splay - index out of bounds"`. That exception is the one
+  metaprl's proof census raised with `SEQ_SET = Lm_splay`.
 - `Lm_rformat_tex` did not escape `~`, which TeX reads as a non-breaking
   space, so a literal tilde disappeared; it is now written `\char126` (#30).
 - `Lm_format.bprintf` (and so `Lm_rprintf.bprintf`) wrote nothing: it printed
@@ -162,6 +169,9 @@
 - `Lm_trace` is pinned (`test/test_trace.ml`, #38): conversions, the maps,
   folds and iterations with and without depth, `fold_map`, `header_nodes`,
   `special_nodes` and `pp_print`, on one tree of three levels.
+- Both linear sets are checked on composed operations
+  (`test/test_linear_set_compose.ml`, #56): sets built by random histories
+  of every operation, as the refiner builds them.
 - `Lm_array_linear_set` and `Lm_splay_linear_set` are checked against a list
   model (`test/test_linear_set.ml`, #46): every operation, and indexing the
   results of `split`, `concat`, `append_list` and `lazy_sub_map`.

@@ -5,10 +5,10 @@ array get: 0 of 1500 disagree
 array length: 0 of 1500 disagree
 array split, then get both parts: 0 of 1500 disagree
 array to_list: 0 of 1500 disagree
-splay collect, whole parts: 3 of 4 disagree (first: [7;1;2;3])
-splay build raises: 18 of 1500 disagree (first: Invalid_argument("Linear_set.splay - index out of bounds"))
-splay fold: 62 of 1500 disagree (first: append(collect(mapi(append_list(of_list[],of_list[2])),3,0),collect(left(append_list(of_list[73;82;65;11],of_list[39;27;26;36]),4),0,4)))
-splay get: 61 of 1500 disagree (first: append(collect(mapi(append_list(of_list[],of_list[2])),3,0),collect(left(append_list(of_list[73;82;65;11],of_list[39;27;26;36]),4),0,4)))
-splay length: 10 of 1500 disagree (first: left(lazy_sub_map(append_list(right(of_list[37;28;74],0),collect(of_list[78;40;45],0,3)),2,3),2))
-splay split, then get both parts: 61 of 1500 disagree (first: append(collect(mapi(append_list(of_list[],of_list[2])),3,0),collect(left(append_list(of_list[73;82;65;11],of_list[39;27;26;36]),4),0,4)))
-splay to_list: 22 of 1500 disagree (first: left(lazy_sub_map(append_list(right(of_list[37;28;74],0),collect(of_list[78;40;45],0,3)),2,3),2))
+splay collect, whole parts: 0 of 4 disagree
+splay build raises: 0 of 1500 disagree
+splay fold: 0 of 1500 disagree
+splay get: 0 of 1500 disagree
+splay length: 0 of 1500 disagree
+splay split, then get both parts: 0 of 1500 disagree
+splay to_list: 0 of 1500 disagree
