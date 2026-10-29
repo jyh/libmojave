@@ -97,6 +97,8 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_printf.ml` | pin | `Lm_printf` |
 | `test_printf_model.ml` | pin | `Lm_format`, `Lm_rprintf` |
 | `test_printf_rbuffer.ml` | pin | `Lm_printf`, `Lm_printf_rbuffer`, `Lm_rformat` |
+| `test_rawfloat_model.ml` | pin | `Lm_rawfloat`, `Lm_rawint` |
+| `test_rawint_model.ml` | model | `Lm_fmarshal`, `Lm_rawint` |
 | `test_rformat.ml` | pin | `Lm_num`, `Lm_rformat`, `Lm_rformat_text` |
 | `test_rformat_backends.ml` | pin | `Lm_rformat`, `Lm_rformat_html`, `Lm_rformat_tex` |
 | `test_rprintf.ml` | pin | `Lm_ref_util`, `Lm_rformat`, `Lm_rprintf` |
@@ -117,7 +119,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-73 test files: 30 model checks, 43 pins.
+75 test files: 31 model checks, 44 pins.
 <!-- end test table -->
 
 Known gaps:
