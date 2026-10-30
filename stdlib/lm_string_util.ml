@@ -185,6 +185,7 @@ let rindex_set s set =
  *)
 let strpat buffer start len pattern =
    let patlen = String.length pattern in
+   let stop = start + len in
    let rec pattern_matches_prefix bufcur patcur =
       if patcur >= patlen then
          true
@@ -195,7 +196,7 @@ let strpat buffer start len pattern =
    in
    let pattern_matches_prefix start = pattern_matches_prefix start 0 in
    let rec is_match start =
-      if start + patlen > len then
+      if start + patlen > stop then
          raise Not_found
       else if pattern_matches_prefix start then
          start
@@ -947,7 +948,7 @@ let split_mime_string boundary s =
 
    (* Collect the delimited text *)
    let rec split l i =
-      if len_s - i < len_b - 2 then
+      if len_s - i < len_b + 2 then
          l
       else if s.[i] = '-' && s.[i + 1] = '-' && matches (i + 2) 0 then
          let l = Buffer.contents buf :: l in
@@ -968,7 +969,7 @@ let split_mime_string boundary s =
 
    (* Skip to the first delimiter *)
    and skip_start i =
-      if len_s - i < len_b - 2 then
+      if len_s - i < len_b + 2 then
          []
       else if s.[i] = '-' && s.[i + 1] = '-' && matches (i + 2) 0 then
          skip [] (i + 2 + len_b)
@@ -1341,37 +1342,21 @@ let unhexify_int s =
  * whitespace or quotes.  Quote them in a meaningful way before
  * parsing.
  *)
-type mode =
-   ModeNormal
- | ModeDouble
- | ModeSingle
-
-let rec needs_quotes mode s i len =
-   if i >= len then
-      mode <> ModeNormal
-   else
-      match mode, s.[i] with
-         _, '\\' ->
-            needs_quotes mode s (i + 2) len
-       | ModeNormal, ' '
-       | ModeNormal, '\t'
-       | ModeNormal, '\012'
-       | ModeNormal, '\n'
-       | ModeNormal, '\r' ->
-            true
-       | ModeNormal, '"' ->
-            needs_quotes ModeDouble s (succ i) len
-       | ModeNormal, '\'' ->
-            needs_quotes ModeSingle s (succ i) len
-       | ModeSingle, '\''
-       | ModeDouble, '"' ->
-                  needs_quotes ModeNormal s (succ i) len
-       | _ ->
-            needs_quotes mode s (succ i) len
-
+(*
+ * A string needs quotes unless parse_args reads it back as one word
+ * unchanged: it is not empty and has no white space or quote, or it is
+ * already wrapped in double quotes (passed through as quoted).
+ * parse_args treats a single quote as an ordinary character, so a
+ * single-quoted string is not "already quoted".
+ *)
 let needs_quotes s =
    let len = String.length s in
-      len = 0 || needs_quotes ModeNormal s 0 len
+      len = 0
+      || (not (len >= 2 && s.[0] = '"' && s.[len - 1] = '"')
+          && String.exists (fun c ->
+                   match c with
+                      ' ' | '\t' | '\012' | '\n' | '\r' | '"' | '\'' -> true
+                    | _ -> false) s)
 
 let dquote = '"'
 let equote = "\\\""
@@ -1469,7 +1454,7 @@ let string_argv argv =
  *)
 let quote_string s =
    let len = String.length s in
-      if needs_quotes s || (not (s.[0] = '"' && s.[len - 1] = '"' || s.[0] = '\'' && s.[len - 1] = '\'')) then
+      if needs_quotes s || not (s.[0] = '"' && s.[len - 1] = '"') then
          let buf = Buffer.create 32 in
             quotify buf s;
             Buffer.contents buf

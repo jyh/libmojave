@@ -270,36 +270,6 @@ let rec output_symbol_list out vl =
  *)
 exception Has
 
-let string_of_ext_symbol (i, s) =
-   let has_special_char s =
-      try
-         for i = 0 to String.length s - 1 do
-            let c = Char.lowercase_ascii (String.get s i) in
-               if not ((Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z')
-                       || (Char.code c >= Char.code '0' && Char.code c <= Char.code '9')
-                       || c = '_')
-               then
-                  raise Has
-         done;
-         false
-      with
-         Has ->
-            true
-   in
-   let s =
-      if i = 0 then
-         s
-      else
-         sprintf "%s%d" s i
-   in
-      if has_special_char s then
-         sprintf "`\"%s\"" s
-      else
-         s
-
-let pp_print_ext_symbol buf v =
-   pp_print_string buf (string_of_ext_symbol v)
-
 let pp_print_symbol buf v =
    pp_print_string buf (string_of_symbol v)
 
@@ -315,7 +285,7 @@ let rec pp_print_symbol_list buf vl =
 (*
  * Print extended symbols. Used in FIR printing.
  *)
-let string_of_ext_symbol (i, s) =
+let string_of_ext_symbol v =
    let has_special_char s =
       try
          for i = 0 to String.length s - 1 do
@@ -331,16 +301,15 @@ let string_of_ext_symbol (i, s) =
          Has ->
             true
    in
-   let s =
-      if i = 0 then
-         s
-      else
-         sprintf "%s%d" s i
-   in
+   (* string_of_symbol's form, so that different symbols print differently *)
+   let s = string_of_symbol v in
       if has_special_char s then
          sprintf "`\"%s\"" s
       else
          s
+
+let pp_print_ext_symbol buf v =
+   pp_print_string buf (string_of_ext_symbol v)
 
 (*
  * Compare for equality.

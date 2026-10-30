@@ -1,0 +1,5 @@
+enabled  = false
+create  = EXN Invalid_argument("Lm_thread_pool_null.create: threads are not enabled")
+wait  = EXN Invalid_argument("Lm_thread_pool_null.wait: threads are not enabled")
+waitpid 1  = EXN Invalid_argument("Lm_thread_pool_null.waitpid: threads are not enabled")
+blocking_section (fun x -> x + 1) 41; resume_inner_section  = 42 42

@@ -92,7 +92,13 @@ sig
    val add_entry_i : 'a t -> key list -> 'a t * 'a -> 'a t
    val remove_entry : 'a t -> key list -> 'a t
 
-   (* filter addition/removal - single level *)
+   (*
+    * filter addition/removal - single level.
+    * filter_add gets the old datum (None if the key is absent).
+    * filter_remove gets the datum: None removes the key, Some d keeps
+    * it with d (as Lm_map.filter_remove). Removing an absent key raises
+    * Not_found, except in an index that has never held an entry.
+    *)
    val filter_add : 'a t -> key -> ('a option -> 'a) -> 'a t
    val filter_add_i : 'a t -> key -> (('a t * 'a) option -> ('a t * 'a)) -> 'a t
    val filter_remove : 'a t -> key -> ('a -> 'a option) -> 'a t

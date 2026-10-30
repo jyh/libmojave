@@ -89,13 +89,17 @@ let copy_file from_name to_name mode =
          let () =
             try
                copy_file_fd (Bytes.create 8192) from_fd to_fd;
-               Unix.fchmod to_fd mode
+               (* Windows has no fchmod: set the mode by name, after the close *)
+               if not Sys.win32 then
+                  Unix.fchmod to_fd mode
             with
                x ->
                   Unix.close to_fd;
                   raise x
          in
-            Unix.close to_fd
+            Unix.close to_fd;
+            if Sys.win32 then
+               Unix.chmod to_name mode
       with
          x ->
             Unix.close from_fd;

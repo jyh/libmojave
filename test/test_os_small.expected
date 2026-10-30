@@ -1,0 +1,9 @@
+compare nocompare nocompare; = ; Hashtbl.hash  = 0 | EXN Invalid_argument("Lm_nocompare: some code attempted to use a Pervasives comparison operation\n   on a data structure that specifically prohibits this") | hashed
+Marshal nomarshal; Marshal nocompare  = EXN Invalid_argument("Lm_nocompare: some code attempted to marshal a value\n   on a data structure that specifically prohibits this") | marshaled
+it == nocompare  = true
+Lm_id: 5 ids distinct; pid field is getpid; index counts by 1  = true true true
+Lm_fs_case_sensitive: not available, or agrees with a file probe  = true
+mkdirhier osu/a/b/c, then is a directory; again  = true true
+copy_file of a 70,000-byte file: same bytes  = true
+openfile + really_read 10 bytes at offset 5  = true
+really_read past the end of a 3-byte file  = EXN Failure("really_read")

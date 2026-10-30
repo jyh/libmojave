@@ -284,6 +284,73 @@
   outside the string; with an empty `s2` it answered true (#90). It is
   now false for a negative offset. Nothing in libmojave or metaprl calls
   it.
+- `Lm_index.filter_remove` (and `filter_remove_i` and the `_entry` forms)
+  removed the key when the filter returned `Some` and kept it unchanged on
+  `None`, discarding `Some`'s value (#96): the opposite of
+  `Lm_map.filter_remove`, and the only reading under which the type
+  `'a -> 'a option` means nothing. It now follows `Lm_map`: `None`
+  removes, `Some d` keeps the key with `d`; `remove` and `remove_entry`
+  are unchanged in effect. The interface now says so. Nothing in
+  libmojave or metaprl calls it.
+- `Lm_symbol.string_of_ext_symbol` and `Lm_symbol_hash.string_of_ext_symbol`
+  appended a symbol's number without the underscore `string_of_symbol`
+  puts after a name that ends in a digit, so different symbols printed
+  the same: `("x1", 2)` and `("x", 12)` were both `x12` (#97). They now
+  print `string_of_symbol`'s form (`x1_2`), quoted as before when it has
+  other characters. `Lm_symbol` also had two identical definitions of
+  it. Nothing in libmojave or metaprl calls it.
+- `Lm_channel`'s buffer refill (#99) asked the reader for 4,096 bytes
+  whatever the buffer's size, and a string channel's buffer is the string
+  itself, so after `set_io_functions` on a string channel reading raised
+  `Invalid_argument`. On Windows, in text mode, a full read ending in `\r`
+  read one more byte one past the buffer, so a CRLF file whose `\r\n`
+  straddled a 4,096-byte boundary raised. The refill now reads into the
+  buffer it has and, in text mode, leaves room for that byte, as the
+  lexer's refill already did.
+- `Lm_glob`: a negated class `[!...]` was passed to the regex engine as a
+  class containing `!` (#100), so `glob "[!a]*.ml"` returned `a.ml`, the
+  one file it should exclude, and `GlobIgnore`/`GlobAllow` patterns with
+  one misbehaved the same way. It is now translated to `[^...]`.
+- `Lm_format` against `Format` (#101): `pp_print_break n o` handed
+  `Lm_rformat` its two strings in the wrong order, so a break not taken
+  printed `o` spaces instead of `n`. A flush or `print_newline` with a
+  vbox, hvbox or hovbox open raised "unbalanced buffer" (it closed one
+  zone and no margins); it now ends every open box, as `Format` does, and
+  `close_box` with no box open is ignored, as in `Format`. In
+  `Lm_rformat`, a break in a zone that cannot break (a linear zone, which
+  is what `Lm_format`'s hbox is) printed a single space whatever its
+  text, so a cut in an hbox printed a space; it now prints the break's
+  not-taken text, as `Lm_rformat` already did when printing a linear
+  zone. metaprl's display forms go through `Lm_rformat`; the existing
+  `Lm_rformat` pins are unchanged.
+- `Lm_fs_case_sensitive.case_sensitive` on macOS (#102) read the volume's
+  capabilities 4 bytes off — its result header was an `unsigned long`
+  where `getattrlist` writes a 4-byte length — and so answered wrongly:
+  "case-sensitive" for this machine's case-insensitive volume. It also
+  kept a pointer into the OCaml string while the runtime lock was
+  released. The header is now 4 bytes and packed, the path is copied
+  first, and `ATTR_VOL_INFO` is set as `getattrlist` requires. macOS is
+  the only platform where it is available, and CI does not run there:
+  the test's check is local.
+- `Lm_unix_util.copy_file` raised `Unix.fchmod not implemented` on
+  Windows, so it never copied a file there (#102, found by the new test's
+  Windows jobs). It now sets the mode with `Unix.chmod` after closing the
+  file on Windows, and with `Unix.fchmod` elsewhere as before.
+- `Lm_thread_pool` (threads profile, #105): `waitpid id` waited only while
+  the job was running, so on a job still queued (any job just created:
+  the workers cannot take one until the main thread waits) it returned
+  before the job had run. It now waits while the job is queued or running.
+  A worker woke the main thread only when a visible job finished, so
+  `waitpid` on an invisible job (`create false`) that was running never
+  woke; every job's end now wakes it. Nothing in libmojave or metaprl
+  calls it.
+- `Lm_big_int.big_int_of_string` (#106): a decimal string with a leading
+  zero lost the digit after it (`"0123"` was 23, `"-0123"` -23): the test
+  for a `0b`/`0o`/`0x` prefix skipped two characters whatever followed.
+  And `"-0"` made a negative zero, which printed `0` and was zero by
+  `is_zero_big_int` but was not `eq_big_int` to 0 and compared below it.
+  Both fixed. `Lm_num.num_of_string`, which metaprl uses, already
+  normalized `"-0"`.
 - `Lm_rawint` (#91): the signed cast tested whether the 64-bit value was
   negative instead of sign-extending from the precision's top bit, so a
   signed 8-, 16- or 32-bit value out of range stayed out of range: every
@@ -313,6 +380,28 @@
   answered -1 whenever either side was NaN, so it was not an order; NaN
   now equals itself and is below every other value, as in OCaml's
   `compare`.
+- `Lm_marshal_buf.Buf` never terminated on a write (#94): `create` set the
+  block's end to 0 and nothing reset it, so the first `write`,
+  `write_int`, `write_int2` or `write_tag` found no room, started a new
+  64 KB block and retried, forever (one `write_int` reached 34 GB in 5 s).
+  Blocks now end at the block size; `to_static` keeps only the written
+  part of each block; a word that does not fit starts a new block (it
+  could run past the end), and the reader moves to the next block for
+  one; `write_int2` retried as `write_int`, losing its tag. Nothing in
+  libmojave or metaprl calls it (`Lm_marshal_shared.XMarshal`, its client,
+  exports nothing).
+- `Lm_string_util` (#95): `strpat buf start len pat` compared an absolute
+  position with the relative `len`, so a search from `start > 0` stopped
+  `start` characters early. `split_mime_string` tested for `len_b - 2`
+  characters left where a delimiter needs `len_b + 2`, so it read past
+  the end: a body without a final delimiter raised "index out of
+  bounds" (metaprl's HTTP server splits multipart bodies with it); it
+  now returns the parts found. `concat_argv`, `string_argv` and
+  `quote_string` left a string unquoted when its quotes balanced (`a"b
+  c"d`, `'a b'`), but `parse_args` honours only a double quote that opens
+  a word and no single quotes, so the string split in two. They now
+  quote any string with white space or a quote, unless it is wrapped in
+  double quotes, which the interface passes through as already quoted.
 - `Lm_lexer.union` numbered the second lexer's clauses in reverse order
   (#78), so between two of its own clauses that match the same text the
   other one won. With `choose = max`, which metaprl's `filter_grammar`
@@ -541,6 +630,94 @@
   (`test/test_rawfloat_model.ml`, #92): 3,000 cases per operation,
   arithmetic to within one ulp (long double is 80-bit on x86-64 Linux and
   64-bit on Apple Silicon and MSVC), conversions and comparisons exactly.
+- `Lm_splay` is checked against its stated semantics
+  (`test/test_splay.ml`, #93): on 2,000 random search trees, `splay` at an
+  element, between elements, below all and above all keeps the elements
+  and their order, puts the cut between the two sides, and leaves both
+  sides search trees; `splay_max` and `splay_min` return the extreme and
+  the rest. No defect (a mutant of the zig-zag case fails 292 trees).
+  The same file checks `Lm_rformat_raw`'s channel printer against its
+  buffer printer and takes `Lm_thread_util`'s printer lock twice.
+- `Lm_marshal_buf.Buf` is checked by round trip (`test/test_marshal_buf.ml`,
+  #94): 300 random sequences (53,745 values) of ints, int2s, tagged values
+  and byte strings, some longer than a block, read back in order. Values
+  outside a word's bits lose the bits that do not fit; a tag above 255
+  raises `Invalid_argument`.
+
+- `Lm_index` is checked against a model trie (`test/test_index_model.ml`,
+  #96): 1,200 random sequences of every add and remove form, single level
+  and along a path, plain and `_i`, compared after each step by every
+  (path, datum) pair.
+
+- `Lm_symbol` is checked by property (`test/test_symbol_model.ml`, #97):
+  on 3,000 random symbols, `add` inverts `string_of_symbol` (how metaprl
+  prints a variable and reads it back) and `string_of_ext_symbol`;
+  `compare_pair`/`compare_triple` are lexicographic; `new_symbol` and its
+  variants give unused numbers; `new_name_gen`, `reintern` and
+  `is_interned`; and the printers by pin.
+
+- `Lm_arg`'s folding forms are checked against its plain ones
+  (`test/test_arg_fold.ml`, #98): on 2,000 random argv vectors per spec
+  mode, `fold_argv` with the `*Fold` specs logs the same effects,
+  anonymous arguments and exceptions as `parse_argv`. No defect (a mutant
+  that passes `SetFold` false fails 75 and 275 vectors). Also the
+  anonymous function's "rest" answer, and `fold`/`parse` on the
+  program's own argv.
+
+- The rest of `Lm_channel` is checked (`test/test_channel_rest.ml`, #99):
+  `of_substring`, `input_entire_line` and `of_fun` by model (2,000 cases
+  each), and locations under `of_loc_string`, `set_line` and
+  `create_loc_string`, `lex_buffer`, `descr`, `set_io_functions` and a
+  text-mode read across a buffer boundary by pin.
+
+- The rest of `Lm_glob` is checked (`test/test_glob_rest.ml`, #100):
+  `regex_of_shell_pattern` against a brute-force shell matcher (4,000
+  pairs), and `glob_argv`, `list_dirs`, `list_dirs_rec`,
+  `subdirs_of_dirs`, the glob options, `tilde_collapse` and `gethomedir`
+  by pin, with output the same on every platform.
+
+- `Lm_format` is checked against `Stdlib.Format`
+  (`test/test_format_model.ml`, #101): on 2,000 random sequences of boxes,
+  prints, breaks, newlines and extra closes, the same text (white space
+  aside) at margins 1000, 30 and 10, and no exception; exact output where
+  no break is taken; the setters, getters and output functions by pin.
+
+- `Lm_nocompare`, `Lm_id`, `Lm_fs_case_sensitive` and the portable part of
+  `Lm_unix_util` are checked by property (`test/test_os_small.ml`, #102).
+
+- `Lm_printf`'s own wrappers are pinned (`test/test_printf_rest.ml`, #103):
+  `out_channel_of_formatter`, `pp_print_any_list`, `eflush` and the
+  global output functions. The rest of `Lm_printf` is OCaml's `Format`.
+
+- `Lm_symbol_hash` is checked by property (`test/test_symbol_hash_model.ml`,
+  #104): `add` inverts `string_of_symbol`; `compare` is a total order
+  agreeing with `eq`, and `eq` symbols hash alike; `compare_pair`,
+  `compare_triple` and `compare_lists` are lexicographic; fresh symbols,
+  `new_name_gen`, and `reintern` keeps the symbol. No defect (a mutant
+  `reintern` that drops the number fails 2,029 of 3,000).
+
+- `Lm_thread_pool` is tested in both profiles (`test/test_thread_pool.ml`,
+  `test/test_thread_pool_null.ml`, #105).
+
+- The rest of `Lm_num` and `Lm_big_int` is checked by property
+  (`test/test_num_rest.ml`, #106): comparisons, `is_zero`, `integer_num`,
+  `is_integer_num`, `is_integer_big_int`, `neg_big_int`, `of_string`,
+  `quo_big_int`/`rem_big_int`.
+
+- `Lm_graph`'s traversals are checked (`test/test_graph_dfs.ml`, #107): on
+  300 random graphs, `dfs_list` is a preorder from its start, `dfs_iter`
+  and `dfs_fold` follow it, and `iter`/`fold` visit each node of `list`
+  once. No defect (a postorder `dfs_iter` fails 211 graphs).
+
+- `Lm_interval_set`'s `is_singleton`, `dest_singleton`, `is_total`,
+  `max_set`, `is_enum` and `to_enum` join its model test
+  (`test/test_interval_set.ml`, #108). No defect (mutants making each
+  predicate false fail 14 to 3,000 cases).
+
+- `Lm_parser.create_prec_lt` is checked (`test/test_parser_prec.ml`, #109):
+  the same random precedence tables built top-down with it parse the same
+  12,000 inputs as the precedence-climbing model. No defect (a mutant that
+  makes it `create_prec_gt` fails 2,087).
 
 - `Lm_rformat`'s `format_bound`, `format_azone`, `format_hspace`,
   `format_depth`, `format_flush` and `format_flush_popm` are pinned
@@ -554,6 +731,30 @@
   `Lm_float80.blit_float80` asserts that a long double is at least 10
   bytes, which aborts where it is 8 (Apple Silicon, MSVC); nothing calls
   it.
+- The rest of `Lm_string_util` is checked (`test/test_string_rest.ml`,
+  #95): `parse_args` against `concat_argv`, `string_argv` and
+  `quote_string`, the hex-name round trip, `hexify_sub` and `strpat` by
+  model (3,000 cases each), and the escapes, trims, MIME splitting,
+  tokens, `prepend`, `string_of_file` and the checked `make`/`blit`/`get`
+  by pin.
+
+### Behaviour that the tests record and that may be a bug
+
+- The argv quoting in `Lm_string_util` copies a backslash as an escape
+  already written, which `parse_args` then reads as one, so a string
+  with a backslash does not round-trip; and `parse_args "a\\ b"` (an
+  escaped space outside quotes) raises `Invalid_argument`
+  (`test/test_string_rest.ml`).
+- `Lm_symbol.make "010" 0` (an all-digit name with a leading zero, number
+  0) prints as `010`, which `add` reads as `("0", 10)`; `add` never makes
+  such a symbol (`test/test_symbol_model.ml`). `Lm_printf` opens a file
+  (`open_out`) but has no `close_out`.
+- `Lm_format` lays lines out with `Lm_rformat`'s zones, not `Format`'s
+  boxes: its vbox, hvbox and hovbox are one kind of zone, so where lines
+  break differs from `Format`. Its tab boxes, `print_tab`, `set_tab` and
+  `print_if_newline` do nothing, and `max_boxes`, the ellipsis and
+  `max_indent` are stored but not applied (`test/test_format_model.ml`).
+  `Lm_rformat.format_flush` closes one zone, though its comment says all.
 - `Lm_lexer`: a group under `?` (`x\(a\)?\(b\)`) is accepted by
   `add_clause` and fails at the first `lex` with "mismatched argument
   counts": `?` is an alternation with the empty string (#82).

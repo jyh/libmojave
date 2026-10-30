@@ -1,0 +1,5 @@
+adds only (add, add_i, add_list(_i), add_entry(_i), filter_add*): sequences that diverge 400 sequences, 7957 steps = 0
+adds and remove, remove_entry: sequences that diverge 400 sequences, 9281 steps = 0
+every operation: sequences that diverge 400 sequences, 12000 steps = 0
+filter_remove a (even 2: Some 21), b (odd 3: None), on [a=2; b=3]  = [a=21; b=3] [a=2]
+remove q (absent) from [a=2; b=3]; from empty  = EXN Not_found []

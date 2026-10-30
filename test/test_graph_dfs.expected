@@ -1,0 +1,4 @@
+dfs_list from the start, each node adjacent to an earlier one: graphs that differ 300 graphs = 0
+dfs_iter in dfs_list order: graphs that differ 300 graphs = 0
+dfs_fold in dfs_list order: graphs that differ 300 graphs = 0
+iter and fold: each node of list once: graphs that differ 300 graphs = 0

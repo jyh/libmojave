@@ -1,0 +1,10 @@
+compare_num against the decimal strings; lt/le/ge/gt/is_zero against compare_num: cases that differ 3000 cases = 0
+integer_num, int_of_num, is_integer_num: the int when |n| < 2^30, else raise: cases that differ 3000 cases = 0
+Lm_big_int: is_integer_big_int iff integer_big_int succeeds; neg; of_string: cases that differ 3000 cases = 0
+Lm_big_int: quo_big_int, rem_big_int are div_big_int, mod_big_int: cases that differ 1000 cases = 0
+Lm_big_int: big_int_of_string, then eq 0, compare 0, is_zero, string "-0" = true 0 true "0"
+Lm_big_int: big_int_of_string, then eq 0, compare 0, is_zero, string "-000" = true 0 true "0"
+Lm_big_int: big_int_of_string, then eq 0, compare 0, is_zero, string "0" = true 0 true "0"
+Lm_num: num_of_string, then eq_num 0, compare_num 0, is_zero "-0" = true 0 true
+Lm_num: num_of_string, then eq_num 0, compare_num 0, is_zero "-000000000000000000000000000000" = true 0 true
+Lm_big_int: big_int_of_string of 0123, 0789, -0123, 007, 0x1f, 0b101, 0o17  = 123 789 -123 7 31 5 15

@@ -49,10 +49,15 @@
 #include <memory.h>
 #include <errno.h>
 
+/*
+ * getattrlist writes a 4-byte length, then the attributes, packed:
+ * the length is not an unsigned long (8 bytes on 64-bit macOS, which put
+ * caps 4 bytes off and read the wrong capability words).
+ */
 typedef struct vol_caps_buf {
-    unsigned long size;
+    u_int32_t size;
     vol_capabilities_attr_t caps;
-} vol_caps_buf_t;
+} __attribute__((aligned(4), packed)) vol_caps_buf_t;
 
 value lm_fs_case_sensitive_available(value _unit) {
     return Val_true;
@@ -66,41 +71,37 @@ value lm_fs_case_sensitive_available(value _unit) {
 value lm_fs_case_sensitive(value path_val) {
     CAMLparam1(path_val);
     struct statfs stat;
-    char *path = String_val(path_val);
-    
-    do {
-        caml_enter_blocking_section();
-        if (statfs(path, &stat))
-            break;
-        
-        struct attrlist alist;
+    struct attrlist alist;
+    vol_caps_buf_t buffer;
+    int err = 0;
+    /* Copy the path: the OCaml string may move while the lock is released */
+    char *path = caml_stat_strdup(String_val(path_val));
+
+    caml_enter_blocking_section();
+    if (statfs(path, &stat) != 0)
+        err = errno;
+    else {
         memset(&alist, 0, sizeof(alist));
         alist.bitmapcount = ATTR_BIT_MAP_COUNT;
-        alist.volattr = ATTR_VOL_CAPABILITIES;
-        vol_caps_buf_t buffer;
-        
-        if (getattrlist(stat.f_mntonname, &alist, &buffer, sizeof(buffer), 0))
-            break;
-        
-        caml_leave_blocking_section();
-        if (!(alist.volattr & ATTR_VOL_CAPABILITIES))
-            caml_failwith("Couldn't get volume capabilities");
-        
-        if (!(buffer.caps.valid[VOL_CAPABILITIES_FORMAT] 
-                    & VOL_CAP_FMT_CASE_SENSITIVE))
-            caml_failwith("VOL_CAP_FMT_CASE_SENSITIVE not valid on this volume");
-        
-        if (buffer.caps.capabilities[VOL_CAPABILITIES_FORMAT] 
-                    & VOL_CAP_FMT_CASE_SENSITIVE) {
-            CAMLreturn(Val_true);
-        } else {
-            CAMLreturn(Val_false);
-        }
-        
-    } while (0);
+        alist.volattr = ATTR_VOL_INFO | ATTR_VOL_CAPABILITIES;
+        if (getattrlist(stat.f_mntonname, &alist, &buffer, sizeof(buffer), 0) != 0)
+            err = errno;
+    }
     caml_leave_blocking_section();
-    caml_failwith(strerror(errno));
-    CAMLreturn(Val_false);  /* For the compiler's sake */
+    caml_stat_free(path);
+    if (err)
+        caml_failwith(strerror(err));
+
+    if (!(buffer.caps.valid[VOL_CAPABILITIES_FORMAT] 
+                & VOL_CAP_FMT_CASE_SENSITIVE))
+        caml_failwith("VOL_CAP_FMT_CASE_SENSITIVE not valid on this volume");
+
+    if (buffer.caps.capabilities[VOL_CAPABILITIES_FORMAT] 
+                & VOL_CAP_FMT_CASE_SENSITIVE) {
+        CAMLreturn(Val_true);
+    } else {
+        CAMLreturn(Val_false);
+    }
 }
 
 #else /* not DETECT_FS_CASE_SENSITIVE_GETATTRLIST */
