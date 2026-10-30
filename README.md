@@ -17,6 +17,14 @@ interest as a snapshot of large-scale OCaml systems practice from the 2000s.
 Since October 2026 libmojave builds again, on OCaml 4.14 and 5.4. CI covers
 Linux (both versions) and Windows (MinGW and MSVC, OCaml 5.4).
 
+Releases are in opam:
+
+```sh
+opam install libmojave
+```
+
+To build from a checkout:
+
 ```sh
 dune build                     # the library: _build/default/lib/lm.cma, lm.cmxa
 dune build --profile threads   # the same, with system threads (as MetaPRL uses)
