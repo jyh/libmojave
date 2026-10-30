@@ -464,6 +464,10 @@ let string_of_big_int (sign, mag) =
 (*
  * Produce it from a string.
  *)
+(* Zero has one sign: "-0" must equal 0 *)
+let normalize_zero_sign ((_, mag) as i) =
+   if zeros mag then (true, mag) else i
+
 let big_int_of_string =
    let inv () = raise (Invalid_argument "Lm_big_int.big_int_of_string") in
    let rec collect mult char_code s len i mag =
@@ -500,17 +504,17 @@ let big_int_of_string =
       if len = 0 then inv ();
       let sign = not (s.[0] = '-') in
       if not sign && len = 1 then inv ();
-      sign, begin
+      normalize_zero_sign (sign, begin
          let i = if sign then 0 else 1 in
          if s.[i] = '0' && len >= (i+3) then
             match s.[i+1] with
               'b' | 'B' -> collect mult2_mag char_code2 s len (i+2) []
             | 'o' | 'O' -> collect mult8_mag char_code8 s len (i+2) []
             | 'x' | 'X' -> collect mult16_mag char_code16 s len (i+2) []
-            | _         -> collect mult10_mag char_code10 s len (i+2) []
+            | _         -> collect mult10_mag char_code10 s len i []  (* decimal: keep every digit *)
          else
             collect mult10_mag char_code10 s len i []
-      end
+      end)
 
 (*
  * Additional names.

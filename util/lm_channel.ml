@@ -751,7 +751,11 @@ let fillbuf info =
    let binary = info.channel_binary in
    let buf = info.in_buffer in
    let reader = info.read_fun in
-   let count = reader buf 0 buf_size in
+   (* Read into the buffer we have (a string channel's is the string), and
+    * in text mode leave room for the extra char read after a \r, as
+    * lex_fill does. *)
+   let len = Bytes.length buf in
+   let count = reader buf 0 (if binary then len else max 0 (len - 1)) in
    let count =
       if count = 0 then
          raise End_of_file;

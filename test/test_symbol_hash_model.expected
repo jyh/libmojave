@@ -1,0 +1,6 @@
+add (string_of_symbol v) is eq v: cases that differ 3000 cases = 0
+compare: 0 iff eq; antisymmetric; transitive; eq values hash alike: cases that differ 3000 cases = 0
+compare_pair, compare_triple, compare_lists: lexicographic: cases that differ 3000 cases = 0
+new_symbol, new_symbol_string, new_symbol_pre: fresh number, same name: cases that differ 3000 cases = 0
+new_name_gen: the first make v i that f accepts: cases that differ 1000 cases = 0
+reintern v is eq v; is_interned = number 0: cases that differ 3000 cases = 0

@@ -44,11 +44,13 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | test | kind | modules |
 |---|---|---|
 | `test_arg.ml` | pin | `Lm_arg` |
+| `test_arg_fold.ml` | pin | `Lm_arg` |
 | `test_array_util.ml` | pin | `Lm_array_util` |
 | `test_attribute.ml` | pin | `Lm_attribute` |
 | `test_big_int.ml` | model | `Lm_big_int`, `Lm_num` |
 | `test_bitmatrix.ml` | model | `Lm_bitmatrix` |
 | `test_channel.ml` | pin | `Lm_channel` |
+| `test_channel_rest.ml` | pin | `Lm_channel`, `Lm_location` |
 | `test_config.ml` | pin | `Lm_config` |
 | `test_cstubs.ml` | pin | `Lm_rusage` |
 | `test_ctype.ml` | model | `Lm_ctype` |
@@ -62,8 +64,11 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_filename_util.ml` | pin | `Lm_filename_util` |
 | `test_flags.ml` | pin | `Lm_flags` |
 | `test_fmarshal.ml` | pin | `Lm_fmarshal`, `Lm_rawfloat`, `Lm_rawint` |
+| `test_format_model.ml` | pin | `Lm_format` |
 | `test_glob.ml` | pin | `Lm_glob` |
+| `test_glob_rest.ml` | pin | `Lm_glob`, `Lm_lexer` |
 | `test_graph.ml` | model | `Lm_graph` |
+| `test_graph_dfs.ml` | model | `Lm_graph` |
 | `test_hash.ml` | pin | `Lm_hash` |
 | `test_hash_cons.ml` | model | `Lm_hash` |
 | `test_hashtbl_util.ml` | model | `Lm_hashtbl_util` |
@@ -90,6 +95,8 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_min_sets.ml` | model | `Lm_hash_set`, `Lm_set`, `Lm_set_sig`, `Lm_small_set`, `Lm_splay_set` |
 | `test_num.ml` | pin | `Lm_num` |
 | `test_num_model.ml` | model | `Lm_num` |
+| `test_num_rest.ml` | pin | `Lm_big_int`, `Lm_num` |
+| `test_os_small.ml` | pin | `Lm_fs_case_sensitive`, `Lm_id`, `Lm_nocompare`, `Lm_unix_util` |
 | `test_parse_id.ml` | pin | `Lm_parse_id` |
 | `test_parser.ml` | pin | `Lm_location`, `Lm_parser`, `Lm_printf`, `Lm_symbol` |
 | `test_parser_model.ml` | model | `Lm_location`, `Lm_parser`, `Lm_printf` |
@@ -99,6 +106,7 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_printf.ml` | pin | `Lm_printf` |
 | `test_printf_model.ml` | pin | `Lm_format`, `Lm_rprintf` |
 | `test_printf_rbuffer.ml` | pin | `Lm_printf`, `Lm_printf_rbuffer`, `Lm_rformat` |
+| `test_printf_rest.ml` | pin | `Lm_printf` |
 | `test_rawfloat_model.ml` | pin | `Lm_rawfloat`, `Lm_rawint` |
 | `test_rawint_model.ml` | model | `Lm_fmarshal`, `Lm_rawint` |
 | `test_rformat.ml` | pin | `Lm_num`, `Lm_rformat`, `Lm_rformat_text` |
@@ -115,16 +123,19 @@ for Windows. Behaviour a test records that may be a bug is listed in
 | `test_string_util.ml` | pin | `Lm_string_util` |
 | `test_symbol.ml` | pin | `Lm_symbol` |
 | `test_symbol_hash.ml` | model | `Lm_int_util`, `Lm_symbol`, `Lm_symbol_hash` |
+| `test_symbol_hash_model.ml` | pin | `Lm_symbol_hash` |
 | `test_symbol_matrix.ml` | pin | `Lm_symbol`, `Lm_symbol_matrix` |
 | `test_symbol_model.ml` | pin | `Lm_printf`, `Lm_symbol`, `Lm_symbol_hash` |
 | `test_table_compose.ml` | model | `Lm_printf`, `Lm_splay_table` |
 | `test_thread.ml` | pin | `Lm_thread` |
 | `test_thread_event.ml` | pin | `Lm_printf`, `Lm_thread`, `Lm_thread_event` |
 | `test_thread_event_null.ml` | pin | `Lm_thread`, `Lm_thread_event` |
+| `test_thread_pool.ml` | pin | `Lm_thread_pool` |
+| `test_thread_pool_null.ml` | pin | `Lm_thread_pool` |
 | `test_thread_shell.ml` | pin | `Lm_thread_shell` |
 | `test_trace.ml` | pin | `Lm_printf`, `Lm_trace` |
 
-80 test files: 32 model checks, 48 pins.
+91 test files: 33 model checks, 58 pins.
 <!-- end test table -->
 
 Known gaps:

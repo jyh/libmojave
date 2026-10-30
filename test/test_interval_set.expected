@@ -1,6 +1,9 @@
 countable add_point: 0 of 3000 disagree
 countable equal: 0 of 3000 disagree
 countable is_empty: 0 of 3000 disagree
+countable is_enum lo, to_enum (countable): 0 of 3000 disagree
+countable is_singleton, dest_singleton: 0 of 3000 disagree
+countable is_total, max_set: 0 of 3000 disagree
 countable isect: 0 of 3000 disagree
 countable negate: 0 of 3000 disagree
 countable of_interval raises: 347 of 3000 disagree (first: of_interval (20 inf: Invalid_argument("Lm_interval_set.left_bound"))
@@ -13,6 +16,8 @@ countable union: 0 of 3000 disagree
 dense add_point: 0 of 3000 disagree
 dense equal: 0 of 3000 disagree
 dense is_empty: 0 of 3000 disagree
+dense is_singleton, dest_singleton: 0 of 3000 disagree
+dense is_total, max_set: 0 of 3000 disagree
 dense isect: 0 of 3000 disagree
 dense negate: 0 of 3000 disagree
 dense of_interval raises: 0 of 3000 disagree
@@ -25,6 +30,9 @@ dense union: 0 of 3000 disagree
 countable (non-empty intervals) add_point: 0 of 3000 disagree
 countable (non-empty intervals) equal: 0 of 3000 disagree
 countable (non-empty intervals) is_empty: 0 of 3000 disagree
+countable (non-empty intervals) is_enum lo, to_enum (countable): 0 of 3000 disagree
+countable (non-empty intervals) is_singleton, dest_singleton: 0 of 3000 disagree
+countable (non-empty intervals) is_total, max_set: 0 of 3000 disagree
 countable (non-empty intervals) isect: 0 of 3000 disagree
 countable (non-empty intervals) negate: 0 of 3000 disagree
 countable (non-empty intervals) of_interval raises: 0 of 3000 disagree
@@ -37,6 +45,8 @@ countable (non-empty intervals) union: 0 of 3000 disagree
 dense (non-empty intervals) add_point: 0 of 3000 disagree
 dense (non-empty intervals) equal: 0 of 3000 disagree
 dense (non-empty intervals) is_empty: 0 of 3000 disagree
+dense (non-empty intervals) is_singleton, dest_singleton: 0 of 3000 disagree
+dense (non-empty intervals) is_total, max_set: 0 of 3000 disagree
 dense (non-empty intervals) isect: 0 of 3000 disagree
 dense (non-empty intervals) negate: 0 of 3000 disagree
 dense (non-empty intervals) of_interval raises: 0 of 3000 disagree

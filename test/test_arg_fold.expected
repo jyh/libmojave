@@ -1,0 +1,5 @@
+fold_argv (Fold specs) against parse_argv: vectors that differ, strict 2000 vectors = 0
+fold_argv (Fold specs) against parse_argv: vectors that differ, multi 2000 vectors = 0
+fold_argv: anonymous "stop" asks for the rest ["-u"; "a"; "stop"; "-u"; "b"] = ["u"; "anon=a"; "anon=stop"; "anon=-u"; "anon=b"]
+fold on Sys.argv (no arguments)  = 7
+parse on Sys.argv (no arguments)  = 0
