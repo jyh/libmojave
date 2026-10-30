@@ -719,6 +719,10 @@
   12,000 inputs as the precedence-climbing model. No defect (a mutant that
   makes it `create_prec_gt` fails 2,087).
 
+- `Lm_rformat`'s `format_bound`, `format_azone`, `format_hspace`,
+  `format_depth`, `format_flush` and `format_flush_popm` are pinned
+  (`test/test_rformat_rest.ml`, #110).
+
 ### Behaviour that the tests record and that may be a bug
 
 - `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded

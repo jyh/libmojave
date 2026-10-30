@@ -1,0 +1,5 @@
+bound 10: a 12-character string  = "123456789012"
+bound 10: the next insertion  = EXN Lm_rformat.RFormatOverflow
+width 10: aaaa bbbbbbbb c, plain then bbbbbbbb in an atomic zone  = "aaaa\nbbbbbbbb\nc" / "aaaa bbbbbbbb c"
+hzone with hspace  = "x\ny"
+format_depth: empty; after szone, pushm, hzone; after format_flush; after format_flush_popm  = 1 4 3 2
