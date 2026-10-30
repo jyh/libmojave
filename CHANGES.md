@@ -728,14 +728,6 @@
   `format_depth`, `format_flush` and `format_flush_popm` are pinned
   (`test/test_rformat_rest.ml`, #110).
 
-### Behaviour that the tests record and that may be a bug
-
-- `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
-  to single precision, and arithmetic on it is done in long double
-  (`test/test_rawfloat_model.ml`). `rem` raises `Failure "Not supported"`.
-  `Lm_float80.blit_float80` asserts that a long double is at least 10
-  bytes, which aborts where it is 8 (Apple Silicon, MSVC); nothing calls
-  it.
 - The rest of `Lm_string_util` is checked (`test/test_string_rest.ml`,
   #95): `parse_args` against `concat_argv`, `string_argv` and
   `quote_string`, the hex-name round trip, `hexify_sub` and `strpat` by
@@ -745,6 +737,12 @@
 
 ### Behaviour that the tests record and that may be a bug
 
+- `Lm_rawfloat`'s precision is a tag only: a `Single` value is not rounded
+  to single precision, and arithmetic on it is done in long double
+  (`test/test_rawfloat_model.ml`). `rem` raises `Failure "Not supported"`.
+  `Lm_float80.blit_float80` asserts that a long double is at least 10
+  bytes, which aborts where it is 8 (Apple Silicon, MSVC); nothing calls
+  it.
 - The argv quoting in `Lm_string_util` copies a backslash as an escape
   already written, which `parse_args` then reads as one, so a string
   with a backslash does not round-trip; and `parse_args "a\\ b"` (an
