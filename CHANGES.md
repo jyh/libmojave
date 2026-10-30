@@ -655,6 +655,11 @@
   `compare_pair`/`compare_triple` are lexicographic; `new_symbol` and its
   variants give unused numbers; `new_name_gen`, `reintern` and
   `is_interned`; and the printers by pin.
+- `Lm_symbol` and `Lm_symbol_hash` document `add`, `is_interned` and
+  `reintern` in their interfaces (#111). The two `reintern`s differ:
+  `Lm_symbol.reintern` is `add (to_string v)` and drops the number,
+  `Lm_symbol_hash.reintern` returns the table's copy after unmarshaling
+  and keeps it. Nothing calls either.
 
 - `Lm_arg`'s folding forms are checked against its plain ones
   (`test/test_arg_fold.ml`, #98): on 2,000 random argv vectors per spec

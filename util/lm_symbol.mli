@@ -54,6 +54,12 @@ val empty_var : symbol
 
 (*
  * Add a symbol to the table.
+ * [add s] splits a trailing number off [s]: [add "x5"] is ("x", 5).
+ * [is_interned v] is true when [v]'s number is 0.
+ * [reintern v] is the interned symbol of [v]'s name, [add (to_string v)]:
+ * it drops the number. (Lm_symbol_hash.reintern, with the same type,
+ * instead returns the table's copy of [v] after unmarshaling, number
+ * kept.)
  *)
 val add : string -> symbol
 val make : string -> int -> symbol
