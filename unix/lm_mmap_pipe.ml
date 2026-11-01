@@ -314,10 +314,13 @@ let open_client mmap =
       } ->
          (* We're free, so accept this client *)
          let sock, _ = Unix.accept server in
-            Bytes.set char_buf 0 (Char.chr 1);
-            try_write sock char_buf;
+            (* Clear both halves BEFORE the accept byte: the client writes as
+               soon as it reads that byte, and clearing after it could erase
+               the client's first message. *)
             set_int buf (0 + full_offset) 0;
             set_int buf (length + full_offset) 0;
+            Bytes.set char_buf 0 (Char.chr 1);
+            try_write sock char_buf;
             mmap.mmap_socket <- Some sock;
             true
 
