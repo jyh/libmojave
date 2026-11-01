@@ -33,6 +33,12 @@
   clears the flags first. Found by `test/test_mmap_pipe.ml` failing on CI;
   a delay placed between the two steps makes the old order fail every time
   and the new one pass.
+- `Lm_ssl.shutdown` without SSL (every dune build) did nothing, while with
+  SSL it closes the sending side after `SSL_shutdown`. A peer waiting for
+  end of file after `shutdown` (metaprl's `http_simple`, `proxyedit`) waited
+  until `close`. It now closes the sending side too
+  (`test/test_ssl_plain.ml`, which drives the plain-socket path metaprl's
+  browser server runs: listen, connect, accept, text both ways).
 
 ## 1.1.0 (2026-10-30)
 

@@ -863,6 +863,12 @@ value lm_ssl_flush(value v_info)
  */
 value lm_ssl_shutdown(value v_info)
 {
+    SslInfo *info;
+
+    /* As the SSL branch does after SSL_shutdown: close the sending side, so the peer reads end of file */
+    info = SslInfo_val(v_info);
+    if(info->fd >= 0)
+        shutdown(info->fd, SHUT_WR);
     return Val_unit;
 }
 
