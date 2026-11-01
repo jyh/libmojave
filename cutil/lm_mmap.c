@@ -318,7 +318,8 @@ value ml_string_of_mmap(value mmap_val)
 
     mmap = (Mmap *) mmap_val;
     data = (value) ((header_t *) mmap->data + 1);
-    words = (mmap->size >> 2) - 1;
+    /* The block is the whole mapping less its header word (a word is sizeof(value) bytes, 8 on a 64-bit system) */
+    words = (int) (mmap->size / sizeof(value)) - 1;
 #if OCAML_VERSION_MAJOR >= 5
     /* The block lives outside the OCaml heap: OCaml 5 requires such a
        header to carry the NOT_MARKABLE color so the GC never marks it. */
