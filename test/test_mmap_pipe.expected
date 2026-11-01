@@ -1,4 +1,3 @@
 server open_client = true
-server block = true
-server read = code 7, name "name", data "hello from the client\000\000\000"
+server block, then read, until a message = code 7, name "name", data "hello from the client\000\000\000"
 client write, then exit = exit 0
