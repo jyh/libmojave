@@ -1,0 +1,9 @@
+enabled  = false
+getsockname address, port > 0 = 127.0.0.1, true
+input_line 1 = "hello 42 world"
+input_line 2 = "second line"
+input_char  = 'x'
+input_line 3 = "yz"
+really_input 5 = "23456"
+input_line reply = "reply"
+after shutdown, input_line  = EXN End_of_file
