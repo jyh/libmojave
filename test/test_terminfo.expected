@@ -1,0 +1,4 @@
+capability names bold, attributes off = "bold", "sgr0"
+TERM dumb = as expected
+TERM xterm = as expected
+TERM vt100 = as expected
