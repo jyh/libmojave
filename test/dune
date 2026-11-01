@@ -120,3 +120,9 @@
  (modules test_thread_pool)
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin threads.posix))
+
+(test
+ (name test_getlk)
+ (modules test_getlk)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))

@@ -483,7 +483,25 @@ value lm_getlk(value v_fd, value v_op)
 
 	fd = Int_val(v_fd);
 	op = Int_val(v_op);
-	info.l_type = op;
+
+	/*
+	 * v_op is a Unix.lock_command (F_ULOCK, F_LOCK, F_TLOCK, F_TEST,
+	 * F_RLOCK, F_TRLOCK = 0..5), not an fcntl lock type: ask whether a
+	 * read lock (F_RLOCK, F_TRLOCK) or a write lock (the others) would
+	 * be blocked. Unlocking is never blocked, so F_ULOCK is refused.
+	 */
+	switch(op) {
+	case 0:
+		caml_invalid_argument("Lm_unix_util.getlk: F_ULOCK");
+		break;
+	case 4:
+	case 5:
+		info.l_type = F_RDLCK;
+		break;
+	default:
+		info.l_type = F_WRLCK;
+		break;
+	}
 	info.l_whence = SEEK_SET;
 	info.l_start = 0;
 	info.l_len = 0;
