@@ -75,6 +75,11 @@ val int_of_fd : Unix.file_descr -> int
  * Lock utilities.
  *)
 val lockf : Unix.file_descr -> Unix.lock_command -> int -> unit
+
+(* getlk fd cmd: Some pid of a process holding a lock on the file that
+   would block cmd — a read request for F_RLOCK and F_TRLOCK, a write
+   request for F_LOCK, F_TLOCK and F_TEST — or None if nothing would.
+   The whole file is asked about. Raises Invalid_argument for F_ULOCK. *)
 val getlk : Unix.file_descr -> Unix.lock_command -> int option
 
 (*

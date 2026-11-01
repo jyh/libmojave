@@ -15,6 +15,13 @@
   returns it without. metaprl's shell is written for the second: its
   `\` line continuation tests the line's last character, so it never fired.
   `readline` now returns the line without its newline on both paths.
+- `Lm_unix_util.getlk` passed its `Unix.lock_command` straight to `fcntl` as
+  the lock type, though the two are numbered differently (and fcntl's
+  numbers differ between platforms). On macOS `F_ULOCK`, `F_RLOCK` and
+  `F_TRLOCK` failed with EINVAL and `F_LOCK` asked about a read lock. It now
+  asks about a read lock for `F_RLOCK`/`F_TRLOCK`, a write lock otherwise,
+  and refuses `F_ULOCK` (`test/test_getlk.ml`). Nothing in libmojave,
+  metaprl or omake calls it.
 
 ## 1.1.0 (2026-10-30)
 
