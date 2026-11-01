@@ -11,7 +11,15 @@
    it). Integer conversions are compared where the C types hold the value:
    to_int below 2^30, to_int64 and to_rawint below 2^62. Not called:
    Lm_float80's blit functions (blit_float80 asserts that a long double is
-   at least 10 bytes, which aborts where it is 8). *)
+   at least 10 bytes, which aborts where it is 8).
+   Where long double is IBM double-double (ppc64: more than 80 bits of
+   mantissa, detected below), arithmetic within a factor of 4 of max_float
+   can overflow inside the double-double algorithm (max_float /. 1.5 gives
+   nan there, reported on opam-repository's ppc64 CI for libmojave 1.1.0).
+   On that platform only, a binary case with a finite operand or result of
+   magnitude >= 2^1021 is not counted as differing. Elsewhere every case is
+   checked, so the output is the same on every platform. The measured
+   mantissa and the number of cases not counted are printed on stderr. *)
 open Pin
 module F = Lm_rawfloat
 
@@ -54,6 +62,19 @@ let check name case =
   done;
   line (name ^ ": cases that differ") (string_of_int !tried ^ " cases")
     (Printf.sprintf "%d%s" !bad (if !bad = 0 then "" else " (first: " ^ !first ^ ")"))
+
+(* The long double's mantissa, measured: the largest k (up to 200) for which
+   1 + 2^-(k-1) differs from 1 is the number of bits (64 on x86's 80-bit
+   format, 53 where long double is double). Double-double keeps 1 + 2^-k for
+   every k tried, so more than 80 bits means double-double. *)
+let mantissa_bits =
+  let one = Lm_float80.of_float 1. in
+  let survives k = Lm_float80.to_float (Lm_float80.sub (Lm_float80.add one (Lm_float80.of_float (ldexp 1. (-k)))) one) <> 0. in
+  let rec go k = if k > 200 || not (survives k) then k else go (k + 1) in
+  go 1
+let double_double = mantissa_bits > 80
+let near_overflow v = Float.is_finite v && Float.abs v >= ldexp 1. 1021
+let skipped = ref 0
 
 let f x = Printf.sprintf "%h" x
 let gotf r = guard (fun () -> f (F.to_float r))
@@ -122,7 +143,10 @@ let () =
         let p = prec () in
         let r = (try op (F.of_float p x) (F.of_float p y) with _ -> F.of_float F.Double nan) in
         let want = m x y in
-        Some (near (F.to_float r) want,
+        let ok = near (F.to_float r) want in
+        let excused = (not ok) && double_double && (near_overflow x || near_overflow y || near_overflow want) in
+        if excused then incr skipped;
+        Some (excused || ok,
               fun () -> Printf.sprintf "%s, %s: got %s, want %s" (f x) (f y) (gotf r) (f want))) in
   binary "add" F.add ( +. );
   binary "sub" F.sub ( -. );
@@ -152,3 +176,9 @@ let () =
       let r = F.of_float F.Single 0.1 in
       Printf.sprintf "%s, single would be %s" (gotf r) (f (Int32.float_of_bits (Int32.bits_of_float 0.1)))));
   line "of_rawfloat Single of a Double 1/3" "" (guard (fun () -> gotf (F.of_rawfloat F.Single (d (1. /. 3.)))))
+
+(* On stderr, which the expected file does not compare, so the output stays
+   the same on every platform. *)
+let () =
+  Printf.eprintf "long double: %s mantissa bits (measured); near-overflow cases not counted: %d\n%!"
+    (if mantissa_bits > 200 then "more than 200" else string_of_int mantissa_bits) !skipped
