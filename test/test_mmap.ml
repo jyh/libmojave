@@ -3,7 +3,9 @@
    Recorded: the length to_bytes reports, a byte written through it read back
    after close and reopen, and the file's size after close. Until 2026-11 the
    header counted 4-byte words, so on a 64-bit system the block claimed twice
-   the mapping and Bytes.length read past its end. *)
+   the mapping and Bytes.length read past its end. Not run on Windows, where
+   this test crashes (an access violation) in Lm_mmap's Windows branch: a
+   declared hole, not investigated (no Windows build here). *)
 open Pin
 
 let name = "test_mmap.tmp"
