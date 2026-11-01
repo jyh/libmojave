@@ -127,12 +127,9 @@
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
 
-; Not on Windows: there the test crashes (0xc0000005) in Lm_mmap's Windows
-; branch (CreateFile/MapViewOfFile), which is not yet investigated.
 (test
  (name test_mmap)
  (modules test_mmap)
- (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
 
 (test
