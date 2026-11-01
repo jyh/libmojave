@@ -1,9 +1,9 @@
-readline 1 = length 0, letters [], newline true
-readline 2 = length 10, letters [b], newline true
-readline 3 = length 1021, letters [c], newline true
-readline 4 = length 1022, letters [d], newline true
-readline 5 = length 1023, letters [e], newline true
-readline 6 = length 1024, letters [f], newline true
-readline 7 = length 3000, letters [g], newline true
+readline 1 = length 0, letters [], newline false
+readline 2 = length 10, letters [b], newline false
+readline 3 = length 1021, letters [c], newline false
+readline 4 = length 1022, letters [d], newline false
+readline 5 = length 1023, letters [e], newline false
+readline 6 = length 1024, letters [f], newline false
+readline 7 = length 3000, letters [g], newline false
 readline 8 = length 4, letters [ailt], newline false
 readline 9 = End_of_file

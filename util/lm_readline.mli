@@ -59,5 +59,7 @@ val history_truncate_file : string -> int -> unit
    Displays a readline prompt, and accepts a line of input from the user.
    Tab completion will be enabled as approprate.  Be sure to call the
    initialize_readline () function before calling this function.  This
-   will raise End_of_file if the user strikes ^D.  *)
+   will raise End_of_file if the user strikes ^D.
+   The line is returned without its newline, with or without GNU
+   readline, and whatever its length.  *)
 val readline : string -> string
