@@ -1,5 +1,17 @@
 # Changes
 
+## Unreleased
+
+### Fixed
+
+- `Lm_readline.readline` without GNU readline (every dune build: `READLINE`
+  is never defined) read stdin with a fixed 1,023-byte `fgets`, so a line
+  of 1,022 characters or more came back in pieces, the rest as further
+  lines. metaprl's `mp` shell reads its input this way, and a command over
+  that length failed to parse. It now reads the whole line, however long
+  (`test/test_readline_long.ml`). Shorter lines, a last line with no
+  newline, and end of file are unchanged.
+
 ## 1.1.0 (2026-10-30)
 
 ### Fixed

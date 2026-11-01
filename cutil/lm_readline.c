@@ -23,7 +23,7 @@
 
 
 /*
- * Max line length without readline.
+ * Initial line buffer without readline (it grows for a longer line).
  */
 #define MAX_LINE_LENGTH         1024
 
@@ -308,26 +308,42 @@ value caml_readline(value prompt_arg) {
 
 #else /* No READLINE */
 
-   char *bufp;
+   char *bufp, *newp;
+   size_t cap = MAX_LINE_LENGTH, len = 0;
 
-   bufp = malloc(MAX_LINE_LENGTH);
+   bufp = malloc(cap);
    if(bufp == NULL) {
       /* Pretend that we have reached EOF */
       CAMLreturn(Val_int(0));
    }
 
-   /* Get the line (make sure string is terminated) */
-   bufp[MAX_LINE_LENGTH - 1] = '\0';
    fputs(String_val(prompt_arg), stdout);
    fflush(stdout);
-   line = fgets(bufp, MAX_LINE_LENGTH - 1, stdin);
+
+   /*
+    * Read the whole line, however long: fgets stops at a newline, at EOF,
+    * or when the buffer is full; only in the last case is there more to read.
+    */
+   while(fgets(bufp + len, (int) (cap - len), stdin) != NULL) {
+      len += strlen(bufp + len);
+      if(len > 0 && bufp[len - 1] == '\n')
+         break;
+      if(len + 1 == cap) {
+         newp = realloc(bufp, 2 * cap);
+         if(newp == NULL)
+            break;
+         bufp = newp;
+         cap *= 2;
+      }
+   }
 
    /* Readline returns null on EOF */
-   if(line == NULL) {
+   if(len == 0) {
       /* None */
       free(bufp);
       CAMLreturn(Val_int(0));
    }
+   line = bufp;
 
 #endif /* READLINE enabled? */
 
