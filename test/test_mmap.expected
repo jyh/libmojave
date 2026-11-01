@@ -1,0 +1,4 @@
+to_bytes length = 8388599
+to_bytes length = mapping - one word - 1 = true
+file size after close = 8388608
+reopen bytes at 0 and 1000 = 'A' 'B'
