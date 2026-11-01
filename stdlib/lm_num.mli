@@ -68,6 +68,14 @@ val is_zero : num -> bool
 
 (*
  * Conversion.
+ *
+ * is_integer_num n is true when n fits Lm_num's Int range, |n| < 2^30
+ * (31-bit ints, as on a 32-bit OCaml), NOT whether n fits an OCaml int:
+ * on 64-bit, 2^30 is a native int and is_integer_num says false for it.
+ * integer_num and int_of_num raise outside that range. To read a num as a
+ * native int, use int_of_string_opt (string_of_num n).
+ * (test/test_num_rest.ml pins the range; metaprl's Filter_summary.dest_id
+ * read a 64-bit hash this way and refused ids >= 2^30.)
  *)
 val is_integer_num : num -> bool
 val integer_num : num -> int
