@@ -134,3 +134,9 @@
  (modules test_mmap)
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
+
+(test
+ (name test_mmap_pipe)
+ (modules test_mmap_pipe)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
