@@ -115,9 +115,15 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
      * Create a map, but do not allocate storage.
      */
     if(perm & GENERIC_WRITE) {
-        prot = PAGE_READWRITE | SEC_RESERVE;
+        /*
+         * The whole MAX_SIZE region, committed (CreateFileMapping extends the
+         * file to it), as on Unix. It was SEC_RESERVE with mapped = 0, so
+         * to_bytes built a header of -1 words and the first Bytes.length
+         * faulted.
+         */
+        prot = PAGE_READWRITE;
         size = MAX_SIZE;
-        mapped = 0;
+        mapped = size;
     }
     else {
         prot = PAGE_READONLY;
@@ -154,7 +160,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
         CloseHandle(fd);
         caml_failwith("mmap_open");
     }
-    memset(infop, 0, sizeof(infop));
+    memset(infop, 0, sizeof(*infop));
     infop->fd = fd;
     infop->map = map;
     infop->size = mapped;
@@ -211,8 +217,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
 static void mmap_close(Mmap *mmap)
 {
 #ifdef _WIN32
-    if(mmap->size)
-        VirtualFree(mmap->data, mmap->size, 0);
+    /* A mapped view is released by UnmapViewOfFile, never by VirtualFree */
     UnmapViewOfFile(mmap->data);
     CloseHandle(mmap->map);
     CloseHandle(mmap->fd);
