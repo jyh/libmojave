@@ -22,6 +22,17 @@
   asks about a read lock for `F_RLOCK`/`F_TRLOCK`, a write lock otherwise,
   and refuses `F_ULOCK` (`test/test_getlk.ml`). Nothing in libmojave,
   metaprl or omake calls it.
+- `Lm_mmap.to_bytes` wrote the block header's size in 4-byte words, so on a
+  64-bit system the bytes it returned claimed twice the 8 MiB mapping and
+  `Bytes.length` read past its end (a segfault). It now counts words of
+  `sizeof(value)` bytes: the length is the mapping less one word and one byte
+  (`test/test_mmap.ml`, which also reads back bytes written through it).
+- `Lm_mmap_pipe.open_client` sent the client its accept byte and only then
+  cleared the shared buffer's flags, so a client that wrote at once could
+  have its first message erased (the server then read nothing). It now
+  clears the flags first. Found by `test/test_mmap_pipe.ml` failing on CI;
+  a delay placed between the two steps makes the old order fail every time
+  and the new one pass.
 
 ## 1.1.0 (2026-10-30)
 
