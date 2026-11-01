@@ -33,6 +33,12 @@
   clears the flags first. Found by `test/test_mmap_pipe.ml` failing on CI;
   a delay placed between the two steps makes the old order fail every time
   and the new one pass.
+- `Lm_mmap` on Windows reserved its write mapping (`SEC_RESERVE`) but recorded
+  its size as 0, so `to_bytes` built a header of -1 words and the first
+  `Bytes.length` faulted; and it released the mapped view with
+  `VirtualFree`, which is never valid for one. It now maps the whole region
+  committed, as on Unix, and releases the view with `UnmapViewOfFile` (#125;
+  `test/test_mmap.ml` runs on Windows again).
 - `Lm_ssl.shutdown` without SSL (every dune build) did nothing, while with
   SSL it closes the sending side after `SSL_shutdown`. A peer waiting for
   end of file after `shutdown` (metaprl's `http_simple`, `proxyedit`) waited
