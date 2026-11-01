@@ -343,6 +343,10 @@ value caml_readline(value prompt_arg) {
       free(bufp);
       CAMLreturn(Val_int(0));
    }
+
+   /* Like readline(3), return the line without its newline */
+   if(bufp[len - 1] == '\n')
+      bufp[len - 1] = '\0';
    line = bufp;
 
 #endif /* READLINE enabled? */

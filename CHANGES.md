@@ -11,6 +11,10 @@
   that length failed to parse. It now reads the whole line, however long
   (`test/test_readline_long.ml`). Shorter lines, a last line with no
   newline, and end of file are unchanged.
+- On the same path the line came back WITH its newline, while GNU readline
+  returns it without. metaprl's shell is written for the second: its
+  `\` line continuation tests the line's last character, so it never fired.
+  `readline` now returns the line without its newline on both paths.
 
 ## 1.1.0 (2026-10-30)
 
