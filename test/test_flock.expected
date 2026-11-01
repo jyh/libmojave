@@ -1,0 +1,7 @@
+flock LOCK_EX held, another process asks LOCK_TEX = refused
+flock LOCK_EX held, another process asks LOCK_TSH = refused
+flock after LOCK_UN, another process asks LOCK_TEX = granted
+flock LOCK_SH held, another process asks LOCK_TSH = granted
+flock LOCK_SH held, another process asks LOCK_TEX = refused
+int_of_fd the descriptor's number = true
+getpwents non-empty, and includes the current uid = true
