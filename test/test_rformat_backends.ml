@@ -34,5 +34,18 @@ let () =
           line "tex" tag (guard (fun () -> str (X.print_tex_string w (build f)))))
         [ 80; 10 ])
     docs;
+  (* format_string with newlines inside it (its String.index branch) must
+     print as the same text with explicit format_newline calls. *)
+  let embedded b = F.format_string b "ab\ncd\n\nef" in
+  let explicit b =
+    F.format_string b "ab"; F.format_newline b; F.format_string b "cd";
+    F.format_newline b; F.format_newline b; F.format_string b "ef" in
+  List.iter (fun w ->
+      let h f = H.print_html_string w None (build f) and t f = X.print_tex_string w (build f) in
+      line "html" ("embedded newlines w=" ^ string_of_int w) (guard (fun () -> str (h embedded)));
+      line "html" ("embedded = explicit newlines w=" ^ string_of_int w) (guard (fun () -> string_of_bool (h embedded = h explicit)));
+      line "tex" ("embedded newlines w=" ^ string_of_int w) (guard (fun () -> str (t embedded)));
+      line "tex" ("embedded = explicit newlines w=" ^ string_of_int w) (guard (fun () -> string_of_bool (t embedded = t explicit))))
+    [ 80; 10 ];
   List.iter (fun s -> line "escape" (str s) (guard (fun () -> str (H.escape s))))
     [ ""; "plain"; "<a href=\"x\">"; "a & b"; "it's"; "caf\xc3\xa9" ]

@@ -201,8 +201,10 @@ let default_writer fd buf off len =
 let null_reader _ _ _ =
    0
 
+(* An input-only string channel: refuse a write as a read-only descriptor
+ * would (returning 0 made flush_aux loop forever). *)
 let null_writer _ _ _ =
-   0
+   raise (Unix.Unix_error (Unix.EBADF, "Lm_channel.write", "string input channel"))
 
 (*
  * Empty buffer.
@@ -690,7 +692,11 @@ let rec output_char info c =
    let max = info.out_max in
    let buffer = info.out_buffer in
       flush_input info;
-      if max = Bytes.length buffer then
+      if Bytes.length buffer = 0 then
+         (* No output buffer (an input-only string channel): hand the byte
+          * to the writer, which refuses it; flushing frees no room. *)
+         ignore (info.write_fun (Bytes.make 1 c) 0 1)
+      else if max = Bytes.length buffer then
          begin
             flush_output info;
             output_char info c
@@ -713,7 +719,10 @@ let rec output_buffer info buf off len =
    let avail = Bytes.length buffer - max in
       flush_input info;
       if len <> 0 then
-         if avail = 0 then
+         if Bytes.length buffer = 0 then
+            (* No output buffer: see output_char. *)
+            ignore (info.write_fun (Bytes.of_string (String.sub buf off len)) 0 len)
+         else if avail = 0 then
             begin
                flush_output info;
                output_buffer info buf off len

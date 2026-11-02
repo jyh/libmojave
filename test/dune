@@ -130,9 +130,21 @@
  (action (diff test_config.native.expected test_config.native.output)))
 
 (test
+ (name test_set_invariants)
+ (modules test_set_invariants)
+ (libraries libmojave pin))
+
+(test
  (name test_index_iter)
  (modules test_index_iter)
  (libraries libmojave pin))
+
+; Lm_glob's ~user and tilde_collapse; reads only our own account (getpwuid).
+(test
+ (name test_glob_tilde)
+ (modules test_glob_tilde)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
 
 ; Lm_ctype's primitives follow the C library's locale tables. Under MSVC's
 ; C runtime, after setlocale(LC_CTYPE, ""), isprint('\t') is true; MinGW,
@@ -154,6 +166,11 @@
  (alias runtest)
  (enabled_if (= %{ocaml-config:ccomp_type} msvc))
  (action (diff test_ctype.msvc.expected test_ctype.output)))
+
+(test
+ (name test_string_debug)
+ (modules test_string_debug)
+ (libraries libmojave pin unix))
 
 (test
  (name test_thread_pool_null)
@@ -256,14 +273,71 @@
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin unix threads.posix))
 
+; Lm_channel's lexer fill in text mode (Windows only): per-platform expected
+; file, the Windows one a prediction until the Windows lanes measured it.
+(executable
+ (name test_channel_lex_text)
+ (modules test_channel_lex_text)
+ (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_channel_lex_text.output (run ./test_channel_lex_text.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_lex_text.expected test_channel_lex_text.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_lex_text.win32.expected test_channel_lex_text.output)))
+
+(test
+ (name test_thread_state_get)
+ (modules test_thread_state_get)
+ (libraries libmojave pin unix))
+
 (test
  (name test_tokens_model)
  (modules test_tokens_model)
  (libraries libmojave pin))
 
+; Lm_channel's text-mode write past one buffer (Windows only): per-platform
+; expected file, the Windows one a prediction until the Windows lanes measured it.
+(executable
+ (name test_channel_text_write)
+ (modules test_channel_text_write)
+ (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_channel_text_write.output (run ./test_channel_text_write.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_text_write.expected test_channel_text_write.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_text_write.win32.expected test_channel_text_write.output)))
+
+(test
+ (name test_channel_of_string)
+ (modules test_channel_of_string)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
 (test
  (name test_glob_options)
  (modules test_glob_options)
+ (libraries libmojave pin unix))
+
+(test
+ (name test_glob_mix)
+ (modules test_glob_mix)
+ (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
 
 (test
