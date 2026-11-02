@@ -115,6 +115,13 @@
  (modules test_index_iter)
  (libraries libmojave pin))
 
+; Lm_glob's ~user and tilde_collapse; reads only our own account (getpwuid).
+(test
+ (name test_glob_tilde)
+ (modules test_glob_tilde)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
 ; Lm_ctype's primitives follow the C library's locale tables. Under MSVC's
 ; C runtime, after setlocale(LC_CTYPE, ""), isprint('\t') is true; MinGW,
 ; Linux and macOS say false. So MSVC compares against its own file.
