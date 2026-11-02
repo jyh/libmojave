@@ -53,6 +53,12 @@
   wrapped at 40 there. 0 columns now means unknown (pinned by
   `test/test_term_pty.ml`).
 
+- `Lm_channel.select` with a negative timeout returned at once with
+  nothing ready when every channel was a socket — always the case on Unix,
+  where every descriptor is selected as one — although its pipe branch
+  reads a negative timeout as "no limit". It now waits, as `Unix.select`
+  does (`test/test_channel_select.ml`). omake's `select` builtin passes its
+  timeout straight through.
 - `Lm_channel.write` into a string channel (`create_string`) wrote nothing
   and returned 0, where `output_string` and the other output functions
   append, so a caller writing until all bytes are taken looped forever.

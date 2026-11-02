@@ -8,4 +8,4 @@ select [] [b] [] 0, "zz" buffered in b  = [] [b] []
   select [a] [] [] 0 (did select flush b?)  = [a] [] []
   read a  = zz
 select [a] [] [] 0.3, nothing sent  = [] [] [], waited >= 0.25 s: true
-select [a] [] [] (-1), b writes after 0.3 s  = [] [] [], returned within 0.1 s: true
+select [a] [] [] (-1), b writes after 0.3 s  = [a] [] [], returned within 0.1 s: false
