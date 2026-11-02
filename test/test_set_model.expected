@@ -1,0 +1,8 @@
+LmMake add_list / subtract_list / add / remove: elements 4627 steps = 0 disagree
+Make add / remove: elements 4627 steps = 0 disagree
+range_fold 4627 steps = 0 disagree
+for_all 4627 steps = 0 disagree
+exists 4627 steps = 0 disagree
+Make mem 4627 steps = 0 disagree
+Make fold (element first) 4627 steps = 0 disagree
+Make partition = the elements that satisfy 4627 steps = 0 disagree
