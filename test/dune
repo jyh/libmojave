@@ -169,3 +169,8 @@
  (name test_channel_model)
  (modules test_channel_model)
  (libraries libmojave unix))
+
+(test
+ (name test_tokens_model)
+ (modules test_tokens_model)
+ (libraries libmojave pin))
