@@ -63,6 +63,11 @@
   (122 of 600 random pairs of tables answered false where they share a
   key). The walk now returns to that parent. Nothing in libmojave or
   metaprl calls it (`test/test_splay_table_model.ml`).
+- `Lm_string_util.sub` and `blit` with the `string` debug flag on refused
+  legal calls that end at the end of a buffer (`i + len < length` where
+  Stdlib allows `<=`), raising `Failure` where `String.sub` and
+  `Bytes.blit` succeed: 10 of 144 small `sub` calls and 100 of 3456 `blit`
+  calls. Without the flag nothing changes (`test/test_string_debug.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
@@ -77,6 +82,14 @@
   specified"; the inverted lookup now keeps the lookup's own reason and
   adds that it was extracted from the inverted name
   (`test/test_arg_invert.ml`).
+- `Lm_glob.tilde_collapse` checked that a known home directory was a prefix
+  of the path but not that a separator followed it, so with home `/u/jo-c`
+  the path `/u/jo-cx/y` became `~x/y`, which names another user's home. It
+  also tried only one table entry (the largest not above the path in
+  string order), so `/u/jo/x` stayed uncollapsed once `/u/jo-c` was in the
+  table. It now takes the longest entry that is a prefix of the path and is
+  followed by a separator or ends it (`test/test_glob_tilde.ml`, which reads
+  only the running user's own account). omake's `tilde-collapse` calls it.
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -94,6 +107,13 @@
   and returned 0, where `output_string` and the other output functions
   append, so a caller writing until all bytes are taken looped forever.
   omake's `$(write ...)` builtin reaches it (through omake's own copy).
+- Writing to an `Lm_channel.of_string` channel never returned:
+  `output_string`, `output_char` and the other output functions spun
+  forever, because such a channel has no output buffer and flushing frees no
+  room; `write` returned 0, so a caller writing until all bytes are taken
+  looped too. All of them now raise `Unix_error (EBADF, ...)`, as a
+  read-only descriptor does; reading is unchanged. omake's `open-in-string`
+  returns such a channel (`test/test_channel_of_string.ml`).
 - `Lm_channel.seek` on a channel without a descriptor (a string channel)
   discarded the input not yet read before raising `EINVAL`, so the reads
   after a failed seek ended early. It now raises first and leaves the
@@ -119,6 +139,12 @@
   and no workers, the first time it enters `blocking_section` or
   `resume_inner_section` (`test/test_channel_fork.ml`). The default profile
   (null threads) was not affected. Nothing in libmojave or metaprl forks.
+- `Lm_parser` `build parser true` printed nothing: it raised `debug_parse`
+  for the build, a flag that traces parsing only, so its "debug mode" had no
+  effect since it was written (2004). It now raises `debug_parsegen`, the
+  generator's own output, for the build and restores it after. omake's
+  parser builtin passes its debug option to `build`
+  (`test/test_parser_assoc.ml`).
 - `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`

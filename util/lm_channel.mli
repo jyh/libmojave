@@ -123,7 +123,15 @@ val output_string : t -> string -> unit
  *)
 val write         : t -> bytes -> int -> int -> int
 
-(* Select *)
+(*
+ * Select. A negative timeout waits with no limit. On Windows a pipe is
+ * polled every 50 ms, and a pipe writer that still holds buffered output
+ * is flushed by an output thread; in a build without threads (the
+ * default profile) that thread cannot start, so select on such a writer
+ * raises Invalid_argument "Lm_thread_pool_null.create: threads are not
+ * enabled". Flush the channel before selecting on it there. Measured on
+ * the Windows CI lanes by test_channel_pipe.
+ *)
 val select        : t list -> t list -> t list -> float -> t list * t list * t list
 
 (* Lex-mode operations *)
