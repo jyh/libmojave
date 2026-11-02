@@ -371,8 +371,10 @@ let block mmap =
       eprintf "Lm_mmap_pipe.block: 0x%08x%t" (Obj.magic mmap.mmap_data) eflush;
    match mmap.mmap_socket with
       Some sock ->
-         let count = Unix.read sock char_buf 0 1 in
-            count = 1
+         (* A peer that closed with our wake-up bytes unread resets the
+            connection on Linux (macOS reads end of file): closed either way. *)
+         (try Unix.read sock char_buf 0 1 = 1 with
+             Unix.Unix_error (Unix.ECONNRESET, _, _) -> false)
     | None ->
          raise (Invalid_argument "block")
 

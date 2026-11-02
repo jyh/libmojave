@@ -13,7 +13,10 @@
   returns `false`, as it does when busy. A peer that hangs up only after
   the accept is still taken (declared). The only caller is metaprl's
   ensemble outboard server, which is not built
-  (`test/test_mmap_pipe_server.ml`).
+  (`test/test_mmap_pipe_server.ml`). And `block` raised `ECONNRESET` on
+  Linux when the server closed the connection with wake-up bytes from the
+  client unread (macOS reads end of file there); it now returns `false`
+  for both.
 - `Lm_lexer` bracket expressions: a `[` that opens no class just before the
   closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
   sequence is not terminated"), and a `-` just before the closing `]` began

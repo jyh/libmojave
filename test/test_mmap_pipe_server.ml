@@ -5,8 +5,9 @@
    live one. Each scenario has its own directory. Children leave with
    Unix._exit: a forked child of a server runs the server's at_exit
    otherwise, which unlinks the SERVER's socket and buffer (stated, not
-   changed). Every child sets an alarm, so a hang reads as "signal". Not on
-   Windows (no fork). *)
+   changed). Every child sets an alarm, so a hang reads as "signal"; an
+   exception in a child exits 97 (a reset connection), 96 (another Unix
+   error) or 99. Not on Windows (no fork). *)
 open Pin
 
 let mkdir d = try Unix.mkdir d 0o755 with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
@@ -20,7 +21,13 @@ let status pid =
 
 let child f =
   match Unix.fork () with
-  | 0 -> ignore (Unix.alarm 5); (try f () with _ -> Unix._exit 99); Unix._exit 98
+  | 0 ->
+      ignore (Unix.alarm 5);
+      (try f () with
+       | Unix.Unix_error (Unix.ECONNRESET, _, _) -> Unix._exit 97
+       | Unix.Unix_error _ -> Unix._exit 96
+       | _ -> Unix._exit 99);
+      Unix._exit 98
   | pid -> pid
 
 let writer s = fun buf off len ->
