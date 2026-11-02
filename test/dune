@@ -164,3 +164,8 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_rusage.win32.expected test_rusage.output)))
+
+(test
+ (name test_channel_model)
+ (modules test_channel_model)
+ (libraries libmojave unix))

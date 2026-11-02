@@ -732,9 +732,19 @@ let output_string info buf =
  * This is always in binary mode.
  *)
 let write info buf off len =
-   flush_input info;
-   flush_output info;
-   info.write_fun buf off len
+   if info.out_expand then
+      (* a string channel: its writer is null_writer, so append as the
+       * output_* functions do *)
+      begin
+         output_buffer info (Bytes.sub_string buf off len) 0 len;
+         len
+      end
+   else
+      begin
+         flush_input info;
+         flush_output info;
+         info.write_fun buf off len
+      end
 
 (*
  * Check if there is input already in the buffer.
@@ -893,9 +903,12 @@ let tell info =
          pos + info.in_index
 
 let seek info pos whence =
-   flush_output info;
-   flush_input info;
-   Unix.lseek (descr info) pos whence
+   (* the descriptor first: a channel without one (a string channel)
+    * raises here, before its buffered input is discarded *)
+   let fd = descr info in
+      flush_output info;
+      flush_input info;
+      Unix.lseek fd pos whence
 
 (*
  * Get the current location.

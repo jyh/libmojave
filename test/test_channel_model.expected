@@ -1,0 +1,15 @@
+create_string: to_string = what was written       300 of  300
+of_string: input_buffer                           512 of  512
+of_string: input_byte                             537 of  537
+of_string: input_char                             532 of  532
+of_string: input_entire_line                      505 of  505
+of_string: input_line                             497 of  497
+of_string: read                                   503 of  503
+of_string: seek and tell raise EINVAL             514 of  514
+of_substring: input_buffer                        515 of  515
+of_substring: input_byte                          528 of  528
+of_substring: input_char                          506 of  506
+of_substring: input_entire_line                   520 of  520
+of_substring: input_line                          508 of  508
+of_substring: read                                522 of  522
+of_substring: seek and tell raise EINVAL          501 of  501

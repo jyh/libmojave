@@ -21,6 +21,14 @@
   wrapped at 40 there. 0 columns now means unknown (pinned by
   `test/test_term_pty.ml`).
 
+- `Lm_channel.write` into a string channel (`create_string`) wrote nothing
+  and returned 0, where `output_string` and the other output functions
+  append, so a caller writing until all bytes are taken looped forever.
+  omake's `$(write ...)` builtin reaches it (through omake's own copy).
+- `Lm_channel.seek` on a channel without a descriptor (a string channel)
+  discarded the input not yet read before raising `EINVAL`, so the reads
+  after a failed seek ended early. It now raises first and leaves the
+  channel as it was.
 - `Lm_filename_util.unescape_string` kept a single-quoted string open: after
   the first character inside `'…'` it scanned as if in double quotes, so the
   closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
@@ -34,6 +42,12 @@
 
 ### Tests
 
+- `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
+  `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
+  `input_buffer` through `of_string` and `of_substring`, step by step, and
+  the output functions through `create_string` (lm_channel.ml was at 42 %
+  of its points under the tests). Recorded: `seek` and `tell` raise
+  `EINVAL` on a string channel.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
