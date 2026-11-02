@@ -4,6 +4,19 @@
 
 ### Fixed
 
+- `Lm_mmap_pipe`: a second server started in the same directory as a live
+  one with no client checks that the live one is alive by connecting and
+  hanging up; the live server's next `open_client` then took that closed
+  connection as its client, so it turned real clients away (busy) until
+  its caller read end of file on that socket and called `close_client`.
+  `open_client` now closes a connection whose peer has already hung up and
+  returns `false`, as it does when busy. A peer that hangs up only after
+  the accept is still taken (declared). The only caller is metaprl's
+  ensemble outboard server, which is not built
+  (`test/test_mmap_pipe_server.ml`). And `block` raised `ECONNRESET` on
+  Linux when the server closed the connection with wake-up bytes from the
+  client unread (macOS reads end of file there); it now returns `false`
+  for both.
 - `Lm_lexer` bracket expressions: a `[` that opens no class just before the
   closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
   sequence is not terminated"), and a `-` just before the closing `]` began
@@ -31,6 +44,12 @@
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_splay_table`'s `intersectp` (in the method record `create` returns)
+  missed common keys: its in-order walk stepped past the parent of every
+  node without a right subtree, so keys held there were never compared
+  (122 of 600 random pairs of tables answered false where they share a
+  key). The walk now returns to that parent. Nothing in libmojave or
+  metaprl calls it (`test/test_splay_table_model.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
@@ -40,6 +59,11 @@
   directories as files. Both now use the root, as the rest of the module
   does. With the root `.` nothing changes; no caller in libmojave or
   metaprl passes another (`test/test_glob_options.ml`).
+- `Lm_arg`: an ambiguous inverted option (`--no-o` with `-on` and `-off`)
+  reported "No such option" where the plain one reports "Ambiguous option
+  specified"; the inverted lookup now keeps the lookup's own reason and
+  adds that it was extracted from the inverted name
+  (`test/test_arg_invert.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -148,6 +172,7 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_arg`'s inverted options and usage text (`test/test_arg_invert.ml`).
 - `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
   backend's string, `Buffer.t` and channel printers give the same bytes, and
   `make_text_printer` the same text. `make_html_printer` and
@@ -156,11 +181,19 @@
   returned printer has no way to flush it, so the last line is lost (all
   of a one-line document). Nothing calls those two; the test pins this as
   it is.
+- `Lm_index`'s iterators against `fold_all` (`test/test_index_iter.ml`):
+  `iter_all`, `map_all`, `mapi_all`, `fold_map_all`, and one level `iter`,
+  `fold`, `map`, `mapi`, `fold_map`, on 400 random tries (2,867 pairs). No
+  disagreement.
 - `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
   and a buffer formatter retargeted with `pp_set_formatter_out_channel`
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 - `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
   on names without a drive letter.
+- `Lm_splay_table`'s method record against a model
+  (`test/test_splay_table_model.ml`): elements, `find_all`, `cardinal`,
+  `mem_filt`, `not_mem_filt`, `intersectp`, union, `of_list` and
+  `deletemax` on tables built by random histories.
 - `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
   a child under `script(1)` sets the pseudo-terminal's size with `stty`;
   `term_size` reads it back, `term_width` and `stdout_width` are its columns
@@ -168,6 +201,11 @@
   a 0 x 0 terminal `term_width` keeps the width it was given (see Fixed);
   curses falls back to a size of its own. On a pipe `term_size`
   fails and `term_width` keeps its argument. Not run on Windows.
+- `Lm_set` against `Stdlib.Set` on random histories
+  (`test/test_set_model.ml`): `add_list`, `subtract_list`, `range_fold`,
+  `for_all`, `exists`, and `Make`'s `mem`, `add`, `remove`, `fold` and
+  `partition` (which `S` declares to return the satisfying half). No
+  disagreement; five mutants each turn their own line red.
 - `Lm_map` against `Stdlib.Map` (`test/test_map_model.ml`): `of_list`,
   `elements`, `equal`, `find_key`, `forall`, `exists`, `find_iter`,
   `isect_mem`, `add_list`, `union`, `forall2`, `fold_map`, `filter_add`,
