@@ -1,0 +1,9 @@
+elements (and add, replace, remove, make, union) 600 steps = 0 disagree
+find_all 600 steps = 0 disagree
+cardinal 600 steps = 0 disagree
+mem_filt 600 steps = 0 disagree
+not_mem_filt 600 steps = 0 disagree
+intersectp 600 steps = 122 disagree (first: replace 18 [16;17], remove 19, remove 2, add 1 31 | replace 18 [17;18], add 9 43, union make 2 [32], add 17 61, add 4 50)
+union of two tables 600 steps = 0 disagree
+of_list (elements a) = a 600 steps = 0 disagree
+deletemax 535 steps = 0 disagree
