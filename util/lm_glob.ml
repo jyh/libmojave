@@ -626,7 +626,7 @@ let glob_braces options names =
 let glob_dir_pattern options root dirs names dir pattern =
    let options =
       if options.glob_cvs then
-         { options with glob_cvsignore = load_cvsignore dir }
+         { options with glob_cvsignore = load_cvsignore (filename_concat root dir) }
       else
          options
    in
@@ -877,7 +877,7 @@ let list_dir_exn options root hidden_dirs dirs names dirname =
           | Some name ->
                let hidden_dirs, dirs, names =
                   let filename = filename_concat dirname name in
-                  let dir_flag = is_dir filename in
+                  let dir_flag = is_dir (filename_concat root filename) in
                      if (options.glob_dot || name.[0] <> '.')
                         && (dir_flag || not options.glob_dirs)
                         && not (options.glob_ignore name)

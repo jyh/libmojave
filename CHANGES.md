@@ -14,6 +14,15 @@
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_glob` with a root other than the current directory: `glob` with
+  `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
+  instead of `<root>/<dir>`, so its patterns were ignored; and the
+  directory listings (`list_dirs`, `list_dirs_rec`, `subdirs_of_dirs`)
+  asked whether `<dir>/<name>` was a directory, not `<root>/<dir>/<name>`,
+  so `subdirs_of_dirs` found no subdirectory and the listings classed
+  directories as files. Both now use the root, as the rest of the module
+  does. With the root `.` nothing changes; no caller in libmojave or
+  metaprl passes another (`test/test_glob_options.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -65,6 +74,13 @@
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
   with `win`.
+- `Lm_glob` options no other test used (`test/test_glob_options.ml`, Unix
+  only): `GlobNoBraces`, `GlobNoEscape`, `GlobNoTilde`, `GlobHomeDir`,
+  `GlobIgnoreFun`, `GlobAllowFun`, `GlobCVSIgnore`, `GlobProperSubdirs`,
+  over a fixture tree. Recorded: a backslash that escapes nothing
+  separates path components (the Windows convention), so with
+  `GlobNoEscape` `a\*` is `a/*`, and a name holding a backslash cannot be
+  globbed.
 - `Lm_rusage` (`test/test_rusage.ml`): after burning CPU, `getrusage_time`'s
   user time is positive and agrees with `Unix.times` and with `getrusage`;
   `RUSAGE_CHILDREN` grows once a child that burned CPU is waited for; a
