@@ -1,0 +1,6 @@
+info id, new  = 0
+info id, after set_id 42  = 42
+output_string "xy"  = did not return within 2 s
+output_char then flush  = did not return within 2 s
+write 2 bytes  = 0 returned
+input_line (reading is unaffected)  = "abc"
