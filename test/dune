@@ -189,6 +189,12 @@
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
 
+(test
+ (name test_channel_select)
+ (modules test_channel_select)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
 ; Lm_rusage is "not implemented" on Win32 (zeros, setrlimit a no-op), so
 ; it compares against a per-platform expected file too.
 (rule
