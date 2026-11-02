@@ -137,6 +137,11 @@
  (action (diff test_ctype.msvc.expected test_ctype.output)))
 
 (test
+ (name test_string_debug)
+ (modules test_string_debug)
+ (libraries libmojave pin unix))
+
+(test
  (name test_thread_pool_null)
  (modules test_thread_pool_null)
  (enabled_if (<> %{profile} threads))

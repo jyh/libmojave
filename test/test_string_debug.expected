@@ -1,0 +1,8 @@
+with the string debug flag on, create vs Stdlib = 6 of 6 agree
+with the string debug flag on, make vs Stdlib = 6 of 6 agree
+with the string debug flag on, get vs Stdlib = 24 of 24 agree
+with the string debug flag on, set vs Stdlib = 24 of 24 agree
+with the string debug flag on, sub vs Stdlib = 134 of 144 agree
+  first difference: "" 0 0
+with the string debug flag on, blit vs Stdlib = 3356 of 3456 agree
+  first difference: "" 0 into "" at 0, 0
