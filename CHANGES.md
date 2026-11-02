@@ -107,6 +107,13 @@
   and returned 0, where `output_string` and the other output functions
   append, so a caller writing until all bytes are taken looped forever.
   omake's `$(write ...)` builtin reaches it (through omake's own copy).
+- Writing to an `Lm_channel.of_string` channel never returned:
+  `output_string`, `output_char` and the other output functions spun
+  forever, because such a channel has no output buffer and flushing frees no
+  room; `write` returned 0, so a caller writing until all bytes are taken
+  looped too. All of them now raise `Unix_error (EBADF, ...)`, as a
+  read-only descriptor does; reading is unchanged. omake's `open-in-string`
+  returns such a channel (`test/test_channel_of_string.ml`).
 - `Lm_channel.seek` on a channel without a descriptor (a string channel)
   discarded the input not yet read before raising `EINVAL`, so the reads
   after a failed seek ended early. It now raises first and leaves the
