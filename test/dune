@@ -130,6 +130,11 @@
  (action (diff test_config.native.expected test_config.native.output)))
 
 (test
+ (name test_set_invariants)
+ (modules test_set_invariants)
+ (libraries libmojave pin))
+
+(test
  (name test_index_iter)
  (modules test_index_iter)
  (libraries libmojave pin))
