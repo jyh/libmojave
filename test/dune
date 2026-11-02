@@ -15,6 +15,12 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_term_pty)
+ (modules test_term_pty)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_thread_event_null)
  (modules test_thread_event_null)
  (enabled_if (<> %{profile} threads))
