@@ -3,7 +3,8 @@
    time is positive and agrees with Unix.times (both read getrusage);
    microseconds stay below 1e6; a second read is not smaller; a child
    that burns CPU shows in RUSAGE_CHILDREN once waited; and a child that
-   sets its CPU limit to 1 s and spins is killed by SIGXCPU. On Windows
+   sets its CPU limit to 1 s and spins is killed by it (SIGXCPU on macOS;
+   the signal differs on Linux, see below). On Windows
    the stubs are "not implemented" and return zeros, and setrlimit_time
    does nothing; test_rusage.win32.expected pins that. *)
 open Pin
@@ -51,7 +52,19 @@ let () =
     (match Unix.fork () with
      | 0 -> Lm_rusage.setrlimit_time 1; burn 10.0; exit 0
      | pid ->
+       (* setrlimit_time sets the soft AND the hard limit to the same value.
+          macOS sends SIGXCPU at it; Linux CI read false for SIGXCPU, so the
+          line accepts either fatal CPU-limit signal and stderr names the one
+          that arrived. *)
        let _, st = Unix.waitpid [] pid in
-       line "setrlimit_time 1" "a spinning child is killed by SIGXCPU"
-         (b (st = Unix.WSIGNALED Sys.sigxcpu)))
+       let name = function
+         | Unix.WSIGNALED n when n = Sys.sigxcpu -> "SIGXCPU"
+         | Unix.WSIGNALED n when n = Sys.sigkill -> "SIGKILL"
+         | Unix.WSIGNALED n -> "signal " ^ string_of_int n
+         | Unix.WEXITED n -> "exit " ^ string_of_int n
+         | Unix.WSTOPPED n -> "stopped " ^ string_of_int n
+       in
+       Printf.eprintf "setrlimit_time 1: the child ended by %s\n%!" (name st);
+       line "setrlimit_time 1" "a spinning child is killed by the CPU limit (SIGXCPU or SIGKILL)"
+         (b (st = Unix.WSIGNALED Sys.sigxcpu || st = Unix.WSIGNALED Sys.sigkill)))
   end
