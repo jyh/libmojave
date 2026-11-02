@@ -1,0 +1,10 @@
+haystack 400 tries = 2867 (path, datum) pairs; 338 tries hold 3 or more
+iter_all = fold_all's pairs, in order 400 tries = 0 disagree
+map_all 400 tries = 0 disagree
+mapi_all 400 tries = 0 disagree
+fold_map_all 400 tries = 0 disagree
+iter (one level, keys increasing) 400 tries = 0 disagree
+fold (one level) 400 tries = 0 disagree
+map (one level) 400 tries = 0 disagree
+mapi (one level) 400 tries = 0 disagree
+fold_map (one level) 400 tries = 0 disagree
