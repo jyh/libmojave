@@ -1,0 +1,8 @@
+glob, an absolute directory  = dirs ["<cwd>/glob_mix.tmp/da"] files []
+glob, an absolute file  = dirs [] files ["<cwd>/glob_mix.tmp/fa"]
+glob, an absolute missing name  = dirs [] files ["<cwd>/glob_mix.tmp/nope"]
+glob_argv, ?a (a directory and a file)  = ["da"; "fa"]
+glob_argv, * (both kinds)  = ["da"; "db"; "fa"; "fb"; "zc"]
+glob_argv, d* (directories only; sorted by the test)  = ["da"; "db"]
+glob_argv, f* (files only; sorted by the test)  = ["fa"; "fb"]
+glob_argv, ?a then fb (order of the arguments kept)  = ["da"; "fa"; "fb"]

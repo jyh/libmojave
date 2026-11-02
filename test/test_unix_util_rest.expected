@@ -1,0 +1,16 @@
+copy_file 20000 bytes, mode 0o640  = unit
+  same contents  = true
+  mode  = 0o640
+copy_file over a longer file  = "new"
+copy_file from a missing source  = EXN Unix.Unix_error(Unix.ENOENT, "open", "test_unix_util_rest.dir/none")
+copy_file into a missing directory  = EXN Unix.Unix_error(Unix.ENOENT, "open", "test_unix_util_rest.dir/no/dst")
+copy_file from a directory  = EXN Unix.Unix_error(Unix.EISDIR, "read", "")
+  open descriptors gained by the three failures  = 0
+mkdirhier a/b/c (relative)  = unit
+  a/b/c is a directory  = true
+mkdirhier a/b/c again  = unit
+mkdirhier an absolute name  = unit
+  abs/x is a directory  = true
+mkdirhier a/../d/./e (simplified)  = true
+mkdirhier through a regular file  = EXN Unix.Unix_error(Unix.EEXIST, "mkdir", "./test_unix_util_rest.dir/src")
+ftruncate at offset 4 of 10 bytes  = "0123"

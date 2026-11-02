@@ -1,0 +1,6 @@
+text write, 5000 newlines Lm_channel = length 10000, \r 5000, \n 5000, ends "\r\n\r\n\r\n\r\n"
+text write, 5000 newlines Stdlib open_out = length 10000, \r 5000, \n 5000, ends "\r\n\r\n\r\n\r\n"
+text write, 4095 a then "\n" then 4096 b Lm_channel = length 8193, \r 1, \n 1, ends "bbbbbbbb"
+text write, 4095 a then "\n" then 4096 b Stdlib open_out = length 8193, \r 1, \n 1, ends "bbbbbbbb"
+text write, "a\r\nb\n" Lm_channel = length 7, \r 3, \n 2, ends "a\r\r\nb\r\n"
+text write, "a\r\nb\n" Stdlib open_out = length 7, \r 3, \n 2, ends "a\r\r\nb\r\n"
