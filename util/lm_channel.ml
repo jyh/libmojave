@@ -900,7 +900,9 @@ let tell info =
       if info.out_max <> 0 then
          pos + info.out_max
       else
-         pos + info.in_index
+         (* the descriptor is past the whole buffered input; the
+          * position is where reading has reached in it *)
+         pos - (info.in_max - info.in_index)
 
 let seek info pos whence =
    (* the descriptor first: a channel without one (a string channel)
