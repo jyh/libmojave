@@ -1,5 +1,14 @@
 # Changes
 
+## Unreleased
+
+### Tests
+
+- `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
+  command prints for it (`-s -n -r -v -m`). On Windows, where there is no
+  `uname` to compare with, each field must be non-empty and `sysname` start
+  with `win`.
+
 ## 1.1.1 (2026-11-01)
 
 ### Fixed
