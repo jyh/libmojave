@@ -40,6 +40,11 @@ let euid =
       Unix.Unix_error _ ->
          0
 
+let egid =
+   try Unix.getegid () with
+      Unix.Unix_error _ ->
+         0
+
 let groups =
    try Array.to_list (Unix.getgroups ()) with
       Unix.Unix_error _ ->
@@ -53,10 +58,14 @@ let unix_is_executable s =
          let perm = st.Unix.LargeFile.st_perm in
          let uid = st.Unix.LargeFile.st_uid in
          let gid = st.Unix.LargeFile.st_gid in
+            (* As the kernel decides: the owner's bits for the owner, else
+               the group's for a member, else the others'; root runs a
+               file with any execute bit. *)
             (kind = Unix.S_REG)
-            && ((perm land 0o001) <> 0
-                || (List.mem gid groups && (perm land 0o010) <> 0)
-                || (uid = euid && (perm land 0o100) <> 0))
+            && (if euid = 0 then perm land 0o111 <> 0
+                else if uid = euid then perm land 0o100 <> 0
+                else if gid = egid || List.mem gid groups then perm land 0o010 <> 0
+                else perm land 0o001 <> 0)
       with
          Unix.Unix_error _ ->
             false

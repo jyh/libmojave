@@ -1049,9 +1049,14 @@ let rec select_poll rfd_pipes rfd_sockets wfd_pipes wfd_sockets efd_sockets expi
                (* Compute the nest polling interval *)
                let timeout, final_attempt =
                   if rfd_pipes = [] && wfd_pipes = [] then
-                     let now = Unix.gettimeofday () in
-                     let timeout = expire -. now in
-                        max timeout 0.0, true
+                     if expire < 0.0 then
+                        (* No limit, as for the pipes below: a negative
+                           timeout makes Unix.select wait. *)
+                        -1.0, true
+                     else
+                        let now = Unix.gettimeofday () in
+                        let timeout = expire -. now in
+                           max timeout 0.0, true
                   else if expire < 0.0 then
                      poll_interval, false
                   else
