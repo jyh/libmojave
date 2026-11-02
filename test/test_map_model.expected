@@ -1,0 +1,24 @@
+elements = the model's bindings                                300 of 300
+of_list = the model of the list (last wins)                    300 of 300
+equal iff the models are equal                                 300 of 300
+equal to itself rebuilt by of_list                             300 of 300
+find_key                                                       300 of 300
+forall (v < 90)                                                300 of 300
+exists (v > 90)                                                300 of 300
+find_iter (an even value, iff there is one)                    300 of 300
+isect_mem (even keys)                                          300 of 300
+add_list                                                       300 of 300
+union (sum on a shared key)                                    300 of 300
+forall2 on itself                                              300 of 300
+fold_map                                                       300 of 300
+filter_add                                                     300 of 300
+filter_remove (drop odd values)                                300 of 300
+replace (raises iff absent)                                    300 of 300
+MTable: every key's values, newest first                       300 of 300
+MTable.find = the newest                                       300 of 300
+MTable.find_all                                                300 of 300
+MTable.find_all_partial raises iff absent                      300 of 300
+MTable.replace (the newest; raises iff absent)                 300 of 300
+MTable.add_list                                                300 of 300
+MTable.data_all                                                300 of 300
+MTable.fold_map (identity) keeps each key's values in order    300 of 300
