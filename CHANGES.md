@@ -22,6 +22,9 @@
   returned printer has no way to flush it, so the last line is lost (all
   of a one-line document). Nothing calls those two; the test pins this as
   it is.
+- `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
+  and a buffer formatter retargeted with `pp_set_formatter_out_channel`
+  write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 
 ## 1.1.1 (2026-11-01)
 

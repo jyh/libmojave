@@ -1,0 +1,36 @@
+words margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+words margin 80: text = "alpha beta gamma"
+words margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+words margin 20: text = "alpha beta gamma"
+words margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+words margin 8: text = "alpha beta gamma"
+hov margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+hov margin 80: text = "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta"
+hov margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+hov margin 20: text = "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta"
+hov margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+hov margin 8: text = "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta"
+v margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+v margin 80: text = "firstsecondthird"
+v margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+v margin 20: text = "firstsecondthird"
+v margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+v margin 8: text = "first\nsecond\nthird"
+nested margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+nested margin 80: text = "(f\n(g\n   x\n   y)\n(h\n           z))"
+nested margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+nested margin 20: text = "(f\n(g\n   x\n   y)\n(h\n     z))"
+nested margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+nested margin 8: text = "(f\n(g\nx\ny)\n(h\nz))"
+break margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+break margin 80: text = "a b c d"
+break margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+break margin 20: text = "a b c d"
+break margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+break margin 8: text = "a b c d"
+newline margin 80: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+newline margin 80: text = "one\ntwo\n   three"
+newline margin 20: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+newline margin 20: text = "one\ntwo\n   three"
+newline margin 8: buffer = formatter_of_out_channel = pp_set_formatter_out_channel = true
+newline margin 8: text = "one\ntwo\n   three"
