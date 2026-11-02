@@ -144,6 +144,11 @@
   a 0 x 0 terminal `term_width` keeps the width it was given (see Fixed);
   curses falls back to a size of its own. On a pipe `term_size`
   fails and `term_width` keeps its argument. Not run on Windows.
+- `Lm_set` against `Stdlib.Set` on random histories
+  (`test/test_set_model.ml`): `add_list`, `subtract_list`, `range_fold`,
+  `for_all`, `exists`, and `Make`'s `mem`, `add`, `remove`, `fold` and
+  `partition` (which `S` declares to return the satisfying half). No
+  disagreement; five mutants each turn their own line red.
 - `Lm_map` against `Stdlib.Map` (`test/test_map_model.ml`): `of_list`,
   `elements`, `equal`, `find_key`, `forall`, `exists`, `find_iter`,
   `isect_mem`, `add_list`, `union`, `forall2`, `fold_map`, `filter_add`,

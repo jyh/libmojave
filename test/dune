@@ -172,6 +172,11 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
+ (name test_set_model)
+ (modules test_set_model)
+ (libraries libmojave pin))
+
+(test
  (name test_channel_fork)
  (modules test_channel_fork)
  (enabled_if (<> %{os_type} Win32))
