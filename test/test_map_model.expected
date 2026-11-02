@@ -1,6 +1,5 @@
 elements = the model's bindings                                300 of 300
-of_list = the model of the list (last wins)                     54 of 300
-  first difference: of_list [1:60; 8:70; 1:33; 5:82; 13:96; 18:59; 0:56; 9:99; 17:71; 16:6; 5:59; 7:34] gave [1:60; 8:70; 1:33; 5:82; 13:96; 18:59; 0:56; 9:99; 17:71; 16:6; 5:59; 7:34]
+of_list = the model of the list (last wins)                    300 of 300
 equal iff the models are equal                                 300 of 300
 equal to itself rebuilt by of_list                             300 of 300
 find_key                                                       300 of 300
@@ -22,5 +21,4 @@ MTable.find_all_partial raises iff absent                      300 of 300
 MTable.replace (the newest; raises iff absent)                 300 of 300
 MTable.add_list                                                300 of 300
 MTable.data_all                                                300 of 300
-MTable.fold_map (identity) keeps each key's values in order    120 of 300
-  first difference: 1/3/41 1/7/89 1/6/2 1/7/0 4/1/53 0/2/51 0/3/54 4/0/65 2/4/61 0/7/76 3/8/3 2/8/59 0/2/8 0/0/20 0/8/94 0/4/57 3/9/92
+MTable.fold_map (identity) keeps each key's values in order    300 of 300

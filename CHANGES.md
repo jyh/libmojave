@@ -4,6 +4,16 @@
 
 ### Fixed
 
+- `Lm_map`'s `of_list` (the `LmMake` maps) built its tree straight from the
+  list, so a list that was not sorted, or bound a key twice, gave a map whose
+  `find` and `elements` were wrong (54 of 300 random lists came out right).
+  It now sorts the list and keeps the last binding of a key, as `add` would;
+  `Lm_set.of_list` already took any order. No caller in libmojave, metaprl
+  or omake passed such a list.
+- `Lm_map.LmMakeList.fold_map` (the multi-value maps) gave back each key's
+  values in reverse order, so after it `find` returned the oldest value
+  rather than the newest (120 of 300 maps unchanged by an identity map). No
+  caller uses it.
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -54,6 +64,15 @@
   a 0 x 0 terminal `term_width` keeps the width it was given (see Fixed);
   curses falls back to a size of its own. On a pipe `term_size`
   fails and `term_width` keeps its argument. Not run on Windows.
+- `Lm_map` against `Stdlib.Map` (`test/test_map_model.ml`): `of_list`,
+  `elements`, `equal`, `find_key`, `forall`, `exists`, `find_iter`,
+  `isect_mem`, `add_list`, `union`, `forall2`, `fold_map`, `filter_add`,
+  `filter_remove`, `replace`, and the multi-value maps' `add`, `find`,
+  `find_all`, `replace`, `add_list`, `data_all`, `fold_map`, on 300 random
+  maps each (lm_map.ml was at 54 % of its points under the tests). Recorded
+  as they are: `find_iter` returns some match, not the first by key, and
+  `LmMakeList.filter_remove` that removes a key's newest value removes the
+  key.
 
 ## 1.1.1 (2026-11-01)
 
