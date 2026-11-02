@@ -1,0 +1,3 @@
+the channel  = "one twochild back\nnext\nlast\rendbox\n  indented\n"
+the log  = "[|P1: one two|][|P2: child|][|P1:  back|]\n[|P1: next|]\n[|P1: last|]\n[|P1: endbox|]\n[|P1:   indented|]\n"
+the pid file  = "0"

@@ -44,12 +44,31 @@
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin unix))
 
+(test
+ (name test_unix_util_rest)
+ (modules test_unix_util_rest)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
 ; Filenames and globbing are platform-dependent by design (separators,
 ; drives), so these two compare against a per-platform expected file.
 (executables
- (names test_filename_util test_glob test_rusage)
- (modules test_filename_util test_glob test_rusage)
+ (names test_filename_util test_glob test_rusage test_channel_text)
+ (modules test_filename_util test_glob test_rusage test_channel_text)
  (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_channel_text.output (run ./test_channel_text.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_text.expected test_channel_text.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_text.win32.expected test_channel_text.output)))
 
 (rule
  (with-stdout-to test_filename_util.output (run ./test_filename_util.exe)))
@@ -160,8 +179,20 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_inet_leak)
+ (modules test_inet_leak)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_mmap_pipe)
  (modules test_mmap_pipe)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
+ (name test_filename_exec)
+ (modules test_filename_exec)
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
 
@@ -191,6 +222,12 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_rusage.win32.expected test_rusage.output)))
+
+(test
+ (name test_printf_extra)
+ (modules test_printf_extra)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
 
 (test
  (name test_set_model)
