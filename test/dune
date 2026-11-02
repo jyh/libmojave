@@ -64,6 +64,11 @@
  (enabled_if (= %{os_type} Win32))
  (action (diff test_filename_util.win32.expected test_filename_util.output)))
 
+(test
+ (name test_splay_table_model)
+ (modules test_splay_table_model)
+ (libraries libmojave pin))
+
 (rule
  (with-stdout-to test_glob.output (run ./test_glob.exe)))
 
