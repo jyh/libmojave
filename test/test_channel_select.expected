@@ -1,0 +1,11 @@
+select [a] [] [] 0, nothing sent  = [] [] []
+select [a] [] [] 0, b sent "xy"  = [a] [] []
+  input_char a  = 'x'
+select [a] [] [] 0, "y" buffered in a  = [a] [] []
+  input_char a  = 'y'
+select [] [b] [] 0, b's buffer empty  = [] [b] []
+select [] [b] [] 0, "zz" buffered in b  = [] [b] []
+  select [a] [] [] 0 (did select flush b?)  = [a] [] []
+  read a  = zz
+select [a] [] [] 0.3, nothing sent  = [] [] [], waited >= 0.25 s: true
+select [a] [] [] (-1), b writes after 0.3 s  = [a] [] [], returned within 0.1 s: false
