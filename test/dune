@@ -177,6 +177,12 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
+ (name test_printf_extra)
+ (modules test_printf_extra)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_set_model)
  (modules test_set_model)
  (libraries libmojave pin))
