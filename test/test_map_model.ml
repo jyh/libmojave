@@ -8,7 +8,13 @@
      - LmMakeList (IntMTable, a key to the list of its values, newest
        first): add, find (the newest), find_all, find_all_partial, remove
        (the key), filter_add, filter_remove, replace (newest only), add_list,
-       data_all, and fold_map, which must keep each key's values in order.
+       data_all, and fold_map, which must keep each key's values in order;
+       then (row 294) the rest of its family: iter / map / mapi / fold (each
+       key's newest value only), mem, find_key, cardinal, is_empty, keys,
+       data, forall, exists, find_iter (root first: some match), isect_mem,
+       choose, filter, union (f gets the LARGER table's list first: the
+       smaller table is inserted into the larger), forall2 and equal, which
+       is also asked about t's own lists moved to other keys.
    Each line prints how many maps agree with the model, and the first
    difference.  The generator is a fixed linear congruential sequence. *)
 open Lm_int_set
@@ -105,7 +111,49 @@ let () =
     note "MTable.add_list" (lists (IntMTable.add_list t l) = M.bindings (List.fold_left (fun m (k, v) -> M.add k (v :: (try M.find k m with Not_found -> [])) m) m l)) what;
     note "MTable.data_all" (List.sort compare (IntMTable.data_all t) = List.sort compare (List.map snd (M.bindings m))) what;
     let _, t' = IntMTable.fold_map (fun acc _ v -> acc, v) () t in
-    note "MTable.fold_map (identity) keeps each key's values in order" (lists t' = lists t) what
+    note "MTable.fold_map (identity) keeps each key's values in order" (lists t' = lists t) what;
+    (* The single-value views see each key's newest value. *)
+    let newest = M.map List.hd m in
+    let seen = ref [] in
+    IntMTable.iter (fun k v -> seen := (k, v) :: !seen) t;
+    note "MTable.iter (each key once, its newest value)" (List.rev !seen = M.bindings newest) what;
+    note "MTable.map (the newest value only)" (lists (IntMTable.map (fun v -> v * 2) t) = M.bindings (M.map (fun l -> [ List.hd l * 2 ]) m)) what;
+    note "MTable.mapi" (lists (IntMTable.mapi (fun k v -> k * 1000 + v) t) = M.bindings (M.mapi (fun k l -> [ k * 1000 + List.hd l ]) m)) what;
+    note "MTable.fold (key order, newest value)" (IntMTable.fold (fun acc k v -> (k, v) :: acc) [] t = List.rev (M.bindings newest)) what;
+    note "MTable.mem / find_key / cardinal / is_empty"
+      (IntMTable.mem t k = M.mem k m && IntMTable.find_key t k = (if M.mem k m then Some k else None)
+       && IntMTable.cardinal t = M.cardinal m && IntMTable.is_empty t = M.is_empty m) what;
+    note "MTable.keys / data" (IntMTable.keys t = List.map fst (M.bindings m) && IntMTable.data t = List.concat (List.map snd (M.bindings m))) what;
+    let p v = v mod 3 = 0 in
+    note "MTable.forall (every value of every key)" (IntMTable.forall (fun _ v -> not (p v)) t = M.for_all (fun _ l -> not (List.exists p l)) m) what;
+    note "MTable.exists (any value of any key)" (IntMTable.exists (fun _ v -> p v) t = M.exists (fun _ l -> List.exists p l) m) what;
+    (* find_iter searches root first, as LmMake's does: some match, iff there is one. *)
+    note "MTable.find_iter (a value passing the test, iff there is one)"
+      (match IntMTable.find_iter (fun k v -> if p v then Some (k, v) else None) t with
+       | Some (k, v) -> p v && List.mem v (try M.find k m with Not_found -> [])
+       | None -> not (M.exists (fun _ l -> List.exists p l) m)) what;
+    note "MTable.isect_mem (keys passing the test)" (lists (IntMTable.isect_mem t (fun k -> k mod 2 = 0)) = M.bindings (M.filter (fun k _ -> k mod 2 = 0) m)) what;
+    note "MTable.choose (a key and its newest value)"
+      ((try let k, v = IntMTable.choose t in M.find_opt k newest = Some v with Not_found -> M.is_empty m)) what;
+    note "MTable.filter (the key's whole list; [] removes)"
+      (lists (IntMTable.filter t k (fun l -> List.filter (fun v -> not (p v)) l))
+       = M.bindings (match List.filter (fun v -> not (p v)) (try M.find k m with Not_found -> []) with [] -> M.remove k m | l -> M.add k l m)) what;
+    (* A second table, and t's own lists moved to other keys. *)
+    let l2 = List.init (pick 12) (fun _ -> pick 10, pick 100) in
+    let t2 = IntMTable.add_list IntMTable.empty l2 in
+    let m2 = List.fold_left (fun m (k, v) -> M.add k (v :: (try M.find k m with Not_found -> [])) m) M.empty l2 in
+    let moved = IntMTable.fold_all (fun acc k l -> List.fold_left (fun acc v -> IntMTable.add acc (k + 10) v) acc (List.rev l)) IntMTable.empty t in
+    let m_moved = M.fold (fun k l acc -> M.add (k + 10) l acc) m M.empty in
+    let leq a b = List.length a = List.length b && List.for_all2 ( = ) a b in
+    (* union t t2 inserts the smaller table into the larger (t on a tie), so f gets
+       the LARGER table's list first, whichever order the caller passed. *)
+    let big, small = if M.cardinal m < M.cardinal m2 then m2, m else m, m2 in
+    note "MTable.union (f gets the larger table's list first)"
+      (lists (IntMTable.union (fun _ a b -> a @ b) t t2) = M.bindings (M.union (fun _ a b -> Some (a @ b)) big small)) what;
+    note "MTable.forall2 (same keys, same lists)" (IntMTable.forall2 ( = ) t t2 = M.equal leq m m2) what;
+    note "MTable.equal, a second table" (IntMTable.equal ( = ) t t2 = M.equal leq m m2) what;
+    note "MTable.equal, its lists under other keys" (IntMTable.equal ( = ) t moved = M.equal leq m m_moved) what;
+    note "MTable.equal to itself rebuilt" (IntMTable.equal ( = ) t (IntMTable.fold_all (fun acc k l -> List.fold_left (fun acc v -> IntMTable.add acc k v) acc (List.rev l)) IntMTable.empty t)) what
   done;
   List.iter (fun name ->
       let t = Hashtbl.find tried name and o = try Hashtbl.find ok name with Not_found -> 0 in

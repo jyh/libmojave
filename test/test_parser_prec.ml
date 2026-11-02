@@ -7,7 +7,13 @@
    them well-formed expressions, are parsed into a bracketed tree and
    compared with a precedence-climbing parser: a higher level binds
    tighter, LeftAssoc groups to the left, RightAssoc to the right, and two
-   operators of one NonAssoc level side by side are a syntax error. *)
+   operators of one NonAssoc level side by side are a syntax error.
+   Then union's precedence merge (union_prec), against the same model: the
+   union of an empty grammar with the table's (every level new) and of the
+   table's grammar with itself (every level shared); and four hand-built
+   pairs, printed: a level g2 shares with g1 through an operator is g1's,
+   and a new level is placed just above the one before it in g2's order,
+   so a level only g2 has lands below all of g1's. *)
 open Pin
 
 module Arg = struct
@@ -131,6 +137,8 @@ let mutate toks =
 let () =
   let bad = ref 0 and first = ref "" and total = ref 0 and errors = ref 0 and refused = ref 0 in
   let bad_lt = ref 0 and first_lt = ref "" and refused_lt = ref 0 in
+  (* union_prec: union with a grammar that carries precedences *)
+  let bad_ue = ref 0 and first_ue = ref "" and bad_us = ref 0 and first_us = ref "" in
   for _ = 1 to 300 do
     let nlev = 1 + rnd 4 in
     let levels = List.init nlev (fun _ -> match rnd 3 with 0 -> L | 1 -> R | _ -> N) in
@@ -144,6 +152,8 @@ let () =
     | exception e -> incr refused; if !first = "" then first := desc () ^ ": " ^ Printexc.to_string e
     | g ->
         let g_lt = (try Some (build_lt levels level_of) with _ -> incr refused_lt; None) in
+        (* every level new (an empty first grammar), and every level shared (g with itself) *)
+        let g_ue = P.union (P.add_start P.empty "prog") g and g_us = P.union g g in
         for _ = 1 to 40 do
           incr total;
           let toks = mutate (gen 4) in
@@ -159,6 +169,15 @@ let () =
                    first_lt := Printf.sprintf "%s on %s: model %s, parser %s" (desc ()) (String.concat " " toks) want got_lt
                end
            | None -> ());
+          let check bad first g' =
+            let got' = parse g' toks in
+            if want <> got' then begin
+              incr bad;
+              if !first = "" then
+                first := Printf.sprintf "%s on %s: model %s, parser %s" (desc ()) (String.concat " " toks) want got'
+            end in
+          check bad_ue first_ue g_ue;
+          check bad_us first_us g_us;
           if want <> got then begin
             incr bad;
             if !first = "" then
@@ -170,4 +189,50 @@ let () =
   line "precedence" (string_of_int !total ^ " inputs")
     (if !bad = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad !first);
   line "precedence, tables built with create_prec_lt" (string_of_int !total ^ " inputs, " ^ string_of_int !refused_lt ^ " tables refused")
-    (if !bad_lt = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad_lt !first_lt)
+    (if !bad_lt = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad_lt !first_lt);
+  let verdict bad first = if !bad = 0 then "0 disagree" else Printf.sprintf "%d disagree (first: %s)" !bad !first in
+  line "precedence, union of an empty grammar with the table's" (string_of_int !total ^ " inputs") (verdict bad_ue first_ue);
+  line "precedence, union of the table's grammar with itself" (string_of_int !total ^ " inputs") (verdict bad_us first_us);
+  (* Hand-built pairs: g1 holds the productions and precedences for some
+     operators, g2 for others (no action shared), and the union is parsed.
+     A level of g2 that one of g1's operators also has is kept as g1's;
+     a new level is placed just above the level before it in g2's order
+     (prec_min for the lowest). *)
+  let gram levels assign =
+    let g = P.add_start P.empty "prog" in
+    let g, precs, _ =
+      List.fold_left (fun (g, precs, base) a ->
+          let g, p = P.create_prec_gt g base (match a with L -> Lm_parser.LeftAssoc | R -> Lm_parser.RightAssoc | N -> Lm_parser.NonAssoc) in
+          (g, precs @ [ p ], p)) (g, [], P.prec_min) levels in
+    let g = List.fold_left (fun g (op, l) -> P.add_prec g (List.nth precs l) op) g assign in
+    List.fold_left (fun g (op, _) -> P.add_production g ("bin" ^ op) "e" [ "e"; op; "e" ] None) g assign in
+  let base g =
+    let g = P.add_production g "paren" "e" [ "("; "e"; ")" ] None in
+    let g = P.add_production g "num" "e" [ "num" ] None in
+    P.add_production g "prog" "prog" [ "e"; Arg.eof ] None in
+  let show name g1 g2 inputs =
+    let u = P.union (base g1) g2 in
+    List.iter (fun s -> line ("union, " ^ name) (Printf.sprintf "%S" s)
+                 (parse u (String.split_on_char ' ' s))) inputs in
+  (* g2 shares + with g1 and puts * above it *)
+  show "g1 {+}, g2 {+ < *}, + shared" (gram [ L ] [ ("+", 0) ]) (gram [ L; L ] [ ("+", 0); ("*", 1) ])
+    [ "1 + 2 * 3"; "1 * 2 + 3"; "1 * 2 * 3" ];
+  (* g2 does not mention +: its one level is new, placed just above prec_min *)
+  show "g1 {+}, g2 {*} only" (gram [ L ] [ ("+", 0) ]) (gram [ L ] [ ("*", 0) ])
+    [ "1 + 2 * 3"; "1 * 2 + 3" ];
+  (* g2 gives + a right-assoc level: g1's left-assoc level is kept *)
+  show "g1 {+ left}, g2 {+ right, *}" (gram [ L ] [ ("+", 0) ]) (gram [ R; L ] [ ("+", 0); ("*", 1) ])
+    [ "1 + 2 + 3"; "1 * 2 * 3"; "1 + 2 * 3" ];
+  (* g2 has < below + and * above it *)
+  show "g1 {+}, g2 {< < + < *}" (gram [ L ] [ ("+", 0) ]) (gram [ N; L; L ] [ ("<", 0); ("+", 1); ("*", 2) ])
+    [ "1 < 2 + 3 * 4"; "1 * 2 + 3 < 4"; "1 < 2 < 3" ];
+  (* get_start and find_prec, which no test called *)
+  let starts g = "[" ^ String.concat "; " (List.sort compare (P.get_start g)) ^ "]" in
+  let g1 = base (gram [ L; L ] [ ("+", 0); ("-", 0); ("*", 1) ]) in
+  line "get_start" "one start symbol" (starts g1);
+  line "get_start" "after add_start \"stmt\"" (starts (P.add_start g1 "stmt"));
+  line "get_start" "of a union" (starts (P.union g1 (P.add_start P.empty "decl")));
+  let same a b = guard (fun () -> string_of_bool (P.find_prec g1 a = P.find_prec g1 b)) in
+  line "find_prec" "+ and - (one level)" (same "+" "-");
+  line "find_prec" "+ and * (two levels)" (same "+" "*");
+  line "find_prec" "an operator with no precedence" (guard (fun () -> ignore (P.find_prec g1 "/"); "found"))

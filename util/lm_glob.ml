@@ -94,42 +94,36 @@ let tilde_insert dir name =
                   tilde_table := ntable
 
 (*
- * Find an entry in the table.
+ * Collapse with the longest table entry that is a prefix of dir and is
+ * followed by a separator (or is all of dir), so "~name" expands back to
+ * dir.
  *)
-let rec tilde_matches dir1 dir2 len i =
-   i = len || dir1.[i] = dir2.[i] && tilde_matches dir1 dir2 len (succ i)
+let tilde_is_sep c =
+   c = '/' || (Sys.os_type = "Win32" && c = '\\')
 
 let tilde_collapse dir =
-   let table = !tilde_table in
-   let len = Array.length table in
-   let rec search i j =
-      if i < j - 1 then
-         let k = (i + j) / 2 in
-         let dir', _ = table.(k) in
-            if dir' > dir then
-               search i k
-            else
-               search k j
-      else
-         i
+   let len = String.length dir in
+   let best =
+      Array.fold_left (fun best (dir', name) ->
+            let len' = String.length dir' in
+               if len' <= len
+                  && String.sub dir 0 len' = dir'
+                  && (len' = len || tilde_is_sep dir.[len'] || (len' > 0 && tilde_is_sep dir'.[len' - 1]))
+               then
+                  match best with
+                     Some (best_dir, _) when String.length best_dir >= len' ->
+                        best
+                   | _ ->
+                        Some (dir', name)
+               else
+                  best) None !tilde_table
    in
-   let i = search (-1) len in
-      if i < 0 then
-         dir
-      else
-         let dir', name = table.(i) in
-         let len' = String.length dir' in
-         let len = String.length dir in
-            if len' <= len && tilde_matches dir' dir len' 0 then
-               let namelen = String.length name in
-               let length = len - len' + namelen + 1 in
-               let s = Bytes.make length ' ' in
-                  Bytes.set s 0 '~';
-                  Bytes.blit (Bytes.of_string name) 0 s 1 namelen;
-                  Bytes.blit (Bytes.of_string dir) len' s (namelen + 1) (len - len');
-                  Bytes.to_string s
-            else
-               dir
+      match best with
+         None ->
+            dir
+       | Some (dir', name) ->
+            let len' = String.length dir' in
+               "~" ^ name ^ String.sub dir len' (len - len')
 
 (*
  * Here is the caching getpwnam.
