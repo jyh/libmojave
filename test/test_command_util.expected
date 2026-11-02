@@ -1,0 +1,29 @@
+get_next_argument [a; b] = a / ["b"]
+get_next_argument [] = "" / []
+reconstruct_arguments [a; "b c"; ""] = "a b c "
+reconstruct_arguments [] = ""
+space_filter "  a\tb  c\n" = ["a"; "b"; "c"]
+space_filter "" = []
+no_filter " x " = " x "
+continue f 3 = Continue, f got 3
+-- loop
+
+p> echo got ["a"; "b"]
+
+p> echo got ["ho"; "a"; "b"]
+
+p> echo got ["o"; "c"]
+
+p> echo print the arguments
+
+p> Unrecognized command "nope".  Try "help".
+
+p> 
+p> echo got []
+
+p> 
+run_loop returned "quit"
+-- end of file
+
+p> 
+run_loop returned "eof"

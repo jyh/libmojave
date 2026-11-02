@@ -292,3 +292,8 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_channel_pipe.win32.expected test_channel_pipe.output)))
+
+(test
+ (name test_command_util)
+ (modules test_command_util)
+ (libraries libmojave pin unix))
