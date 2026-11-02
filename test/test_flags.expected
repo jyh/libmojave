@@ -13,3 +13,32 @@ set_int on a bool flag  = EXN Failure("flags_set: flag fast is a Boolean flag")
   then get_int fast  = EXN Failure("flags_get_int: invalid value type for flag fast")
 flags_empty: get_bool x  = EXN Failure("flags_get_bool: flag x not defined")
 flags_empty: set_bool x  = EXN Failure("flags_set: flag x not defined")
+set_bool on an int flag  = EXN Failure("flags_set: flag n is an integer flag")
+get_bool on an int flag  = EXN Failure("flags_get_bool: invalid value type for flag n")
+get_int undefined  = EXN Failure("flags_get_int: flag nope not defined")
+set_expr "b=f" then get_bool b  = false
+set_expr "b=t" then get_bool b  = true
+--- begin print_std_flag_defaults
+new:  A section with no flags.
+
+opt:  Optimizer flags.
+   fast                           = false
+      go fast when the input is large enough to matter
+   depth                          = 2
+      how deep the search goes before it gives up; a larger depth finds more
+      and takes longer, and past twenty it rarely pays
+
+other:  other
+   b                              = true
+      no help available
+   n                              = 4
+      no help available
+
+--- end print_std_flag_defaults
+--- begin print_std_flag_values
+===begin current state===
+Flag name                        Current value
+b                              = true
+depth                          = 9
+=== end current state ===
+--- end print_std_flag_values
