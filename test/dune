@@ -188,6 +188,12 @@
  (libraries libmojave unix))
 
 (test
+ (name test_thread_state)
+ (modules test_thread_state)
+ (enabled_if (= %{profile} threads))
+ (libraries libmojave pin unix threads.posix))
+
+(test
  (name test_tokens_model)
  (modules test_tokens_model)
  (libraries libmojave pin))
