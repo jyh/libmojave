@@ -5,4 +5,4 @@ terminal 30 x 100 = size 30 x 100; width 100; stdout_width 100; curses agrees (r
 terminal 24 x 80 = size 24 x 80; width 80; stdout_width 80; curses agrees (rc 0)
 terminal 50 x 132 = size 50 x 132; width 132; stdout_width 132; curses agrees (rc 0)
 terminal 10 x 30 = size 10 x 30; width 40; stdout_width 40; curses agrees (rc 0)
-terminal 0 x 0 = size 0 x 0; width 40; stdout_width 40; curses falls back to a size (rc 0)
+terminal 0 x 0 = size 0 x 0; width 80; stdout_width 80; curses falls back to a size (rc 0)

@@ -10,8 +10,8 @@
    says so on stderr.
    On a pipe (no terminal) term_size fails and term_width keeps the width it
    was given. A terminal of 0 x 0 (what a pseudo-terminal starts as when
-   nothing sets it) reads as 0 columns, so term_width gives 40, not its
-   default; that is recorded as it is. The child's lines come back through
+   nothing sets it) reads as 0 columns, which means unknown, so term_width
+   keeps the width it was given (it gave min_screen_width, 40, until 1.1.2). The child's lines come back through
    the terminal, so only lines starting "R " are read. Not run on Windows
    (no script(1); Lm_termsize reads the console there). *)
 open Pin

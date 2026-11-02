@@ -42,7 +42,8 @@ let term_width_fd fd width =
       let _, cols = term_size fd in
          if !debug_terminal then
             eprintf "Terminal size: requested %i, got %i, minimal witdth is %i%t" width cols (!min_screen_width) eflush;
-         max (!min_screen_width) cols
+         (* A terminal nobody sized reads 0 columns: that is "unknown". *)
+         if cols <= 0 then width else max (!min_screen_width) cols
    with
       Failure s ->
          if !debug_terminal then
