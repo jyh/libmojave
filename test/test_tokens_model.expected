@@ -1,0 +1,16 @@
+tokens_string + data/add/atomic/break vs model 3000 cases = 0 disagree
+tokens_lex + data/add/atomic/break vs model 3000 cases = 0 disagree
+tokens_string in pieces = whole 3000 cases = 0 disagree
+tokens_lex in pieces = whole 3000 cases = 0 disagree
+tokens vs model 3000 cases = 195 disagree (first: tokens "\"'" " &" "'b| \t&;\"\\\\\\&b": got ["'b| \t&;\"\\\\\\"; "b"], model ["'b| \t&;\"\\\\\\&b"])
+tokens_std = tokens quotes white 3000 cases = 0 disagree
+tokens_string ["a\\"; " b"] vs whole = ["a\\"; "b"] vs ["a\\ b"]
+tokens_lex ["a\\"; " b"] vs whole = ["a\\"; "b"] vs ["a\\ b"]
+tokens_string ["\"a"; " b\""] = ["\"a b\""]
+tokens_lex ["'a"; " b'"; " c"] = ["a b"; "c"]
+tokens_std "\"it's here\" x" = ["\"it's"; "here\" x"]
+tokens_std "'say \"hi\" now' y" = ["'say \"hi\" now'"; "y"]
+tokens_std "a\\ b" = ["a\\"; "b"]
+tokens_std "\"a\\\" b\" c" = ["\"a\\\" b\""; "c"]
+tokens_std "\"open quote" = ["\"open quote"]
+interface example  = ["Foo"; "\"bar \\\" baz  a \"b c   boo\""; "bum"]
