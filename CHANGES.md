@@ -64,6 +64,14 @@
   specified"; the inverted lookup now keeps the lookup's own reason and
   adds that it was extracted from the inverted name
   (`test/test_arg_invert.ml`).
+- `Lm_glob.tilde_collapse` checked that a known home directory was a prefix
+  of the path but not that a separator followed it, so with home `/u/jo-c`
+  the path `/u/jo-cx/y` became `~x/y`, which names another user's home. It
+  also tried only one table entry (the largest not above the path in
+  string order), so `/u/jo/x` stayed uncollapsed once `/u/jo-c` was in the
+  table. It now takes the longest entry that is a prefix of the path and is
+  followed by a separator or ends it (`test/test_glob_tilde.ml`, which reads
+  only the running user's own account). omake's `tilde-collapse` calls it.
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for

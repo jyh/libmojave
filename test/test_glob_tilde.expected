@@ -1,8 +1,8 @@
 home_dir  = "<R>-c"
 tilde_collapse <R>-c/x  = "~/x"
-tilde_collapse <R>-cx/y (no separator after the entry <R>-c)  = "~x/y"
+tilde_collapse <R>-cx/y (no separator after the entry <R>-c)  = "<R>-cx/y"
 gethomedir <N> (adds <R> as "~<N>")  = "<R>"
-tilde_collapse <R>/x  = "<R>/x"
+tilde_collapse <R>/x  = "~<N>/x"
 tilde_collapse <R>  = "~<N>"
 tilde_collapse <R>-c/x, again  = "~/x"
 glob "~"  = ["<R>-c"]
