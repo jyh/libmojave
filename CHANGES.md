@@ -12,6 +12,15 @@
   before are unchanged. `[:cntrl:]` now includes DEL (127), as C's
   `iscntrl` does; nothing in libmojave, metaprl or omake uses it
   (`test/test_lexer_charset.ml`).
+- `Lm_thread.State`'s entry locks did not exclude under contention (pinned
+  by `test/test_thread_state.ml`): `read_lock` and `write_lock` waited once
+  without re-checking, and a release signalled a queued thread while a new
+  arrival could take the lock first, so a writer could run beside a writer
+  or beside readers. A release now grants the lock to the queued threads
+  (one writer, or the readers up to the next writer) before waking them, a
+  woken thread waits until it finds itself granted, and a new arrival
+  queues whenever the lock is held or anyone is queued. Writers keep their
+  precedence over readers that arrive after them.
 - `Lm_map`'s `of_list` (the `LmMake` maps) built its tree straight from the
   list, so a list that was not sorted, or bound a key twice, gave a map whose
   `find` and `elements` were wrong (54 of 300 random lists came out right).
@@ -117,7 +126,8 @@
   writer. Recorded, a defect not yet fixed: under contention the entry
   locks do not exclude. With 8 threads doing random reads and writes, a
   writer enters beside a writer, beside readers, and a reader beside a
-  writer, on every run (roughly 60-250 of each in 2,400 steps).
+  writer, on every run (roughly 60-250 of each in 2,400 steps). Fixed
+  below.
 - `Lm_glob` options no other test used (`test/test_glob_options.ml`, Unix
   only): `GlobNoBraces`, `GlobNoEscape`, `GlobNoTilde`, `GlobHomeDir`,
   `GlobIgnoreFun`, `GlobAllowFun`, `GlobCVSIgnore`, `GlobProperSubdirs`,

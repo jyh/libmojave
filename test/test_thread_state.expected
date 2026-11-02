@@ -2,6 +2,6 @@ private_val a child thread in a new state = 105 (fork of the parent's 5: 105)
 private_val main thread, state 1 = 5 (5)
 private_val main thread in a new state = 105
 shared_val written 7 by the child = 7
-exclusion 8 threads x 300 steps = a writer entering beside a writer: some; beside readers: some; a reader entering beside a writer: some
+exclusion 8 threads x 300 steps = a writer entering beside a writer: none; beside readers: none; a reader entering beside a writer: none
 unlock inside a write, another thread reads = 0
 queued readers 4 behind a writer = 4 finished, after the write
