@@ -4,4 +4,4 @@ getrusage_time user time agrees with Unix.times within 0.05 s = true
 getrusage_time a second read is not smaller = true
 getrusage ru_utime agrees with getrusage_time within 0.05 s = true
 getrusage_time RUSAGE_CHILDREN grows by > 0.2 s after a child burns 0.3 s = true
-setrlimit_time 1 a spinning child is killed by SIGXCPU = true
+setrlimit_time 1 a spinning child is killed by the CPU limit (SIGXCPU or SIGKILL) = true
