@@ -83,4 +83,32 @@ let () =
 
   (* what one sync writes to stderr *)
   line "stderr lines written by sync (always 0)" "" (string_of_int (stderr_lines (fun () -> ignore (E.sync 0 (E.always 0)))));
-  line "stderr lines written by poll (receive c)" "" (string_of_int (stderr_lines (fun () -> ignore (E.poll (E.receive c)))))
+  line "stderr lines written by poll (receive c)" "" (string_of_int (stderr_lines (fun () -> ignore (E.poll (E.receive c)))));
+
+  (* A select that completes on one channel leaves its entry queued on the
+     other; a later peer there must skip it and meet the live one. The
+     joins are bounded: a value handed to the stale entry would leave the
+     live peer blocked for ever. Each poll is bound with let before the
+     join is read (OCaml evaluates ^'s operands right to left). *)
+  let bounded_join r =
+    let rec loop n = if !r <> "unset" then !r else if n = 0 then "TIMEOUT" else (Unix.sleepf 0.001; loop (n - 1)) in
+    loop 5000 in
+  let spawn_r f = let r = ref "unset" in ignore (T.Thread.create (fun () -> r := guard f) ()); r in
+  let rec until_value ev n =
+    if n = 0 then "TIMEOUT" else match E.poll ev with Some v -> v | None -> Unix.sleepf 0.001; until_value ev (n - 1) in
+  let c1 : int E.channel = E.new_channel () and c2 : int E.channel = E.new_channel () in
+  let a = spawn_r (fun () -> string_of_int (E.select 0 [ E.receive c1; E.receive c2 ])) in
+  let p = until_poll (E.send c1 1) in
+  line "select [receive c1; receive c2] blocked, send c1 1" "" (p ^ ", the selector: " ^ bounded_join a);
+  let b = spawn_r (fun () -> string_of_int (E.sync 0 (E.receive c2))) in
+  let p = until_poll (E.send c2 2) in
+  line "then send c2 2, to a new receiver on c2" "" (p ^ ", the receiver: " ^ bounded_join b);
+  let c3 : string E.channel = E.new_channel () and c4 : string E.channel = E.new_channel () in
+  let a = spawn_r (fun () -> E.select 0 [ E.wrap (E.send c3 "a3") (fun () -> "sent c3"); E.wrap (E.send c4 "a4") (fun () -> "sent c4") ]) in
+  let p = until_value (E.receive c3) 10000 in
+  line "select [send c3 a3; send c4 a4] blocked, receive c3" "" (p ^ ", the selector: " ^ bounded_join a);
+  let b = spawn_r (fun () -> E.sync 0 (E.send c4 "b4"); "sent") in
+  let p = until_value (E.receive c4) 10000 in
+  line "then receive c4, from a new sender on c4" "" (p ^ ", the sender: " ^ bounded_join b);
+
+  line "poll (sequence_final [])" "" (opt string_of_int (E.poll (E.sequence_final [])))
