@@ -23,10 +23,12 @@ let norm s =
   go 0; Buffer.contents b
 
 let collapse what s = line ("tilde_collapse " ^ what) "" (guard (fun () -> str (norm (G.tilde_collapse s))))
+(* Only names every home has ("." ), so the output does not depend on
+   what the home directory holds. *)
 let glob what pat =
-  line ("glob " ^ what) "" (guard (fun () ->
+  line ("glob " ^ what) "" (norm (guard (fun () ->
       let dirs, files = G.glob G.default_glob_options "/" [ pat ] in
-      list (fun s -> str (norm s)) (dirs @ files)))
+      list (fun s -> str s) (dirs @ files))))
 
 let child () =
   line "home_dir" "" (str (norm G.home_dir));
@@ -40,7 +42,7 @@ let child () =
   collapse "<R>-c/x, again" (real ^ "-c/x");
   glob "\"~\"" "~";
   glob "\"~<N>\"" ("~" ^ me);
-  glob "\"~<N>/x\"" ("~" ^ me ^ "/x");
+  glob "\"~<N>/.\"" ("~" ^ me ^ "/.");
   glob "an unknown user" "~no_such_user_zq9"
 
 (* HOME = <R>/n: the home nested inside <R>, so the longest entry must win. *)
