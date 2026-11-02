@@ -14,6 +14,14 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
+  backend's string, `Buffer.t` and channel printers give the same bytes, and
+  `make_text_printer` the same text. `make_html_printer` and
+  `make_tex_printer` do not: their printers keep the current line in a
+  buffer that only the module's own print functions flush, and the
+  returned printer has no way to flush it, so the last line is lost (all
+  of a one-line document). Nothing calls those two; the test pins this as
+  it is.
 
 ## 1.1.1 (2026-11-01)
 

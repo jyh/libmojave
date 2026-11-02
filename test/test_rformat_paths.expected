@@ -1,0 +1,144 @@
+text plain w=80: string = buffer = channel = true
+text plain w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text plain w=80: make_printer = string = true
+text plain w=10: string = buffer = channel = true
+text plain w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text plain w=10: make_printer = string = true
+text specials w=80: string = buffer = channel = true
+text specials w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text specials w=80: make_printer = string = true
+text specials w=10: string = buffer = channel = true
+text specials w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text specials w=10: make_printer = string = true
+text pushm w=80: string = buffer = channel = true
+text pushm w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text pushm w=80: make_printer = string = true
+text pushm w=10: string = buffer = channel = true
+text pushm w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text pushm w=10: make_printer = string = true
+text newline w=80: string = buffer = channel = true
+text newline w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text newline w=80: make_printer = string = true
+text newline w=10: string = buffer = channel = true
+text newline w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text newline w=10: make_printer = string = true
+text tzone w=80: string = buffer = channel = true
+text tzone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text tzone w=80: make_printer = string = true
+text tzone w=10: string = buffer = channel = true
+text tzone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text tzone w=10: make_printer = string = true
+text izone w=80: string = buffer = channel = true
+text izone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+text izone w=80: make_printer = string = true
+text izone w=10: string = buffer = channel = true
+text izone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+text izone w=10: make_printer = string = true
+html plain w=80: string = buffer = channel = true
+html plain w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html plain w=80: make_printer = string = false
+html plain w=10: string = buffer = channel = true
+html plain w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html plain w=10: make_printer = string = false
+html specials w=80: string = buffer = channel = true
+html specials w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html specials w=80: make_printer = string = false
+html specials w=10: string = buffer = channel = true
+html specials w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html specials w=10: make_printer = string = false
+html pushm w=80: string = buffer = channel = true
+html pushm w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html pushm w=80: make_printer = string = false
+html pushm w=10: string = buffer = channel = true
+html pushm w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html pushm w=10: make_printer = string = false
+html newline w=80: string = buffer = channel = true
+html newline w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html newline w=80: make_printer = string = false
+html newline w=10: string = buffer = channel = true
+html newline w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html newline w=10: make_printer = string = false
+html tzone w=80: string = buffer = channel = true
+html tzone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html tzone w=80: make_printer = string = false
+html tzone w=10: string = buffer = channel = true
+html tzone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html tzone w=10: make_printer = string = false
+html izone w=80: string = buffer = channel = true
+html izone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html izone w=80: make_printer = string = false
+html izone w=10: string = buffer = channel = true
+html izone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html izone w=10: make_printer = string = false
+html+tagger plain w=80: string = buffer = channel = true
+html+tagger plain w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger plain w=80: make_printer = string = false
+html+tagger plain w=10: string = buffer = channel = true
+html+tagger plain w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger plain w=10: make_printer = string = false
+html+tagger specials w=80: string = buffer = channel = true
+html+tagger specials w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger specials w=80: make_printer = string = false
+html+tagger specials w=10: string = buffer = channel = true
+html+tagger specials w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger specials w=10: make_printer = string = false
+html+tagger pushm w=80: string = buffer = channel = true
+html+tagger pushm w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger pushm w=80: make_printer = string = false
+html+tagger pushm w=10: string = buffer = channel = true
+html+tagger pushm w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger pushm w=10: make_printer = string = false
+html+tagger newline w=80: string = buffer = channel = true
+html+tagger newline w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger newline w=80: make_printer = string = false
+html+tagger newline w=10: string = buffer = channel = true
+html+tagger newline w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger newline w=10: make_printer = string = false
+html+tagger tzone w=80: string = buffer = channel = true
+html+tagger tzone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger tzone w=80: make_printer = string = false
+html+tagger tzone w=10: string = buffer = channel = true
+html+tagger tzone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger tzone w=10: make_printer = string = false
+html+tagger izone w=80: string = buffer = channel = true
+html+tagger izone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger izone w=80: make_printer = string = false
+html+tagger izone w=10: string = buffer = channel = true
+html+tagger izone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+html+tagger izone w=10: make_printer = string = false
+tex plain w=80: string = buffer = channel = true
+tex plain w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex plain w=80: make_printer = string = false
+tex plain w=10: string = buffer = channel = true
+tex plain w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex plain w=10: make_printer = string = false
+tex specials w=80: string = buffer = channel = true
+tex specials w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex specials w=80: make_printer = string = false
+tex specials w=10: string = buffer = channel = true
+tex specials w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex specials w=10: make_printer = string = false
+tex pushm w=80: string = buffer = channel = true
+tex pushm w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex pushm w=80: make_printer = string = false
+tex pushm w=10: string = buffer = channel = true
+tex pushm w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex pushm w=10: make_printer = string = false
+tex newline w=80: string = buffer = channel = true
+tex newline w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex newline w=80: make_printer = string = false
+tex newline w=10: string = buffer = channel = true
+tex newline w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex newline w=10: make_printer = string = false
+tex tzone w=80: string = buffer = channel = true
+tex tzone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex tzone w=80: make_printer = string = false
+tex tzone w=10: string = buffer = channel = true
+tex tzone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex tzone w=10: make_printer = string = false
+tex izone w=80: string = buffer = channel = true
+tex izone w=80: make_printer is a prefix of string (tex: after its prologue) = true
+tex izone w=80: make_printer = string = false
+tex izone w=10: string = buffer = channel = true
+tex izone w=10: make_printer is a prefix of string (tex: after its prologue) = true
+tex izone w=10: make_printer = string = false
