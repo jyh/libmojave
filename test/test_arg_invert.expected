@@ -14,7 +14,7 @@ fold_argv ["--no-on"] = " on=false"
 fold_argv ["-off"] = " off=false"
 fold_argv ["--no-off"] = " off=true"
 fold_argv ["-o"] = "BogusArg Ambiguous option specified: -o"
-fold_argv ["--no-o"] = "BogusArg No such option: -o (extracted from inverted: --no-o)"
+fold_argv ["--no-o"] = "BogusArg Ambiguous option specified: -o (extracted from inverted: --no-o)"
 usage:
 Usage: prog [options].
 
