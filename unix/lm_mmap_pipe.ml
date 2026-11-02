@@ -162,7 +162,8 @@ let search_server dir =
                try
                   Unix.connect sock (Unix.ADDR_UNIX sockname);
 
-                  (* Server is operational, so close the socket and keep trying *)
+                  (* Server is operational, so close the socket and keep trying;
+         its open_client sees the closed probe and stays free *)
                   Unix.close sock;
                   search (succ i)
                with
@@ -294,6 +295,17 @@ let try_write sock buf =
       ()
 
 (*
+ * A client says nothing until it reads the accept byte, so a socket that
+ * is readable at accept time has hit end of file: the peer already closed.
+ *)
+let peer_closed sock =
+   match Unix.select [sock] [] [] 0.0 with
+      [], _, _ ->
+         false
+    | _ ->
+         (try Unix.read sock char_buf 0 1 = 0 with Unix.Unix_error _ -> true)
+
+(*
  * Open a client connection for the server.
  *)
 let open_client mmap =
@@ -314,6 +326,14 @@ let open_client mmap =
       } ->
          (* We're free, so accept this client *)
          let sock, _ = Unix.accept server in
+         if peer_closed sock then
+            begin
+               (* Another server's search_server probed us and hung up: not
+                  a client.  Stay free, as for a busy refusal. *)
+               Unix.close sock;
+               false
+            end
+         else begin
             (* Clear both halves BEFORE the accept byte: the client writes as
                soon as it reads that byte, and clearing after it could erase
                the client's first message. *)
@@ -323,6 +343,7 @@ let open_client mmap =
             try_write sock char_buf;
             mmap.mmap_socket <- Some sock;
             true
+         end
 
     | _ ->
          raise (Invalid_argument "Lm_mmap_pipe.open_client")

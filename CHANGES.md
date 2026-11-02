@@ -4,6 +4,16 @@
 
 ### Fixed
 
+- `Lm_mmap_pipe`: a second server started in the same directory as a live
+  one with no client checks that the live one is alive by connecting and
+  hanging up; the live server's next `open_client` then took that closed
+  connection as its client, so it turned real clients away (busy) until
+  its caller read end of file on that socket and called `close_client`.
+  `open_client` now closes a connection whose peer has already hung up and
+  returns `false`, as it does when busy. A peer that hangs up only after
+  the accept is still taken (declared). The only caller is metaprl's
+  ensemble outboard server, which is not built
+  (`test/test_mmap_pipe_server.ml`).
 - `Lm_lexer` bracket expressions: a `[` that opens no class just before the
   closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
   sequence is not terminated"), and a `-` just before the closing `]` began
