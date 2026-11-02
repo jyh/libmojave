@@ -10,6 +10,7 @@
      writer (counted with a separate mutex).
    - unlock inside a write lets another thread read.
    - readers queued behind a writer all finish once it releases.
+   - writer precedence: a reader arriving after a queued writer waits for it.
    A watchdog ends the run with "HUNG" after 60 s, so a deadlock is a
    red line rather than a stuck job. *)
 open Pin
@@ -90,5 +91,21 @@ let () =
       let v = S.read e (fun r -> !r) in
       Mutex.lock m; if v = 1 then incr done_; Mutex.unlock m) ()) in
   T.join w; List.iter T.join rs;
-  line "queued readers" "4 behind a writer" (Printf.sprintf "%d finished, after the write" !done_);
+  line "queued readers" "4 behind a writer" (Printf.sprintf "%d finished, after the write" !done_)
+
+(* Writer precedence: A holds a read lock; W asks to write and queues; R
+   asks to read after W, and must wait behind W, not join A. The order the
+   three enter is recorded. Timing (A holds 0.4 s, W asks at 0.1 s, R at
+   0.2 s) only arranges the order of arrival. *)
+let () =
+  let e = S.shared_val "f" (ref 0) in
+  let order = ref [] and m = Mutex.create () in
+  let enter name = Mutex.lock m; order := name :: !order; Mutex.unlock m in
+  let a = T.create (fun () -> S.read e (fun _ -> enter "A"; Unix.sleepf 0.4)) () in
+  Unix.sleepf 0.1;
+  let w = T.create (fun () -> S.write e (fun _ -> enter "W")) () in
+  Unix.sleepf 0.1;
+  let r = T.create (fun () -> S.read e (fun _ -> enter "R")) () in
+  List.iter T.join [ a; w; r ];
+  line "writer precedence" "A reading, then W asks to write, then R to read" (String.concat " " (List.rev !order));
   exit 0
