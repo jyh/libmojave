@@ -1,0 +1,3 @@
+write "a\nb\n\n", the bytes on disk  = "a\r\nb\r\n\r\n"
+read "x\r\ny\r\n\r\nz\rw"  = "x\ny\n\nz\rw"
+read 4095 a, "\r\n" at the fill boundary, "tail\r\n"  = length 4101, \r 0, \n 2, ends "aa\ntail\n"

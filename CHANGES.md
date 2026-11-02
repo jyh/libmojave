@@ -114,6 +114,11 @@
   the output functions through `create_string` (lm_channel.ml was at 42 %
   of its points under the tests). Recorded: `seek` and `tell` raise
   `EINVAL` on a string channel.
+- `Lm_channel`'s text mode (`test/test_channel_text.ml`, a per-platform
+  expected file): on Windows a write turns `\n` into `\r\n` and a read
+  turns `\r\n` back, a lone `\r` kept, including a `\r\n` that straddles
+  the 4096-byte fill; elsewhere the bytes pass unchanged. The Windows file
+  was written from that contract and is checked by the Windows CI lanes.
 - `Lm_lexer` bracket expressions and escapes against a model
   (`test/test_lexer_charset.ml`): random sets of characters, ranges,
   classes and escapes, each class against ASCII, and the escapes outside
