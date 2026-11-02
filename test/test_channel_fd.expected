@@ -1,19 +1,19 @@
-file out: tell = bytes written 2082 cases = 0 disagree
-file out: write takes every byte 385 cases = 0 disagree
+file out: tell = bytes written 1895 cases = 0 disagree
+file out: write takes every byte 357 cases = 0 disagree
 file out: the file holds the text 120 cases = 0 disagree
-file in: input_entire_line 194 cases = 0 disagree
-file in: tell 193 cases = 103 disagree (first: text of 5356 after input_entire_line (tell 4099, model 2) tell)
-file in: input_buffer 208 cases = 0 disagree
-file in: read 201 cases = 0 disagree
-file in: input_line 192 cases = 0 disagree
-file in: seek 198 cases = 0 disagree
-file in: input_char 176 cases = 0 disagree
-pipe out: write takes every byte 193 cases = 0 disagree
-pipe in: input_line 267 cases = 0 disagree
-pipe in: input_entire_line 304 cases = 0 disagree
-pipe in: input_buffer 305 cases = 0 disagree
-pipe in: read 324 cases = 0 disagree
-pipe in: input_char 300 cases = 0 disagree
+file in: input_entire_line 413 cases = 0 disagree
+file in: tell 436 cases = 0 disagree
+file in: input_line 425 cases = 0 disagree
+file in: input_char 480 cases = 0 disagree
+file in: input_buffer 426 cases = 0 disagree
+file in: seek 398 cases = 0 disagree
+file in: read 422 cases = 0 disagree
+pipe out: write takes every byte 184 cases = 0 disagree
+pipe in: input_buffer 277 cases = 0 disagree
+pipe in: input_line 324 cases = 0 disagree
+pipe in: input_entire_line 286 cases = 0 disagree
+pipe in: input_char 313 cases = 0 disagree
+pipe in: read 300 cases = 0 disagree
 select nothing written, timeout 0.1 = [] [] (waited)
 select "ab" written to rb's pipe = [rb] []
 select rb reads one char = "a"

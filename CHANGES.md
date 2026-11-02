@@ -29,6 +29,12 @@
   discarded the input not yet read before raising `EINVAL`, so the reads
   after a failed seek ended early. It now raises first and leaves the
   channel as it was.
+- `Lm_channel.tell` on an input channel over a file, after a read, gave
+  the descriptor's offset plus the read index, so after reading one short
+  line it said 4099 where the position was 2 (103 of 193 random reads
+  wrong). It now subtracts the input still buffered. Nothing in libmojave
+  or metaprl calls it; omake's `$(tell)` reaches its own copy
+  (`test/test_channel_fd.ml`).
 - `Lm_filename_util.unescape_string` kept a single-quoted string open: after
   the first character inside `'…'` it scanned as if in double quotes, so the
   closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
@@ -55,6 +61,12 @@
   against the whole. Recorded: a backslash that ends a piece does not
   escape the next piece's first character.
 
+- `Lm_channel` over a file and a pipe against a model
+  (`test/test_channel_fd.ml`, Unix only): texts up to three buffers long
+  written by random output steps (with `tell` after each) and read back by
+  random input steps, `seek` and `tell`, through a file and through a pipe
+  from a forked writer; then `select` over pipes, including input still
+  buffered and end of file.
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
   `input_buffer` through `of_string` and `of_substring`, step by step, and
