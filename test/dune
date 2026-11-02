@@ -218,6 +218,26 @@
  (modules test_tokens_model)
  (libraries libmojave pin))
 
+; Lm_channel's text-mode write past one buffer (Windows only): per-platform
+; expected file, the Windows one a prediction until the Windows lanes measured it.
+(executable
+ (name test_channel_text_write)
+ (modules test_channel_text_write)
+ (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_channel_text_write.output (run ./test_channel_text_write.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_text_write.expected test_channel_text_write.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_text_write.win32.expected test_channel_text_write.output)))
+
 (test
  (name test_glob_options)
  (modules test_glob_options)
