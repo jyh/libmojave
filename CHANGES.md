@@ -4,12 +4,14 @@
 
 ### Fixed
 
-- `Lm_parser` `build parser true` printed nothing: it raised `debug_parse`
-  for the build, a flag that traces parsing only, so its "debug mode" had no
-  effect since it was written (2004). It now raises `debug_parsegen`, the
-  generator's own output, for the build and restores it after. omake's
-  parser builtin passes its debug option to `build`
-  (`test/test_parser_assoc.ml`).
+- `Lm_map.LmMakeList`'s `equal` compared each key's list of values but not
+  the keys, so a table read equal to the same lists under other keys (286
+  of 300 random tables). It now compares the keys too, as `LmMake`'s
+  `equal` and both `forall2` do. Nothing in libmojave, metaprl or omake
+  calls it (`test/test_map_model.ml`, which now also pins the rest of the
+  family: `union` gives its function the larger table's list first,
+  whichever order the tables were passed in, and `find_iter` returns some
+  match, not the first by key).
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed
@@ -82,6 +84,12 @@
   wrapped at 40 there. 0 columns now means unknown (pinned by
   `test/test_term_pty.ml`).
 
+- `Lm_channel.select` with a negative timeout returned at once with
+  nothing ready when every channel was a socket — always the case on Unix,
+  where every descriptor is selected as one — although its pipe branch
+  reads a negative timeout as "no limit". It now waits, as `Unix.select`
+  does (`test/test_channel_select.ml`). omake's `select` builtin passes its
+  timeout straight through.
 - `Lm_channel.write` into a string channel (`create_string`) wrote nothing
   and returned 0, where `output_string` and the other output functions
   append, so a caller writing until all bytes are taken looped forever.
@@ -111,6 +119,12 @@
   and no workers, the first time it enters `blocking_section` or
   `resume_inner_section` (`test/test_channel_fork.ml`). The default profile
   (null threads) was not affected. Nothing in libmojave or metaprl forks.
+- `Lm_parser` `build parser true` printed nothing: it raised `debug_parse`
+  for the build, a flag that traces parsing only, so its "debug mode" had no
+  effect since it was written (2004). It now raises `debug_parsegen`, the
+  generator's own output, for the build and restores it after. omake's
+  parser builtin passes its debug option to `build`
+  (`test/test_parser_assoc.ml`).
 - `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
@@ -165,6 +179,11 @@
   the output functions through `create_string` (lm_channel.ml was at 42 %
   of its points under the tests). Recorded: `seek` and `tell` raise
   `EINVAL` on a string channel.
+- `Lm_channel`'s text mode (`test/test_channel_text.ml`, a per-platform
+  expected file): on Windows a write turns `\n` into `\r\n` and a read
+  turns `\r\n` back, a lone `\r` kept, including a `\r\n` that straddles
+  the 4096-byte fill; elsewhere the bytes pass unchanged. The Windows file
+  was written from that contract and is checked by the Windows CI lanes.
 - `Lm_lexer` bracket expressions and escapes against a model
   (`test/test_lexer_charset.ml`): random sets of characters, ranges,
   classes and escapes, each class against ASCII, and the escapes outside
@@ -173,6 +192,11 @@
   that follows.
 - A forked child doing channel I/O, in both thread profiles
   (`test/test_channel_fork.ml`, Unix only).
+- `Lm_printf.extra_formatting` (`test/test_printf_extra.ml`, Unix): two
+  processes writing in turn through one formatter; the channel's bytes
+  and the log's `[|PID: ...|]` entries (merged per process, closed at a
+  newline or a change of process). Recorded as it stands: the channel
+  also gets `\r\n` written as `\n`. Nothing calls it. No defect.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
