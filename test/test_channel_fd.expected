@@ -1,0 +1,25 @@
+file out: tell = bytes written 2082 cases = 0 disagree
+file out: write takes every byte 385 cases = 0 disagree
+file out: the file holds the text 120 cases = 0 disagree
+file in: input_entire_line 194 cases = 0 disagree
+file in: tell 193 cases = 103 disagree (first: text of 5356 after input_entire_line (tell 4099, model 2) tell)
+file in: input_buffer 208 cases = 0 disagree
+file in: read 201 cases = 0 disagree
+file in: input_line 192 cases = 0 disagree
+file in: seek 198 cases = 0 disagree
+file in: input_char 176 cases = 0 disagree
+pipe out: write takes every byte 193 cases = 0 disagree
+pipe in: input_line 267 cases = 0 disagree
+pipe in: input_entire_line 304 cases = 0 disagree
+pipe in: input_buffer 305 cases = 0 disagree
+pipe in: read 324 cases = 0 disagree
+pipe in: input_char 300 cases = 0 disagree
+select nothing written, timeout 0.1 = [] [] (waited)
+select "ab" written to rb's pipe = [rb] []
+select rb reads one char = "a"
+select rb's pipe empty, "b" still buffered = [rb] []
+select write side = [] [wa]
+select "xyz" through wa = [ra] []
+select ra reads what is there = "xyz"
+select rb drained, its writer closed (end of file) = [rb] []
+select rb then = EXN End_of_file
