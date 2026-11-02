@@ -271,3 +271,24 @@
  (modules test_mmap_pipe_server)
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
+
+; Lm_channel.select on pipes: the pipe branch runs only on Windows, so this
+; test compares against a per-platform expected file (the Windows one a
+; prediction until the Windows lanes measured it).
+(executable
+ (name test_channel_pipe)
+ (modules test_channel_pipe)
+ (libraries libmojave pin unix threads.posix))
+
+(rule
+ (with-stdout-to test_channel_pipe.output (run ./test_channel_pipe.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_pipe.expected test_channel_pipe.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_pipe.win32.expected test_channel_pipe.output)))

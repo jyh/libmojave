@@ -1,0 +1,9 @@
+select [r] [] [] 0, nothing written  = [] [] []
+select [r] [] [] 0, "x" in the pipe  = [r] [] []
+  input_char r  = 'x'
+select [r] [] [] 0.3, nothing written  = [] [] [], waited >= 0.25 s: true
+select [r] [] [] (-1), "y" written after 0.3 s  = [r] [] [], waited >= 0.25 s: true
+  input_char r  = 'y'
+select [] [w] [] 0, w's buffer empty  = [] [w] []
+select [] [w] [] 0, "zz" buffered in w  = [] [w] []
+  after flush w, read the pipe  = "zz"
