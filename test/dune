@@ -21,6 +21,11 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_rformat_quote)
+ (modules test_rformat_quote)
+ (libraries libmojave pin unix))
+
+(test
  (name test_term_pty)
  (modules test_term_pty)
  (enabled_if (<> %{os_type} Win32))

@@ -155,6 +155,12 @@
   quote now ends at its own character (`test/test_tokens_model.ml`).
   `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
   `tokens_std`; omake has its own copy.
+- `Lm_rformat.format_quoted_string` left a backslash as it was: it neither
+  escaped it nor quoted a string for holding one, so `x\" y` printed as
+  `"x\\" y"`, which reads back as `x\` and a stray `y"`. A backslash now
+  quotes the string and prints as `\\`; every quoted output reads back with
+  OCaml's `%S` (`test/test_rformat_quote.ml`, 3000 strings). metaprl's
+  display forms print variable and operator names through it.
 - `Lm_filename_util.is_executable` (and so `which` and `where`) on Unix
   took a file with any execute bit the process could match as executable,
   so a file the process owns with mode `0o010` or `0o001` read as
