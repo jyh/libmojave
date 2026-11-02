@@ -1,0 +1,16 @@
+home_dir  = "<R>-c"
+tilde_collapse <R>-c/x  = "~/x"
+tilde_collapse <R>-cx/y (no separator after the entry <R>-c)  = "<R>-cx/y"
+gethomedir <N> (adds <R> as "~<N>")  = "<R>"
+tilde_collapse <R>/x  = "~<N>/x"
+tilde_collapse <R>  = "~<N>"
+tilde_collapse <R>-c/x, again  = "~/x"
+glob "~"  = ["<R>-c"]
+glob "~<N>"  = ["<R>"]
+glob "~<N>/."  = ["<R>/."]
+glob an unknown user  = EXN Failure("Unknown user: no_such_user_zq9")
+-- HOME = <R>/n
+home_dir  = "<R>/n"
+gethomedir <N>  = "<R>"
+tilde_collapse <R>/n/x (inside both: the longer wins)  = "~/x"
+tilde_collapse <R>/m (inside <R> only)  = "~<N>/m"

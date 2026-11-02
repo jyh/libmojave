@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- `Lm_map.LmMakeList`'s `equal` compared each key's list of values but not
+  the keys, so a table read equal to the same lists under other keys (286
+  of 300 random tables). It now compares the keys too, as `LmMake`'s
+  `equal` and both `forall2` do. Nothing in libmojave, metaprl or omake
+  calls it (`test/test_map_model.ml`, which now also pins the rest of the
+  family: `union` gives its function the larger table's list first,
+  whichever order the tables were passed in, and `find_iter` returns some
+  match, not the first by key).
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed
@@ -40,6 +48,11 @@
   It now sorts the list and keeps the last binding of a key, as `add` would;
   `Lm_set.of_list` already took any order. No caller in libmojave, metaprl
   or omake passed such a list.
+- `Lm_inet.connect` left its socket open when the connection failed
+  (refused, or no address of a name answered), one descriptor per failed
+  call (20 of 20 in `test/test_inet_leak.ml`). It now closes the socket and
+  raises the same exception. Windows takes the same path, unmeasured (the
+  count reads `/dev/fd`).
 - `Lm_map.LmMakeList.fold_map` (the multi-value maps) gave back each key's
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
@@ -69,6 +82,14 @@
   specified"; the inverted lookup now keeps the lookup's own reason and
   adds that it was extracted from the inverted name
   (`test/test_arg_invert.ml`).
+- `Lm_glob.tilde_collapse` checked that a known home directory was a prefix
+  of the path but not that a separator followed it, so with home `/u/jo-c`
+  the path `/u/jo-cx/y` became `~x/y`, which names another user's home. It
+  also tried only one table entry (the largest not above the path in
+  string order), so `/u/jo/x` stayed uncollapsed once `/u/jo-c` was in the
+  table. It now takes the longest entry that is a prefix of the path and is
+  followed by a separator or ends it (`test/test_glob_tilde.ml`, which reads
+  only the running user's own account). omake's `tilde-collapse` calls it.
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -76,6 +97,12 @@
   wrapped at 40 there. 0 columns now means unknown (pinned by
   `test/test_term_pty.ml`).
 
+- `Lm_channel.select` with a negative timeout returned at once with
+  nothing ready when every channel was a socket — always the case on Unix,
+  where every descriptor is selected as one — although its pipe branch
+  reads a negative timeout as "no limit". It now waits, as `Unix.select`
+  does (`test/test_channel_select.ml`). omake's `select` builtin passes its
+  timeout straight through.
 - `Lm_channel.write` into a string channel (`create_string`) wrote nothing
   and returned 0, where `output_string` and the other output functions
   append, so a caller writing until all bytes are taken looped forever.
@@ -115,9 +142,25 @@
   quote now ends at its own character (`test/test_tokens_model.ml`).
   `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
   `tokens_std`; omake has its own copy.
+- `Lm_filename_util.is_executable` (and so `which` and `where`) on Unix
+  took a file with any execute bit the process could match as executable,
+  so a file the process owns with mode `0o010` or `0o001` read as
+  executable although the kernel refuses to run it (the owner's bits decide
+  for the owner). It now decides as the kernel does: the owner's bits for
+  the owner, else the group's for a member (the effective group included),
+  else the others'; root needs any execute bit. Checked against
+  `access X_OK` (`test/test_filename_exec.ml`); the group branch has no
+  test file, and ACLs are not read.
 
 ### Tests
 
+- `Lm_thread_event` under threads (`test/test_thread_event.ml`): a `select`
+  that completes on one channel leaves its entry queued on the other, and a
+  later `send` or `receive` there skips it and meets the live peer (both
+  directions); `poll (sequence_final [])` is `None`. No defect. Left
+  unreached and stated: `always`'s block (its poll never fails), the
+  unexported `_delay`, a second wait after a spurious wake-up, and the
+  "Event.sync" failure, which only null threads reach.
 - `Lm_string_util`'s token scanners against models
   (`test/test_tokens_model.ml`): `tokens_string`, `tokens_lex`,
   `tokens_data`, `tokens_add`, `tokens_atomic`, `tokens_break` and
@@ -131,12 +174,23 @@
   random input steps, `seek` and `tell`, through a file and through a pipe
   from a forked writer; then `select` over pipes, including input still
   buffered and end of file.
+- `Lm_unix_util` on Unix (`test/test_unix_util_rest.ml`): `copy_file`
+  (contents, mode, over a longer file, and three failures — a missing
+  source, a missing destination directory, a directory as the source —
+  that leave no descriptor open), `mkdirhier` (relative, absolute,
+  simplified, through a regular file) and `ftruncate` at the current
+  position. No defect.
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
   `input_buffer` through `of_string` and `of_substring`, step by step, and
   the output functions through `create_string` (lm_channel.ml was at 42 %
   of its points under the tests). Recorded: `seek` and `tell` raise
   `EINVAL` on a string channel.
+- `Lm_channel`'s text mode (`test/test_channel_text.ml`, a per-platform
+  expected file): on Windows a write turns `\n` into `\r\n` and a read
+  turns `\r\n` back, a lone `\r` kept, including a `\r\n` that straddles
+  the 4096-byte fill; elsewhere the bytes pass unchanged. The Windows file
+  was written from that contract and is checked by the Windows CI lanes.
 - `Lm_lexer` bracket expressions and escapes against a model
   (`test/test_lexer_charset.ml`): random sets of characters, ranges,
   classes and escapes, each class against ASCII, and the escapes outside
@@ -145,6 +199,11 @@
   that follows.
 - A forked child doing channel I/O, in both thread profiles
   (`test/test_channel_fork.ml`, Unix only).
+- `Lm_printf.extra_formatting` (`test/test_printf_extra.ml`, Unix): two
+  processes writing in turn through one formatter; the channel's bytes
+  and the log's `[|PID: ...|]` entries (merged per process, closed at a
+  newline or a change of process). Recorded as it stands: the channel
+  also gets `\r\n` written as `\n`. Nothing calls it. No defect.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
@@ -213,6 +272,11 @@
   as they are: `find_iter` returns some match, not the first by key, and
   `LmMakeList.filter_remove` that removes a key's newest value removes the
   key.
+- `Lm_flags`'s printers and help sections (`test/test_flags.ml`):
+  `print_std_flag_defaults` (sections, defaults, help text wrapped at the
+  margin) and `print_std_flag_values` pinned by their output, a section's
+  text set before and after its flags, and the type-mismatch and undefined
+  branches of `set_bool`, `get_bool` and `get_int`. No defect.
 
 ## 1.1.1 (2026-11-01)
 
