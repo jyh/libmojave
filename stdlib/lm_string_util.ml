@@ -531,21 +531,22 @@ let tokens_fold f x quotes delims str =
             if contains delims c then
                pos
             else if contains quotes c then
-               next_quote (succ pos)
+               next_quote c (succ pos)
             else
                next_split (succ pos)
 
-   and next_quote pos =
+   (* A quote ends at the character that opened it. *)
+   and next_quote q pos =
       if pos = strlen then
          strlen
       else
          let c = str.[pos] in
-            if contains quotes c then
+            if c = q then
                next_split (succ pos)
             else if c = '\\' && pos < pred strlen then
-               next_quote (pos + 2)
+               next_quote q (pos + 2)
             else
-               next_quote (succ pos)
+               next_quote q (succ pos)
    in
 
    (* Build the list *)
