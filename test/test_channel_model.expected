@@ -1,0 +1,28 @@
+create_string: to_string = what was written        97 of  300
+  first difference: after output_string write: "cb a\ncddb bbb acadcab ccdbbadbc\nbc\n\nc dbca\ndd\ncabb\naa\n bc " vs "cb a\ncddb bbb acadcab ccdbbadbc\nbc\n\nc dbca\ndd\ncabb\naa\n bc <write returned 0>"
+of_string: input_buffer                           309 of  331
+  first difference: "dc\nca\ndaca\nbbaacb\ncac\nac bcabda ab\nabdaa cbaad\n" after seek and tell raise EINVAL input_buffer
+of_string: input_byte                             312 of  349
+  first difference: " da\nbdddddca\nca a aabcb\ndc b\nc abb adbdd a" after input_line input_buffer input_char seek and tell raise EINVAL input_byte
+of_string: input_char                             274 of  313
+  first difference: "bcc\nac\nb c acdc\n\nccccb bbcd c \n  \ndddd\nd\nb\ncba a" after read input_char input_line input_entire_line input_buffer input_buffer read input_char input_entire_line seek and tell raise EINVAL input_char
+of_string: input_entire_line                      305 of  333
+  first difference: "ad babdd \nb\n bd \ncccc bddbdcaddabada \n\n\nc \n" after read input_buffer input_buffer seek and tell raise EINVAL input_entire_line
+of_string: input_line                             297 of  330
+  first difference: "db \nc cdd b bcacb\ndabcddcdc bba\ndccbaa cb\n" after input_entire_line input_byte input_char input_line read input_entire_line input_byte input_buffer seek and tell raise EINVAL input_line
+of_string: read                                   319 of  340
+  first difference: "aadd b\na dbccaa" after input_char read seek and tell raise EINVAL read
+of_string: seek and tell raise EINVAL             347 of  347
+of_substring: input_buffer                        391 of  396
+  first difference: "cd c \n  \ndddd\nd\nb" after read seek and tell raise EINVAL seek and tell raise EINVAL input_buffer
+of_substring: input_byte                          403 of  419
+  first difference: "cddcd" after seek and tell raise EINVAL input_byte
+of_substring: input_char                          404 of  414
+  first difference: "ba\nd\ndc" after input_line input_byte input_byte seek and tell raise EINVAL input_char
+of_substring: input_entire_line                   410 of  425
+  first difference: "addbca" after input_byte seek and tell raise EINVAL input_entire_line
+of_substring: input_line                          383 of  403
+  first difference: "d\nddcbbbbbcda\ndcabbccb" after input_char input_char seek and tell raise EINVAL input_line
+of_substring: read                                393 of  408
+  first difference: "bccaa\n" after input_char input_char input_char seek and tell raise EINVAL read
+of_substring: seek and tell raise EINVAL          439 of  439
