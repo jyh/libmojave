@@ -225,4 +225,14 @@ let () =
     [ "1 + 2 + 3"; "1 * 2 * 3"; "1 + 2 * 3" ];
   (* g2 has < below + and * above it *)
   show "g1 {+}, g2 {< < + < *}" (gram [ L ] [ ("+", 0) ]) (gram [ N; L; L ] [ ("<", 0); ("+", 1); ("*", 2) ])
-    [ "1 < 2 + 3 * 4"; "1 * 2 + 3 < 4"; "1 < 2 < 3" ]
+    [ "1 < 2 + 3 * 4"; "1 * 2 + 3 < 4"; "1 < 2 < 3" ];
+  (* get_start and find_prec, which no test called *)
+  let starts g = "[" ^ String.concat "; " (List.sort compare (P.get_start g)) ^ "]" in
+  let g1 = base (gram [ L; L ] [ ("+", 0); ("-", 0); ("*", 1) ]) in
+  line "get_start" "one start symbol" (starts g1);
+  line "get_start" "after add_start \"stmt\"" (starts (P.add_start g1 "stmt"));
+  line "get_start" "of a union" (starts (P.union g1 (P.add_start P.empty "decl")));
+  let same a b = guard (fun () -> string_of_bool (P.find_prec g1 a = P.find_prec g1 b)) in
+  line "find_prec" "+ and - (one level)" (same "+" "-");
+  line "find_prec" "+ and * (two levels)" (same "+" "*");
+  line "find_prec" "an operator with no precedence" (guard (fun () -> ignore (P.find_prec g1 "/"); "found"))
