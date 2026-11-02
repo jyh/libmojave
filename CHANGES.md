@@ -10,6 +10,12 @@
   generator's own output, for the build and restores it after. omake's
   parser builtin passes its debug option to `build`
   (`test/test_parser_assoc.ml`).
+- `Lm_rformat.format_quoted_string` left a backslash as it was: it neither
+  escaped it nor quoted a string for holding one, so `x\" y` printed as
+  `"x\\" y"`, which reads back as `x\` and a stray `y"`. A backslash now
+  quotes the string and prints as `\\`; every quoted output reads back with
+  OCaml's `%S` (`test/test_rformat_quote.ml`, 3000 strings). metaprl's
+  display forms print variable and operator names through it.
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed
