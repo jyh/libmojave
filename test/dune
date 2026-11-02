@@ -6,6 +6,11 @@
  (modules pin))
 
 (test
+ (name test_command_util)
+ (modules test_command_util)
+ (libraries libmojave pin unix))
+
+(test
  (name test_channel_fd)
  (modules test_channel_fd)
  (enabled_if (<> %{os_type} Win32))

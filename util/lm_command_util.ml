@@ -286,7 +286,9 @@ let read_eval_print run =
       else
          printf "@."
    in
-   let input = Lm_readline.readline (bold_text (prompt ())) in
+   (* Trim first: the arguments are cut from the line at the length of the
+      command, so the command must start the line. *)
+   let input = Lm_string_util.trim (Lm_readline.readline (bold_text (prompt ()))) in
    let command, _ = get_next_argument (parse_command input) in
    let command_len = String.length command in
    let arguments = String.sub input command_len (String.length input - command_len) in

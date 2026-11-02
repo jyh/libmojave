@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- `Lm_command_util.read_eval_print` gave a command the wrong arguments when the
+  line began with blanks: it cut the arguments from the line at the length of the
+  command, so `"  echo a b"` ran `echo` with `["ho"; "a"; "b"]` and a leading tab
+  with `["o"; "c"]`. It now trims the line first (`test_command_util`).
 - `Lm_map.LmMakeList`'s `equal` compared each key's list of values but not
   the keys, so a table read equal to the same lists under other keys (286
   of 300 random tables). It now compares the keys too, as `LmMake`'s
