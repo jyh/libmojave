@@ -4,3 +4,4 @@ release agrees with uname -r = true
 version agrees with uname -v = true
 machine agrees with uname -m = true
 sysname is non-empty (Windows: starts with win) = true
+machine is not "unknown" = true
