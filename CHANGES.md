@@ -58,6 +58,15 @@
   `\'` was not unescaped. Single quotes now close, and `\'` inside them gives
   `'` (`test/test_filename_rest.ml`). Double quotes are unchanged. Nothing in
   libmojave, metaprl or omake calls it.
+- Under `--profile threads` (real threads), a forked child that read or
+  wrote a channel before `exec` died with `Sys_error "Mutex.unlock:
+  Operation not permitted"`: the main thread holds `Lm_thread_pool`'s lock
+  outside `blocking_section`, and OCaml 5's mutexes refuse an unlock from a
+  thread that does not own them, which a forked child's thread is not
+  (OCaml 4's did not check). The child now starts with a fresh lock, held,
+  and no workers, the first time it enters `blocking_section` or
+  `resume_inner_section` (`test/test_channel_fork.ml`). The default profile
+  (null threads) was not affected. Nothing in libmojave or metaprl forks.
 - `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
@@ -96,6 +105,8 @@
   brackets. Recorded, not POSIX and not changed: an escape cannot start or
   end a range, `\8` reads as `\0` then `8`, `\x` reads every hex digit
   that follows.
+- A forked child doing channel I/O, in both thread profiles
+  (`test/test_channel_fork.ml`, Unix only).
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
