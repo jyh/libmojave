@@ -22,6 +22,12 @@
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_splay_table`'s `intersectp` (in the method record `create` returns)
+  missed common keys: its in-order walk stepped past the parent of every
+  node without a right subtree, so keys held there were never compared
+  (122 of 600 random pairs of tables answered false where they share a
+  key). The walk now returns to that parent. Nothing in libmojave or
+  metaprl calls it (`test/test_splay_table_model.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
@@ -137,6 +143,10 @@
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 - `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
   on names without a drive letter.
+- `Lm_splay_table`'s method record against a model
+  (`test/test_splay_table_model.ml`): elements, `find_all`, `cardinal`,
+  `mem_filt`, `not_mem_filt`, `intersectp`, union, `of_list` and
+  `deletemax` on tables built by random histories.
 - `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
   a child under `script(1)` sets the pseudo-terminal's size with `stty`;
   `term_size` reads it back, `term_width` and `stdout_width` are its columns
