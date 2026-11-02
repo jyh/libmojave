@@ -35,8 +35,8 @@
 ; Filenames and globbing are platform-dependent by design (separators,
 ; drives), so these two compare against a per-platform expected file.
 (executables
- (names test_filename_util test_glob)
- (modules test_filename_util test_glob)
+ (names test_filename_util test_glob test_rusage)
+ (modules test_filename_util test_glob test_rusage)
  (libraries libmojave pin unix))
 
 (rule
@@ -143,3 +143,18 @@
  (modules test_flock)
  (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
+
+; Lm_rusage is "not implemented" on Win32 (zeros, setrlimit a no-op), so
+; it compares against a per-platform expected file too.
+(rule
+ (with-stdout-to test_rusage.output (run ./test_rusage.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_rusage.expected test_rusage.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_rusage.win32.expected test_rusage.output)))
