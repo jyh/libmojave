@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
+  `min_screen_width` (40) on a terminal that reports 0 columns — a
+  pseudo-terminal nobody sized — instead of the width it was given (80 for
+  `stdout_width`), so `Lm_arg`'s usage text and metaprl's proof printer
+  wrapped at 40 there. 0 columns now means unknown (pinned by
+  `test/test_term_pty.ml`).
+
 - `Lm_filename_util.unescape_string` kept a single-quoted string open: after
   the first character inside `'…'` it scanned as if in double quotes, so the
   closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
@@ -43,9 +50,9 @@
 - `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
   a child under `script(1)` sets the pseudo-terminal's size with `stty`;
   `term_size` reads it back, `term_width` and `stdout_width` are its columns
-  but never under `min_screen_width` (40), and curses' `getmaxyx` agrees. A
-  0 x 0 terminal reads as 0 columns, so `term_width` gives 40, not the width
-  it was given; curses falls back to a size of its own. On a pipe `term_size`
+  but never under `min_screen_width` (40), and curses' `getmaxyx` agrees. On
+  a 0 x 0 terminal `term_width` keeps the width it was given (see Fixed);
+  curses falls back to a size of its own. On a pipe `term_size`
   fails and `term_width` keeps its argument. Not run on Windows.
 
 ## 1.1.1 (2026-11-01)
