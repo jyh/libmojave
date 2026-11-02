@@ -1114,8 +1114,19 @@ struct
                    of_array (succ depth) max_depth elements (off + len2 + 1) (len - len2 - 1),
                    len)
 
+   (*
+    * of_array wants the elements sorted, each key once.  A list in any
+    * order is sorted first, and of a key bound twice the last binding is
+    * kept, as add would.
+    *)
    let of_list elements =
-      match elements with
+      let elements = List.stable_sort (fun (k1, _) (k2, _) -> Base.compare k1 k2) elements in
+      let rec last = function
+         (k1, _) :: (((k2, _) :: _) as rest) when Base.compare k1 k2 = 0 -> last rest
+       | x :: rest -> x :: last rest
+       | [] -> []
+      in
+      match last elements with
          [] ->
             Leaf
        | [key, data] ->
@@ -1429,10 +1440,13 @@ struct
 
    let fold_map f x t =
       MMap.fold_map (fun x key data ->
-            List.fold_left (fun (x, data) d ->
-                  let x, d = f x key d in
-                  let data = d :: data in
-                     x, data) (x, []) data) x t
+            let x, data =
+               List.fold_left (fun (x, data) d ->
+                     let x, d = f x key d in
+                     let data = d :: data in
+                        x, data) (x, []) data
+            in
+               x, List.rev data) x t
 
    let iter_all = MMap.iter
    let mapi_all = MMap.mapi
