@@ -132,6 +132,10 @@
   returned printer has no way to flush it, so the last line is lost (all
   of a one-line document). Nothing calls those two; the test pins this as
   it is.
+- `Lm_index`'s iterators against `fold_all` (`test/test_index_iter.ml`):
+  `iter_all`, `map_all`, `mapi_all`, `fold_map_all`, and one level `iter`,
+  `fold`, `map`, `mapi`, `fold_map`, on 400 random tries (2,867 pairs). No
+  disagreement.
 - `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
   and a buffer formatter retargeted with `pp_set_formatter_out_channel`
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
