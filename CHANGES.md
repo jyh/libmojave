@@ -88,6 +88,13 @@
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
   with `win`.
+- `Lm_thread.State` with real threads (`test/test_thread_state.ml`,
+  `--profile threads` only): a `private_val` forked into a child thread's
+  new state, `shared_val`, `unlock` inside a write, readers queued behind a
+  writer. Recorded, a defect not yet fixed: under contention the entry
+  locks do not exclude. With 8 threads doing random reads and writes, a
+  writer enters beside a writer, beside readers, and a reader beside a
+  writer, on every run (roughly 60-250 of each in 2,400 steps).
 - `Lm_glob` options no other test used (`test/test_glob_options.ml`, Unix
   only): `GlobNoBraces`, `GlobNoEscape`, `GlobNoTilde`, `GlobHomeDir`,
   `GlobIgnoreFun`, `GlobAllowFun`, `GlobCVSIgnore`, `GlobProperSubdirs`,
