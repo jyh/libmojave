@@ -46,6 +46,11 @@
   directories as files. Both now use the root, as the rest of the module
   does. With the root `.` nothing changes; no caller in libmojave or
   metaprl passes another (`test/test_glob_options.ml`).
+- `Lm_arg`: an ambiguous inverted option (`--no-o` with `-on` and `-off`)
+  reported "No such option" where the plain one reports "Ambiguous option
+  specified"; the inverted lookup now keeps the lookup's own reason and
+  adds that it was extracted from the inverted name
+  (`test/test_arg_invert.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -147,6 +152,7 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_arg`'s inverted options and usage text (`test/test_arg_invert.ml`).
 - `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
   backend's string, `Buffer.t` and channel printers give the same bytes, and
   `make_text_printer` the same text. `make_html_printer` and
