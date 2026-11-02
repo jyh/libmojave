@@ -170,6 +170,11 @@
   as they are: `find_iter` returns some match, not the first by key, and
   `LmMakeList.filter_remove` that removes a key's newest value removes the
   key.
+- `Lm_flags`'s printers and help sections (`test/test_flags.ml`):
+  `print_std_flag_defaults` (sections, defaults, help text wrapped at the
+  margin) and `print_std_flag_values` pinned by their output, a section's
+  text set before and after its flags, and the type-mismatch and undefined
+  branches of `set_bool`, `get_bool` and `get_int`. No defect.
 
 ## 1.1.1 (2026-11-01)
 
