@@ -64,6 +64,11 @@
  (enabled_if (= %{os_type} Win32))
  (action (diff test_filename_util.win32.expected test_filename_util.output)))
 
+(test
+ (name test_splay_table_model)
+ (modules test_splay_table_model)
+ (libraries libmojave pin))
+
 (rule
  (with-stdout-to test_glob.output (run ./test_glob.exe)))
 
@@ -76,6 +81,11 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_glob.win32.expected test_glob.output)))
+
+(test
+ (name test_arg_invert)
+ (modules test_arg_invert)
+ (libraries libmojave pin))
 
 ; Lm_config.code has one C stub per mode, so this test runs as bytecode
 ; (byte_complete: the C stubs linked in) and as native code. The expected
@@ -99,6 +109,11 @@
 (rule
  (alias runtest)
  (action (diff test_config.native.expected test_config.native.output)))
+
+(test
+ (name test_index_iter)
+ (modules test_index_iter)
+ (libraries libmojave pin))
 
 ; Lm_ctype's primitives follow the C library's locale tables. Under MSVC's
 ; C runtime, after setlocale(LC_CTYPE, ""), isprint('\t') is true; MinGW,
@@ -170,6 +185,11 @@
  (alias runtest)
  (enabled_if (= %{os_type} Win32))
  (action (diff test_rusage.win32.expected test_rusage.output)))
+
+(test
+ (name test_set_model)
+ (modules test_set_model)
+ (libraries libmojave pin))
 
 (test
  (name test_channel_fork)
