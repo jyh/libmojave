@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed
+
+- `Lm_filename_util.unescape_string` kept a single-quoted string open: after
+  the first character inside `'…'` it scanned as if in double quotes, so the
+  closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
+  `\'` was not unescaped. Single quotes now close, and `\'` inside them gives
+  `'` (`test/test_filename_rest.ml`). Double quotes are unchanged. Nothing in
+  libmojave, metaprl or omake calls it.
+
 ### Tests
 
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
@@ -25,6 +34,8 @@
 - `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
   and a buffer formatter retargeted with `pp_set_formatter_out_channel`
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
+- `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
+  on names without a drive letter.
 
 ## 1.1.1 (2026-11-01)
 

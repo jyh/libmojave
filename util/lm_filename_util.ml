@@ -233,13 +233,13 @@ let unescape_string s =
                (match s.[i + 1] with
                    '\'' ->
                       Buffer.add_char buf '\'';
-                      dquote buf (i + 2)
+                      squote buf (i + 2)
                  | _ ->
                       Buffer.add_char buf '\\';
-                      dquote buf (succ i))
+                      squote buf (succ i))
           | c ->
                Buffer.add_char buf c;
-               dquote buf (succ i)
+               squote buf (succ i)
 
    and normal buf i =
       if i = len then
