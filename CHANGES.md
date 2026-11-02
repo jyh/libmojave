@@ -4,6 +4,19 @@
 
 ### Fixed
 
+- `Lm_mmap_pipe`: a second server started in the same directory as a live
+  one with no client checks that the live one is alive by connecting and
+  hanging up; the live server's next `open_client` then took that closed
+  connection as its client, so it turned real clients away (busy) until
+  its caller read end of file on that socket and called `close_client`.
+  `open_client` now closes a connection whose peer has already hung up and
+  returns `false`, as it does when busy. A peer that hangs up only after
+  the accept is still taken (declared). The only caller is metaprl's
+  ensemble outboard server, which is not built
+  (`test/test_mmap_pipe_server.ml`). And `block` raised `ECONNRESET` on
+  Linux when the server closed the connection with wake-up bytes from the
+  client unread (macOS reads end of file there); it now returns `false`
+  for both.
 - `Lm_lexer` bracket expressions: a `[` that opens no class just before the
   closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
   sequence is not terminated"), and a `-` just before the closing `]` began
@@ -46,6 +59,11 @@
   directories as files. Both now use the root, as the rest of the module
   does. With the root `.` nothing changes; no caller in libmojave or
   metaprl passes another (`test/test_glob_options.ml`).
+- `Lm_arg`: an ambiguous inverted option (`--no-o` with `-on` and `-off`)
+  reported "No such option" where the plain one reports "Ambiguous option
+  specified"; the inverted lookup now keeps the lookup's own reason and
+  adds that it was extracted from the inverted name
+  (`test/test_arg_invert.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -101,6 +119,13 @@
 
 ### Tests
 
+- `Lm_thread_event` under threads (`test/test_thread_event.ml`): a `select`
+  that completes on one channel leaves its entry queued on the other, and a
+  later `send` or `receive` there skips it and meets the live peer (both
+  directions); `poll (sequence_final [])` is `None`. No defect. Left
+  unreached and stated: `always`'s block (its poll never fails), the
+  unexported `_delay`, a second wait after a spurious wake-up, and the
+  "Event.sync" failure, which only null threads reach.
 - `Lm_string_util`'s token scanners against models
   (`test/test_tokens_model.ml`): `tokens_string`, `tokens_lex`,
   `tokens_data`, `tokens_add`, `tokens_atomic`, `tokens_break` and
@@ -153,6 +178,7 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_arg`'s inverted options and usage text (`test/test_arg_invert.ml`).
 - `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
   backend's string, `Buffer.t` and channel printers give the same bytes, and
   `make_text_printer` the same text. `make_html_printer` and
@@ -161,6 +187,10 @@
   returned printer has no way to flush it, so the last line is lost (all
   of a one-line document). Nothing calls those two; the test pins this as
   it is.
+- `Lm_index`'s iterators against `fold_all` (`test/test_index_iter.ml`):
+  `iter_all`, `map_all`, `mapi_all`, `fold_map_all`, and one level `iter`,
+  `fold`, `map`, `mapi`, `fold_map`, on 400 random tries (2,867 pairs). No
+  disagreement.
 - `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
   and a buffer formatter retargeted with `pp_set_formatter_out_channel`
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
