@@ -178,6 +178,11 @@
   that follows.
 - A forked child doing channel I/O, in both thread profiles
   (`test/test_channel_fork.ml`, Unix only).
+- `Lm_printf.extra_formatting` (`test/test_printf_extra.ml`, Unix): two
+  processes writing in turn through one formatter; the channel's bytes
+  and the log's `[|PID: ...|]` entries (merged per process, closed at a
+  newline or a change of process). Recorded as it stands: the channel
+  also gets `\r\n` written as `\n`. Nothing calls it. No defect.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
