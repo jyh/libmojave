@@ -160,6 +160,12 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_inet_leak)
+ (modules test_inet_leak)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_mmap_pipe)
  (modules test_mmap_pipe)
  (enabled_if (<> %{os_type} Win32))

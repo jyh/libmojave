@@ -40,6 +40,11 @@
   It now sorts the list and keeps the last binding of a key, as `add` would;
   `Lm_set.of_list` already took any order. No caller in libmojave, metaprl
   or omake passed such a list.
+- `Lm_inet.connect` left its socket open when the connection failed
+  (refused, or no address of a name answered), one descriptor per failed
+  call (20 of 20 in `test/test_inet_leak.ml`). It now closes the socket and
+  raises the same exception. Windows takes the same path, unmeasured (the
+  count reads `/dev/fd`).
 - `Lm_map.LmMakeList.fold_map` (the multi-value maps) gave back each key's
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
