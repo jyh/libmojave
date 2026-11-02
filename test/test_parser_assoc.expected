@@ -12,4 +12,4 @@ hash two grammars built alike = true
 hash after add_assoc (same) = true
 hash one more production = false
 debug_parsetiming build: timed phases, in order = 15 of 17 lines: First and nullable sets / Head items / Lookaheads / Head table / Starting LALR construction / State table / Propagation table / Start state lookaheads / Propagation ordering / Fixpoint / LALR reconstruction / Reduce productions / Shift/reduce table / PDA construction / Grammar total
-debug_parsetiming build: the other lines = Propagate: 14 entries, 10 edges / Fixpoint in 10 iterations
+debug_parsetiming build: the other lines = Propagate: 14 entries, 10 edges / Fixpoint in 2 iterations

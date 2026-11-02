@@ -12,8 +12,8 @@
      for two grammars built alike and after add_assoc, and differs once a
      production is added;
    - debug_parsetiming during a build writes one timing line per phase to
-     stderr (captured in a file; the phase names are printed, the times
-     not). *)
+     stderr (read from a child process; the phase names are printed, the
+     times not). *)
 open Pin
 
 module Pr = Lm_parser.ParserPrecedence
@@ -72,19 +72,34 @@ let parse g toks =
 let inputs = [ [ "1"; "+"; "2"; "*"; "3" ]; [ "1"; "*"; "2"; "+"; "3" ]; [ "1"; "+"; "2"; "+"; "3" ]; [ "1"; "+" ] ]
 let parses g = String.concat "  " (List.map (parse g) inputs)
 
-(* Run f with stderr going to a file; return the file's lines. *)
-let with_stderr f =
-  let file = "test_parser_assoc.stderr" in
-  flush stderr;
-  let saved = Unix.dup Unix.stderr in
-  let fd = Unix.openfile file [ Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC ] 0o644 in
-  Unix.dup2 fd Unix.stderr; Unix.close fd;
-  (try f () with e -> flush stderr; Unix.dup2 saved Unix.stderr; Unix.close saved; raise e);
+(* The two builds whose stderr is read run in a child process (this
+   executable again) with stdout and stderr on one pipe; the child marks
+   its own stdout lines "OUT: ". No descriptor is redirected in place:
+   doing that with dup2 failed under MSVC (Sys_error "Bad file
+   descriptor"). *)
+let child mode =
+  let g, _, _ = grammar () in
+  (match mode with
+   | "debug" -> P.build g true
+   | _ -> Lm_parser.debug_parsetiming := true; P.build g false; Lm_parser.debug_parsetiming := false);
   Format.pp_print_flush Format.err_formatter (); flush stderr;
-  Unix.dup2 saved Unix.stderr; Unix.close saved;
-  let ic = open_in_bin file in
-  let rec lines acc = match input_line ic with l -> lines (l :: acc) | exception End_of_file -> List.rev acc in
-  let l = lines [] in close_in ic; Sys.remove file; l
+  Printf.printf "OUT: %b %b  %s\n" !Lm_parser.debug_parse !Lm_parser.debug_parsegen (parses g);
+  exit 0
+
+let () = if Array.length Sys.argv > 2 && Sys.argv.(1) = "--child" then child Sys.argv.(2)
+
+(* stdout lines (without the mark) and the other lines, in order *)
+let run_child mode =
+  let r, w = Unix.pipe () in
+  let pid = Unix.create_process Sys.executable_name [| Sys.executable_name; "--child"; mode |] Unix.stdin w w in
+  Unix.close w;
+  let ic = Unix.in_channel_of_descr r in
+  let rec lines acc = match input_line ic with l -> lines (String.trim l :: acc) | exception End_of_file -> List.rev acc in
+  let all = lines [] in
+  close_in ic; ignore (Unix.waitpid [] pid);
+  let is_out l = String.length l >= 5 && String.sub l 0 5 = "OUT: " in
+  List.map (fun l -> String.sub l 5 (String.length l - 5)) (List.filter is_out all),
+  List.filter (fun l -> not (is_out l)) all
 
 let () =
   (* the precedence table alone *)
@@ -114,17 +129,15 @@ let () =
   let g2, _, _ = grammar () in
   line "build" "build g2 false, debug_parse after, parses"
     (P.build g2 false; Printf.sprintf "%b  %s" !Lm_parser.debug_parse (parses g2));
-  let g3, _, _ = grammar () in
-  let err = with_stderr (fun () -> P.build g3 true) in
+  let out, err = run_child "debug" in
   line "build" "build g3 true: debug_parse and debug_parsegen after, stderr written, parses"
-    (Printf.sprintf "%b %b  %b  %s" !Lm_parser.debug_parse !Lm_parser.debug_parsegen (err <> []) (parses g3));
+    (Printf.sprintf "%s  %b  %s" (match out with [ o ] -> String.sub o 0 11 | _ -> "?")
+       (err <> []) (match out with [ o ] -> String.sub o 13 (String.length o - 13) | _ -> "?"));
   let g4, _, _ = grammar () and g5, _, _ = grammar () in
   line "hash" "two grammars built alike" (string_of_bool (P.hash g4 = P.hash g5));
   line "hash" "after add_assoc (same)" (string_of_bool (P.hash g4 = P.hash (P.add_assoc g4 plus Lm_parser.LeftAssoc)));
   line "hash" "one more production" (string_of_bool (P.hash g4 = P.hash (P.add_production g4 "neg" "e" [ "-"; "e" ] None)));
-  let g6, _, _ = grammar () in
-  let err = with_stderr (fun () ->
-      Lm_parser.debug_parsetiming := true; P.build g6 false; Lm_parser.debug_parsetiming := false) in
+  let _, err = run_child "timing" in
   (* each phase prints "Time: <figures> (<phase>)"; keep the phase *)
   let phase l =
     if String.length l > 6 && String.sub l 0 6 = "Time: " && l.[String.length l - 1] = ')' then
