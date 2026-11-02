@@ -1,0 +1,3 @@
+getrusage_time RUSAGE_SELF on Windows = true
+getrusage on Windows = true
+setrlimit_time 1 on Windows = returned, no limit

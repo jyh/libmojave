@@ -8,6 +8,12 @@
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
   with `win`.
+- `Lm_rusage` (`test/test_rusage.ml`): after burning CPU, `getrusage_time`'s
+  user time is positive and agrees with `Unix.times` and with `getrusage`;
+  `RUSAGE_CHILDREN` grows once a child that burned CPU is waited for; a
+  child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
+  Windows the stubs return zeros and `setrlimit_time` does nothing, which
+  `test/test_rusage.win32.expected` pins.
 
 ## 1.1.1 (2026-11-01)
 
