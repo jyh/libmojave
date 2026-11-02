@@ -1,0 +1,14 @@
+get, no lock  = EXN Invalid_argument("State.get: e: entry is not locked")
+get inside read  = 41
+get inside write  = 41
+get inside unlock inside read  = EXN Invalid_argument("State.get: e: entry is not locked")
+get inside read, after an inner unlock  = 41
+get after read returned  = EXN Invalid_argument("State.get: e: entry is not locked")
+get of a private value inside read  = 7
+debug_lock: get, no lock  = EXN Invalid_argument("State.get: e: entry is not locked")
+debug_lock: get inside read  = 41
+debug_lock: get inside write  = 41
+debug_lock: get inside unlock inside read  = EXN Invalid_argument("State.get: e: entry is not locked")
+debug_lock: get inside read, after an inner unlock  = 41
+debug_lock: get after read returned  = EXN Invalid_argument("State.get: e: entry is not locked")
+debug_lock: get of a private value inside read  = 7
