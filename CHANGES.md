@@ -147,6 +147,12 @@
   random input steps, `seek` and `tell`, through a file and through a pipe
   from a forked writer; then `select` over pipes, including input still
   buffered and end of file.
+- `Lm_unix_util` on Unix (`test/test_unix_util_rest.ml`): `copy_file`
+  (contents, mode, over a longer file, and three failures — a missing
+  source, a missing destination directory, a directory as the source —
+  that leave no descriptor open), `mkdirhier` (relative, absolute,
+  simplified, through a regular file) and `ftruncate` at the current
+  position. No defect.
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
   `input_buffer` through `of_string` and `of_substring`, step by step, and
