@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- `Lm_parser` `build parser true` printed nothing: it raised `debug_parse`
+  for the build, a flag that traces parsing only, so its "debug mode" had no
+  effect since it was written (2004). It now raises `debug_parsegen`, the
+  generator's own output, for the build and restores it after. omake's
+  parser builtin passes its debug option to `build`
+  (`test/test_parser_assoc.ml`).
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed
