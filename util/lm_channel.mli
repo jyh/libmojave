@@ -95,6 +95,16 @@ val input_byte    : t -> int
 val input_buffer  : t -> bytes -> int -> int -> unit
 val input_line    : t -> string
 val input_entire_line : t -> string
+
+(*
+ * read is a partial read. It returns the bytes already in the channel's
+ * buffer if there are any, and otherwise reads straight from the
+ * descriptor into [s]. On a text-mode channel (Windows only) the
+ * buffer holds translated text ("\r\n" read as "\n", filled by the
+ * input functions above) while a read straight from the descriptor is
+ * not translated, so read returns "\r\n" or "\n" depending on what was
+ * read before it. Use the input functions to read text.
+ *)
 val read          : t -> bytes -> int -> int -> int
 
 (* Flush data to the channel *)
@@ -105,6 +115,12 @@ val output_char   : t -> char -> unit
 val output_byte   : t -> int -> unit
 val output_buffer : t -> string -> int -> int -> unit
 val output_string : t -> string -> unit
+
+(*
+ * write is a partial write, straight to the descriptor after flushing
+ * the buffer: always binary, so "\n" is not written as "\r\n" on a
+ * text-mode channel. The output functions above translate.
+ *)
 val write         : t -> bytes -> int -> int -> int
 
 (* Select *)
