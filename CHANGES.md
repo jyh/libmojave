@@ -86,6 +86,15 @@
   quote now ends at its own character (`test/test_tokens_model.ml`).
   `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
   `tokens_std`; omake has its own copy.
+- `Lm_filename_util.is_executable` (and so `which` and `where`) on Unix
+  took a file with any execute bit the process could match as executable,
+  so a file the process owns with mode `0o010` or `0o001` read as
+  executable although the kernel refuses to run it (the owner's bits decide
+  for the owner). It now decides as the kernel does: the owner's bits for
+  the owner, else the group's for a member (the effective group included),
+  else the others'; root needs any execute bit. Checked against
+  `access X_OK` (`test/test_filename_exec.ml`); the group branch has no
+  test file, and ACLs are not read.
 
 ### Tests
 
