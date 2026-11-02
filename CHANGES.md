@@ -12,6 +12,15 @@
   before are unchanged. `[:cntrl:]` now includes DEL (127), as C's
   `iscntrl` does; nothing in libmojave, metaprl or omake uses it
   (`test/test_lexer_charset.ml`).
+- `Lm_thread.State`'s entry locks did not exclude under contention (pinned
+  by `test/test_thread_state.ml`): `read_lock` and `write_lock` waited once
+  without re-checking, and a release signalled a queued thread while a new
+  arrival could take the lock first, so a writer could run beside a writer
+  or beside readers. A release now grants the lock to the queued threads
+  (one writer, or the readers up to the next writer) before waking them, a
+  woken thread waits until it finds itself granted, and a new arrival
+  queues whenever the lock is held or anyone is queued. Writers keep their
+  precedence over readers that arrive after them.
 - `Lm_map`'s `of_list` (the `LmMake` maps) built its tree straight from the
   list, so a list that was not sorted, or bound a key twice, gave a map whose
   `find` and `elements` were wrong (54 of 300 random lists came out right).
@@ -22,6 +31,12 @@
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_splay_table`'s `intersectp` (in the method record `create` returns)
+  missed common keys: its in-order walk stepped past the parent of every
+  node without a right subtree, so keys held there were never compared
+  (122 of 600 random pairs of tables answered false where they share a
+  key). The walk now returns to that parent. Nothing in libmojave or
+  metaprl calls it (`test/test_splay_table_model.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
@@ -31,6 +46,11 @@
   directories as files. Both now use the root, as the rest of the module
   does. With the root `.` nothing changes; no caller in libmojave or
   metaprl passes another (`test/test_glob_options.ml`).
+- `Lm_arg`: an ambiguous inverted option (`--no-o` with `-on` and `-off`)
+  reported "No such option" where the plain one reports "Ambiguous option
+  specified"; the inverted lookup now keeps the lookup's own reason and
+  adds that it was extracted from the inverted name
+  (`test/test_arg_invert.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -111,6 +131,14 @@
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
   with `win`.
+- `Lm_thread.State` with real threads (`test/test_thread_state.ml`,
+  `--profile threads` only): a `private_val` forked into a child thread's
+  new state, `shared_val`, `unlock` inside a write, readers queued behind a
+  writer. Recorded, a defect not yet fixed: under contention the entry
+  locks do not exclude. With 8 threads doing random reads and writes, a
+  writer enters beside a writer, beside readers, and a reader beside a
+  writer, on every run (roughly 60-250 of each in 2,400 steps). Fixed
+  below.
 - `Lm_glob` options no other test used (`test/test_glob_options.ml`, Unix
   only): `GlobNoBraces`, `GlobNoEscape`, `GlobNoTilde`, `GlobHomeDir`,
   `GlobIgnoreFun`, `GlobAllowFun`, `GlobCVSIgnore`, `GlobProperSubdirs`,
@@ -124,6 +152,7 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_arg`'s inverted options and usage text (`test/test_arg_invert.ml`).
 - `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
   backend's string, `Buffer.t` and channel printers give the same bytes, and
   `make_text_printer` the same text. `make_html_printer` and
@@ -141,6 +170,10 @@
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 - `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
   on names without a drive letter.
+- `Lm_splay_table`'s method record against a model
+  (`test/test_splay_table_model.ml`): elements, `find_all`, `cardinal`,
+  `mem_filt`, `not_mem_filt`, `intersectp`, union, `of_list` and
+  `deletemax` on tables built by random histories.
 - `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
   a child under `script(1)` sets the pseudo-terminal's size with `stty`;
   `term_size` reads it back, `term_width` and `stdout_width` are its columns
@@ -148,6 +181,11 @@
   a 0 x 0 terminal `term_width` keeps the width it was given (see Fixed);
   curses falls back to a size of its own. On a pipe `term_size`
   fails and `term_width` keeps its argument. Not run on Windows.
+- `Lm_set` against `Stdlib.Set` on random histories
+  (`test/test_set_model.ml`): `add_list`, `subtract_list`, `range_fold`,
+  `for_all`, `exists`, and `Make`'s `mem`, `add`, `remove`, `fold` and
+  `partition` (which `S` declares to return the satisfying half). No
+  disagreement; five mutants each turn their own line red.
 - `Lm_map` against `Stdlib.Map` (`test/test_map_model.ml`): `of_list`,
   `elements`, `equal`, `find_key`, `forall`, `exists`, `find_iter`,
   `isect_mem`, `add_list`, `union`, `forall2`, `fold_map`, `filter_add`,
