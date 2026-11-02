@@ -1,8 +1,8 @@
 (* Lm_thread.State.get, which no test called: it returns an entry's value
    only while this thread holds the entry's lock (read or write), and
    raises Invalid_argument otherwise. Also the same calls with debug_lock
-   on, which reaches print_thread_id (its messages go to stderr, sent to
-   the null device). Both thread profiles. *)
+   on, which reaches print_thread_id (its messages go to stderr). Both
+   thread profiles. *)
 open Pin
 module S = Lm_thread.State
 
@@ -19,10 +19,9 @@ let run tag =
   line (tag ^ "get after read returned") "" (ignore (S.read e (fun _ -> ())); get e);
   line (tag ^ "get of a private value inside read") "" (S.read p (fun _ -> guard (fun () -> string_of_int (S.get p))))
 
+(* An exception escaping a run is printed here, so the expected file shows it. *)
 let () =
-  run "";
-  let null = Unix.openfile Filename.null [ Unix.O_WRONLY ] 0 in
-  Unix.dup2 null Unix.stderr;
+  (try run "" with e -> print_endline ("EXN " ^ Printexc.to_string e));
   Lm_thread.debug_lock := true;
-  run "debug_lock: ";
+  (try run "debug_lock: " with e -> print_endline ("EXN " ^ Printexc.to_string e));
   Lm_thread.debug_lock := false
