@@ -40,6 +40,11 @@
   It now sorts the list and keeps the last binding of a key, as `add` would;
   `Lm_set.of_list` already took any order. No caller in libmojave, metaprl
   or omake passed such a list.
+- `Lm_string_util.sub` and `blit` with the `string` debug flag on refused
+  legal calls that end at the end of a buffer (`i + len < length` where
+  Stdlib allows `<=`), raising `Failure` where `String.sub` and
+  `Bytes.blit` succeed: 10 of 144 small `sub` calls and 100 of 3456 `blit`
+  calls. Without the flag nothing changes (`test/test_string_debug.ml`).
 - `Lm_map.LmMakeList.fold_map` (the multi-value maps) gave back each key's
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
