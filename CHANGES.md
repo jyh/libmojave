@@ -177,6 +177,14 @@
 
 ### Tests
 
+- `Lm_ncurses_display` with no display open (`test/test_ncurses_display_off.ml`):
+  `display_active` is false, `stop_display` is a no-op (twice), and
+  `update_status`, `putchar`, `putsubstr`, `getchar`, `flush` and a
+  `make_formatter` formatter each raise `Failure "No ncurses display is
+  open!"`, as the interface says. The module had no test. Not covered:
+  opening a display (`start_display` calls `initscr`, which ends the process
+  without a terminal), so `in_display`, `text_viewer` and `menu_select` need a
+  pseudo-terminal.
 - `Lm_thread_event` under threads (`test/test_thread_event.ml`): a `select`
   that completes on one channel leaves its entry queued on the other, and a
   later `send` or `receive` there skips it and meets the live peer (both

@@ -1,0 +1,11 @@
+display_active () = false
+update_status: Failure "No ncurses display is open!"
+putchar: Failure "No ncurses display is open!"
+putsubstr: Failure "No ncurses display is open!"
+getchar: Failure "No ncurses display is open!"
+flush: Failure "No ncurses display is open!"
+stop_display: returned
+stop_display again: returned
+display_active () = false
+make_formatter, print and flush: Failure "No ncurses display is open!"
+display_active () = false
