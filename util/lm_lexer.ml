@@ -748,7 +748,7 @@ struct
          else
             chars
       in
-         collect IntSet.empty 0
+         IntSet.add (collect IntSet.empty 0) 127
 
    let digit_chars  = explode_chars "01234565789"
 
@@ -1067,6 +1067,10 @@ struct
       if i = len then
          raise (Failure "Lm_lexer: regex: character sequence not terminated");
       let j = succ i in
+      if s.[i] = ']' then
+         (* c- just before the closing ]: the - is literal *)
+         IntSet.add (IntSet.add chars c1) (Char.code '-'), j
+      else
       let c2 = Char.code s.[i] in
       let rec collect chars i =
          if i > c2 then
@@ -1087,6 +1091,9 @@ struct
          match s.[i] with
             ':' ->
                regex_chars_class chars s j len
+          | ']' ->
+               (* [ that opens no class, then the closing ] *)
+               IntSet.add chars (Char.code '['), j
           | '[' ->
                regex_chars_possible_class (IntSet.add chars (Char.code '[')) s j len
           | '\\' ->

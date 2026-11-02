@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- `Lm_lexer` bracket expressions: a `[` that opens no class just before the
+  closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
+  sequence is not terminated"), and a `-` just before the closing `]` began
+  a range ending at the `]` (`[a-]` failed the same way). Both now read as
+  POSIX does: `[[]` is `{[}`, `[a-]` is `{a, -}`. Patterns that parsed
+  before are unchanged. `[:cntrl:]` now includes DEL (127), as C's
+  `iscntrl` does; nothing in libmojave, metaprl or omake uses it
+  (`test/test_lexer_charset.ml`).
 - `Lm_map`'s `of_list` (the `LmMake` maps) built its tree straight from the
   list, so a list that was not sorted, or bound a key twice, gave a map whose
   `find` and `elements` were wrong (54 of 300 random lists came out right).
@@ -48,6 +56,12 @@
   the output functions through `create_string` (lm_channel.ml was at 42 %
   of its points under the tests). Recorded: `seek` and `tell` raise
   `EINVAL` on a string channel.
+- `Lm_lexer` bracket expressions and escapes against a model
+  (`test/test_lexer_charset.ml`): random sets of characters, ranges,
+  classes and escapes, each class against ASCII, and the escapes outside
+  brackets. Recorded, not POSIX and not changed: an escape cannot start or
+  end a range, `\8` reads as `\0` then `8`, `\x` reads every hex digit
+  that follows.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start

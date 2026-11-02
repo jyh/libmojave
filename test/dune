@@ -166,11 +166,11 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
- (name test_channel_model)
- (modules test_channel_model)
- (libraries libmojave unix))
-
-(test
  (name test_lexer_charset)
  (modules test_lexer_charset)
  (libraries libmojave pin))
+
+(test
+ (name test_channel_model)
+ (modules test_channel_model)
+ (libraries libmojave unix))

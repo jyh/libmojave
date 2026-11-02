@@ -1,9 +1,9 @@
-bracket expression vs model 598 cases = 142 disagree (first: "[\\xb7[:alpha:]*-*[]": model {*ABCDEFGHIJK...(55)}, lexer EXN Failure("Lm_lexer: regex: character sequence is not terminated"))
-each class vs ASCII 12 cases = 1 disagree (first: [[:cntrl:]]: model {\000\001\002\003\004\005\006\007\008\009\010\011...(33)}, lexer {\000\001\002\003\004\005\006\007\008\009\010\011...(32)})
+bracket expression vs model 598 cases = 0 disagree
+each class vs ASCII 12 cases = 0 disagree
 escape outside brackets vs model 400 cases = 0 disagree
-set "[[]" = EXN Failure("Lm_lexer: regex: character sequence is not terminated")  posix {[}
-set "[a[]" = EXN Failure("Lm_lexer: regex: character sequence is not terminated")  posix {[a}
-set "[a-]" = EXN Failure("Lm_lexer: regex: character sequence is not terminated")  posix {-a}
+set "[[]" = {[}  posix {[}
+set "[a[]" = {[a}  posix {[a}
+set "[a-]" = {-a}  posix {-a}
 set "[]a]" = {]a}  posix {]a}
 set "[-a]" = {-a}  posix {-a}
 set "[\\x41-\\x43]" = {-AC}  posix (not POSIX; a range would be {ABC})
