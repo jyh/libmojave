@@ -89,6 +89,13 @@
 
 ### Tests
 
+- `Lm_thread_event` under threads (`test/test_thread_event.ml`): a `select`
+  that completes on one channel leaves its entry queued on the other, and a
+  later `send` or `receive` there skips it and meets the live peer (both
+  directions); `poll (sequence_final [])` is `None`. No defect. Left
+  unreached and stated: `always`'s block (its poll never fails), the
+  unexported `_delay`, a second wait after a spurious wake-up, and the
+  "Event.sync" failure, which only null threads reach.
 - `Lm_string_util`'s token scanners against models
   (`test/test_tokens_model.ml`): `tokens_string`, `tokens_lex`,
   `tokens_data`, `tokens_add`, `tokens_atomic`, `tokens_break` and
