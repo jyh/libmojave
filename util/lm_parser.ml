@@ -2386,11 +2386,13 @@ struct
    let compile info =
       ignore (pda_of_info info)
 
+   (* debug turns on the generator's own output (debug_parsegen) for this
+      build; debug_parse traces parsing only, so it had no effect here. *)
    let build info debug =
-      let prev_debug = !debug_parse in
-      let () = debug_parse := debug in
+      let prev_debug = !debug_parsegen in
+      let () = debug_parsegen := debug in
       let pda = create info.parse_grammar in
-         debug_parse := prev_debug;
+         debug_parsegen := prev_debug;
          info.parse_pda <- Some pda
 
    let pp_print_parser buf info =

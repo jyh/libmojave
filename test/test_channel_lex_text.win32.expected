@@ -1,0 +1,2 @@
+lex lines of "x\r\ny\r\n\r\nz\rw\r\n"  = 4 lines, "x\ny\n\nz\rw\n"
+lex lines of 4095 a, "\r\n" at the fill boundary, "tail\r\n"  = 2 lines, length 4101, \r 0, \n 2, ends "aa\ntail\n"
