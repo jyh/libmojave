@@ -4,12 +4,14 @@
 
 ### Fixed
 
-- `Lm_rformat.format_quoted_string` left a backslash as it was: it neither
-  escaped it nor quoted a string for holding one, so `x\" y` printed as
-  `"x\\" y"`, which reads back as `x\` and a stray `y"`. A backslash now
-  quotes the string and prints as `\\`; every quoted output reads back with
-  OCaml's `%S` (`test/test_rformat_quote.ml`, 3000 strings). metaprl's
-  display forms print variable and operator names through it.
+- `Lm_map.LmMakeList`'s `equal` compared each key's list of values but not
+  the keys, so a table read equal to the same lists under other keys (286
+  of 300 random tables). It now compares the keys too, as `LmMake`'s
+  `equal` and both `forall2` do. Nothing in libmojave, metaprl or omake
+  calls it (`test/test_map_model.ml`, which now also pins the rest of the
+  family: `union` gives its function the larger table's list first,
+  whichever order the tables were passed in, and `find_iter` returns some
+  match, not the first by key).
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed
@@ -127,6 +129,12 @@
   quote now ends at its own character (`test/test_tokens_model.ml`).
   `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
   `tokens_std`; omake has its own copy.
+- `Lm_rformat.format_quoted_string` left a backslash as it was: it neither
+  escaped it nor quoted a string for holding one, so `x\" y` printed as
+  `"x\\" y"`, which reads back as `x\` and a stray `y"`. A backslash now
+  quotes the string and prints as `\\`; every quoted output reads back with
+  OCaml's `%S` (`test/test_rformat_quote.ml`, 3000 strings). metaprl's
+  display forms print variable and operator names through it.
 - `Lm_filename_util.is_executable` (and so `which` and `where`) on Unix
   took a file with any execute bit the process could match as executable,
   so a file the process owns with mode `0o010` or `0o001` read as
@@ -171,6 +179,11 @@
   the output functions through `create_string` (lm_channel.ml was at 42 %
   of its points under the tests). Recorded: `seek` and `tell` raise
   `EINVAL` on a string channel.
+- `Lm_channel`'s text mode (`test/test_channel_text.ml`, a per-platform
+  expected file): on Windows a write turns `\n` into `\r\n` and a read
+  turns `\r\n` back, a lone `\r` kept, including a `\r\n` that straddles
+  the 4096-byte fill; elsewhere the bytes pass unchanged. The Windows file
+  was written from that contract and is checked by the Windows CI lanes.
 - `Lm_lexer` bracket expressions and escapes against a model
   (`test/test_lexer_charset.ml`): random sets of characters, ranges,
   classes and escapes, each class against ASCII, and the escapes outside
@@ -179,6 +192,11 @@
   that follows.
 - A forked child doing channel I/O, in both thread profiles
   (`test/test_channel_fork.ml`, Unix only).
+- `Lm_printf.extra_formatting` (`test/test_printf_extra.ml`, Unix): two
+  processes writing in turn through one formatter; the channel's bytes
+  and the log's `[|PID: ...|]` entries (merged per process, closed at a
+  newline or a change of process). Recorded as it stands: the channel
+  also gets `\r\n` written as `\n`. Nothing calls it. No defect.
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
