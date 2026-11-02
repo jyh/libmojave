@@ -472,10 +472,18 @@ let create
          raise (Invalid_argument "key_of_path")
    in
 
-   let rec next_path = function
-      Left (Node (_, _, _, Leaf, _)) :: path
-    | Right  _ :: path ->
-         next_path path
+   (*
+    * The head of the path is the current node; each Left node below it
+    * is an ancestor whose left subtree we are in, not yet visited. With
+    * no right subtree, the next node is the ancestor on top: the path
+    * as it stands (an empty path is the end).
+    *)
+   let next_path = function
+      Left (Node (_, _, _, Leaf, _)) :: path ->
+         if path = [] then
+            raise Not_found
+         else
+            path
     | Left (Node (_, _, _, right, _)) :: path ->
          initial_path path right
     | [] ->

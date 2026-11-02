@@ -64,6 +64,11 @@
  (enabled_if (= %{os_type} Win32))
  (action (diff test_filename_util.win32.expected test_filename_util.output)))
 
+(test
+ (name test_splay_table_model)
+ (modules test_splay_table_model)
+ (libraries libmojave pin))
+
 (rule
  (with-stdout-to test_glob.output (run ./test_glob.exe)))
 
@@ -177,6 +182,11 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
+ (name test_set_model)
+ (modules test_set_model)
+ (libraries libmojave pin))
+
+(test
  (name test_channel_fork)
  (modules test_channel_fork)
  (enabled_if (<> %{os_type} Win32))
@@ -193,6 +203,12 @@
  (libraries libmojave unix))
 
 (test
+ (name test_thread_state)
+ (modules test_thread_state)
+ (enabled_if (= %{profile} threads))
+ (libraries libmojave pin unix threads.posix))
+
+(test
  (name test_tokens_model)
  (modules test_tokens_model)
  (libraries libmojave pin))
@@ -200,5 +216,4 @@
 (test
  (name test_glob_options)
  (modules test_glob_options)
- (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))

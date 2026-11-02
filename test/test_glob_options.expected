@@ -3,7 +3,7 @@ GlobNoBraces x{a,b}y = ok dirs [] files ["x{a,b}y"]
 escape a\\* (a literal a*: no such file) = dirs [] files ["a*"]
 GlobNoEscape sub\\k* = ok dirs [] files ["sub/k.ml"; "sub/k.tmp"; "sub/keep"]
 GlobNoEscape a\\* (= a/*) = EXN Failure("a\\*: bad match")
-escape a\\b (= a/b) = dirs [] files ["a\\b"]
+escape a\\b (= a/b) = dirs [] files ["a/b"]
 GlobHomeDir ~/h* = ok dirs [] files ["<F>/home/h1"; "<F>/home/h2.txt"]
 GlobHomeDir ~ = ok dirs ["<F>/home"] files []
 GlobNoTilde ~ = ok dirs [] files ["~"]

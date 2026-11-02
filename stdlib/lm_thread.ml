@@ -77,7 +77,7 @@ type thread_request =
  *    handle_state: the current active state
  *    handle_active: a table of the currently active threads
  *    handle_readers: the number of active readers
- *    handle_writers: the number of active and queued writers
+ *    handle_writers: the number of active writers (0 or 1)
  *)
 type handle_state =
    HandleUnlocked
@@ -288,29 +288,50 @@ let with_state id f x =
             raise exn
 
 (*
- * Once a thread finishes, unlock the remaining processes.
+ * The lock is free: hand it to the threads at the head of the queue
+ * (one writer, or every reader up to the next writer), granting it to
+ * them before they wake, so a thread that arrives in between cannot take
+ * it first. A woken thread finds itself in handle_active.
  * We assume a lock.
  *)
+let grant_read handle thread =
+   handle.handle_state   <- HandleReading;
+   handle.handle_readers <- succ handle.handle_readers;
+   handle.handle_active  <- IntTable.add handle.handle_active thread.thread_id ModeReading
+
+let grant_write handle thread =
+   handle.handle_state   <- HandleWriting;
+   handle.handle_writers <- succ handle.handle_writers;
+   handle.handle_active  <- IntTable.add handle.handle_active thread.thread_id ModeWriting
+
 let release handle =
-   let len = Queue.length handle.handle_queue in
-      if len <> 0 then
-         match Queue.take handle.handle_queue with
-            RequestRead thread ->
-               Condition.signal thread.thread_cond;
-               let rec unblock i =
-                  if i <> 0 then
-                     let info = Queue.peek handle.handle_queue in
-                        match info with
-                           RequestRead thread ->
-                              ignore (Queue.take handle.handle_queue);
-                              Condition.signal thread.thread_cond;
-                              unblock (pred i)
-                         | RequestWrite _ ->
-                              ()
-               in
-                  unblock (pred len)
-          | RequestWrite thread ->
-               Condition.signal thread.thread_cond
+   match Queue.take_opt handle.handle_queue with
+      Some (RequestWrite thread) ->
+         grant_write handle thread;
+         Condition.signal thread.thread_cond
+    | Some (RequestRead thread) ->
+         grant_read handle thread;
+         Condition.signal thread.thread_cond;
+         let rec unblock () =
+            match Queue.peek_opt handle.handle_queue with
+               Some (RequestRead thread) ->
+                  ignore (Queue.take handle.handle_queue);
+                  grant_read handle thread;
+                  Condition.signal thread.thread_cond;
+                  unblock ()
+             | Some (RequestWrite _)
+             | None ->
+                  ()
+         in
+            unblock ()
+    | None ->
+         ()
+
+(* Wait until release has granted the lock to this thread. *)
+let wait_granted thread handle =
+   while not (IntTable.mem handle.handle_active thread.thread_id) do
+      Condition.wait thread.thread_cond state.state_lock
+   done
 
 (*
  * Get the lock record.
@@ -384,16 +405,16 @@ let get_handle thread entry =
  *)
 let read_lock thread handle =
    with_lock "read_lock" (fun () ->
-         if handle.handle_writers <> 0 then
+         (* a queued writer goes first: a reader does not pass the queue *)
+         if handle.handle_state = HandleWriting || not (Queue.is_empty handle.handle_queue) then
             begin
                if !debug_lock then
                   eprintf "read_lock: %t: %s: waiting@." print_thread_id handle.handle_debug;
                Queue.add (RequestRead thread) handle.handle_queue;
-               Condition.wait thread.thread_cond state.state_lock
-            end;
-         handle.handle_state   <- HandleReading;
-         handle.handle_readers <- succ handle.handle_readers;
-         handle.handle_active  <- IntTable.add handle.handle_active thread.thread_id ModeReading) ()
+               wait_granted thread handle
+            end
+         else
+            grant_read handle thread) ()
 
 let read_unlock thread handle =
    with_lock "read_unlock" (fun () ->
@@ -444,16 +465,15 @@ let write_lock thread handle =
    if !debug_lock then
       eprintf "write_lock: %t: begin@." print_thread_id;
    with_lock "write_lock" (fun () ->
-         handle.handle_writers <- succ handle.handle_writers;
-         if handle.handle_state <> HandleUnlocked then
+         if handle.handle_state <> HandleUnlocked || not (Queue.is_empty handle.handle_queue) then
             begin
                if !debug_lock then
                   eprintf "write_lock: %t: waiting@." print_thread_id;
                Queue.add (RequestWrite thread) handle.handle_queue;
-               Condition.wait thread.thread_cond state.state_lock
-            end;
-         handle.handle_state <- HandleWriting;
-         handle.handle_active <- IntTable.add handle.handle_active thread.thread_id ModeWriting) ()
+               wait_granted thread handle
+            end
+         else
+            grant_write handle thread) ()
 
 let write_unlock thread handle =
    if !debug_lock then
