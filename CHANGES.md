@@ -22,6 +22,15 @@
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_glob` with a root other than the current directory: `glob` with
+  `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
+  instead of `<root>/<dir>`, so its patterns were ignored; and the
+  directory listings (`list_dirs`, `list_dirs_rec`, `subdirs_of_dirs`)
+  asked whether `<dir>/<name>` was a directory, not `<root>/<dir>/<name>`,
+  so `subdirs_of_dirs` found no subdirectory and the listings classed
+  directories as files. Both now use the root, as the rest of the module
+  does. With the root `.` nothing changes; no caller in libmojave or
+  metaprl passes another (`test/test_glob_options.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -37,6 +46,12 @@
   discarded the input not yet read before raising `EINVAL`, so the reads
   after a failed seek ended early. It now raises first and leaves the
   channel as it was.
+- `Lm_channel.tell` on an input channel over a file, after a read, gave
+  the descriptor's offset plus the read index, so after reading one short
+  line it said 4099 where the position was 2 (103 of 193 random reads
+  wrong). It now subtracts the input still buffered. Nothing in libmojave
+  or metaprl calls it; omake's `$(tell)` reaches its own copy
+  (`test/test_channel_fd.ml`).
 - `Lm_filename_util.unescape_string` kept a single-quoted string open: after
   the first character inside `'…'` it scanned as if in double quotes, so the
   closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
@@ -72,6 +87,12 @@
   against the whole. Recorded: a backslash that ends a piece does not
   escape the next piece's first character.
 
+- `Lm_channel` over a file and a pipe against a model
+  (`test/test_channel_fd.ml`, Unix only): texts up to three buffers long
+  written by random output steps (with `tell` after each) and read back by
+  random input steps, `seek` and `tell`, through a file and through a pipe
+  from a forked writer; then `select` over pipes, including input still
+  buffered and end of file.
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
   `input_buffer` through `of_string` and `of_substring`, step by step, and
@@ -90,6 +111,13 @@
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
   with `win`.
+- `Lm_glob` options no other test used (`test/test_glob_options.ml`, Unix
+  only): `GlobNoBraces`, `GlobNoEscape`, `GlobNoTilde`, `GlobHomeDir`,
+  `GlobIgnoreFun`, `GlobAllowFun`, `GlobCVSIgnore`, `GlobProperSubdirs`,
+  over a fixture tree. Recorded: a backslash that escapes nothing
+  separates path components (the Windows convention), so with
+  `GlobNoEscape` `a\*` is `a/*`, and a name holding a backslash cannot be
+  globbed.
 - `Lm_rusage` (`test/test_rusage.ml`): after burning CPU, `getrusage_time`'s
   user time is positive and agrees with `Unix.times` and with `getrusage`;
   `RUSAGE_CHILDREN` grows once a child that burned CPU is waited for; a
