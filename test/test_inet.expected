@@ -4,3 +4,7 @@ accept: the accepted peer port is the client's local port  = true
 client -> server  = "ping"
 server -> client  = "pong!"
 connect to the closed port  = EXN Unix.Unix_error(Unix.ECONNREFUSED, "connect", "")
+serve (Some port), the port just freed  = true
+connect "localhost": the peer port  = true
+  client -> server  = "byname"
+connect "localhost" to the closed port  = EXN Unix.Unix_error(Unix.ECONNREFUSED, "connect", "")
