@@ -46,6 +46,14 @@ tex izone w=80 = "\\texfalse\\iftex%\nv<hidden>w\\\\\n\\fi\\enmptab%\n"
 html izone w=10 = "v<hidden>w"
 html+tagger izone w=10 = "v<hidden>w"
 tex izone w=10 = "\\texfalse\\iftex%\nv<hidden>w\\\\\n\\fi\\enmptab%\n"
+html embedded newlines w=80 = "ab\n<br>\ncd\n<br>\n\n<br>\nef"
+html embedded = explicit newlines w=80 = true
+tex embedded newlines w=80 = "\\texfalse\\iftex%\nab\\\\\ncd\\\\\nef\\\\\n\\fi\\enmptab%\n"
+tex embedded = explicit newlines w=80 = true
+html embedded newlines w=10 = "ab\n<br>\ncd\n<br>\n\n<br>\nef"
+html embedded = explicit newlines w=10 = true
+tex embedded newlines w=10 = "\\texfalse\\iftex%\nab\\\\\ncd\\\\\nef\\\\\n\\fi\\enmptab%\n"
+tex embedded = explicit newlines w=10 = true
 escape "" = ""
 escape "plain" = "plain"
 escape "<a href=\"x\">" = "&lt;a href=&quot;x&quot;&gt;"
