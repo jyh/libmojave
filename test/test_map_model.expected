@@ -37,6 +37,5 @@ MTable.filter (the key's whole list; [] removes)               300 of 300
 MTable.union (f gets the larger table's list first)            300 of 300
 MTable.forall2 (same keys, same lists)                         300 of 300
 MTable.equal, a second table                                   300 of 300
-MTable.equal, its lists under other keys                        14 of 300
-  first difference: 1/1/41 4/8/82 3/0/53 2/1/35 3/4/7
+MTable.equal, its lists under other keys                       300 of 300
 MTable.equal to itself rebuilt                                 300 of 300

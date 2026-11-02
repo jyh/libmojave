@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- `Lm_map.LmMakeList`'s `equal` compared each key's list of values but not
+  the keys, so a table read equal to the same lists under other keys (286
+  of 300 random tables). It now compares the keys too, as `LmMake`'s
+  `equal` and both `forall2` do. Nothing in libmojave, metaprl or omake
+  calls it (`test/test_map_model.ml`, which now also pins the rest of the
+  family: `union` gives its function the larger table's list first,
+  whichever order the tables were passed in, and `find_iter` returns some
+  match, not the first by key).
 - `Lm_mmap_pipe`: a second server started in the same directory as a live
   one with no client checks that the live one is alive by connecting and
   hanging up; the live server's next `open_client` then took that closed

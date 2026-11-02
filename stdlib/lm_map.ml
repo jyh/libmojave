@@ -1538,8 +1538,8 @@ struct
       if MMap.cardinality set1 = MMap.cardinality set2 then
          let list1 = MMap.to_list set1 in
          let list2 = MMap.to_list set2 in
-            List.for_all2 (fun (_x1, x2) (_y1, y2) ->
-                  List.length x2 = List.length y2 && List.for_all2 eq x2 y2) list1 list2
+            List.for_all2 (fun (x1, x2) (y1, y2) ->
+                  Ord.compare x1 y1 = 0 && List.length x2 = List.length y2 && List.for_all2 eq x2 y2) list1 list2
       else
          false
 end
