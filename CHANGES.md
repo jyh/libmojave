@@ -47,8 +47,21 @@
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
   uses (`test/test_uname.ml`).
+- `Lm_string_util.tokens` and `tokens_std` ended a quote at any quote
+  character, not the one that opened it, so a double-quoted string holding
+  an apostrophe was split: `"it's here" x` gave `"it's` and `here" x`. A
+  quote now ends at its own character (`test/test_tokens_model.ml`).
+  `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
+  `tokens_std`; omake has its own copy.
 
 ### Tests
+
+- `Lm_string_util`'s token scanners against models
+  (`test/test_tokens_model.ml`): `tokens_string`, `tokens_lex`,
+  `tokens_data`, `tokens_add`, `tokens_atomic`, `tokens_break` and
+  `tokens_flush` on random event sequences, and a string fed in pieces
+  against the whole. Recorded: a backslash that ends a piece does not
+  escape the next piece's first character.
 
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
