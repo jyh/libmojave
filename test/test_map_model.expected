@@ -22,3 +22,21 @@ MTable.replace (the newest; raises iff absent)                 300 of 300
 MTable.add_list                                                300 of 300
 MTable.data_all                                                300 of 300
 MTable.fold_map (identity) keeps each key's values in order    300 of 300
+MTable.iter (each key once, its newest value)                  300 of 300
+MTable.map (the newest value only)                             300 of 300
+MTable.mapi                                                    300 of 300
+MTable.fold (key order, newest value)                          300 of 300
+MTable.mem / find_key / cardinal / is_empty                    300 of 300
+MTable.keys / data                                             300 of 300
+MTable.forall (every value of every key)                       300 of 300
+MTable.exists (any value of any key)                           300 of 300
+MTable.find_iter (a value passing the test, iff there is one)  300 of 300
+MTable.isect_mem (keys passing the test)                       300 of 300
+MTable.choose (a key and its newest value)                     300 of 300
+MTable.filter (the key's whole list; [] removes)               300 of 300
+MTable.union (f gets the larger table's list first)            300 of 300
+MTable.forall2 (same keys, same lists)                         300 of 300
+MTable.equal, a second table                                   300 of 300
+MTable.equal, its lists under other keys                        14 of 300
+  first difference: 1/1/41 4/8/82 3/0/53 2/1/35 3/4/7
+MTable.equal to itself rebuilt                                 300 of 300
