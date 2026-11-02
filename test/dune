@@ -166,6 +166,12 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
+ (name test_channel_fork)
+ (modules test_channel_fork)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_lexer_charset)
  (modules test_lexer_charset)
  (libraries libmojave pin))
