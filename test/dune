@@ -222,3 +222,9 @@
  (name test_glob_options)
  (modules test_glob_options)
  (libraries libmojave pin unix))
+
+(test
+ (name test_mmap_pipe_server)
+ (modules test_mmap_pipe_server)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
