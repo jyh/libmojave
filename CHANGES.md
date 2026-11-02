@@ -40,6 +40,13 @@
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 - `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
   on names without a drive letter.
+- `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
+  a child under `script(1)` sets the pseudo-terminal's size with `stty`;
+  `term_size` reads it back, `term_width` and `stdout_width` are its columns
+  but never under `min_screen_width` (40), and curses' `getmaxyx` agrees. A
+  0 x 0 terminal reads as 0 columns, so `term_width` gives 40, not the width
+  it was given; curses falls back to a size of its own. On a pipe `term_size`
+  fails and `term_width` keeps its argument. Not run on Windows.
 
 ## 1.1.1 (2026-11-01)
 
