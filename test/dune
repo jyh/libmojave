@@ -213,6 +213,26 @@
  (enabled_if (= %{profile} threads))
  (libraries libmojave pin unix threads.posix))
 
+; Lm_channel's lexer fill in text mode (Windows only): per-platform expected
+; file, the Windows one a prediction until the Windows lanes measured it.
+(executable
+ (name test_channel_lex_text)
+ (modules test_channel_lex_text)
+ (libraries libmojave pin unix))
+
+(rule
+ (with-stdout-to test_channel_lex_text.output (run ./test_channel_lex_text.exe)))
+
+(rule
+ (alias runtest)
+ (enabled_if (<> %{os_type} Win32))
+ (action (diff test_channel_lex_text.expected test_channel_lex_text.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (= %{os_type} Win32))
+ (action (diff test_channel_lex_text.win32.expected test_channel_lex_text.output)))
+
 (test
  (name test_tokens_model)
  (modules test_tokens_model)
