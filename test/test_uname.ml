@@ -3,9 +3,10 @@
    printed: nodename is the host name, and release/version vary by
    machine. On Windows there is no uname command to compare with, so
    each field must only be non-empty and sysname start with "win" (any
-   case) -- a weaker check, with the same printed lines; the machine
-   field goes to stderr there, since the C code knows only i?86, alpha
-   and mips. *)
+   case) -- a weaker check, with the same printed lines. On every
+   platform machine must not be "unknown", which x86-64 Windows read
+   until the C code learned AMD64 and ARM64; it still goes to stderr
+   on Windows. *)
 open Pin
 
 let command flag =
@@ -34,4 +35,5 @@ let () =
     else Lm_uname.sysname <> ""
   in
   line "sysname" "is non-empty (Windows: starts with win)" (string_of_bool prefix);
+  line "machine" "is not \"unknown\"" (string_of_bool (Lm_uname.machine <> "unknown"));
   if Sys.win32 then Printf.eprintf "Windows machine field: %S\n%!" Lm_uname.machine

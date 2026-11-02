@@ -10,6 +10,10 @@
   `\'` was not unescaped. Single quotes now close, and `\'` inside them gives
   `'` (`test/test_filename_rest.ml`). Double quotes are unchanged. Nothing in
   libmojave, metaprl or omake calls it.
+- `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
+  Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
+  now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
+  uses (`test/test_uname.ml`).
 
 ### Tests
 

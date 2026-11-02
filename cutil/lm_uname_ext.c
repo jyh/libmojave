@@ -122,6 +122,16 @@ static int uname(struct utsname *name)
     case PROCESSOR_ARCHITECTURE_MIPS:
         strcpy(name->machine, "mips");
         break;
+#ifdef PROCESSOR_ARCHITECTURE_AMD64
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        strcpy(name->machine, "x86_64");
+        break;
+#endif
+#ifdef PROCESSOR_ARCHITECTURE_ARM64
+    case PROCESSOR_ARCHITECTURE_ARM64:
+        strcpy(name->machine, "aarch64");
+        break;
+#endif
     default:
         strcpy(name->machine, "unknown");
         break;
