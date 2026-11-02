@@ -269,6 +269,11 @@
  (libraries libmojave pin unix threads.posix))
 
 (test
+ (name test_thread_state_get)
+ (modules test_thread_state_get)
+ (libraries libmojave pin unix))
+
+(test
  (name test_tokens_model)
  (modules test_tokens_model)
  (libraries libmojave pin))
