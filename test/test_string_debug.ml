@@ -1,6 +1,6 @@
 (* Lm_string_util's bounds-checked primitives with the "string" debug flag
    on: create, make, sub, blit, set, get against Stdlib's own String /
-   Bytes functions on every small argument (buffers of length 0-3, offsets
+   Bytes functions on every small argument; and for_all (buffers of length 0-3, offsets
    and lengths -1..4). A call agrees when both raise or both return the
    same thing. The debug messages they print go to stderr, which is sent to
    the null device for the run. *)
@@ -44,6 +44,11 @@ let () =
                       let f2 = Bytes.of_string s and t2 = Bytes.of_string d in
                       let r1 = res (fun () -> S.blit "t" f1 i t1 j len) and r2 = res (fun () -> Bytes.blit f2 i t2 j len) in
                       note "blit" (r1 = r2 && Bytes.equal t1 t2) what) range) strs) range) range) strs;
+  (* for_all, which no other test reached (not bounds-checked) *)
+  List.iter (fun s ->
+      List.iter (fun (pn, p) -> note "for_all" (S.for_all p s = String.for_all p s) (fun () -> Printf.sprintf "%s %S" pn s))
+        [ ("is a", fun c -> c = 'a'); ("is not c", fun c -> c <> 'c'); ("false", fun _ -> false) ])
+    (strs @ [ "aaa"; "aac"; "cab" ]);
   List.iter (fun name ->
       let t = Hashtbl.find tried name and o = try Hashtbl.find ok name with Not_found -> 0 in
       line ("with the string debug flag on, " ^ name) "vs Stdlib" (Printf.sprintf "%d of %d agree" o t);
