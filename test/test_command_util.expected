@@ -10,9 +10,9 @@ continue f 3 = Continue, f got 3
 
 p> echo got ["a"; "b"]
 
-p> echo got ["ho"; "a"; "b"]
+p> echo got ["a"; "b"]
 
-p> echo got ["o"; "c"]
+p> echo got ["c"]
 
 p> echo print the arguments
 
