@@ -46,12 +46,27 @@
   discarded the input not yet read before raising `EINVAL`, so the reads
   after a failed seek ended early. It now raises first and leaves the
   channel as it was.
+- `Lm_channel.tell` on an input channel over a file, after a read, gave
+  the descriptor's offset plus the read index, so after reading one short
+  line it said 4099 where the position was 2 (103 of 193 random reads
+  wrong). It now subtracts the input still buffered. Nothing in libmojave
+  or metaprl calls it; omake's `$(tell)` reaches its own copy
+  (`test/test_channel_fd.ml`).
 - `Lm_filename_util.unescape_string` kept a single-quoted string open: after
   the first character inside `'…'` it scanned as if in double quotes, so the
   closing `'` was kept as text (`'ab'` gave `ab'`, `x'y'z` gave `xy'z`) and
   `\'` was not unescaped. Single quotes now close, and `\'` inside them gives
   `'` (`test/test_filename_rest.ml`). Double quotes are unchanged. Nothing in
   libmojave, metaprl or omake calls it.
+- Under `--profile threads` (real threads), a forked child that read or
+  wrote a channel before `exec` died with `Sys_error "Mutex.unlock:
+  Operation not permitted"`: the main thread holds `Lm_thread_pool`'s lock
+  outside `blocking_section`, and OCaml 5's mutexes refuse an unlock from a
+  thread that does not own them, which a forked child's thread is not
+  (OCaml 4's did not check). The child now starts with a fresh lock, held,
+  and no workers, the first time it enters `blocking_section` or
+  `resume_inner_section` (`test/test_channel_fork.ml`). The default profile
+  (null threads) was not affected. Nothing in libmojave or metaprl forks.
 - `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
@@ -72,6 +87,12 @@
   against the whole. Recorded: a backslash that ends a piece does not
   escape the next piece's first character.
 
+- `Lm_channel` over a file and a pipe against a model
+  (`test/test_channel_fd.ml`, Unix only): texts up to three buffers long
+  written by random output steps (with `tell` after each) and read back by
+  random input steps, `seek` and `tell`, through a file and through a pipe
+  from a forked writer; then `select` over pipes, including input still
+  buffered and end of file.
 - `Lm_channel` on strings against a model (`test/test_channel_model.ml`):
   `input_char`, `input_byte`, `input_line`, `input_entire_line`, `read`,
   `input_buffer` through `of_string` and `of_substring`, step by step, and
@@ -84,6 +105,8 @@
   brackets. Recorded, not POSIX and not changed: an escape cannot start or
   end a range, `\8` reads as `\0` then `8`, `\x` reads every hex digit
   that follows.
+- A forked child doing channel I/O, in both thread profiles
+  (`test/test_channel_fork.ml`, Unix only).
 - `Lm_uname` (`test/test_uname.ml`): each field equals what the `uname`
   command prints for it (`-s -n -r -v -m`). On Windows, where there is no
   `uname` to compare with, each field must be non-empty and `sysname` start
