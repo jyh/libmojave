@@ -63,6 +63,11 @@
   (122 of 600 random pairs of tables answered false where they share a
   key). The walk now returns to that parent. Nothing in libmojave or
   metaprl calls it (`test/test_splay_table_model.ml`).
+- `Lm_string_util.sub` and `blit` with the `string` debug flag on refused
+  legal calls that end at the end of a buffer (`i + len < length` where
+  Stdlib allows `<=`), raising `Failure` where `String.sub` and
+  `Bytes.blit` succeed: 10 of 144 small `sub` calls and 100 of 3456 `blit`
+  calls. Without the flag nothing changes (`test/test_string_debug.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
