@@ -1215,7 +1215,7 @@ let make name i c =
 let sub name s i len =
    if !debug_string then
       let len' = String.length s in
-         if i >= 0 && len >= 0 && i + len < len' then
+         if i >= 0 && len >= 0 && i + len <= len' then
             String.sub s i len
          else
             begin
@@ -1229,7 +1229,7 @@ let blit name froms i tos j len =
    if !debug_string then
       let from_len = Bytes.length froms in
       let to_len = Bytes.length tos in
-         if i >= 0 && j >= 0 && len >= 0 && i + len < from_len && j + len < to_len then
+         if i >= 0 && j >= 0 && len >= 0 && i + len <= from_len && j + len <= to_len then
             Bytes.blit froms i tos j len
          else
             begin

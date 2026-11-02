@@ -126,7 +126,7 @@ let accept fd =
  *)
 let connect machine port =
    let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-   let addr =
+   let connect_addr () =
       try
          let addr = Unix.inet_addr_of_string machine in
             Unix.connect fd (Unix.ADDR_INET (addr, port));
@@ -149,6 +149,13 @@ let connect machine port =
             in
             let exn = Unix.Unix_error (Unix.EAFNOSUPPORT, "connect", machine) in
                search exn 0
+   in
+   let addr =
+      (* A failed connect closes its socket, and raises what it raised. *)
+      try connect_addr () with
+         exn ->
+            (try Unix.close fd with Unix.Unix_error _ -> ());
+            raise exn
    in
       fd, addr, port
 
