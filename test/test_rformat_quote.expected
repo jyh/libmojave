@@ -1,0 +1,11 @@
+format_quoted_string 3000 strings, read back with %S = 638 fail (638 of the 773 with a backslash); first: "\"\\" printed as "\"\\\"\\\""
+format_quoted_string "a\\b" = "a\\b"
+format_quoted_string "a\\ b" = "\"a\\ b\""
+format_quoted_string "x\\\" y" = "\"x\\\\\" y\""
+format_quoted_string "\\" = "\\"
+unmarshal_buffers round trip = 1 buffer(s): hello world
+unmarshal_buffers empty string = Failure Lm_rformat.unmarshal_buffers
+unmarshal_buffers short string = Failure Lm_rformat.unmarshal_buffers
+unmarshal_buffers header cut short of its data = Failure Lm_rformat.unmarshal_buffers
+unmarshal_buffers corrupt header = Failure Marshal.data_size: bad object
+unmarshal_buffers another version = Failure Lm_rformat.unmarshal_buffers
