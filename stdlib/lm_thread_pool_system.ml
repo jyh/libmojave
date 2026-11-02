@@ -90,9 +90,10 @@ type pool =
      mutable pool_running      : job IntTable.t;
      mutable pool_finished     : job list;
      mutable pool_break        : bool;
-     pool_finished_wait        : Condition.t;
-     pool_consumer_wait        : Condition.t;
-     pool_lock                 : Mutex.t
+     mutable pool_process      : int;
+     mutable pool_finished_wait : Condition.t;
+     mutable pool_consumer_wait : Condition.t;
+     mutable pool_lock         : Mutex.t
    }
 
 (*
@@ -107,6 +108,7 @@ let pool =
      pool_running       = IntTable.empty;
      pool_finished      = [];
      pool_break         = false;
+     pool_process       = Unix.getpid ();
      pool_finished_wait = Condition.create ();
      pool_consumer_wait = Condition.create ();
      pool_lock          = Mutex.create "Lm_thread_pool"
@@ -123,10 +125,30 @@ let () = Mutex.lock pool.pool_lock
 let enabled = true
 
 (*
+ * In a forked child only the forking thread exists, and it does not own
+ * the parent's lock: OCaml 5's mutexes refuse an unlock from it. Start
+ * the child with a fresh lock, held as the main thread holds it, and no
+ * workers.
+ *)
+let after_fork () =
+   pool.pool_process <- Unix.getpid ();
+   pool.pool_lock <- Mutex.create "Lm_thread_pool";
+   pool.pool_finished_wait <- Condition.create ();
+   pool.pool_consumer_wait <- Condition.create ();
+   pool.pool_members <- [];
+   pool.pool_size <- 0;
+   Mutex.lock pool.pool_lock
+
+let check_fork () =
+   if Unix.getpid () <> pool.pool_process then
+      after_fork ()
+
+(*
  * Temporarily unlock the pool while performing IO.
  * The check_status function may generate exceptions.
  *)
 let blocking_section f x =
+   check_fork ();
    Mutex.unlock pool.pool_lock;
    try
       let y = f x in
@@ -138,6 +160,7 @@ let blocking_section f x =
          raise exn
 
 let resume_inner_section f x =
+   check_fork ();
    Mutex.lock pool.pool_lock;
    try
       let y = f x in

@@ -5,6 +5,12 @@
  (name pin)
  (modules pin))
 
+(test
+ (name test_channel_fd)
+ (modules test_channel_fd)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
 (tests
  (names test_string_util test_symbol test_num test_channel
   test_set_map test_printf test_lexer test_parser test_hash test_fmarshal
@@ -166,6 +172,12 @@
  (action (diff test_rusage.win32.expected test_rusage.output)))
 
 (test
+ (name test_channel_fork)
+ (modules test_channel_fork)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_lexer_charset)
  (modules test_lexer_charset)
  (libraries libmojave pin))
@@ -189,5 +201,4 @@
 (test
  (name test_glob_options)
  (modules test_glob_options)
- (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
