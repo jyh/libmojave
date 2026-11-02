@@ -139,6 +139,12 @@
   and no workers, the first time it enters `blocking_section` or
   `resume_inner_section` (`test/test_channel_fork.ml`). The default profile
   (null threads) was not affected. Nothing in libmojave or metaprl forks.
+- `Lm_parser` `build parser true` printed nothing: it raised `debug_parse`
+  for the build, a flag that traces parsing only, so its "debug mode" had no
+  effect since it was written (2004). It now raises `debug_parsegen`, the
+  generator's own output, for the build and restores it after. omake's
+  parser builtin passes its debug option to `build`
+  (`test/test_parser_assoc.ml`).
 - `Lm_uname.machine` read `"unknown"` on x86-64 Windows (measured on the
   Windows CI lane): the Win32 code knew only i?86, alpha and mips. AMD64
   now reads `x86_64` and ARM64 `aarch64`, the names Linux's `uname -m`
