@@ -4,6 +4,19 @@
 
 ### Fixed
 
+- `Lm_mmap_pipe`: a second server started in the same directory as a live
+  one with no client checks that the live one is alive by connecting and
+  hanging up; the live server's next `open_client` then took that closed
+  connection as its client, so it turned real clients away (busy) until
+  its caller read end of file on that socket and called `close_client`.
+  `open_client` now closes a connection whose peer has already hung up and
+  returns `false`, as it does when busy. A peer that hangs up only after
+  the accept is still taken (declared). The only caller is metaprl's
+  ensemble outboard server, which is not built
+  (`test/test_mmap_pipe_server.ml`). And `block` raised `ECONNRESET` on
+  Linux when the server closed the connection with wake-up bytes from the
+  client unread (macOS reads end of file there); it now returns `false`
+  for both.
 - `Lm_lexer` bracket expressions: a `[` that opens no class just before the
   closing `]` swallowed the `]` (`[[]` and `[a[]` failed with "character
   sequence is not terminated"), and a `-` just before the closing `]` began
@@ -27,10 +40,21 @@
   It now sorts the list and keeps the last binding of a key, as `add` would;
   `Lm_set.of_list` already took any order. No caller in libmojave, metaprl
   or omake passed such a list.
+- `Lm_inet.connect` left its socket open when the connection failed
+  (refused, or no address of a name answered), one descriptor per failed
+  call (20 of 20 in `test/test_inet_leak.ml`). It now closes the socket and
+  raises the same exception. Windows takes the same path, unmeasured (the
+  count reads `/dev/fd`).
 - `Lm_map.LmMakeList.fold_map` (the multi-value maps) gave back each key's
   values in reverse order, so after it `find` returned the oldest value
   rather than the newest (120 of 300 maps unchanged by an identity map). No
   caller uses it.
+- `Lm_splay_table`'s `intersectp` (in the method record `create` returns)
+  missed common keys: its in-order walk stepped past the parent of every
+  node without a right subtree, so keys held there were never compared
+  (122 of 600 random pairs of tables answered false where they share a
+  key). The walk now returns to that parent. Nothing in libmojave or
+  metaprl calls it (`test/test_splay_table_model.ml`).
 - `Lm_glob` with a root other than the current directory: `glob` with
   `GlobCVSIgnore` read `<dir>/.cvsignore` from the current directory
   instead of `<root>/<dir>`, so its patterns were ignored; and the
@@ -40,6 +64,11 @@
   directories as files. Both now use the root, as the rest of the module
   does. With the root `.` nothing changes; no caller in libmojave or
   metaprl passes another (`test/test_glob_options.ml`).
+- `Lm_arg`: an ambiguous inverted option (`--no-o` with `-on` and `-off`)
+  reported "No such option" where the plain one reports "Ambiguous option
+  specified"; the inverted lookup now keeps the lookup's own reason and
+  adds that it was extracted from the inverted name
+  (`test/test_arg_invert.ml`).
 - `Lm_termsize.term_width` (and so `stdout_width` and `stderr_width`) gave
   `min_screen_width` (40) on a terminal that reports 0 columns — a
   pseudo-terminal nobody sized — instead of the width it was given (80 for
@@ -86,9 +115,25 @@
   quote now ends at its own character (`test/test_tokens_model.ml`).
   `Lm_glob`'s ignore-file reader and metaprl's shell reach it through
   `tokens_std`; omake has its own copy.
+- `Lm_filename_util.is_executable` (and so `which` and `where`) on Unix
+  took a file with any execute bit the process could match as executable,
+  so a file the process owns with mode `0o010` or `0o001` read as
+  executable although the kernel refuses to run it (the owner's bits decide
+  for the owner). It now decides as the kernel does: the owner's bits for
+  the owner, else the group's for a member (the effective group included),
+  else the others'; root needs any execute bit. Checked against
+  `access X_OK` (`test/test_filename_exec.ml`); the group branch has no
+  test file, and ACLs are not read.
 
 ### Tests
 
+- `Lm_thread_event` under threads (`test/test_thread_event.ml`): a `select`
+  that completes on one channel leaves its entry queued on the other, and a
+  later `send` or `receive` there skips it and meets the live peer (both
+  directions); `poll (sequence_final [])` is `None`. No defect. Left
+  unreached and stated: `always`'s block (its poll never fails), the
+  unexported `_delay`, a second wait after a spurious wake-up, and the
+  "Event.sync" failure, which only null threads reach.
 - `Lm_string_util`'s token scanners against models
   (`test/test_tokens_model.ml`): `tokens_string`, `tokens_lex`,
   `tokens_data`, `tokens_add`, `tokens_atomic`, `tokens_break` and
@@ -147,6 +192,7 @@
   child that calls `setrlimit_time 1` and spins dies by `SIGXCPU`. On
   Windows the stubs return zeros and `setrlimit_time` does nothing, which
   `test/test_rusage.win32.expected` pins.
+- `Lm_arg`'s inverted options and usage text (`test/test_arg_invert.ml`).
 - `Lm_rformat_text`, `_html`, `_tex` (`test/test_rformat_paths.ml`): each
   backend's string, `Buffer.t` and channel printers give the same bytes, and
   `make_text_printer` the same text. `make_html_printer` and
@@ -155,11 +201,19 @@
   returned printer has no way to flush it, so the last line is lost (all
   of a one-line document). Nothing calls those two; the test pins this as
   it is.
+- `Lm_index`'s iterators against `fold_all` (`test/test_index_iter.ml`):
+  `iter_all`, `map_all`, `mapi_all`, `fold_map_all`, and one level `iter`,
+  `fold`, `map`, `mapi`, `fold_map`, on 400 random tries (2,867 pairs). No
+  disagreement.
 - `Lm_format` (`test/test_format_channel.ml`): `formatter_of_out_channel`
   and a buffer formatter retargeted with `pp_set_formatter_out_channel`
   write the same bytes as `formatter_of_buffer`, at margins 80, 20 and 8.
 - `Lm_filename_util.filename_string` and `filename_path` (`test/test_filename_rest.ml`),
   on names without a drive letter.
+- `Lm_splay_table`'s method record against a model
+  (`test/test_splay_table_model.ml`): elements, `find_all`, `cardinal`,
+  `mem_filt`, `not_mem_filt`, `intersectp`, union, `of_list` and
+  `deletemax` on tables built by random histories.
 - `Lm_termsize` and `Lm_ncurses` on a terminal (`test/test_term_pty.ml`):
   a child under `script(1)` sets the pseudo-terminal's size with `stty`;
   `term_size` reads it back, `term_width` and `stdout_width` are its columns
@@ -181,6 +235,11 @@
   as they are: `find_iter` returns some match, not the first by key, and
   `LmMakeList.filter_remove` that removes a key's newest value removes the
   key.
+- `Lm_flags`'s printers and help sections (`test/test_flags.ml`):
+  `print_std_flag_defaults` (sections, defaults, help text wrapped at the
+  margin) and `print_std_flag_values` pinned by their output, a section's
+  text set before and after its flags, and the type-mismatch and undefined
+  branches of `set_bool`, `get_bool` and `get_int`. No defect.
 
 ## 1.1.1 (2026-11-01)
 
