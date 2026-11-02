@@ -290,6 +290,12 @@
  (libraries libmojave pin unix))
 
 (test
+ (name test_glob_mix)
+ (modules test_glob_mix)
+ (enabled_if (<> %{os_type} Win32))
+ (libraries libmojave pin unix))
+
+(test
  (name test_mmap_pipe_server)
  (modules test_mmap_pipe_server)
  (enabled_if (<> %{os_type} Win32))
