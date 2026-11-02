@@ -1,0 +1,6 @@
+info id, new  = 0
+info id, after set_id 42  = 42
+output_string "xy"  = EXN Unix.Unix_error(Unix.EBADF, "Lm_channel.write", "string input channel")
+output_char then flush  = EXN Unix.Unix_error(Unix.EBADF, "Lm_channel.write", "string input channel")
+write 2 bytes  = EXN Unix.Unix_error(Unix.EBADF, "Lm_channel.write", "string input channel")
+input_line (reading is unaffected)  = "abc"
