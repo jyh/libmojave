@@ -77,6 +77,11 @@
  (enabled_if (= %{os_type} Win32))
  (action (diff test_glob.win32.expected test_glob.output)))
 
+(test
+ (name test_arg_invert)
+ (modules test_arg_invert)
+ (libraries libmojave pin))
+
 ; Lm_config.code has one C stub per mode, so this test runs as bytecode
 ; (byte_complete: the C stubs linked in) and as native code. The expected
 ; files differ only in the backend's name.

@@ -1,0 +1,26 @@
+parse_argv ["-alpha"] = alpha true beta true gamma ""
+parse_argv ["--no-alpha"] = alpha false beta true gamma ""
+parse_argv ["--no-beta"] = alpha false beta true gamma ""
+parse_argv ["-beta"] = alpha false beta false gamma ""
+parse_argv ["--no-alp"] = alpha false beta true gamma ""
+parse_argv ["--no-alpha"; "-alpha"] = alpha true beta true gamma ""
+parse_argv ["--no-gamma"; "x"] = BogusArg Not an invertable option: -gamma (extracted from inverted: --no-gamma)
+parse_argv ["--no-zeta"] = BogusArg No such option: -zeta (extracted from inverted: --no-zeta)
+parse_argv ["--no-"] = BogusArg No such option: --no-
+parse_argv ["--noalpha"] = BogusArg No such option: --noalpha
+parse_argv ["-gamma"; "s"; "--no-alpha"; "rest"] = alpha false beta true gamma "anon:rest"
+fold_argv ["-on"] = " on=true"
+fold_argv ["--no-on"] = " on=false"
+fold_argv ["-off"] = " off=false"
+fold_argv ["--no-off"] = " off=true"
+fold_argv ["-o"] = "BogusArg Ambiguous option specified: -o"
+fold_argv ["--no-o"] = "BogusArg No such option: -o (extracted from inverted: --no-o)"
+usage:
+Usage: prog [options].
+
+Flags:
+   -alpha         *:  set alpha
+   -beta          *:  clear beta
+   -gamma <string> :  a string
+
+(*) Prefix the option with "--no" to disable.
