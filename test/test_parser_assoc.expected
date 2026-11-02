@@ -1,0 +1,15 @@
+assoc prec_min, prec_max, created right, created nonassoc = NoneAssoc, NoneAssoc, RightAssoc, NonAssoc
+add_assoc same associativity, the table returned = the same table
+add_assoc different associativity = Failure ParserPrecedence.add_assoc: associativities do not match
+add_assoc a level created in another table = Failure ParserPrecedence.add_assoc: precedence is not defined
+assoc a level created in another table = raised Not_found
+grammar parses = (1+(2*3))  ((1*2)+3)  ((1+2)+3)  syntax error
+grammar add_assoc + left (same), parses = (1+(2*3))  ((1*2)+3)  ((1+2)+3)  syntax error
+grammar add_assoc * right (different) = Failure ParserPrecedence.add_assoc: associativities do not match
+build build g2 false, debug_parse after, parses = false  (1+(2*3))  ((1*2)+3)  ((1+2)+3)  syntax error
+build build g3 true: debug_parse and debug_parsegen after, stderr written, parses = false false  false  (1+(2*3))  ((1*2)+3)  ((1+2)+3)  syntax error
+hash two grammars built alike = true
+hash after add_assoc (same) = true
+hash one more production = false
+debug_parsetiming build: timed phases, in order = 15 of 17 lines: First and nullable sets / Head items / Lookaheads / Head table / Starting LALR construction / State table / Propagation table / Start state lookaheads / Propagation ordering / Fixpoint / LALR reconstruction / Reduce productions / Shift/reduce table / PDA construction / Grammar total
+debug_parsetiming build: the other lines = Propagate: 14 entries, 10 edges / Fixpoint in 10 iterations
