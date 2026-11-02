@@ -675,6 +675,7 @@ let format_quoted_string buf str =
           | '\r'
           | '\t'
           | ' '
+          | '\\'
           | '\034' ->
                true
           | _ ->
@@ -690,6 +691,7 @@ let format_quoted_string buf str =
               | '\r' -> format_string buf "\\r"
               | '\t' -> format_string buf "\\t"
               | '\034' -> format_string buf "\\\034"
+              | '\\' -> format_string buf "\\\\"
               | c -> format_char buf c);
             format_string' (i + 1)
          end
