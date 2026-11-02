@@ -183,5 +183,4 @@
 (test
  (name test_glob_options)
  (modules test_glob_options)
- (enabled_if (<> %{os_type} Win32))
  (libraries libmojave pin unix))
