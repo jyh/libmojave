@@ -1,6 +1,7 @@
 .omakedb*
 *.a
 *.cmi
+*.cma
 *.cmo
 *.cmx
 *.cmxa
